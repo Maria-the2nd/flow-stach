@@ -82,7 +82,7 @@ export function AssetDetailContent({ slug }: AssetDetailContentProps) {
         </Suspense>
       }
       main={<AssetDetailMain asset={asset} hasPayload={hasPayload} />}
-      context={<AssetDetailContext asset={asset} />}
+      context={<AssetDetailContext asset={asset} payload={payload ?? null} />}
     />
   );
 }

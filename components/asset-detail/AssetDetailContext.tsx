@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Doc } from "@/convex/_generated/dataModel";
 import { useFavorites } from "@/components/favorites/FavoritesProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,11 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Copy01Icon, FavouriteIcon } from "@hugeicons/core-free-icons";
+import { copyText, copyWebflowJson } from "@/lib/clipboard";
 
 type Asset = Doc<"assets">;
+type Payload = Doc<"payloads">;
 
 interface AssetDetailContextProps {
   asset: Asset;
+  payload: Payload | null;
 }
 
 function formatDate(timestamp: number): string {
@@ -22,9 +26,29 @@ function formatDate(timestamp: number): string {
   });
 }
 
-export function AssetDetailContext({ asset }: AssetDetailContextProps) {
+export function AssetDetailContext({ asset, payload }: AssetDetailContextProps) {
   const { isFavorited, toggle } = useFavorites();
   const favorited = isFavorited(asset.slug);
+  const [copyingWebflow, setCopyingWebflow] = useState(false);
+  const [copyingCode, setCopyingCode] = useState(false);
+
+  const handleCopyWebflow = async () => {
+    setCopyingWebflow(true);
+    try {
+      await copyWebflowJson(payload?.webflowJson ?? "");
+    } finally {
+      setCopyingWebflow(false);
+    }
+  };
+
+  const handleCopyCode = async () => {
+    setCopyingCode(true);
+    try {
+      await copyText(payload?.codePayload ?? "");
+    } finally {
+      setCopyingCode(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -61,13 +85,23 @@ export function AssetDetailContext({ asset }: AssetDetailContextProps) {
           <CardTitle>Actions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Button variant="outline" className="w-full justify-start" disabled>
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={handleCopyWebflow}
+            disabled={copyingWebflow}
+          >
             <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
-            Copy to Webflow
+            {copyingWebflow ? "Copying..." : "Copy to Webflow"}
           </Button>
-          <Button variant="outline" className="w-full justify-start" disabled>
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={handleCopyCode}
+            disabled={copyingCode}
+          >
             <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
-            Copy Code
+            {copyingCode ? "Copying..." : "Copy Code"}
           </Button>
           <Button
             variant="outline"

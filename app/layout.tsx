@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "./providers/ConvexClientProvider";
 import { InitUser } from "@/components/auth/InitUser";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const notoSans = Noto_Sans({variable:'--font-sans'});
@@ -36,6 +37,7 @@ export default function RootLayout({
           <ConvexClientProvider>
             <InitUser />
             {children}
+            <Toaster position="bottom-right" />
           </ConvexClientProvider>
         </body>
       </html>
