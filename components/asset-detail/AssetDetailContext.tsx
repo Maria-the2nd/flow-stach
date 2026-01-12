@@ -35,7 +35,7 @@ export function AssetDetailContext({ asset, payload }: AssetDetailContextProps) 
   const handleCopyWebflow = async () => {
     setCopyingWebflow(true);
     try {
-      await copyWebflowJson(payload?.webflowJson ?? "");
+      await copyWebflowJson(payload?.webflowJson);
     } finally {
       setCopyingWebflow(false);
     }
