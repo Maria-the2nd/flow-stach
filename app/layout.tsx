@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "./providers/ConvexClientProvider";
+import { ThemeProvider } from "./providers/ThemeProvider";
 import { InitUser } from "@/components/auth/InitUser";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -30,15 +31,17 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={notoSans.variable}>
+      <html lang="en" className={notoSans.variable} suppressHydrationWarning>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <ConvexClientProvider>
-            <InitUser />
-            {children}
-            <Toaster position="bottom-right" />
-          </ConvexClientProvider>
+          <ThemeProvider>
+            <ConvexClientProvider>
+              <InitUser />
+              {children}
+              <Toaster position="bottom-right" />
+            </ConvexClientProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
