@@ -2,6 +2,7 @@ import { mutation } from "./_generated/server"
 import { requireAdmin } from "./auth"
 
 // Demo data based on existing fakeAssets
+// Preview images use placeholder service - replace with real assets in production
 const demoAssets = [
   {
     slug: "magnetic-cursor-effect",
@@ -10,6 +11,7 @@ const demoAssets = [
     description: "A smooth magnetic cursor effect that follows interactive elements",
     tags: ["cursor", "magnetic", "interaction"],
     isNew: true,
+    previewImageUrl: "https://placehold.co/800x600/1a1a2e/eee?text=Magnetic+Cursor",
   },
   {
     slug: "custom-cursor-trails",
@@ -18,6 +20,7 @@ const demoAssets = [
     description: "Beautiful cursor trails with customizable effects",
     tags: ["cursor", "trails", "animation"],
     isNew: false,
+    previewImageUrl: "https://placehold.co/800x600/16213e/eee?text=Cursor+Trails",
   },
   {
     slug: "smooth-scroll-anchor",
@@ -26,6 +29,7 @@ const demoAssets = [
     description: "Smooth scrolling to anchor sections with easing",
     tags: ["scroll", "smooth", "anchor"],
     isNew: true,
+    previewImageUrl: "https://placehold.co/800x600/0f3460/eee?text=Smooth+Scroll",
   },
   {
     slug: "parallax-scroll-sections",
@@ -34,6 +38,7 @@ const demoAssets = [
     description: "Multi-layer parallax scrolling for immersive experiences",
     tags: ["scroll", "parallax", "sections"],
     isNew: false,
+    previewImageUrl: "https://placehold.co/800x600/533483/eee?text=Parallax+Scroll",
   },
   {
     slug: "animated-cta-button",
@@ -42,6 +47,7 @@ const demoAssets = [
     description: "Eye-catching animated call-to-action button",
     tags: ["button", "cta", "animation"],
     isNew: true,
+    previewImageUrl: "https://placehold.co/800x600/e94560/eee?text=CTA+Button",
   },
   {
     slug: "gradient-border-button",
@@ -50,6 +56,7 @@ const demoAssets = [
     description: "Button with animated gradient border effect",
     tags: ["button", "gradient", "border"],
     isNew: false,
+    previewImageUrl: "https://placehold.co/800x600/ff6b6b/eee?text=Gradient+Button",
   },
   {
     slug: "mobile-nav-drawer",
@@ -58,6 +65,7 @@ const demoAssets = [
     description: "Responsive mobile navigation drawer component",
     tags: ["navigation", "mobile", "drawer"],
     isNew: true,
+    previewImageUrl: "https://placehold.co/800x600/4ecdc4/222?text=Nav+Drawer",
   },
   {
     slug: "mega-menu-dropdown",
@@ -66,6 +74,7 @@ const demoAssets = [
     description: "Large dropdown menu for complex navigation structures",
     tags: ["navigation", "menu", "dropdown"],
     isNew: false,
+    previewImageUrl: "https://placehold.co/800x600/45b7d1/222?text=Mega+Menu",
   },
   {
     slug: "card-hover-tilt",
@@ -74,6 +83,7 @@ const demoAssets = [
     description: "3D tilt effect on card hover with smooth animation",
     tags: ["hover", "card", "tilt", "3d"],
     isNew: true,
+    previewImageUrl: "https://placehold.co/800x600/96ceb4/222?text=Card+Tilt",
   },
   {
     slug: "image-hover-zoom",
@@ -82,6 +92,7 @@ const demoAssets = [
     description: "Smooth zoom effect on image hover",
     tags: ["hover", "image", "zoom"],
     isNew: false,
+    previewImageUrl: "https://placehold.co/800x600/ffeaa7/222?text=Hover+Zoom",
   },
   {
     slug: "video-background-hero",
@@ -90,6 +101,7 @@ const demoAssets = [
     description: "Full-screen video background for hero sections",
     tags: ["video", "background", "hero"],
     isNew: true,
+    previewVideoUrl: "https://placehold.co/800x600/dfe6e9/222?text=Video+Hero",
   },
   {
     slug: "image-gallery-lightbox",
@@ -98,6 +110,7 @@ const demoAssets = [
     description: "Interactive image gallery with lightbox modal",
     tags: ["gallery", "lightbox", "images"],
     isNew: false,
+    previewImageUrl: "https://placehold.co/800x600/b2bec3/222?text=Gallery",
   },
   {
     slug: "animated-text-reveal",
@@ -106,6 +119,7 @@ const demoAssets = [
     description: "Text reveal animation with various effects",
     tags: ["text", "animation", "reveal"],
     isNew: true,
+    previewImageUrl: "https://placehold.co/800x600/636e72/eee?text=Text+Reveal",
   },
   {
     slug: "gradient-text-effect",
@@ -114,6 +128,7 @@ const demoAssets = [
     description: "Animated gradient text with CSS effects",
     tags: ["text", "gradient", "effect"],
     isNew: false,
+    previewImageUrl: "https://placehold.co/800x600/2d3436/eee?text=Gradient+Text",
   },
   {
     slug: "copy-to-clipboard",
@@ -122,6 +137,7 @@ const demoAssets = [
     description: "One-click copy to clipboard utility",
     tags: ["clipboard", "copy", "utility"],
     isNew: false,
+    previewImageUrl: "https://placehold.co/800x600/00b894/eee?text=Clipboard",
   },
   {
     slug: "dark-mode-toggle",
@@ -130,6 +146,7 @@ const demoAssets = [
     description: "Smooth dark mode toggle with system preference detection",
     tags: ["dark-mode", "toggle", "theme"],
     isNew: true,
+    previewImageUrl: "https://placehold.co/800x600/6c5ce7/eee?text=Dark+Mode",
   },
   {
     slug: "hero-split-section",
@@ -138,6 +155,7 @@ const demoAssets = [
     description: "Split-screen hero section layout",
     tags: ["hero", "section", "layout"],
     isNew: false,
+    previewImageUrl: "https://placehold.co/800x600/a29bfe/222?text=Hero+Split",
   },
   {
     slug: "testimonial-carousel",
@@ -146,6 +164,7 @@ const demoAssets = [
     description: "Responsive testimonial carousel with auto-play",
     tags: ["testimonial", "carousel", "section"],
     isNew: true,
+    previewImageUrl: "https://placehold.co/800x600/fd79a8/222?text=Testimonials",
   },
 ]
 
@@ -178,6 +197,8 @@ export const seedDemoData = mutation({
         tags: asset.tags,
         isNew: asset.isNew,
         status: "published",
+        previewImageUrl: "previewImageUrl" in asset ? asset.previewImageUrl : undefined,
+        previewVideoUrl: "previewVideoUrl" in asset ? asset.previewVideoUrl : undefined,
         createdAt: now,
         updatedAt: now,
       })
