@@ -1,6 +1,235 @@
 import { mutation } from "./_generated/server"
 import { requireAdmin } from "./auth"
 
+// ============================================================================
+// REAL PAYLOADS FOR HERO ASSETS
+// ============================================================================
+
+const magneticCursorWebflowJson = {
+  type: "@webflow/XscpData",
+  payload: {
+    nodes: [
+      {
+        _id: "mc-wrapper-001",
+        type: "Block",
+        tag: "div",
+        classes: ["mc-style-wrapper"],
+        children: ["mc-cursor-001", "mc-demo-001"],
+        data: {
+          tag: "div",
+          text: false,
+          xattr: [],
+        },
+      },
+      {
+        _id: "mc-cursor-001",
+        type: "Block",
+        tag: "div",
+        classes: ["mc-style-cursor"],
+        children: [],
+        data: {
+          tag: "div",
+          text: false,
+          xattr: [{ name: "data-magnetic-cursor", value: "" }],
+        },
+      },
+      {
+        _id: "mc-demo-001",
+        type: "Block",
+        tag: "div",
+        classes: ["mc-style-demo-container"],
+        children: ["mc-button-001"],
+        data: {
+          tag: "div",
+          text: false,
+          xattr: [],
+        },
+      },
+      {
+        _id: "mc-button-001",
+        type: "Link",
+        tag: "a",
+        classes: ["mc-style-button"],
+        children: ["mc-button-text-001"],
+        data: {
+          button: true,
+          link: { mode: "external", url: "#" },
+          xattr: [
+            { name: "data-magnetic", value: "" },
+            { name: "data-magnetic-strength", value: "0.3" },
+          ],
+        },
+      },
+      {
+        _id: "mc-button-text-001",
+        text: true,
+        v: "Hover Me",
+      },
+    ],
+    styles: [
+      {
+        _id: "mc-style-wrapper",
+        fake: false,
+        type: "class",
+        name: "magnetic-wrapper",
+        namespace: "",
+        comb: "",
+        styleLess: "position: relative; min-height: 400px;",
+        variants: {},
+        children: [],
+      },
+      {
+        _id: "mc-style-cursor",
+        fake: false,
+        type: "class",
+        name: "magnetic-cursor",
+        namespace: "",
+        comb: "",
+        styleLess:
+          "position: fixed; top: 0; left: 0; width: 20px; height: 20px; background-color: #6366f1; border-radius: 50%; pointer-events: none; z-index: 9999; transform: translate(-50%, -50%); opacity: 0; transition: opacity 0.3s ease;",
+        variants: {},
+        children: [],
+      },
+      {
+        _id: "mc-style-demo-container",
+        fake: false,
+        type: "class",
+        name: "magnetic-demo",
+        namespace: "",
+        comb: "",
+        styleLess:
+          "display: flex; align-items: center; justify-content: center; min-height: 400px; padding: 60px;",
+        variants: {},
+        children: [],
+      },
+      {
+        _id: "mc-style-button",
+        fake: false,
+        type: "class",
+        name: "magnetic-button",
+        namespace: "",
+        comb: "",
+        styleLess:
+          "display: inline-flex; align-items: center; justify-content: center; padding: 16px 32px; background-color: #18181b; color: #ffffff; border-radius: 8px; font-size: 16px; font-weight: 500; text-decoration: none; transition: transform 0.15s ease-out;",
+        variants: {},
+        children: [],
+      },
+    ],
+    assets: [],
+    ix1: [],
+    ix2: { interactions: [], events: [], actionLists: [] },
+  },
+  meta: {
+    unlinkedSymbolCount: 0,
+    droppedLinks: 0,
+    dynBindRemovedCount: 0,
+    dynListBindRemovedCount: 0,
+    paginationRemovedCount: 0,
+  },
+}
+
+const magneticCursorCodePayload = `/**
+ * Magnetic Cursor Effect
+ * Dependencies: gsap@3.x
+ *
+ * Usage:
+ *   1. Include GSAP: <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+ *   2. Add data-magnetic-cursor to your cursor element
+ *   3. Add data-magnetic to elements that should attract the cursor
+ *   4. Optional: data-magnetic-strength="0.3" (default: 0.3, range: 0.1-1.0)
+ *
+ * Cleanup:
+ *   Call magneticCursor.destroy() when removing the component
+ */
+
+(function() {
+  const cursor = document.querySelector('[data-magnetic-cursor]');
+  const magnets = document.querySelectorAll('[data-magnetic]');
+
+  if (!cursor || !window.gsap) {
+    console.warn('Magnetic Cursor: Missing cursor element or GSAP');
+    return;
+  }
+
+  let mouseX = 0, mouseY = 0;
+  let cursorX = 0, cursorY = 0;
+  let rafId = null;
+
+  // Show cursor on mouse enter
+  document.addEventListener('mouseenter', () => {
+    gsap.to(cursor, { opacity: 1, duration: 0.3 });
+  });
+
+  document.addEventListener('mouseleave', () => {
+    gsap.to(cursor, { opacity: 0, duration: 0.3 });
+  });
+
+  // Track mouse position
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+  });
+
+  // Smooth cursor follow
+  function animateCursor() {
+    cursorX += (mouseX - cursorX) * 0.15;
+    cursorY += (mouseY - cursorY) * 0.15;
+    cursor.style.left = cursorX + 'px';
+    cursor.style.top = cursorY + 'px';
+    rafId = requestAnimationFrame(animateCursor);
+  }
+  animateCursor();
+
+  // Magnetic effect for each magnet element
+  magnets.forEach((magnet) => {
+    const strength = parseFloat(magnet.dataset.magneticStrength) || 0.3;
+
+    magnet.addEventListener('mouseenter', () => {
+      gsap.to(cursor, { scale: 2, duration: 0.3 });
+    });
+
+    magnet.addEventListener('mouseleave', () => {
+      gsap.to(cursor, { scale: 1, duration: 0.3 });
+      gsap.to(magnet, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1, 0.5)' });
+    });
+
+    magnet.addEventListener('mousemove', (e) => {
+      const rect = magnet.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const deltaX = (e.clientX - centerX) * strength;
+      const deltaY = (e.clientY - centerY) * strength;
+      gsap.to(magnet, { x: deltaX, y: deltaY, duration: 0.3, ease: 'power2.out' });
+    });
+  });
+
+  // Expose cleanup for SPA usage
+  window.magneticCursor = {
+    destroy: () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      gsap.set(cursor, { clearProps: 'all' });
+      magnets.forEach(m => gsap.set(m, { clearProps: 'all' }));
+    }
+  };
+})();
+`
+
+// Asset-specific payloads (only for assets with real implementations)
+const assetPayloads: Record<
+  string,
+  { webflowJson: string; codePayload: string; dependencies: string[] }
+> = {
+  "magnetic-cursor-effect": {
+    webflowJson: JSON.stringify(magneticCursorWebflowJson),
+    codePayload: magneticCursorCodePayload,
+    dependencies: ["gsap@3.x"],
+  },
+}
+
+// ============================================================================
+// DEMO ASSETS
+// ============================================================================
+
 // Demo data based on existing fakeAssets
 // Preview images use placeholder service - replace with real assets in production
 const demoAssets = [
@@ -204,12 +433,13 @@ export const seedDemoData = mutation({
       })
       results.assets++
 
-      // Create placeholder payload
+      // Create payload - use real payload if available, otherwise placeholder
+      const realPayload = assetPayloads[asset.slug]
       await ctx.db.insert("payloads", {
         assetId,
-        webflowJson: JSON.stringify({ placeholder: true }),
-        codePayload: `// ${asset.title}\n// TODO: Add implementation`,
-        dependencies: [],
+        webflowJson: realPayload?.webflowJson ?? JSON.stringify({ placeholder: true }),
+        codePayload: realPayload?.codePayload ?? `// ${asset.title}\n// TODO: Add implementation`,
+        dependencies: realPayload?.dependencies ?? [],
         createdAt: now,
         updatedAt: now,
       })
