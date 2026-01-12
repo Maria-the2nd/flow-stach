@@ -1,17 +1,31 @@
 "use client";
 
-import { Asset } from "@/lib/fakeAssets";
+import { Doc } from "@/convex/_generated/dataModel";
+import { useFavorites } from "@/components/favorites/FavoritesProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Copy01Icon, FavouriteIcon } from "@hugeicons/core-free-icons";
 
+type Asset = Doc<"assets">;
+
 interface AssetDetailContextProps {
   asset: Asset;
 }
 
+function formatDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function AssetDetailContext({ asset }: AssetDetailContextProps) {
+  const { isFavorited, toggle } = useFavorites();
+  const favorited = isFavorited(asset.slug);
+
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* Details Card */}
@@ -26,7 +40,7 @@ export function AssetDetailContext({ asset }: AssetDetailContextProps) {
           </div>
           <div>
             <span className="text-xs text-muted-foreground">Updated</span>
-            <p className="text-sm font-medium">{asset.updatedAt}</p>
+            <p className="text-sm font-medium">{formatDate(asset.updatedAt)}</p>
           </div>
           <div>
             <span className="text-xs text-muted-foreground">Tags</span>
@@ -55,9 +69,17 @@ export function AssetDetailContext({ asset }: AssetDetailContextProps) {
             <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
             Copy Code
           </Button>
-          <Button variant="outline" className="w-full justify-start" disabled>
-            <HugeiconsIcon icon={FavouriteIcon} data-icon="inline-start" />
-            Favorite
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => toggle(asset.slug)}
+          >
+            <HugeiconsIcon
+              icon={FavouriteIcon}
+              data-icon="inline-start"
+              className={favorited ? "fill-current text-red-500" : ""}
+            />
+            {favorited ? "Remove from Favorites" : "Add to Favorites"}
           </Button>
         </CardContent>
       </Card>

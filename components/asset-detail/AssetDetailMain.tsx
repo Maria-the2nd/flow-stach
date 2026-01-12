@@ -1,13 +1,16 @@
 "use client";
 
-import { Asset } from "@/lib/fakeAssets";
+import { Doc } from "@/convex/_generated/dataModel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+type Asset = Doc<"assets">;
 
 interface AssetDetailMainProps {
   asset: Asset;
+  hasPayload?: boolean;
 }
 
-export function AssetDetailMain({ asset }: AssetDetailMainProps) {
+export function AssetDetailMain({ asset, hasPayload }: AssetDetailMainProps) {
   return (
     <div className="flex flex-1 flex-col p-6">
       {/* Title */}
@@ -22,51 +25,54 @@ export function AssetDetailMain({ asset }: AssetDetailMainProps) {
       <Tabs defaultValue="preview" className="mt-6">
         <TabsList>
           <TabsTrigger value="preview">Preview</TabsTrigger>
-          <TabsTrigger value="webflow">Webflow</TabsTrigger>
-          <TabsTrigger value="code">Code</TabsTrigger>
+          <TabsTrigger value="webflow" disabled={!hasPayload}>
+            Webflow
+          </TabsTrigger>
+          <TabsTrigger value="code" disabled={!hasPayload}>
+            Code
+          </TabsTrigger>
           <TabsTrigger value="docs">Docs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="preview" className="mt-4">
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="text-sm text-muted-foreground">
-              This is a placeholder for the preview description. The actual preview
-              content will be displayed here with interactive examples.
+              {asset.description ||
+                "This is a placeholder for the preview description. The actual preview content will be displayed here with interactive examples."}
             </p>
           </div>
         </TabsContent>
 
         <TabsContent value="webflow" className="mt-4">
           <div className="space-y-3">
-            <div className="rounded-lg border border-border bg-card p-4">
-              <div className="h-4 w-3/4 rounded bg-muted" />
-              <div className="mt-2 h-3 w-1/2 rounded bg-muted/60" />
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <div className="h-4 w-2/3 rounded bg-muted" />
-              <div className="mt-2 h-3 w-1/3 rounded bg-muted/60" />
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <div className="h-4 w-1/2 rounded bg-muted" />
-              <div className="mt-2 h-3 w-2/5 rounded bg-muted/60" />
-            </div>
+            {hasPayload ? (
+              <div className="rounded-lg border border-border bg-card p-4">
+                <p className="text-sm text-muted-foreground">
+                  Webflow export data available. Copy functionality coming soon.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-border bg-card p-4">
+                <p className="text-sm text-muted-foreground">
+                  No Webflow payload available for this asset.
+                </p>
+              </div>
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="code" className="mt-4">
           <div className="rounded-lg border border-border bg-zinc-950 p-4">
-            <pre className="text-xs text-zinc-400">
-              <code>{`// Code placeholder
-// The actual component code will be displayed here
-
-function Component() {
-  return (
-    <div>
-      {/* Component implementation */}
-    </div>
-  );
-}`}</code>
-            </pre>
+            {hasPayload ? (
+              <pre className="text-xs text-zinc-400">
+                <code>{`// Code payload available
+// Copy functionality coming soon`}</code>
+              </pre>
+            ) : (
+              <pre className="text-xs text-zinc-400">
+                <code>{`// No code payload available for this asset`}</code>
+              </pre>
+            )}
           </div>
         </TabsContent>
 
