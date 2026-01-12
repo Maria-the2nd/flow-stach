@@ -4,8 +4,8 @@ This folder contains Convex backend functions.
 
 ## Structure
 
-- `schema.ts` - Database schema (to be implemented by intern)
-- `_generated/` - Auto-generated types and API (run `convex dev` to generate)
+- `schema.ts` - Database schema
+- `_generated/` - Auto-generated types (run `bunx convex dev` to generate)
 
 ## Getting Started
 
