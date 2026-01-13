@@ -23,9 +23,9 @@ export default function Nav() {
                         <a href="#features" className="fb-nav-link">Features</a>
                         <a href="#pricing" className="fb-nav-link">Pricing</a>
                         <a href="#academy" className="fb-nav-link">Academy</a>
-                        <a href="/login" className="fb-nav-link">Login</a>
+                        <a href="/assets" className="fb-nav-link">Login</a>
                     </div>
-                    <a href="#import" className="fb-btn fb-btn-primary" style={{ padding: '10px 24px', fontSize: '0.9rem' }}>
+                    <a href="/assets" className="fb-btn fb-btn-primary" style={{ padding: '10px 24px', fontSize: '0.9rem' }}>
                         Try the Import
                     </a>
 
@@ -47,7 +47,7 @@ export default function Nav() {
                     <a href="#features" className="fb-mobile-menu-link" onClick={toggleMenu}>Features</a>
                     <a href="#pricing" className="fb-mobile-menu-link" onClick={toggleMenu}>Pricing</a>
                     <a href="#academy" className="fb-mobile-menu-link" onClick={toggleMenu}>Academy</a>
-                    <a href="/login" className="fb-mobile-menu-link" onClick={toggleMenu}>Login</a>
+                    <a href="/assets" className="fb-mobile-menu-link" onClick={toggleMenu}>Login</a>
                 </div>
             </div>
         </nav>

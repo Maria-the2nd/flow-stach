@@ -195,7 +195,7 @@ export function ImportPanel({ onImportComplete }: ImportPanelProps) {
   const [useFlowPartyMap, setUseFlowPartyMap] = useState(false)
   const [alwaysCreateNew, setAlwaysCreateNew] = useState(true)
   const [combineHeaderHero, setCombineHeaderHero] = useState(true)
-  const [useLlmConversion, setUseLlmConversion] = useState(false)
+  const [useLlmConversion, setUseLlmConversion] = useState(true)
 
   const [conversionSummary, setConversionSummary] = useState<{
     llmSuccess: number
