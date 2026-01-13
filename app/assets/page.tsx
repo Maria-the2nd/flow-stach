@@ -9,7 +9,11 @@ import { AssetsBannerContainer } from "@/components/assets/AssetsBannerContainer
 export default function AssetsPage() {
   return (
     <AppShell
-      banner={<AssetsBannerContainer />}
+      banner={
+        <Suspense fallback={null}>
+          <AssetsBannerContainer />
+        </Suspense>
+      }
       sidebar={
         <Suspense fallback={null}>
           <Sidebar />
