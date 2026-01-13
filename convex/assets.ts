@@ -7,26 +7,30 @@ export const list = query({
   args: {
     category: v.optional(v.string()),
     search: v.optional(v.string()),
+    templateId: v.optional(v.id("templates")),
   },
   handler: async (ctx, args) => {
     // Require authentication for all queries
     await requireAuth(ctx)
 
-    let assets
-
-    // Filter by category if provided
-    if (args.category) {
-      assets = await ctx.db
+    const baseQuery = args.category
+      ? ctx.db
         .query("assets")
         .withIndex("by_category", (q) => q.eq("category", args.category!))
-        .filter((q) => q.eq(q.field("status"), "published"))
-        .collect()
-    } else {
-      assets = await ctx.db
+      : ctx.db
         .query("assets")
         .withIndex("by_status", (q) => q.eq("status", "published"))
-        .collect()
-    }
+
+    let assets = await baseQuery
+      .filter((q) =>
+        args.templateId
+          ? q.and(
+            q.eq(q.field("status"), "published"),
+            q.eq(q.field("templateId"), args.templateId)
+          )
+          : q.eq(q.field("status"), "published")
+      )
+      .collect()
 
     // Apply search filter if provided
     if (args.search) {
@@ -45,13 +49,23 @@ export const list = query({
 
 // Get category counts for sidebar
 export const categoryCounts = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    templateId: v.optional(v.id("templates")),
+  },
+  handler: async (ctx, args) => {
     await requireAuth(ctx)
 
     const assets = await ctx.db
       .query("assets")
       .withIndex("by_status", (q) => q.eq("status", "published"))
+      .filter((q) =>
+        args.templateId
+          ? q.and(
+            q.eq(q.field("status"), "published"),
+            q.eq(q.field("templateId"), args.templateId)
+          )
+          : q.eq(q.field("status"), "published")
+      )
       .collect()
 
     // Count by category
@@ -82,5 +96,20 @@ export const bySlug = query({
       .unique()
 
     return asset
+  },
+})
+
+// Get total asset count (no auth required - for admin CLI usage)
+export const count = query({
+  args: {},
+  handler: async (ctx) => {
+    const allAssets = await ctx.db.query("assets").collect()
+    const published = allAssets.filter((a) => a.status === "published")
+
+    return {
+      total: allAssets.length,
+      published: published.length,
+      draft: allAssets.length - published.length,
+    }
   },
 })

@@ -11,6 +11,7 @@ export const importSections = mutation({
   args: {
     designSystemName: v.string(),
     designSystemSlug: v.string(),
+    designSystemImageUrl: v.optional(v.string()),
     sections: v.array(
       v.object({
         id: v.string(),
@@ -19,20 +20,54 @@ export const importSections = mutation({
         category: v.string(),
         tags: v.array(v.string()),
         codePayload: v.string(),
+        webflowJson: v.optional(v.string()),
+        dependencies: v.optional(v.array(v.string())),
       })
     ),
     tokenManifest: v.optional(v.string()),
+    tokenWebflowJson: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx)
 
     const now = Date.now()
+    const placeholderWebflowJson = JSON.stringify({ placeholder: true })
+    const defaultCapabilityNotes = "Webflow payload not generated yet. Use Install Snippet."
+    const normalizeWebflowJson = (value: string | undefined) => {
+      if (!value || value.trim() === "" || value.trim() === "{}") {
+        return placeholderWebflowJson
+      }
+      return value
+    }
     const results = {
       assetsCreated: 0,
       assetsUpdated: 0,
       payloadsCreated: 0,
       payloadsUpdated: 0,
       errors: [] as string[],
+    }
+
+    const existingTemplate = await ctx.db
+      .query("templates")
+      .withIndex("by_slug", (q) => q.eq("slug", args.designSystemSlug))
+      .unique()
+
+    const templateId = existingTemplate
+      ? existingTemplate._id
+      : await ctx.db.insert("templates", {
+          name: args.designSystemName,
+          slug: args.designSystemSlug,
+          imageUrl: args.designSystemImageUrl,
+          createdAt: now,
+          updatedAt: now,
+        })
+
+    if (existingTemplate) {
+      await ctx.db.patch(existingTemplate._id, {
+        name: args.designSystemName,
+        imageUrl: args.designSystemImageUrl ?? existingTemplate.imageUrl,
+        updatedAt: now,
+      })
     }
 
     // First, create/update the design tokens asset if manifest provided
@@ -43,11 +78,19 @@ export const importSections = mutation({
         .withIndex("by_slug", (q) => q.eq("slug", tokenSlug))
         .unique()
 
+      const hasTokenWebflowJson = !!args.tokenWebflowJson
+      const tokenPasteReliability = hasTokenWebflowJson ? "full" : "none"
+      const tokenCapabilityNotes = hasTokenWebflowJson
+        ? "Webflow payload generated from tokens. Direct paste supported."
+        : defaultCapabilityNotes
+
       if (existingTokenAsset) {
         // Update existing
         await ctx.db.patch(existingTokenAsset._id, {
           title: `${args.designSystemName} Design Tokens`,
           status: "published",
+          pasteReliability: tokenPasteReliability,
+          capabilityNotes: tokenCapabilityNotes,
           updatedAt: now,
         })
 
@@ -60,6 +103,9 @@ export const importSections = mutation({
         if (existingPayload) {
           await ctx.db.patch(existingPayload._id, {
             codePayload: `/* TOKEN MANIFEST */\n${args.tokenManifest}`,
+            webflowJson: args.tokenWebflowJson
+              ? args.tokenWebflowJson
+              : normalizeWebflowJson(existingPayload.webflowJson),
             updatedAt: now,
           })
         }
@@ -72,9 +118,11 @@ export const importSections = mutation({
           category: "tokens",
           description: `Design tokens for ${args.designSystemName}`,
           tags: ["tokens", "design-system", args.designSystemSlug],
+          templateId,
           isNew: true,
           status: "published",
-          pasteReliability: "full",
+          pasteReliability: tokenPasteReliability,
+          capabilityNotes: tokenCapabilityNotes,
           supportsCodeCopy: true,
           createdAt: now,
           updatedAt: now,
@@ -82,7 +130,7 @@ export const importSections = mutation({
 
         await ctx.db.insert("payloads", {
           assetId: tokenAssetId,
-          webflowJson: "{}",
+          webflowJson: args.tokenWebflowJson ?? placeholderWebflowJson,
           codePayload: `/* TOKEN MANIFEST */\n${args.tokenManifest}`,
           dependencies: [],
           createdAt: now,
@@ -105,13 +153,23 @@ export const importSections = mutation({
 
         let assetId: Id<"assets">
 
+        // Determine paste reliability based on whether webflowJson is provided
+        const hasWebflowJson = !!section.webflowJson
+        const pasteReliability = hasWebflowJson ? "full" : "none"
+        const capabilityNotes = hasWebflowJson
+          ? "Webflow JSON generated from HTML/CSS. Direct paste supported."
+          : defaultCapabilityNotes
+
         if (existingAsset) {
           // Update existing asset
           await ctx.db.patch(existingAsset._id, {
             title: section.name,
             category: section.category,
             tags: section.tags,
+            templateId,
             status: "published",
+            pasteReliability,
+            capabilityNotes,
             updatedAt: now,
           })
           assetId = existingAsset._id
@@ -124,9 +182,11 @@ export const importSections = mutation({
             category: section.category,
             description: `${section.name} from ${args.designSystemName}`,
             tags: section.tags,
+            templateId,
             isNew: true,
             status: "published",
-            pasteReliability: "full",
+            pasteReliability,
+            capabilityNotes,
             supportsCodeCopy: true,
             createdAt: now,
             updatedAt: now,
@@ -141,19 +201,26 @@ export const importSections = mutation({
           .unique()
 
         if (existingPayload) {
-          // Update payload
+          // Update payload - use provided webflowJson if available
+          const dependencies = section.dependencies ?? existingPayload.dependencies ?? []
+          const webflowJson = section.webflowJson
+            ? section.webflowJson
+            : normalizeWebflowJson(existingPayload.webflowJson)
           await ctx.db.patch(existingPayload._id, {
             codePayload: section.codePayload,
+            webflowJson,
+            dependencies,
             updatedAt: now,
           })
           results.payloadsUpdated++
         } else {
-          // Create payload
+          // Create payload - use provided webflowJson or placeholder
+          const webflowJson = section.webflowJson ?? placeholderWebflowJson
           await ctx.db.insert("payloads", {
             assetId: assetId,
-            webflowJson: "{}",
+            webflowJson,
             codePayload: section.codePayload,
-            dependencies: [],
+            dependencies: section.dependencies ?? [],
             createdAt: now,
             updatedAt: now,
           })

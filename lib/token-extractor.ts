@@ -6,7 +6,7 @@
 export interface TokenVariable {
   cssVar: string;
   path: string;
-  type: "color" | "fontFamily";
+  type: "color" | "fontFamily" | "spacing";
   values?: { light: string; dark: string };
   value?: string;
 }
@@ -40,32 +40,24 @@ export interface TokenManifest {
  * Extract tokens from CSS content
  */
 export function extractTokens(css: string, designSystemName: string = "Design System"): TokenExtraction {
-  // Find ALL :root blocks - there may be multiple (light/dark themes, multiple style tags)
+  // Find ALL :root or .fp-root blocks - there may be multiple (light/dark themes, multiple style tags)
   const rootContents: string[] = [];
-  let searchStart = 0;
+  const selectors = [":root", ".fp-root"];
 
-  while (true) {
-    const rootStart = css.indexOf(":root", searchStart);
-    if (rootStart === -1) break;
-
-    // Find opening brace
-    const braceStart = css.indexOf("{", rootStart);
-    if (braceStart === -1) break;
-
-    // Find matching closing brace (handle nested braces)
-    let depth = 1;
-    let i = braceStart + 1;
-    while (i < css.length && depth > 0) {
-      if (css[i] === "{") depth++;
-      else if (css[i] === "}") depth--;
-      i++;
-    }
-
-    const content = css.substring(braceStart + 1, i - 1);
-    rootContents.push(content);
-    console.log("[token-extractor] Found :root block #" + rootContents.length + " with", content.length, "chars");
-
-    searchStart = i;
+  for (const selector of selectors) {
+    const blocks = extractSelectorBlocks(css, selector);
+    blocks.forEach((content) => {
+      rootContents.push(content);
+      console.log(
+        "[token-extractor] Found",
+        selector,
+        "block #",
+        rootContents.length,
+        "with",
+        content.length,
+        "chars"
+      );
+    });
   }
 
   if (rootContents.length === 0) {
@@ -95,6 +87,31 @@ export function extractTokens(css: string, designSystemName: string = "Design Sy
     modes,
     variables,
   };
+}
+
+function extractSelectorBlocks(css: string, selector: string): string[] {
+  const blocks: string[] = [];
+  const selectorRegex = new RegExp(`${escapeRegex(selector)}\\s*\\{`, "g");
+  let match;
+
+  while ((match = selectorRegex.exec(css)) !== null) {
+    const braceStart = css.indexOf("{", match.index);
+    if (braceStart === -1) break;
+
+    let depth = 1;
+    let i = braceStart + 1;
+    while (i < css.length && depth > 0) {
+      if (css[i] === "{") depth++;
+      else if (css[i] === "}") depth--;
+      i++;
+    }
+
+    const content = css.substring(braceStart + 1, i - 1);
+    blocks.push(content);
+    selectorRegex.lastIndex = i;
+  }
+
+  return blocks;
 }
 
 /**
@@ -158,13 +175,28 @@ function parseRootVariables(rootContent: string): TokenVariable[] {
 /**
  * Categorize a CSS variable by name and value
  */
-function categorizeVariable(name: string, value: string): { path: string; type: "color" | "fontFamily" } | null {
+function categorizeVariable(name: string, value: string): { path: string; type: "color" | "fontFamily" | "spacing" } | null {
   const nameLower = name.toLowerCase();
 
   // Typography
   if (nameLower.startsWith('font-')) {
     const fontName = formatPathSegment(name.replace('font-', ''));
     return { path: `Typography / ${fontName}`, type: 'fontFamily' };
+  }
+
+  // Spacing - padding, margin, gap, section spacing
+  const isSpacing = nameLower.includes('padding') ||
+    nameLower.includes('margin') ||
+    nameLower.includes('gap') ||
+    nameLower.includes('spacing') ||
+    nameLower.includes('section-') ||
+    nameLower.includes('page-') ||
+    nameLower.includes('container-') ||
+    isSpacingValue(value);
+
+  if (isSpacing) {
+    const spacingName = formatPathSegment(name);
+    return { path: `Spacing / ${spacingName}`, type: 'spacing' };
   }
 
   // Colors - detect by value format or name patterns
@@ -185,6 +217,17 @@ function categorizeVariable(name: string, value: string): { path: string; type: 
   }
 
   return null;
+}
+
+/**
+ * Check if value looks like a spacing value
+ */
+function isSpacingValue(value: string): boolean {
+  const v = value.toLowerCase().trim();
+  return (
+    /^\d+(\.\d+)?(px|rem|em|vw|vh|%)$/.test(v) ||
+    /^\d+(\.\d+)?(px|rem|em|vw|vh|%)\s+\d+(\.\d+)?(px|rem|em|vw|vh|%)/.test(v)
+  );
 }
 
 /**
@@ -418,6 +461,10 @@ function deriveNamespace(name: string): string {
     return words[0].substring(0, 3).toLowerCase();
   }
   return words.map(w => w.charAt(0).toLowerCase()).join('');
+}
+
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**

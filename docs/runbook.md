@@ -30,16 +30,50 @@ NEXT_PUBLIC_CONVEX_URL=https://your-project.convex.cloud
 2. Follow the prompts to create a new project or link an existing one
 3. The URL will be automatically added to `.env.local`
 
+### Admin Access
+
+```env
+NEXT_PUBLIC_ADMIN_EMAILS=your-email@example.com,another-admin@example.com
+```
+
+Only users whose Clerk email matches an entry in this list can access admin features (`/admin/seed`, `/admin/import`).
+
+### Optional: Disable Auth for Testing
+
+```env
+NEXT_PUBLIC_DISABLE_AUTH=true
+```
+
+Set this to bypass Clerk authentication entirely during local development.
+
+### Optional: LLM Conversion (OpenRouter)
+
+```env
+OPENROUTER_API_KEY=sk-or-...
+OPENROUTER_MODEL=openai/gpt-4.1
+```
+
+Required for LLM-powered HTML to Webflow JSON conversion in the import tool.
+
+**How to get OpenRouter keys:**
+1. Create an account at [openrouter.ai](https://openrouter.ai)
+2. Go to API Keys in the dashboard
+3. Create a new key and copy it
+
 ## Development
 
 ### Start the development server
 
 ```bash
-# Start Next.js
-bun dev
+# Recommended: Start both Next.js and Convex concurrently
+bun run dev
 
-# In a separate terminal, start Convex
+# Or run separately in two terminals:
+# Terminal 1
 bunx convex dev
+
+# Terminal 2
+bun run next dev
 ```
 
 ### Build for production
@@ -117,3 +151,55 @@ Multiple emails can be comma-separated. Only users whose Clerk email matches an 
 - The seed operation is idempotent - existing assets (by slug) are skipped.
 - If all 18 demo assets already exist, you'll see "No new assets to seed."
 - The mutation requires admin privileges in Convex (user must have `role: "admin"` in the database).
+
+## How to Import AI-Generated HTML
+
+The HTML Import tool at `/admin/import` converts AI-generated HTML (from Claude, ChatGPT, etc.) into Webflow-ready assets.
+
+### Prerequisites
+
+1. **Admin access** - Your email must be in `NEXT_PUBLIC_ADMIN_EMAILS`
+2. **Sign in** - You must be authenticated with Clerk
+3. **Optional: LLM API key** - For better Webflow JSON conversion, set `OPENROUTER_API_KEY`
+
+### Import Steps
+
+1. Navigate to the import page:
+   ```
+   http://localhost:3000/admin/import
+   ```
+
+2. Enter a **Design System Name** (e.g., "My Landing Page")
+
+3. **Paste HTML** or upload a `.html` file
+
+4. Configure options:
+   - **Strip base styles**: Remove `:root`, reset, `body` styles from sections
+   - **Merge navigation**: Combine mobile menu + main nav into one section
+   - **Combine header+hero**: Create a single Header asset with nav and hero
+   - **Use Flow Party map**: Use predefined slugs for Flow Party templates
+   - **Always create new**: Create new assets instead of updating existing
+   - **Use LLM conversion**: Use OpenRouter API for better Webflow JSON (requires API key)
+
+5. Click **"Parse HTML"** to preview detected sections
+
+6. Select which sections to import
+
+7. Click **"Import"** to create assets
+
+### What Gets Created
+
+For each imported HTML file:
+- **Token asset**: `{slug}-tokens` with extracted design variables
+- **Section assets**: One asset per HTML section with:
+  - Code payload (HTML + CSS for manual use)
+  - Webflow JSON (for paste into Webflow Designer)
+  - Token dependencies
+
+### Troubleshooting
+
+- **No sections detected**: Ensure HTML contains `<section>`, `<nav>`, or `<footer>` tags
+- **LLM conversion failed**: Check console for errors, falls back to basic converter
+- **Assets not appearing**: Check if categories exist in sidebar, try refreshing
+
+See `docs/html-breakdown-process.md` for detailed documentation on the conversion process.

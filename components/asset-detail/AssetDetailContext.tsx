@@ -22,10 +22,22 @@ type Payload = Doc<"payloads">;
 function isPlaceholderPayload(json: string | undefined): boolean {
   if (!json) return true;
   try {
-    const parsed = JSON.parse(json);
-    return parsed?.placeholder === true;
+    const parsed = JSON.parse(json) as {
+      placeholder?: boolean;
+      type?: string;
+      payload?: { nodes?: unknown; styles?: unknown };
+    };
+    if (parsed?.placeholder === true) return true;
+    if (parsed?.type !== "@webflow/XscpData") return true;
+    if (!parsed.payload) return true;
+
+    const hasNodes =
+      Array.isArray(parsed.payload.nodes) && parsed.payload.nodes.length > 0;
+    const hasStyles =
+      Array.isArray(parsed.payload.styles) && parsed.payload.styles.length > 0;
+    return !(hasNodes || hasStyles);
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -118,8 +130,8 @@ export function AssetDetailContext({ asset, payload }: AssetDetailContextProps) 
           <div>
             <span className="text-xs text-muted-foreground">Tags</span>
             <div className="mt-1 flex flex-wrap gap-1">
-              {asset.tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
+              {asset.tags.map((tag, index) => (
+                <Badge key={`${tag}-${index}`} variant="secondary">
                   {tag}
                 </Badge>
               ))}

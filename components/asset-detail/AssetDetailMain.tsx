@@ -118,6 +118,53 @@ function SnippetSection({ title, code, language, defaultExpanded = false }: Snip
   );
 }
 
+// Generate combined embed code for use in Webflow HTML Embed
+function generateEmbedCode(snippets: { html: string; css: string; js: string }): string {
+  const parts: string[] = [];
+
+  if (snippets.css) {
+    parts.push(`<style>\n${snippets.css}\n</style>`);
+  }
+
+  if (snippets.html) {
+    parts.push(snippets.html);
+  }
+
+  if (snippets.js) {
+    parts.push(`<script>\n${snippets.js}\n</script>`);
+  }
+
+  return parts.join("\n\n");
+}
+
+interface CopyAllButtonProps {
+  snippets: { html: string; css: string; js: string };
+}
+
+function CopyAllButton({ snippets }: CopyAllButtonProps) {
+  const [copying, setCopying] = useState(false);
+  const embedCode = generateEmbedCode(snippets);
+
+  const handleCopyAll = async () => {
+    setCopying(true);
+    await copyText(embedCode);
+    setCopying(false);
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleCopyAll}
+      disabled={copying}
+      className="gap-1.5"
+    >
+      <HugeiconsIcon icon={Copy01Icon} size={14} />
+      {copying ? "Copied!" : "Copy All for Embed"}
+    </Button>
+  );
+}
+
 export function AssetDetailMain({ asset, payload, hasPayload }: AssetDetailMainProps) {
   // Check if this asset needs the Install Snippet tab
   const showInstallTab = asset.pasteReliability === "none" && asset.supportsCodeCopy === true;
@@ -128,31 +175,13 @@ export function AssetDetailMain({ asset, payload, hasPayload }: AssetDetailMainP
 
   return (
     <div className="flex flex-1 flex-col p-6">
-      {/* Title */}
-      <h1 className="text-2xl font-semibold">{asset.title}</h1>
-
       {/* Preview */}
-      <div className="mt-6 aspect-video w-full overflow-hidden rounded-lg border border-border bg-muted/30">
-        {asset.previewVideoUrl ? (
-          <video
-            src={asset.previewVideoUrl}
-            className="h-full w-full object-cover"
-            controls
-            muted
-            loop
-            playsInline
-          />
-        ) : asset.previewImageUrl ? (
-          <img
-            src={asset.previewImageUrl}
-            alt={asset.title}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <span className="text-sm text-muted-foreground">No preview available</span>
-          </div>
-        )}
+      <div className="aspect-video w-full overflow-hidden rounded-lg border border-border bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]">
+        <div className="flex h-full w-full items-end justify-start p-6">
+          <span className="rounded-full bg-white/80 px-4 py-2 text-xs font-medium uppercase tracking-[0.24em] text-black/80">
+            Component Preview
+          </span>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -194,6 +223,14 @@ export function AssetDetailMain({ asset, payload, hasPayload }: AssetDetailMainP
               {/* Snippet Sections */}
               {hasSnippets ? (
                 <div className="space-y-3">
+                  {/* Copy All Button */}
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      Copy individual sections or use "Copy All" for a single embed.
+                    </p>
+                    <CopyAllButton snippets={snippets} />
+                  </div>
+
                   <SnippetSection
                     title="HTML"
                     code={snippets.html}

@@ -1,38 +1,40 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth, useUser } from "@clerk/nextjs"
 import { useQuery } from "convex/react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Search01Icon, FavouriteIcon, Folder01Icon, FilterIcon } from "@hugeicons/core-free-icons"
+import {
+  Search01Icon,
+  FavouriteIcon,
+  Folder01Icon,
+  FilterIcon,
+  Copy01Icon,
+  Delete01Icon,
+  Upload04Icon,
+  Database01Icon,
+} from "@hugeicons/core-free-icons"
 
 import { api } from "@/convex/_generated/api"
 import { Doc } from "@/convex/_generated/dataModel"
 import { useFavorites } from "@/components/favorites/FavoritesProvider"
+import { ImportPanel } from "@/components/admin/ImportPanel"
+import { DatabasePanel } from "@/components/admin/DatabasePanel"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardAction,
-  CardContent,
-} from "@/components/ui/card"
+import { ASSET_CATEGORIES } from "@/lib/assets/categories"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+
+function getAdminEmails(): string[] {
+  const envValue = process.env.NEXT_PUBLIC_ADMIN_EMAILS || ""
+  return envValue.split(",").map((email) => email.trim().toLowerCase()).filter(Boolean)
+}
 
 type Asset = Doc<"assets">
-
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })
-}
 
 const MAX_VISIBLE_TAGS = 3
 
@@ -47,24 +49,15 @@ function AssetCard({ asset }: { asset: Asset }) {
   }
 
   const visibleTags = asset.tags.slice(0, MAX_VISIBLE_TAGS)
-  const remainingTags = asset.tags.length - MAX_VISIBLE_TAGS
-
   return (
-    <Link href={`/assets/${asset.slug}`}>
-      <Card className="group flex flex-col overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg hover:ring-2 hover:ring-primary/20">
-        {/* Preview Image */}
-        <div className="relative aspect-[4/3] w-full bg-muted/50 overflow-hidden">
-          {asset.previewImageUrl ? (
-            <img
-              src={asset.previewImageUrl}
-              alt={asset.title}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <HugeiconsIcon icon={Folder01Icon} className="h-8 w-8 text-muted-foreground/50" />
-            </div>
-          )}
+    <Card className="group flex flex-col overflow-hidden transition-all duration-200 hover:shadow-lg hover:ring-2 hover:ring-primary/20">
+      <Link href={`/assets/${asset.slug}`} className="block">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]">
+          <div className="relative flex h-full w-full flex-col items-start justify-end p-4">
+            <span className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.24em] text-black/80">
+              Component
+            </span>
+          </div>
           {/* Overlay badges */}
           <div className="absolute top-2 right-2 flex items-center gap-1">
             {asset.isNew && (
@@ -105,8 +98,24 @@ function AssetCard({ asset }: { asset: Asset }) {
             )}
           </CardDescription>
         </CardHeader>
-      </Card>
-    </Link>
+      </Link>
+      <CardContent className="mt-auto border-t border-border/70 pt-3">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="flex-1 rounded-pill">
+            <HugeiconsIcon icon={Copy01Icon} className="mr-1.5 h-3.5 w-3.5" />
+            Copy to Webflow
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-pill text-destructive border-destructive/40 hover:bg-destructive/10"
+          >
+            <HugeiconsIcon icon={Delete01Icon} className="mr-1.5 h-3.5 w-3.5" />
+            Delete
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -157,23 +166,155 @@ function LoadingState() {
   )
 }
 
+interface TemplateCardProps {
+  label: string
+  slug: string
+  count: number
+  index: number
+  previewGroup?: string
+  imageUrl?: string
+}
+
+function TemplateCard({
+  label,
+  slug,
+  count,
+  index,
+  previewGroup,
+  imageUrl,
+}: TemplateCardProps) {
+  return (
+    <Link href={slug ? `/assets?template=${slug}` : "/assets"}>
+      <Card className="group flex h-full flex-col overflow-hidden transition-all duration-200 hover:shadow-lg hover:ring-2 hover:ring-primary/20">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={`${label} thumbnail`}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : null}
+          <div className="relative flex h-full w-full flex-col justify-between p-4">
+            <span className="text-xs font-medium uppercase tracking-[0.28em] text-black/70">
+              ({String(index + 1).padStart(2, "0")})
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.24em] text-black/80">
+                Template
+              </span>
+            </div>
+          </div>
+        </div>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center justify-between text-sm">
+            <span>{label}</span>
+            <span className="text-xs text-muted-foreground">{count} components</span>
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground">
+            Open the template to view every section and component.
+          </CardDescription>
+          {previewGroup ? (
+            <div className="mt-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+              <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                {previewGroup}
+              </span>
+            </div>
+          ) : null}
+        </CardHeader>
+      </Card>
+    </Link>
+  )
+}
+
+interface GroupCardProps {
+  label: string
+  slug: string
+  count: number
+  index: number
+  templateSlug: string
+}
+
+function GroupCard({ label, slug, count, index, templateSlug }: GroupCardProps) {
+  return (
+    <Link href={`/assets?template=${templateSlug}&cat=${slug}`}>
+      <Card className="group flex h-full flex-col overflow-hidden transition-all duration-200 hover:shadow-lg hover:ring-2 hover:ring-primary/20">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]">
+          <div className="relative flex h-full w-full flex-col justify-between p-4">
+            <span className="text-xs font-medium uppercase tracking-[0.28em] text-black/70">
+              ({String(index + 1).padStart(2, "0")})
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.24em] text-black/80">
+                Group
+              </span>
+            </div>
+          </div>
+        </div>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center justify-between text-sm">
+            <span>{label}</span>
+            <span className="text-xs text-muted-foreground">{count} items</span>
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground">
+            Open the group to view its full component list.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    </Link>
+  )
+}
+
 export function AssetsContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const { favorites } = useFavorites()
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth()
+  const { user } = useUser()
 
+  // Check if user is admin
+  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() || ""
+  const adminEmails = getAdminEmails()
+  const isAdmin = isAuthLoaded && isSignedIn && adminEmails.includes(userEmail)
+
+  const templateFilter = searchParams.get("template")
   const categoryFilter = searchParams.get("cat")
+  const adminPanel = searchParams.get("admin")
+  const showFavoritesOnly = searchParams.get("favorites") === "true"
+  const showTemplateLibrary = !templateFilter && !adminPanel && !showFavoritesOnly
+  const showGroupLibrary = !!templateFilter && !categoryFilter && !adminPanel
+
+  // Handle navigation after admin action
+  const handleAdminActionComplete = () => {
+    // Optionally refresh the page or navigate
+  }
 
   // Skip query until auth is loaded - pass "skip" to prevent query from running
+  const templates = useQuery(
+    api.templates.listWithCounts,
+    isAuthLoaded && isSignedIn ? {} : "skip"
+  )
+
+  const activeTemplate = templates?.find((template) => template.slug === templateFilter)
+
   const assets = useQuery(
     api.assets.list,
-    isAuthLoaded && isSignedIn
+    isAuthLoaded &&
+    isSignedIn &&
+    !adminPanel &&
+    (showFavoritesOnly || (!!activeTemplate && !!categoryFilter))
       ? {
           category: categoryFilter ?? undefined,
           search: searchQuery || undefined,
+          templateId: activeTemplate?._id ?? undefined,
         }
+      : "skip"
+  )
+
+  const categoryCounts = useQuery(
+    api.assets.categoryCounts,
+    isAuthLoaded && isSignedIn
+      ? { templateId: activeTemplate?._id ?? undefined }
       : "skip"
   )
 
@@ -184,82 +325,284 @@ export function AssetsContent() {
     return assets.filter((asset) => favorites.has(asset.slug))
   }, [assets, showFavoritesOnly, favorites])
 
-  const isLoading = !isAuthLoaded || (isSignedIn && assets === undefined)
+  const isLoading = !isAuthLoaded || (
+    isSignedIn &&
+    !adminPanel &&
+    (showFavoritesOnly || (!!activeTemplate && !!categoryFilter)) &&
+    assets === undefined
+  )
+  const isTemplatesLoading = !isAuthLoaded || (
+    isSignedIn && (templates === undefined || categoryCounts === undefined)
+  )
+
+  // Handle favorites toggle via URL
+  const handleFavoritesToggle = () => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (showFavoritesOnly) {
+      params.delete("favorites")
+    } else {
+      params.set("favorites", "true")
+    }
+    router.push(`/assets?${params.toString()}`)
+  }
+
+  const componentGroups = useMemo(() => {
+    const base = ASSET_CATEGORIES.filter((category) => category.slug !== "")
+    return base.map((category) => ({
+      ...category,
+      count: categoryCounts?.byCategory[category.slug] ?? 0,
+    }))
+  }, [categoryCounts])
+
+  const visibleGroups = useMemo(
+    () => componentGroups.filter((group) => group.count > 0),
+    [componentGroups]
+  )
+
+  const previewGroup = visibleGroups[0]?.label ?? componentGroups[0]?.label
 
   return (
     <div className="flex flex-1 flex-col p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">Assets</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Browse and search your asset library
-        </p>
-      </div>
-
-      {/* Search and filters */}
-      <div className="mb-6 flex items-center gap-2">
-        <div className="relative flex-1">
-          <HugeiconsIcon icon={Search01Icon} className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-          <Input
-            type="text"
-            placeholder="Search by title or tags..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-9 pl-9"
-          />
-        </div>
-        <Button
-          variant={showFavoritesOnly ? "default" : "outline"}
-          size="sm"
-          onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-          className="h-9 gap-1.5"
-          aria-pressed={showFavoritesOnly}
-        >
-          <HugeiconsIcon
-            icon={FavouriteIcon}
-            className={showFavoritesOnly ? "fill-current" : ""}
-            size={14}
-          />
-          Favorites
-        </Button>
-      </div>
-
-      {/* Results */}
-      {isLoading ? (
-        <LoadingState />
-      ) : filteredAssets.length === 0 ? (
-        showFavoritesOnly ? (
-          <EmptyState
-            icon={FavouriteIcon}
-            title="No favorites yet"
-            message="Click the heart icon on any asset to add it to your favorites."
-          />
-        ) : searchQuery ? (
-          <EmptyState
-            icon={Search01Icon}
-            title="No results found"
-            message={`No assets match "${searchQuery}"${categoryFilter ? ` in ${categoryFilter}` : ""}. Try a different search term.`}
-          />
-        ) : categoryFilter ? (
-          <EmptyState
-            icon={FilterIcon}
-            title="Category is empty"
-            message={`No assets found in the "${categoryFilter}" category.`}
-          />
-        ) : (
-          <EmptyState
-            icon={Folder01Icon}
-            title="No assets available"
-            message="Assets will appear here once they are added to the vault."
-          />
-        )
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filteredAssets.map((asset) => (
-            <AssetCard key={asset._id} asset={asset} />
-          ))}
-        </div>
+      {/* Admin Panels */}
+      {isAdmin && adminPanel === "import" && (
+        <>
+          <div className="mb-6">
+            <div className="flex items-center gap-2">
+              <HugeiconsIcon icon={Upload04Icon} className="h-5 w-5 text-primary" />
+              <h2 className="font-display text-xl uppercase tracking-tight text-foreground">
+                Import HTML
+              </h2>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Paste AI-generated HTML to split into sections and extract design tokens.
+            </p>
+          </div>
+          <ImportPanel onImportComplete={handleAdminActionComplete} />
+        </>
       )}
+
+      {isAdmin && adminPanel === "database" && (
+        <>
+          <div className="mb-6">
+            <div className="flex items-center gap-2">
+              <HugeiconsIcon icon={Database01Icon} className="h-5 w-5 text-primary" />
+              <h2 className="font-display text-xl uppercase tracking-tight text-foreground">
+                Database Management
+              </h2>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Manage assets and clear the database when needed.
+            </p>
+          </div>
+          <DatabasePanel onActionComplete={handleAdminActionComplete} />
+        </>
+      )}
+
+      {/* Favorites View */}
+      {!adminPanel && showFavoritesOnly && !templateFilter && (
+        <>
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">My Collection</span>
+              <h2 className="mt-2 font-display text-2xl uppercase tracking-tight text-foreground">
+                Favorites
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Your saved components for quick access.
+              </p>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="mb-6 flex items-center gap-2">
+            <div className="relative flex-1">
+              <HugeiconsIcon icon={Search01Icon} className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+              <Input
+                type="text"
+                placeholder="Search favorites..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 pl-9"
+              />
+            </div>
+          </div>
+
+          {/* Favorites Grid */}
+          {isLoading ? (
+            <LoadingState />
+          ) : filteredAssets.length === 0 ? (
+            <EmptyState
+              icon={FavouriteIcon}
+              title="No favorites yet"
+              message="Click the heart icon on any component to add it to your favorites."
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredAssets.map((asset) => (
+                <AssetCard key={asset._id} asset={asset} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {!adminPanel && showTemplateLibrary ? (
+        <>
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Templates</span>
+              <h2 className="mt-2 font-display text-2xl uppercase tracking-tight text-foreground">
+                All Templates
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Select a template to reveal its full component system.
+              </p>
+            </div>
+          </div>
+          {isTemplatesLoading ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <AssetCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {!templates || templates.length === 0 ? (
+                <div className="col-span-full">
+                  <EmptyState
+                    icon={Folder01Icon}
+                    title="No templates available"
+                    message="Templates will appear here once they are added to the vault."
+                  />
+                </div>
+              ) : (
+                templates.map((template, index) => (
+                  <TemplateCard
+                    key={template.slug}
+                    label={template.name}
+                    slug={template.slug}
+                    count={template.assetCount ?? 0}
+                    index={index}
+                    previewGroup={previewGroup}
+                    imageUrl={template.imageUrl}
+                  />
+                ))
+              )}
+            </div>
+          )}
+        </>
+      ) : !adminPanel && showGroupLibrary ? (
+        <>
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Component Groups</span>
+              <h2 className="mt-2 font-display text-2xl uppercase tracking-tight text-foreground">
+                {activeTemplate?.name ?? "Template"}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Choose a group to browse the components inside.
+              </p>
+            </div>
+          </div>
+          {isTemplatesLoading ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <AssetCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {visibleGroups.length === 0 ? (
+                <div className="col-span-full">
+                  <EmptyState
+                    icon={Folder01Icon}
+                    title="No groups available"
+                    message="Groups will appear here once they are added to the vault."
+                  />
+                </div>
+              ) : (
+                visibleGroups.map((group, index) => (
+                  <GroupCard
+                    key={group.slug}
+                    label={group.label}
+                    slug={group.slug}
+                    count={group.count}
+                    index={index}
+                    templateSlug={templateFilter ?? ""}
+                  />
+                ))
+              )}
+            </div>
+          )}
+        </>
+      ) : !adminPanel ? (
+        <>
+          {/* Search and filters */}
+          <div className="mb-6 flex items-center gap-2">
+            <div className="relative flex-1">
+              <HugeiconsIcon icon={Search01Icon} className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+              <Input
+                type="text"
+                placeholder="Search by title or tags..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 pl-9"
+              />
+            </div>
+            <Button
+              variant={showFavoritesOnly ? "default" : "outline"}
+              size="sm"
+              onClick={handleFavoritesToggle}
+              className="h-9 gap-1.5"
+              aria-pressed={showFavoritesOnly}
+            >
+              <HugeiconsIcon
+                icon={FavouriteIcon}
+                className={showFavoritesOnly ? "fill-current" : ""}
+                size={14}
+              />
+              Favorites
+            </Button>
+          </div>
+
+          {/* Results */}
+          {isLoading ? (
+            <LoadingState />
+          ) : filteredAssets.length === 0 ? (
+            showFavoritesOnly ? (
+              <EmptyState
+                icon={FavouriteIcon}
+                title="No favorites yet"
+                message="Click the heart icon on any asset to add it to your favorites."
+              />
+            ) : searchQuery ? (
+              <EmptyState
+                icon={Search01Icon}
+                title="No results found"
+                message={`No assets match "${searchQuery}"${categoryFilter ? ` in ${categoryFilter}` : ""}. Try a different search term.`}
+              />
+            ) : categoryFilter ? (
+              <EmptyState
+                icon={FilterIcon}
+                title="Category is empty"
+                message={`No assets found in the "${categoryFilter}" category.`}
+              />
+            ) : (
+              <EmptyState
+                icon={Folder01Icon}
+                title="No assets available"
+                message="Assets will appear here once they are added to the vault."
+              />
+            )
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredAssets.map((asset) => (
+                <AssetCard key={asset._id} asset={asset} />
+              ))}
+            </div>
+          )}
+        </>
+      ) : null}
     </div>
   )
 }

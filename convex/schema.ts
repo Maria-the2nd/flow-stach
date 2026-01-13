@@ -14,6 +14,7 @@ export default defineSchema({
     category: v.string(),
     description: v.optional(v.string()),
     tags: v.array(v.string()),
+    templateId: v.optional(v.id("templates")),
     previewImageUrl: v.optional(v.string()),
     previewVideoUrl: v.optional(v.string()),
     isNew: v.boolean(),
@@ -28,6 +29,14 @@ export default defineSchema({
     .index("by_slug", ["slug"])
     .index("by_category", ["category"])
     .index("by_status", ["status"]),
+
+  templates: defineTable({
+    name: v.string(),
+    slug: v.string(),
+    imageUrl: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_slug", ["slug"]),
 
   payloads: defineTable({
     assetId: v.id("assets"),

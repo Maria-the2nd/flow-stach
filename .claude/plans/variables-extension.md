@@ -9,18 +9,21 @@
 ## 1. Executive Summary
 
 ### What We're Building
-A **Webflow Designer Extension** called "Flow Stach" that imports design tokens from AI-generated HTML components into Webflow as native Variables.
+A **Webflow Designer Extension** called "Flow Stach" that imports design tokens from AI-generated HTML components into Webflow as native Variables, and enables inserting components as editable Designer elements.
 
 ### Why We Need It
 - Webflow's clipboard JSON **cannot create Variables** (the "variables" block is ignored)
 - Variable bindings are **UUID-based only** - name matching never rebinds
 - The only way to programmatically create Variables is through the Designer Extension API
-- **Current state**: The app already creates styles. It just doesn't create Variables.
+- **Current state**: The app already stores HTML/CSS/JS. It just doesn't create Variables or Designer elements.
 
 ### What It Solves
-Users who copy components from Flow Stach get two options:
-1. **Without tokens**: Paste directly, components use CSS fallback values
-2. **With tokens**: Use extension to create Variables first, then paste with full bindings
+Users who import components from Flow Stach get two options:
+1. **Without tokens**: Import raw components (CSS fallback values)
+2. **With tokens**: Use extension to create Variables first, then insert components with bindings
+
+### Updated Goal (Full Import)
+One flow: upload HTML → Flow Stach splits sections + tokens → Webflow Designer extension creates Variables and inserts components as native Designer elements.
 
 ---
 
@@ -46,8 +49,8 @@ Users who copy components from Flow Stach get two options:
 │                           │                                         │
 │                           ▼                                         │
 │  4. User clicks "Copy to Webflow" on a component                    │
-│     • Component JSON copied to clipboard (via Chrome extension)     │
-│     • Includes styles but NOT variables (Webflow limitation)        │
+│     • Option A: copy payload (clipboard)                            │
+│     • Option B: open Webflow Designer extension                     │
 └─────────────────────────────────────────────────────────────────────┘
                             │
                             ▼
@@ -66,17 +69,21 @@ Users who copy components from Flow Stach get two options:
 │     • No Variables created                                          │
 │     • Good for: one-off usage, quick prototyping                    │
 │                                                                     │
-│     OPTION B: Paste With Variables                                  │
+│     OPTION B: Import With Variables (Extension)                     │
 │     ─────────────────────────────────                               │
 │     • Press "E" to open Extensions panel                            │
 │     • Click "Flow Stach" extension                                  │
 │     • Click "Import Tokens"                                         │
 │     • Variables created in Webflow                                  │
-│     • NOW paste component (Cmd+V)                                   │
-│     • Component binds to Variables automatically                    │
+│     • Click "Insert Component"                                      │
+│     • Extension inserts Webflow elements + bindings                 │
 │     • Good for: design systems, consistent theming                  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+### Notes
+- The full "Insert Component" flow requires **Designer API element creation** or a **valid Webflow JSON payload**.
+- If the API does not allow element creation, we must either generate Webflow JSON in Flow Stach or fall back to manual embed/paste.
 
 ---
 
@@ -227,6 +234,14 @@ flow-stach-designer-extension/
 - `size` - Pixel/rem values (not used in our tokens)
 - `number` - Numeric values (not used in our tokens)
 - `percentage` - Percent values (not used in our tokens)
+
+### 3.5 Component Insertion (Needed for Full Import)
+We need one of these to deliver Webflow-editable components:
+1. **Designer API element creation** (ideal if Webflow exposes it)
+2. **Valid Webflow JSON payloads** per component (clipboard/extension paste)
+
+If (1) is available, the extension can build sections directly from parsed HTML data.
+If only (2) is available, we need a **HTML → Webflow JSON converter** in Flow Stach.
 
 ---
 
@@ -716,6 +731,14 @@ export interface FontConfig {
 }
 ```
 
+### 6.4 Variable Binding Strategy (Required for Component Insert)
+To bind component styles to Variables:
+1. Create variables and collect their **IDs** from the Designer API.
+2. Build a `cssVar -> variableId` map.
+3. When inserting components:
+   - If using Webflow JSON, inject variable IDs into the payload before paste.
+   - If using Designer API elements, set styles to use variables directly.
+
 ---
 
 ## 7. Development Workflow
@@ -826,7 +849,36 @@ webflow extension bundle
 
 ---
 
-### Phase 3: Replace/Create Logic
+### Phase 2.5: Variable ID Mapping
+**Goal**: Build a mapping from CSS variables to Webflow Variable IDs
+
+| Task | Details |
+|------|---------|
+| Capture variable IDs | Store IDs returned by create calls |
+| Build cssVar map | Map `--fp-*` to variable IDs |
+| Persist map | Keep in memory (MVP) or save via extension storage |
+
+**Deliverable**: Variable map available for insertion
+
+---
+
+### Phase 3: Component Insertion
+**Goal**: Insert Webflow elements with bindings
+
+**Path A: Designer API Elements (Preferred)**
+- Build a minimal element tree from parsed HTML
+- Apply classes + styles + variable bindings via API
+
+**Path B: Webflow JSON Payloads**
+- Convert HTML to Webflow JSON in Flow Stach
+- Extension rewrites payload to include variable IDs
+- Paste payload through extension
+
+**Deliverable**: "Insert Component" works in Designer
+
+---
+
+### Phase 4: Replace/Create Logic
 **Goal**: Handle existing variables gracefully
 
 | Task | Details |
@@ -841,7 +893,7 @@ webflow extension bundle
 
 ---
 
-### Phase 4: Platform Integration (Future)
+### Phase 5: Platform Integration (Future)
 **Goal**: Fetch tokens dynamically from Flow Stach API
 
 | Task | Details |
@@ -857,7 +909,20 @@ webflow extension bundle
 
 ---
 
-### Phase 5: Polish & Deploy
+### Phase 5.5: Component Fetch + Insert
+**Goal**: Load components from Flow Stach within the extension
+
+| Task | Details |
+|------|---------|
+| Fetch components | `GET /api/components?designSystem=...` |
+| Show list | Simple dropdown or list |
+| Insert | Use Path A or Path B |
+
+**Deliverable**: Pick a component and insert it in Designer
+
+---
+
+### Phase 6: Polish & Deploy
 **Goal**: Production-ready extension
 
 | Task | Details |
@@ -906,7 +971,7 @@ webflow extension bundle
 
 | Feature | Reason |
 |---------|--------|
-| UUID remapping for paste | Complex, needs separate planning |
+| Full fidelity HTML → Webflow JSON converter | Large scope, separate planning (only if Designer API lacks element creation) |
 | Style creation | Already exists in current app |
 | Variable export (Webflow → Flow Stach) | Reverse flow, different use case |
 | Multiple simultaneous design systems | One at a time for MVP |

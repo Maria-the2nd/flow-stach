@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FileNotFoundIcon } from "@hugeicons/core-free-icons";
+import { AssetsBanner } from "@/components/assets/AssetsBanner";
 
 interface AssetDetailContentProps {
   slug: string;
@@ -20,6 +21,13 @@ interface AssetDetailContentProps {
 function NotFoundState({ slug }: { slug: string }) {
   return (
     <AppShell
+      banner={
+        <AssetsBanner
+          eyebrow="Component Library"
+          title="Component Not Found"
+          description="The component you're looking for is unavailable. Return to the library to pick a different template."
+        />
+      }
       sidebar={
         <Suspense fallback={null}>
           <Sidebar />
@@ -44,11 +52,8 @@ function NotFoundState({ slug }: { slug: string }) {
 function LoadingMainSkeleton() {
   return (
     <div className="flex flex-1 flex-col p-6">
-      {/* Title skeleton */}
-      <Skeleton className="h-8 w-2/3" />
-
       {/* Preview placeholder skeleton */}
-      <Skeleton className="mt-6 aspect-video w-full rounded-lg" />
+      <Skeleton className="aspect-video w-full rounded-lg" />
 
       {/* Tabs skeleton */}
       <div className="mt-6 flex gap-2">
@@ -118,6 +123,13 @@ function LoadingContextSkeleton() {
 function LoadingState() {
   return (
     <AppShell
+      banner={
+        <AssetsBanner
+          eyebrow="Component Library"
+          title="Loading Component"
+          description="Pulling the template context and component details."
+        />
+      }
       sidebar={
         <Suspense fallback={null}>
           <Sidebar />
@@ -158,6 +170,14 @@ export function AssetDetailContent({ slug }: AssetDetailContentProps) {
 
   return (
     <AppShell
+      banner={
+        <AssetsBanner
+          eyebrow="Component Library"
+          title={asset.title}
+          description="This component is part of the selected template system. Copy it into Webflow or review the code snippets below."
+          meta={`Template: ${asset.category}`}
+        />
+      }
       sidebar={
         <Suspense fallback={null}>
           <Sidebar />

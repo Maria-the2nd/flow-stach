@@ -7,6 +7,9 @@ import { InitUser } from "@/components/auth/InitUser";
 import { Toaster } from "sonner";
 import "./globals.css";
 
+// Temporarily disable auth for testing
+const DISABLE_AUTH = process.env.NEXT_PUBLIC_DISABLE_AUTH === "true";
+
 // Creative Studio Warmth typography
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -35,21 +38,23 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <ClerkProvider>
-      <html lang="en" className={`${plusJakartaSans.variable} ${antonio.variable}`} suppressHydrationWarning>
-        <body
-          className={`${geistMono.variable} antialiased`}
-        >
-          <ThemeProvider>
-            <ConvexClientProvider>
-              <InitUser />
-              {children}
-              <Toaster position="bottom-right" />
-            </ConvexClientProvider>
-          </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+  const content = (
+    <html lang="en" className={`${plusJakartaSans.variable} ${antonio.variable}`} suppressHydrationWarning>
+      <body className={`${geistMono.variable} antialiased`}>
+        <ThemeProvider>
+          <ConvexClientProvider>
+            {!DISABLE_AUTH && <InitUser />}
+            {children}
+            <Toaster position="bottom-right" />
+          </ConvexClientProvider>
+        </ThemeProvider>
+      </body>
+    </html>
   );
+
+  if (DISABLE_AUTH) {
+    return content;
+  }
+
+  return <ClerkProvider>{content}</ClerkProvider>;
 }

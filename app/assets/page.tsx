@@ -4,10 +4,12 @@ import { AppShell } from "@/components/layout/AppShell"
 import { Sidebar } from "@/components/sidebar/Sidebar"
 import { ContextPanel } from "@/components/context/ContextPanel"
 import { AssetsContent } from "@/components/assets/AssetsContent"
+import { AssetsBannerContainer } from "@/components/assets/AssetsBannerContainer"
 
 export default function AssetsPage() {
   return (
     <AppShell
+      banner={<AssetsBannerContainer />}
       sidebar={
         <Suspense fallback={null}>
           <Sidebar />

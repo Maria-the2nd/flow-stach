@@ -17,6 +17,27 @@
 
 ---
 
+## Automated Import (Current)
+
+Use the admin importer to automate the split + token manifest + Convex import.
+
+**Where:** `/admin/import`
+
+**Workflow:**
+1. Paste full HTML or upload a `.html` file.
+2. Choose options:
+   - Strip base styles (`:root`, reset, `body`, `html`, `img`) from sections.
+   - Merge mobile menu + main nav into a single Navigation section.
+   - Use Flow Party slug map (`fp-*`) when importing Flow Party HTML.
+3. Click **Auto Import (Parse + Import)** to create/update assets in Convex.
+
+**Notes:**
+- Tokens are extracted from `:root` or `.fp-root`.
+- Sections are imported into Convex with token dependencies.
+- Manual preview + selection is still available if needed.
+
+---
+
 ## Problems With Current Approach
 
 | Issue | Example |

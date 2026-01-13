@@ -4,7 +4,7 @@ import { InformationCircleIcon, Rocket01Icon, StarIcon } from "@hugeicons/core-f
 
 export function ContextPanel() {
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
+    <div className="flex h-full flex-col gap-4 p-6">
       {/* Quick Tips */}
       <Card size="sm">
         <CardHeader>
@@ -16,7 +16,7 @@ export function ContextPanel() {
         <CardContent className="space-y-2 text-xs text-muted-foreground">
           <p>Click any card to view details and copy options.</p>
           <p>Use the heart icon to save favorites for quick access.</p>
-          <p>Filter by category using the sidebar navigation.</p>
+          <p>Select a template from the library to reveal its components.</p>
         </CardContent>
       </Card>
 
@@ -29,13 +29,13 @@ export function ContextPanel() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-xs text-muted-foreground">
-          <p>Browse assets by category or search for specific components.</p>
-          <p>Copy code directly to your project or export to Webflow.</p>
+          <p>Start in the template library, then drill into the component grid.</p>
+          <p>Copy to Webflow when a component is ready to ship.</p>
         </CardContent>
       </Card>
 
       {/* Pro Tip */}
-      <Card size="sm" className="bg-primary/5 border-primary/20">
+      <Card size="sm" className="bg-primary/5 border-primary/20 dark:bg-[lab(4_2.18_0.72)]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-primary">
             <HugeiconsIcon icon={StarIcon} size={14} />
