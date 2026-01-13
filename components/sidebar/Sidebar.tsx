@@ -133,7 +133,7 @@ export function Sidebar({ className }: SidebarProps) {
 
   return (
     <aside className={cn("w-56", className)}>
-      <div className="flex h-[100vh] flex-col">
+      <div className="flex h-full flex-col">
         <div className="flex flex-col px-6 py-4">
           <span className="text-xs uppercase tracking-[0.32em] text-sidebar-foreground/60">
             Template Library
@@ -144,83 +144,53 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
 
         <nav className="mt-10 min-h-0 flex-1 overflow-y-auto px-6 py-2">
-        {/* Favorites Button */}
-        <div className="mb-6">
-          <button
-            type="button"
-            onClick={handleFavoritesClick}
-            className={cn(
-              "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors",
-              showFavorites
-                ? "bg-red-500/10 text-red-500 font-medium"
-                : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-            )}
-          >
-            <HugeiconsIcon
-              icon={FavouriteIcon}
-              className={cn("h-4 w-4", showFavorites && "fill-current")}
-            />
-            <span>My Favorites</span>
-          </button>
-        </div>
+          {/* Favorites Button */}
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={handleFavoritesClick}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors",
+                showFavorites
+                  ? "bg-red-500/10 text-red-500 font-medium"
+                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              )}
+            >
+              <HugeiconsIcon
+                icon={FavouriteIcon}
+                className={cn("h-4 w-4", showFavorites && "fill-current")}
+              />
+              <span>My Favorites</span>
+            </button>
+          </div>
 
-        <div className="mb-6">
-          <span className="text-[11px] uppercase tracking-[0.28em] text-sidebar-foreground/50">
-            Templates
-          </span>
-          <ul className="mt-3 space-y-0.5">
-            <li>
-              <button
-                type="button"
-                onClick={() => handleTemplateClick("")}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors",
-                  activeTemplate === ""
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                )}
-              >
-                <span>All Templates</span>
-              </button>
-            </li>
-            {(templates ?? []).map((template) => {
-              const isActive = activeTemplate === template.slug
-
-              return (
-                <li key={template.slug}>
-                  <button
-                    type="button"
-                    onClick={() => handleTemplateClick(template.slug)}
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors",
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                    )}
-                  >
-                    <span>{template.name}</span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-
-        {activeTemplate ? (
-          <div>
+          <div className="mb-6">
             <span className="text-[11px] uppercase tracking-[0.28em] text-sidebar-foreground/50">
-              Component Groups
+              Templates
             </span>
             <ul className="mt-3 space-y-0.5">
-              {categories.map((category) => {
-                const isActive = activeCategory === category.slug
-                if (category.slug === "") return null
+              <li>
+                <button
+                  type="button"
+                  onClick={() => handleTemplateClick("")}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors",
+                    activeTemplate === ""
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  )}
+                >
+                  <span>All Templates</span>
+                </button>
+              </li>
+              {(templates ?? []).map((template) => {
+                const isActive = activeTemplate === template.slug
 
                 return (
-                  <li key={category.slug}>
+                  <li key={template.slug}>
                     <button
                       type="button"
-                      onClick={() => handleCategoryClick(category.slug)}
+                      onClick={() => handleTemplateClick(template.slug)}
                       className={cn(
                         "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors",
                         isActive
@@ -228,81 +198,111 @@ export function Sidebar({ className }: SidebarProps) {
                           : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                       )}
                     >
-                      <span>{category.label}</span>
-                      <span
-                        className={cn(
-                          "text-xs tabular-nums",
-                          isActive
-                            ? "text-sidebar-accent-foreground/70"
-                            : "text-sidebar-foreground/50"
-                        )}
-                      >
-                        {category.count}
-                      </span>
+                      <span>{template.name}</span>
                     </button>
                   </li>
                 )
               })}
             </ul>
           </div>
-        ) : null}
 
-      </nav>
+          {activeTemplate ? (
+            <div>
+              <span className="text-[11px] uppercase tracking-[0.28em] text-sidebar-foreground/50">
+                Component Groups
+              </span>
+              <ul className="mt-3 space-y-0.5">
+                {categories.map((category) => {
+                  const isActive = activeCategory === category.slug
+                  if (category.slug === "") return null
+
+                  return (
+                    <li key={category.slug}>
+                      <button
+                        type="button"
+                        onClick={() => handleCategoryClick(category.slug)}
+                        className={cn(
+                          "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors",
+                          isActive
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                            : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                        )}
+                      >
+                        <span>{category.label}</span>
+                        <span
+                          className={cn(
+                            "text-xs tabular-nums",
+                            isActive
+                              ? "text-sidebar-accent-foreground/70"
+                              : "text-sidebar-foreground/50"
+                          )}
+                        >
+                          {category.count}
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ) : null}
+
+        </nav>
 
         <div className="mt-auto shrink-0">
-        {/* Admin Tools Section */}
-        {isAdmin && (
-          <div className="border-t border-sidebar-border px-6 py-4">
-            <span className="text-[11px] uppercase tracking-[0.28em] text-sidebar-foreground/50">
-              Admin Tools
-            </span>
-            <ul className="mt-3 space-y-0.5">
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleAdminClick("import")}
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                    activeAdmin === "import"
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                  )}
-                >
-                  <HugeiconsIcon icon={Upload04Icon} className="h-3.5 w-3.5" />
-                  <span>Import HTML</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleAdminClick("database")}
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                    activeAdmin === "database"
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                  )}
-                >
-                  <HugeiconsIcon icon={Database01Icon} className="h-3.5 w-3.5" />
-                  <span>Database</span>
-                </button>
-              </li>
-            </ul>
-          </div>
-        )}
+          {/* Admin Tools Section */}
+          {isAdmin && (
+            <div className="border-t border-sidebar-border px-6 py-4">
+              <span className="text-[11px] uppercase tracking-[0.28em] text-sidebar-foreground/50">
+                Admin Tools
+              </span>
+              <ul className="mt-3 space-y-0.5">
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => handleAdminClick("import")}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                      activeAdmin === "import"
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    )}
+                  >
+                    <HugeiconsIcon icon={Upload04Icon} className="h-3.5 w-3.5" />
+                    <span>Import HTML</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => handleAdminClick("database")}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                      activeAdmin === "database"
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    )}
+                  >
+                    <HugeiconsIcon icon={Database01Icon} className="h-3.5 w-3.5" />
+                    <span>Database</span>
+                  </button>
+                </li>
+              </ul>
+            </div>
+          )}
 
-        {/* User area */}
-        <div className="flex items-center justify-between border-t border-sidebar-border px-6 py-3">
-          <SignedIn>
-            <UserButton afterSignOutUrl="/sign-in" />
-          </SignedIn>
-          <SignedOut>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/sign-in">Sign in</Link>
-            </Button>
-          </SignedOut>
-          <ThemeToggle />
-        </div>
+          {/* User area */}
+          <div className="flex items-center justify-between border-t border-sidebar-border px-6 py-3">
+            <SignedIn>
+              <UserButton afterSignOutUrl="/sign-in" />
+            </SignedIn>
+            <SignedOut>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/sign-in">Sign in</Link>
+              </Button>
+            </SignedOut>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </aside>
