@@ -1,7 +1,11 @@
 "use client"
 
 import { useSearchParams, useRouter } from "next/navigation"
+import Link from "next/link"
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "./ThemeToggle"
 
 export interface Category {
   label: string
@@ -91,6 +95,19 @@ export function Sidebar({ className }: SidebarProps) {
           })}
         </ul>
       </nav>
+
+      {/* User area */}
+      <div className="flex items-center justify-between border-t border-sidebar-border px-3 py-3">
+        <SignedIn>
+          <UserButton afterSignOutUrl="/sign-in" />
+        </SignedIn>
+        <SignedOut>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/sign-in">Sign in</Link>
+          </Button>
+        </SignedOut>
+        <ThemeToggle />
+      </div>
     </aside>
   )
 }

@@ -74,3 +74,46 @@ The Convex schema is defined in `convex/schema.ts`. After modifying the schema:
 
 1. Run `bunx convex dev` to sync changes
 2. Types will be auto-generated in `convex/_generated/`
+
+## How to Seed Demo Data
+
+The database can be seeded with 18 demo assets for testing and development. This is useful for new environments or when you need sample data.
+
+### Prerequisites
+
+1. **Set the admin allowlist** - Add your email to the `NEXT_PUBLIC_ADMIN_EMAILS` environment variable:
+
+```env
+# In .env.local
+NEXT_PUBLIC_ADMIN_EMAILS=your-email@example.com,another-admin@example.com
+```
+
+Multiple emails can be comma-separated. Only users whose Clerk email matches an entry in this list can seed data.
+
+2. **Sign in** - You must be authenticated with Clerk using an allowed email address.
+
+### Seeding Steps
+
+1. Start the development servers:
+   ```bash
+   # Terminal 1
+   bun dev
+
+   # Terminal 2
+   bunx convex dev
+   ```
+
+2. Navigate to the seed page:
+   ```
+   http://localhost:3000/admin/seed
+   ```
+
+3. Click the **"Seed Demo Data"** button.
+
+4. On success, you'll see a confirmation with the number of assets created. Click the link to view them at `/assets`.
+
+### Notes
+
+- The seed operation is idempotent - existing assets (by slug) are skipped.
+- If all 18 demo assets already exist, you'll see "No new assets to seed."
+- The mutation requires admin privileges in Convex (user must have `role: "admin"` in the database).

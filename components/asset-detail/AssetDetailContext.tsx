@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Doc } from "@/convex/_generated/dataModel";
 import { useFavorites } from "@/components/favorites/FavoritesProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,16 @@ import { copyText, copyWebflowJson } from "@/lib/clipboard";
 
 type Asset = Doc<"assets">;
 type Payload = Doc<"payloads">;
+
+function isPlaceholderPayload(json: string | undefined): boolean {
+  if (!json) return true;
+  try {
+    const parsed = JSON.parse(json);
+    return parsed?.placeholder === true;
+  } catch {
+    return false;
+  }
+}
 
 interface AssetDetailContextProps {
   asset: Asset;
@@ -32,16 +42,28 @@ export function AssetDetailContext({ asset, payload }: AssetDetailContextProps) 
   const [copyingWebflow, setCopyingWebflow] = useState(false);
   const [copyingCode, setCopyingCode] = useState(false);
 
+  const hasWebflowPayload = useMemo(
+    () => !!payload?.webflowJson && !isPlaceholderPayload(payload.webflowJson),
+    [payload?.webflowJson]
+  );
+
+  const hasCodePayload = useMemo(
+    () => !!payload?.codePayload && !payload.codePayload.includes("// TODO: Add implementation"),
+    [payload?.codePayload]
+  );
+
   const handleCopyWebflow = async () => {
+    if (!hasWebflowPayload) return;
     setCopyingWebflow(true);
     try {
-      await copyWebflowJson(payload?.webflowJson ?? "");
+      await copyWebflowJson(payload?.webflowJson);
     } finally {
       setCopyingWebflow(false);
     }
   };
 
   const handleCopyCode = async () => {
+    if (!hasCodePayload) return;
     setCopyingCode(true);
     try {
       await copyText(payload?.codePayload ?? "");
@@ -85,24 +107,34 @@ export function AssetDetailContext({ asset, payload }: AssetDetailContextProps) 
           <CardTitle>Actions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={handleCopyWebflow}
-            disabled={copyingWebflow}
-          >
-            <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
-            {copyingWebflow ? "Copying..." : "Copy to Webflow"}
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={handleCopyCode}
-            disabled={copyingCode}
-          >
-            <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
-            {copyingCode ? "Copying..." : "Copy Code"}
-          </Button>
+          <div className="space-y-1">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={handleCopyWebflow}
+              disabled={copyingWebflow || !hasWebflowPayload}
+            >
+              <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
+              {copyingWebflow ? "Copying..." : "Copy to Webflow"}
+            </Button>
+            {!hasWebflowPayload && (
+              <p className="text-xs text-muted-foreground pl-1">No payload yet</p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={handleCopyCode}
+              disabled={copyingCode || !hasCodePayload}
+            >
+              <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
+              {copyingCode ? "Copying..." : "Copy Code"}
+            </Button>
+            {!hasCodePayload && (
+              <p className="text-xs text-muted-foreground pl-1">No payload yet</p>
+            )}
+          </div>
           <Button
             variant="outline"
             className="w-full justify-start"

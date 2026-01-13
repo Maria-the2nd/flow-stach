@@ -22,29 +22,42 @@ export async function copyText(text: string): Promise<CopyResult> {
 }
 
 /**
- * Copy Webflow JSON to clipboard using ClipboardItem with JSON MIME type.
- * Falls back to warning if ClipboardItem API is not supported.
+ * Copy Webflow JSON to clipboard using ClipboardItem with application/json MIME type.
+ * Webflow Designer requires application/json to recognize clipboard content.
  */
-export async function copyWebflowJson(jsonString: string): Promise<CopyResult> {
-  if (!jsonString || jsonString === "TODO") {
-    toast.error("Payload not ready");
-    return { success: false, reason: "payload_not_ready" };
+export async function copyWebflowJson(jsonString: string | undefined): Promise<CopyResult> {
+  if (!jsonString) {
+    toast.error("No Webflow payload found");
+    return { success: false, reason: "no_payload" };
   }
 
-  // Check if ClipboardItem is supported
-  if (typeof ClipboardItem === "undefined") {
-    toast.error("Use Chrome desktop for Webflow paste");
-    return { success: false, reason: "clipboard_item_unsupported" };
+  const json = typeof jsonString === "string" ? jsonString : JSON.stringify(jsonString);
+
+  if (!json || json === "undefined") {
+    toast.error("No Webflow payload found");
+    return { success: false, reason: "no_payload" };
   }
 
   try {
-    const blob = new Blob([jsonString], { type: "application/json" });
-    const item = new ClipboardItem({ "application/json": blob });
-    await navigator.clipboard.write([item]);
+    // Try ClipboardItem with application/json (required for Webflow paste)
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "application/json": new Blob([json], { type: "application/json" }),
+        "text/plain": new Blob([json], { type: "text/plain" }),
+      }),
+    ]);
     toast.success("Copied to clipboard");
     return { success: true };
   } catch {
-    toast.error("Use Chrome desktop for Webflow paste");
-    return { success: false, reason: "clipboard_write_failed" };
+    // Fallback to text-only copy
+    try {
+      await navigator.clipboard.writeText(json);
+      toast.warning("Copied as text only — Webflow paste may fail");
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Clipboard write failed";
+      toast.error(message);
+      return { success: false, reason: "clipboard_write_failed" };
+    }
   }
 }
