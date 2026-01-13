@@ -22,7 +22,8 @@ export async function copyText(text: string): Promise<CopyResult> {
 }
 
 /**
- * Copy Webflow JSON to clipboard using writeText for reliability.
+ * Copy Webflow JSON to clipboard using ClipboardItem with application/json MIME type.
+ * Webflow Designer requires application/json to recognize clipboard content.
  */
 export async function copyWebflowJson(jsonString: string | undefined): Promise<CopyResult> {
   if (!jsonString) {
@@ -30,20 +31,33 @@ export async function copyWebflowJson(jsonString: string | undefined): Promise<C
     return { success: false, reason: "no_payload" };
   }
 
-  const text = typeof jsonString === "string" ? jsonString : JSON.stringify(jsonString);
+  const json = typeof jsonString === "string" ? jsonString : JSON.stringify(jsonString);
 
-  if (!text || text === "undefined") {
+  if (!json || json === "undefined") {
     toast.error("No Webflow payload found");
     return { success: false, reason: "no_payload" };
   }
 
   try {
-    await navigator.clipboard.writeText(text);
+    // Try ClipboardItem with application/json (required for Webflow paste)
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "application/json": new Blob([json], { type: "application/json" }),
+        "text/plain": new Blob([json], { type: "text/plain" }),
+      }),
+    ]);
     toast.success("Copied to clipboard");
     return { success: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Clipboard write failed";
-    toast.error(message);
-    return { success: false, reason: "clipboard_write_failed" };
+  } catch {
+    // Fallback to text-only copy
+    try {
+      await navigator.clipboard.writeText(json);
+      toast.warning("Copied as text only — Webflow paste may fail");
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Clipboard write failed";
+      toast.error(message);
+      return { success: false, reason: "clipboard_write_failed" };
+    }
   }
 }
