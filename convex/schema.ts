@@ -18,6 +18,10 @@ export default defineSchema({
     previewVideoUrl: v.optional(v.string()),
     isNew: v.boolean(),
     status: v.union(v.literal("draft"), v.literal("published")),
+    // Capability flags
+    pasteReliability: v.optional(v.union(v.literal("full"), v.literal("partial"), v.literal("none"))),
+    supportsCodeCopy: v.optional(v.boolean()),
+    capabilityNotes: v.optional(v.string()),
     updatedAt: v.number(),
     createdAt: v.number(),
   })

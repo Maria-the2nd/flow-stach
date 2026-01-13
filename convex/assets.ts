@@ -43,6 +43,30 @@ export const list = query({
   },
 })
 
+// Get category counts for sidebar
+export const categoryCounts = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAuth(ctx)
+
+    const assets = await ctx.db
+      .query("assets")
+      .withIndex("by_status", (q) => q.eq("status", "published"))
+      .collect()
+
+    // Count by category
+    const counts: Record<string, number> = {}
+    for (const asset of assets) {
+      counts[asset.category] = (counts[asset.category] || 0) + 1
+    }
+
+    return {
+      total: assets.length,
+      byCategory: counts,
+    }
+  },
+})
+
 // Get a single asset by slug
 export const bySlug = query({
   args: {

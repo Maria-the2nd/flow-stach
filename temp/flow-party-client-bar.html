@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Party - Client Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           DESIGN TOKENS - Flow Party
+           ============================================ */
+        :root {
+            /* Dark Palette */
+            --dark-bg: #2d2f2e;
+            --dark-secondary: #434645;
+            --text-light: #ffffff;
+            --text-muted-dark: #767f7a;
+
+            /* Light Palette */
+            --light-bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-dark: #171717;
+            --text-muted: #afb6b4;
+            --border: #dddfde;
+
+            /* Coral Gradient Scale */
+            --coral-lightest: #fff0eb;
+            --coral-light: #ffc8b8;
+            --coral-medium: #ff9d80;
+            --coral-strong: #ff531f;
+            --coral-vivid: #ff825c;
+
+            /* Border Radius */
+            --radius-sm: 24px;
+            --radius-md: 32px;
+            --radius-lg: 40px;
+            --radius-xl: 48px;
+            --radius-pill: 9999px;
+
+            /* Typography */
+            --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-logo: 'Antonio', sans-serif;
+        }
+        
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body {
+            font-family: var(--font-body);
+            background: var(--light-bg);
+            line-height: 1.5;
+        }
+        
+        /* Client / Trust Bar */
+        .client-bar {
+            padding: 3rem 5vw;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+        
+        .client-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        
+        .client-line {
+            flex: 0 0 60px;
+            height: 1px;
+            background: var(--border);
+        }
+        
+        .client-logos {
+            display: flex;
+            gap: 3rem;
+            flex-wrap: nowrap;
+        }
+        
+        .client-logos span {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            opacity: 0.5;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+        
+        .client-logos span:hover { 
+            opacity: 1; 
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .client-bar {
+                padding: 2rem 5vw;
+                gap: 1.5rem;
+            }
+            
+            .client-logos {
+                gap: 2rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .client-line {
+                display: none;
+            }
+            
+            .client-bar {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .client-label {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .client-logos {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="client-bar">
+        <span class="client-label">Trusted by teams at</span>
+        <div class="client-line"></div>
+        <div class="client-logos">
+            <span>Vercel</span>
+            <span>Linear</span>
+            <span>Notion</span>
+            <span>Figma</span>
+            <span>Stripe</span>
+            <span>Framer</span>
+        </div>
+    </div>
+</body>
+</html>

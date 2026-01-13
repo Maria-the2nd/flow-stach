@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Party - Creative Development Marketplace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Antonio:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           DESIGN TOKENS - Flow Party
+           ============================================ */
+        :root {
+            /* Dark Palette */
+            --dark-bg: #2d2f2e;
+            --dark-secondary: #434645;
+            --text-light: #ffffff;
+            --text-muted-dark: #767f7a;
+
+            /* Light Palette */
+            --light-bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-dark: #171717;
+            --text-muted: #afb6b4;
+            --border: #dddfde;
+
+            /* Coral Gradient Scale */
+            --coral-lightest: #fff0eb;
+            --coral-light: #ffc8b8;
+            --coral-medium: #ff9d80;
+            --coral-strong: #ff531f;
+            --coral-vivid: #ff825c;
+
+            /* Border Radius */
+            --radius-sm: 24px;
+            --radius-md: 32px;
+            --radius-lg: 40px;
+            --radius-xl: 48px;
+            --radius-pill: 9999px;
+
+            /* Typography */
+            --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-logo: 'Antonio', sans-serif;
+        }
+        
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body {
+            font-family: var(--font-body);
+            background: var(--dark-bg);
+            color: var(--text-light);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+        
+        /* Animations */
+        @keyframes fadeUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px) scale(0.96); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+        
+        @keyframes slideFromLeft {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        
+        @keyframes slideFromBottom {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        
+        .animate-fade-up {
+            animation: fadeUp 0.6s cubic-bezier(0.93, 0.03, 0.56, 1) forwards;
+        }
+        
+        .delay-1 { animation-delay: 0.2s; opacity: 0; }
+        .delay-2 { animation-delay: 0.4s; opacity: 0; }
+        
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            background: var(--dark-bg);
+            padding: 4rem 5vw;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+        
+        .hero-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-logo);
+            font-size: clamp(8rem, 20vw, 16rem);
+            font-weight: 700;
+            color: var(--dark-secondary);
+            opacity: 0.4;
+            pointer-events: none;
+            white-space: nowrap;
+            text-transform: uppercase;
+            animation: slideFromLeft 1.4s cubic-bezier(1, -0.13, 0.18, 0.96) forwards;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+        }
+        
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        
+        .hero-text {
+            max-width: 560px;
+        }
+        
+        .hero-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .hero-label-line {
+            width: 40px;
+            height: 1px;
+            background: var(--coral-strong);
+        }
+        
+        .hero-label-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--coral-strong);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        .hero-headline {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            color: var(--text-light);
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+        
+        .hero-headline-accent {
+            color: var(--coral-strong);
+        }
+        
+        .hero-description {
+            font-size: 1.1rem;
+            color: var(--text-muted-dark);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+            max-width: 480px;
+        }
+        
+        .hero-ctas {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--coral-strong);
+            color: var(--text-light);
+            padding: 0.875rem 1.75rem;
+            border-radius: var(--radius-pill);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            background: #e64a1a;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 83, 31, 0.3);
+        }
+        
+        .btn-arrow {
+            transition: transform 0.2s ease;
+        }
+        
+        .btn-primary:hover .btn-arrow {
+            transform: translateX(3px);
+        }
+        
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            color: var(--text-light);
+            padding: 0.875rem 1.75rem;
+            border-radius: var(--radius-pill);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        
+        .btn-secondary:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .hero-image-wrapper {
+            display: flex;
+            justify-content: center;
+        }
+        
+        .hero-image {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.4);
+            animation: slideFromBottom 0.9s cubic-bezier(1, -0.13, 0.18, 0.96) 0.5s forwards;
+            transform: translateY(100%);
+        }
+        
+        .hero-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+            aspect-ratio: 4/5;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+        
+        .hero-image:hover img { 
+            transform: scale(1.03); 
+        }
+        
+        .hero-image-badge {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 1.5rem;
+            background: rgba(45, 47, 46, 0.9);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-sm);
+        }
+        
+        .hero-badge-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-light);
+        }
+        
+        .hero-badge-label {
+            font-size: 0.75rem;
+            color: var(--text-muted-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Services List */
+        .hero-services {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .hero-services-list {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .hero-service-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted-dark);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .hero-service-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--coral-strong);
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+                text-align: center;
+            }
+            
+            .hero-text {
+                max-width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .hero-description {
+                max-width: 560px;
+            }
+            
+            .hero-image-wrapper {
+                order: -1;
+            }
+            
+            .hero-image {
+                max-width: 380px;
+            }
+            
+            .hero-services-list {
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .hero {
+                padding: 3rem 5vw;
+            }
+            
+            .hero-headline {
+                font-size: clamp(2rem, 8vw, 3rem);
+            }
+            
+            .hero-image {
+                max-width: 280px;
+            }
+            
+            .hero-services-list {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: center;
+            }
+            
+            .hero-ctas {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .hero-ctas .btn-primary,
+            .hero-ctas .btn-secondary {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .hero-watermark {
+                font-size: 5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <div class="hero-watermark">FLOWPARTY</div>
+        
+        <div class="hero-content">
+            <div class="hero-grid">
+                <div class="hero-text animate-fade-up delay-1">
+                    <div class="hero-label">
+                        <span class="hero-label-line"></span>
+                        <span class="hero-label-text">Premium Asset Library</span>
+                    </div>
+                    
+                    <h1 class="hero-headline">
+                        Ship faster with<br>
+                        <span class="hero-headline-accent">complete launch kits</span>
+                    </h1>
+                    
+                    <p class="hero-description">
+                        The premium Webflow marketplace for creative developers. 
+                        Templates, components, and complete Party Packs to help you 
+                        launch polished sites in record time.
+                    </p>
+                    
+                    <div class="hero-ctas">
+                        <a href="#explore" class="btn-primary">
+                            Explore The Stash
+                            <span class="btn-arrow">→</span>
+                        </a>
+                        <a href="#demo" class="btn-secondary">
+                            Watch Demo
+                        </a>
+                    </div>
+                    
+                    <div class="hero-services">
+                        <div class="hero-services-list">
+                            <div class="hero-service-item">
+                                <span class="hero-service-dot"></span>
+                                <span>Full Templates</span>
+                            </div>
+                            <div class="hero-service-item">
+                                <span class="hero-service-dot"></span>
+                                <span>UI Components</span>
+                            </div>
+                            <div class="hero-service-item">
+                                <span class="hero-service-dot"></span>
+                                <span>Figma Files</span>
+                            </div>
+                            <div class="hero-service-item">
+                                <span class="hero-service-dot"></span>
+                                <span>Launch Guides</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hero-image-wrapper animate-fade-up delay-2">
+                    <div class="hero-image">
+                        <img 
+                            src="https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800&q=80" 
+                            alt="Abstract gradient design"
+                        >
+                        <div class="hero-image-badge">
+                            <span class="hero-badge-value">140+</span>
+                            <span class="hero-badge-label">Premium Resources</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>

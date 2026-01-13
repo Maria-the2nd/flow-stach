@@ -163,7 +163,7 @@ export function AssetDetailContent({ slug }: AssetDetailContentProps) {
           <Sidebar />
         </Suspense>
       }
-      main={<AssetDetailMain asset={asset} hasPayload={hasPayload} />}
+      main={<AssetDetailMain asset={asset} payload={payload} hasPayload={hasPayload} />}
       context={<AssetDetailContext asset={asset} payload={payload ?? null} />}
     />
   );

@@ -3,6 +3,9 @@
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
+import { useAuth } from "@clerk/nextjs"
+import { useQuery } from "convex/react"
+import { api } from "@/convex/_generated/api"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "./ThemeToggle"
@@ -10,20 +13,21 @@ import { ThemeToggle } from "./ThemeToggle"
 export interface Category {
   label: string
   slug: string
-  count: number
 }
 
-const CATEGORIES: Category[] = [
-  { label: "All", slug: "", count: 47 },
-  { label: "Cursor", slug: "cursor", count: 8 },
-  { label: "Scroll", slug: "scroll", count: 6 },
-  { label: "Buttons", slug: "buttons", count: 5 },
-  { label: "Navigation", slug: "navigation", count: 7 },
-  { label: "Hover", slug: "hover", count: 4 },
-  { label: "Media", slug: "media", count: 3 },
-  { label: "Typography", slug: "typography", count: 6 },
-  { label: "Utilities", slug: "utilities", count: 5 },
-  { label: "Sections", slug: "sections", count: 3 },
+// Category definitions (counts are dynamic)
+const CATEGORY_DEFS: Category[] = [
+  { label: "All", slug: "" },
+  { label: "Cursor", slug: "cursor" },
+  { label: "Scroll", slug: "scroll" },
+  { label: "Buttons", slug: "buttons" },
+  { label: "Navigation", slug: "navigation" },
+  { label: "Hover", slug: "hover" },
+  { label: "Media", slug: "media" },
+  { label: "Typography", slug: "typography" },
+  { label: "Utilities", slug: "utilities" },
+  { label: "Sections", slug: "sections" },
+  { label: "Tokens", slug: "tokens" },
 ]
 
 export interface SidebarProps {
@@ -33,8 +37,23 @@ export interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { isLoaded, isSignedIn } = useAuth()
+
+  // Fetch dynamic category counts
+  const counts = useQuery(
+    api.assets.categoryCounts,
+    isLoaded && isSignedIn ? {} : "skip"
+  )
 
   const activeCategory = searchParams.get("cat") ?? ""
+
+  // Build categories with counts
+  const categories = CATEGORY_DEFS.map((cat) => ({
+    ...cat,
+    count: cat.slug === ""
+      ? counts?.total ?? 0
+      : counts?.byCategory[cat.slug] ?? 0,
+  })).filter((cat) => cat.slug === "" || cat.count > 0)
 
   function handleCategoryClick(slug: string) {
     const params = new URLSearchParams(searchParams.toString())
@@ -53,7 +72,7 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex h-full w-56 flex-col border-r border-sidebar-border bg-sidebar",
+        "flex h-full w-56 flex-col bg-sidebar",
         className
       )}
     >
@@ -63,7 +82,7 @@ export function Sidebar({ className }: SidebarProps) {
 
       <nav className="flex-1 overflow-y-auto px-2 py-2">
         <ul className="space-y-0.5">
-          {CATEGORIES.map((category) => {
+          {categories.map((category) => {
             const isActive = activeCategory === category.slug
 
             return (
@@ -112,4 +131,4 @@ export function Sidebar({ className }: SidebarProps) {
   )
 }
 
-export { CATEGORIES }
+export { CATEGORY_DEFS as CATEGORIES }

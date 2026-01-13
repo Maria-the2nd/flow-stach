@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Party - Features</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ============================================
+           DESIGN TOKENS - Flow Party
+           ============================================ */
+        :root {
+            /* Dark Palette */
+            --dark-bg: #2d2f2e;
+            --dark-secondary: #434645;
+            --text-light: #ffffff;
+            --text-muted-dark: #767f7a;
+
+            /* Light Palette */
+            --light-bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-dark: #171717;
+            --text-muted: #afb6b4;
+            --border: #dddfde;
+
+            /* Coral Gradient Scale */
+            --coral-lightest: #fff0eb;
+            --coral-light: #ffc8b8;
+            --coral-medium: #ff9d80;
+            --coral-strong: #ff531f;
+            --coral-vivid: #ff825c;
+
+            /* Border Radius */
+            --radius-sm: 24px;
+            --radius-md: 32px;
+            --radius-lg: 40px;
+            --radius-xl: 48px;
+            --radius-pill: 9999px;
+
+            /* Typography */
+            --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-logo: 'Antonio', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--dark-bg);
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 6rem 5vw;
+        }
+
+        .features-header {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 4rem;
+            margin-bottom: 4rem;
+            padding-bottom: 3rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .features-label {
+            font-size: 0.875rem;
+            color: var(--text-muted-dark);
+        }
+
+        .features-intro p {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--text-light);
+            line-height: 1.4;
+            margin-bottom: 1.5rem;
+            max-width: 500px;
+        }
+
+        .feature-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            padding: 2.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: default;
+            transition: padding-left 0.3s ease;
+        }
+
+        .feature-row:hover {
+            padding-left: 1rem;
+        }
+
+        .feature-row:last-child {
+            border-bottom: none;
+        }
+
+        .feature-name {
+            font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+            font-weight: 600;
+            color: var(--text-light);
+            transition: color 0.3s ease;
+        }
+
+        .feature-row:hover .feature-name {
+            color: var(--coral-vivid);
+        }
+
+        .feature-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1.5rem;
+        }
+
+        .feature-tags span {
+            font-size: 0.875rem;
+            color: var(--text-muted-dark);
+            white-space: nowrap;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .features-header {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .feature-row {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .features-section {
+                padding: 4rem 5vw;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <section class="features-section" id="features">
+        <div class="features-header">
+            <span class="features-label">(02)</span>
+            <div class="features-intro">
+                <p>Built different. Every resource in The Stash is crafted with production quality in mind—not just
+                    pretty demos.</p>
+            </div>
+        </div>
+        <div class="feature-row">
+            <h3 class="feature-name">Copy & Paste Ready</h3>
+            <div class="feature-tags">
+                <span>Webflow native</span>
+                <span>No plugins required</span>
+                <span>Clean class naming</span>
+            </div>
+        </div>
+        <div class="feature-row">
+            <h3 class="feature-name">GSAP Interactions</h3>
+            <div class="feature-tags">
+                <span>ScrollTrigger</span>
+                <span>SplitText</span>
+                <span>Flip animations</span>
+            </div>
+        </div>
+        <div class="feature-row">
+            <h3 class="feature-name">Figma Included</h3>
+            <div class="feature-tags">
+                <span>Auto-layout</span>
+                <span>Design tokens</span>
+                <span>Component variants</span>
+            </div>
+        </div>
+        <div class="feature-row">
+            <h3 class="feature-name">Launch Guides</h3>
+            <div class="feature-tags">
+                <span>Setup walkthroughs</span>
+                <span>Customization tips</span>
+                <span>Best practices</span>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>

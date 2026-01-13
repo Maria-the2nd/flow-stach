@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill /PID 37388 /F)",
+      "Bash(powershell -Command:*)",
+      "Skill(generate-agents)",
+      "Skill(generate-agents:*)",
+      "Bash(wc:*)",
+      "Bash(bun run typecheck:*)",
+      "Bash(bun add:*)",
+      "Bash(node -e:*)",
+      "Bash(grep:*)",
+      "Bash(npx convex:*)"
+    ]
+  }
+}

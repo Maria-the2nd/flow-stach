@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Party - CTA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Antonio:wght@700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ============================================
+           DESIGN TOKENS - Flow Party
+           ============================================ */
+        :root {
+            /* Dark Palette */
+            --dark-bg: #2d2f2e;
+            --dark-secondary: #434645;
+            --text-light: #ffffff;
+            --text-muted-dark: #767f7a;
+
+            /* Light Palette */
+            --light-bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-dark: #171717;
+            --text-muted: #afb6b4;
+            --border: #dddfde;
+
+            /* Coral Gradient Scale */
+            --coral-lightest: #fff0eb;
+            --coral-light: #ffc8b8;
+            --coral-medium: #ff9d80;
+            --coral-strong: #ff531f;
+            --coral-vivid: #ff825c;
+
+            /* Border Radius */
+            --radius-sm: 24px;
+            --radius-md: 32px;
+            --radius-lg: 40px;
+            --radius-xl: 48px;
+            --radius-pill: 9999px;
+
+            /* Typography */
+            --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-logo: 'Antonio', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--dark-bg);
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 8rem 5vw;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-logo);
+            font-size: clamp(6rem, 15vw, 12rem);
+            font-weight: 700;
+            color: var(--dark-secondary);
+            opacity: 0.3;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 1;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .cta-content h2 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+        }
+
+        .cta-content p {
+            font-size: 1.1rem;
+            color: var(--text-muted-dark);
+            margin-bottom: 2.5rem;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--coral-strong);
+            color: var(--text-light);
+            padding: 0.875rem 1.75rem;
+            border-radius: var(--radius-pill);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: #e64a1a;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 83, 31, 0.3);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            color: var(--text-light);
+            padding: 0.875rem 1.75rem;
+            border-radius: var(--radius-pill);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-arrow {
+            transition: transform 0.2s ease;
+        }
+
+        .btn-primary:hover .btn-arrow {
+            transform: translateX(3px);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .cta-section {
+                padding: 6rem 5vw;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .cta-watermark {
+                font-size: 4rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <section class="cta-section">
+        <div class="cta-watermark">PARTY</div>
+        <div class="cta-content">
+            <h2>Ready to ship faster?</h2>
+            <p>Join 500+ creative developers already building with Flow Party. Start with our free resources or go Pro
+                for full access.</p>
+            <div class="cta-buttons">
+                <a href="#" class="btn-primary">Start Free <span class="btn-arrow">→</span></a>
+                <a href="#" class="btn-secondary">View Pricing</a>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>

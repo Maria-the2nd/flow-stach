@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,7 +14,25 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { SunIcon, MoonIcon, ComputerIcon } from "@hugeicons/core-free-icons"
 
 export function ThemeToggle() {
+  const [mounted, setMounted] = useState(false)
   const { theme, setTheme } = useTheme()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <Button variant="outline" size="icon">
+        <HugeiconsIcon
+          icon={SunIcon}
+          strokeWidth={1.5}
+          className="size-4"
+        />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    )
+  }
 
   return (
     <DropdownMenu>

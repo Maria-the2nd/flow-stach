@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Party - FAQ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ============================================
+           DESIGN TOKENS - Flow Party
+           ============================================ */
+        :root {
+            /* Dark Palette */
+            --dark-bg: #2d2f2e;
+            --dark-secondary: #434645;
+            --text-light: #ffffff;
+            --text-muted-dark: #767f7a;
+
+            /* Light Palette */
+            --light-bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-dark: #171717;
+            --text-muted: #afb6b4;
+            --border: #dddfde;
+
+            /* Coral Gradient Scale */
+            --coral-lightest: #fff0eb;
+            --coral-light: #ffc8b8;
+            --coral-medium: #ff9d80;
+            --coral-strong: #ff531f;
+            --coral-vivid: #ff825c;
+
+            /* Border Radius */
+            --radius-sm: 24px;
+            --radius-md: 32px;
+            --radius-lg: 40px;
+            --radius-xl: 48px;
+            --radius-pill: 9999px;
+
+            /* Typography */
+            --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-logo: 'Antonio', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--light-bg);
+            color: var(--text-dark);
+            line-height: 1.5;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            padding: 6rem 5vw;
+        }
+
+        .faq-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 4rem;
+        }
+
+        .faq-left h2 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .faq-left>p {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            max-width: 280px;
+        }
+
+        .link-arrow {
+            color: var(--coral-strong);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: gap 0.2s ease;
+        }
+
+        .link-arrow:hover {
+            gap: 0.75rem;
+        }
+
+        .faq-item {
+            padding: 1.5rem 0;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .faq-question-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .faq-question {
+            font-size: 1rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .faq-item:hover .faq-question {
+            color: var(--coral-strong);
+        }
+
+        .faq-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            opacity: 0.15;
+            transition: opacity 0.2s, color 0.2s;
+        }
+
+        .faq-item:hover .faq-number,
+        .faq-item.active .faq-number {
+            opacity: 1;
+            color: var(--coral-strong);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 200px;
+            padding-top: 1rem;
+        }
+
+        .faq-answer p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .faq-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .faq-section {
+                padding: 4rem 5vw;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <section class="faq-section" id="faq">
+        <div class="faq-container">
+            <div class="faq-left">
+                <h2>FAQ</h2>
+                <p>Common questions about Flow Party and how it works.</p>
+                <a href="#" class="link-arrow">Contact support →</a>
+            </div>
+            <div class="faq-right">
+                <div class="faq-item" data-faq>
+                    <div class="faq-question-row">
+                        <span class="faq-question">How does copy & paste work?</span>
+                        <span class="faq-number">01</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Click copy on any component in The Stash, then paste directly into your Webflow Designer. The
+                            component arrives with all classes, interactions, and settings intact. No plugins required.
+                        </p>
+                    </div>
+                </div>
+                <div class="faq-item" data-faq>
+                    <div class="faq-question-row">
+                        <span class="faq-question">What's included in a Party Pack?</span>
+                        <span class="faq-number">02</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Each Party Pack includes a complete Webflow template, matching component library, Figma
+                            source files, and a detailed launch guide. Everything you need to ship a polished site.</p>
+                    </div>
+                </div>
+                <div class="faq-item" data-faq>
+                    <div class="faq-question-row">
+                        <span class="faq-question">Can I use resources for client projects?</span>
+                        <span class="faq-number">03</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes! All resources come with a commercial license. Use them for unlimited personal and client
+                            projects. The only restriction is redistributing or reselling the raw assets.</p>
+                    </div>
+                </div>
+                <div class="faq-item" data-faq>
+                    <div class="faq-question-row">
+                        <span class="faq-question">Do I need GSAP knowledge?</span>
+                        <span class="faq-number">04</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Nope. Interactions work out of the box. But if you want to customize, we include
+                            documentation explaining how each animation works so you can learn as you build.</p>
+                    </div>
+                </div>
+                <div class="faq-item" data-faq>
+                    <div class="faq-question-row">
+                        <span class="faq-question">What if I cancel my subscription?</span>
+                        <span class="faq-number">05</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>You keep access to everything you've already copied or downloaded. You just won't be able to
+                            access new resources or updates until you resubscribe.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // FAQ accordion
+        document.querySelectorAll('[data-faq]').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('[data-faq]').forEach(other => {
+                    if (other !== item) other.classList.remove('active');
+                });
+                item.classList.toggle('active');
+            });
+        });
+    </script>
+</body>
+
+</html>

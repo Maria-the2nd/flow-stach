@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Party - Collaborators</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ============================================
+           DESIGN TOKENS - Flow Party
+           ============================================ */
+        :root {
+            /* Dark Palette */
+            --dark-bg: #2d2f2e;
+            --dark-secondary: #434645;
+            --text-light: #ffffff;
+            --text-muted-dark: #767f7a;
+
+            /* Light Palette */
+            --light-bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-dark: #171717;
+            --text-muted: #afb6b4;
+            --border: #dddfde;
+
+            /* Coral Gradient Scale */
+            --coral-lightest: #fff0eb;
+            --coral-light: #ffc8b8;
+            --coral-medium: #ff9d80;
+            --coral-strong: #ff531f;
+            --coral-vivid: #ff825c;
+
+            /* Border Radius */
+            --radius-sm: 24px;
+            --radius-md: 32px;
+            --radius-lg: 40px;
+            --radius-xl: 48px;
+            --radius-pill: 9999px;
+
+            /* Typography */
+            --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-logo: 'Antonio', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--light-bg);
+            color: var(--text-dark);
+            line-height: 1.5;
+        }
+
+        /* Collaborators Section */
+        .collaborators-section {
+            padding: 6rem 5vw;
+        }
+
+        .collaborators-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 4rem;
+        }
+
+        .collaborators-header h2 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+        }
+
+        .collaborators-header p {
+            font-size: 1rem;
+            color: var(--text-muted);
+            max-width: 400px;
+            text-align: right;
+        }
+
+        .collaborators-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+
+        .collaborator-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .collaborator-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        .collaborator-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            background: linear-gradient(135deg, var(--coral-light), var(--coral-strong));
+            overflow: hidden;
+        }
+
+        .collaborator-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .collaborator-name {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .collaborator-role {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .collaborator-stats {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .collab-stat-value {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .collab-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .collaborators-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .collaborators-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .collaborators-header p {
+                text-align: left;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .collaborators-section {
+                padding: 4rem 5vw;
+            }
+
+            .collaborators-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <section class="collaborators-section" id="collaborators">
+        <div class="collaborators-header">
+            <h2>Collaborators</h2>
+            <p>Learn from the best. Our collaborators are award-winning designers and developers who teach what they
+                ship.</p>
+        </div>
+        <div class="collaborators-grid">
+            <div class="collaborator-card">
+                <div class="collaborator-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                </div>
+                <h4 class="collaborator-name">Alex Rivera</h4>
+                <p class="collaborator-role">Creative Developer</p>
+                <div class="collaborator-stats">
+                    <div>
+                        <div class="collab-stat-value">12</div>
+                        <div class="collab-stat-label">Resources</div>
+                    </div>
+                    <div>
+                        <div class="collab-stat-value">2.4k</div>
+                        <div class="collab-stat-label">Downloads</div>
+                    </div>
+                </div>
+            </div>
+            <div class="collaborator-card">
+                <div class="collaborator-avatar" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                </div>
+                <h4 class="collaborator-name">Maya Johnson</h4>
+                <p class="collaborator-role">UI/UX Designer</p>
+                <div class="collaborator-stats">
+                    <div>
+                        <div class="collab-stat-value">8</div>
+                        <div class="collab-stat-label">Resources</div>
+                    </div>
+                    <div>
+                        <div class="collab-stat-value">1.8k</div>
+                        <div class="collab-stat-label">Downloads</div>
+                    </div>
+                </div>
+            </div>
+            <div class="collaborator-card">
+                <div class="collaborator-avatar" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                </div>
+                <h4 class="collaborator-name">James Park</h4>
+                <p class="collaborator-role">Motion Designer</p>
+                <div class="collaborator-stats">
+                    <div>
+                        <div class="collab-stat-value">15</div>
+                        <div class="collab-stat-label">Resources</div>
+                    </div>
+                    <div>
+                        <div class="collab-stat-value">3.1k</div>
+                        <div class="collab-stat-label">Downloads</div>
+                    </div>
+                </div>
+            </div>
+            <div class="collaborator-card">
+                <div class="collaborator-avatar" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                </div>
+                <h4 class="collaborator-name">Emma Wilson</h4>
+                <p class="collaborator-role">Webflow Expert</p>
+                <div class="collaborator-stats">
+                    <div>
+                        <div class="collab-stat-value">10</div>
+                        <div class="collab-stat-label">Resources</div>
+                    </div>
+                    <div>
+                        <div class="collab-stat-value">2.2k</div>
+                        <div class="collab-stat-label">Downloads</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>

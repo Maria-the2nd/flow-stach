@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Antonio, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "./providers/ConvexClientProvider";
 import { ThemeProvider } from "./providers/ThemeProvider";
@@ -7,11 +7,17 @@ import { InitUser } from "@/components/auth/InitUser";
 import { Toaster } from "sonner";
 import "./globals.css";
 
-const notoSans = Noto_Sans({variable:'--font-sans'});
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Creative Studio Warmth typography
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const antonio = Antonio({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: "700",
 });
 
 const geistMono = Geist_Mono({
@@ -31,9 +37,9 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={notoSans.variable} suppressHydrationWarning>
+      <html lang="en" className={`${plusJakartaSans.variable} ${antonio.variable}`} suppressHydrationWarning>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${geistMono.variable} antialiased`}
         >
           <ThemeProvider>
             <ConvexClientProvider>

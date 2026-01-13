@@ -10,7 +10,7 @@ export function AppShell({ sidebar, main, context }: AppShellProps) {
   return (
     <div className="grid min-h-screen grid-cols-1 md:grid-cols-[240px_1fr] lg:grid-cols-[240px_1fr_280px]">
       {/* Sidebar */}
-      <aside className="hidden border-r border-border bg-sidebar md:block">
+      <aside className="hidden bg-sidebar md:block">
         {sidebar}
       </aside>
 

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Party - Pricing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ============================================
+           DESIGN TOKENS - Flow Party
+           ============================================ */
+        :root {
+            /* Dark Palette */
+            --dark-bg: #2d2f2e;
+            --dark-secondary: #434645;
+            --text-light: #ffffff;
+            --text-muted-dark: #767f7a;
+
+            /* Light Palette */
+            --light-bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-dark: #171717;
+            --text-muted: #afb6b4;
+            --border: #dddfde;
+
+            /* Coral Gradient Scale */
+            --coral-lightest: #fff0eb;
+            --coral-light: #ffc8b8;
+            --coral-medium: #ff9d80;
+            --coral-strong: #ff531f;
+            --coral-vivid: #ff825c;
+
+            /* Border Radius */
+            --radius-sm: 24px;
+            --radius-md: 32px;
+            --radius-lg: 40px;
+            --radius-xl: 48px;
+            --radius-pill: 9999px;
+
+            /* Typography */
+            --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-logo: 'Antonio', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--card-bg);
+            color: var(--text-dark);
+            line-height: 1.5;
+        }
+
+        /* Pricing Section */
+        .pricing-section {
+            padding: 6rem 5vw;
+        }
+
+        .pricing-header {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 4rem;
+        }
+
+        .pricing-header h2 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-header p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: var(--light-bg);
+            border-radius: var(--radius-md);
+            padding: 2.5rem;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .pricing-card.popular {
+            background: var(--dark-bg);
+            color: var(--text-light);
+        }
+
+        .pricing-card.popular .pricing-desc {
+            color: var(--text-muted-dark);
+        }
+
+        .pricing-card.popular .pricing-feature {
+            color: var(--text-muted-dark);
+        }
+
+        .pricing-card.popular .pricing-feature::before {
+            background: var(--coral-strong);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--coral-strong);
+            color: var(--text-light);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.4rem 1rem;
+            border-radius: var(--radius-pill);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .pricing-tier {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--coral-strong);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-price {
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-price span {
+            font-size: 1rem;
+            font-weight: 500;
+            opacity: 0.6;
+        }
+
+        .pricing-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            line-height: 1.4;
+        }
+
+        .pricing-features {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-feature {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .pricing-feature::before {
+            content: '✓';
+            width: 18px;
+            height: 18px;
+            background: var(--coral-lightest);
+            color: var(--coral-strong);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            flex-shrink: 0;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: var(--coral-strong);
+            color: var(--text-light);
+            padding: 0.875rem 1.75rem;
+            border-radius: var(--radius-pill);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: #e64a1a;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 83, 31, 0.3);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: transparent;
+            color: var(--text-dark);
+            padding: 0.875rem 1.75rem;
+            border-radius: var(--radius-pill);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            width: 100%;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--text-dark);
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .btn-dark {
+            background: var(--text-dark);
+        }
+
+        .btn-dark:hover {
+            background: #333;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-arrow {
+            transition: transform 0.2s ease;
+        }
+
+        .btn-primary:hover .btn-arrow {
+            transform: translateX(3px);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .pricing-grid {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .pricing-section {
+                padding: 4rem 5vw;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <section class="pricing-section" id="pricing">
+        <div class="pricing-header">
+            <h2>Simple pricing</h2>
+            <p>Choose the plan that fits your workflow. All plans include lifetime access to purchased resources.</p>
+        </div>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="pricing-tier">Starter</div>
+                <div class="pricing-price">$0 <span>/mo</span></div>
+                <p class="pricing-desc">Perfect for exploring what Flow Party offers.</p>
+                <div class="pricing-features">
+                    <div class="pricing-feature">5 free components</div>
+                    <div class="pricing-feature">Community access</div>
+                    <div class="pricing-feature">Email support</div>
+                </div>
+                <a href="#" class="btn-secondary">Get Started</a>
+            </div>
+            <div class="pricing-card popular">
+                <div class="popular-badge">Most Popular</div>
+                <div class="pricing-tier">Pro</div>
+                <div class="pricing-price">$29 <span>/mo</span></div>
+                <p class="pricing-desc">Full access to The Stash. Ship faster, every project.</p>
+                <div class="pricing-features">
+                    <div class="pricing-feature">All 140+ resources</div>
+                    <div class="pricing-feature">All Party Packs</div>
+                    <div class="pricing-feature">Figma files included</div>
+                    <div class="pricing-feature">Priority support</div>
+                    <div class="pricing-feature">New releases weekly</div>
+                </div>
+                <a href="#" class="btn-primary">Start Pro Trial <span class="btn-arrow">→</span></a>
+            </div>
+            <div class="pricing-card">
+                <div class="pricing-tier">Lifetime</div>
+                <div class="pricing-price">$299 <span>once</span></div>
+                <p class="pricing-desc">One payment, forever access. Best value for agencies.</p>
+                <div class="pricing-features">
+                    <div class="pricing-feature">Everything in Pro</div>
+                    <div class="pricing-feature">Lifetime updates</div>
+                    <div class="pricing-feature">Team sharing (5 seats)</div>
+                    <div class="pricing-feature">Early access</div>
+                </div>
+                <a href="#" class="btn-dark btn-primary">Get Lifetime <span class="btn-arrow">→</span></a>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Party - Bento Grid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ============================================
+           DESIGN TOKENS - Flow Party
+           ============================================ */
+        :root {
+            /* Dark Palette */
+            --dark-bg: #2d2f2e;
+            --dark-secondary: #434645;
+            --text-light: #ffffff;
+            --text-muted-dark: #767f7a;
+
+            /* Light Palette */
+            --light-bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-dark: #171717;
+            --text-muted: #afb6b4;
+            --border: #dddfde;
+
+            /* Coral Gradient Scale */
+            --coral-lightest: #fff0eb;
+            --coral-light: #ffc8b8;
+            --coral-medium: #ff9d80;
+            --coral-strong: #ff531f;
+            --coral-vivid: #ff825c;
+
+            /* Border Radius */
+            --radius-sm: 24px;
+            --radius-md: 32px;
+            --radius-lg: 40px;
+            --radius-xl: 48px;
+            --radius-pill: 9999px;
+
+            /* Typography */
+            --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-logo: 'Antonio', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--light-bg);
+            color: var(--text-dark);
+            line-height: 1.5;
+        }
+
+        /* Bento Grid */
+        .bento-section {
+            padding: 2rem 5vw 4rem;
+        }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-areas:
+                "testimonial stat1     showcase"
+                "testimonial process   showcase"
+                "timeline    timeline  stat2";
+            gap: 1.5rem;
+        }
+
+        .bento-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            min-height: 200px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .bento-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .testimonial-card {
+            grid-area: testimonial;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .stat-card-1 {
+            grid-area: stat1;
+        }
+
+        .stat-card-2 {
+            grid-area: stat2;
+        }
+
+        .showcase-card {
+            grid-area: showcase;
+            padding: 0;
+            min-height: 400px;
+        }
+
+        .process-card {
+            grid-area: process;
+        }
+
+        .timeline-card {
+            grid-area: timeline;
+        }
+
+        .bento-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .bento-card>p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .testimonial-text {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: var(--text-dark);
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: auto;
+            padding-top: 1.5rem;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid var(--light-bg);
+            background: linear-gradient(135deg, var(--coral-light), var(--coral-strong));
+            overflow: hidden;
+        }
+
+        .author-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .author-role {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .watermark-number {
+            position: absolute;
+            bottom: 0.5rem;
+            right: 1rem;
+            font-size: 7rem;
+            font-weight: 700;
+            opacity: 0.03;
+            line-height: 1;
+            pointer-events: none;
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+        }
+
+        .stat-value {
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value span {
+            font-size: 0.5em;
+            vertical-align: top;
+        }
+
+        .stat-desc {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .showcase-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .showcase-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 2rem;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+            color: var(--text-light);
+        }
+
+        .showcase-overlay h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-light);
+        }
+
+        .showcase-overlay p {
+            font-size: 0.875rem;
+            color: var(--text-muted-dark);
+            margin-bottom: 1rem;
+        }
+
+        .link-arrow {
+            color: var(--coral-strong);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: gap 0.2s ease;
+        }
+
+        .link-arrow:hover {
+            gap: 0.75rem;
+        }
+
+        .timeline-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .timeline-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .timeline-bars {
+            display: flex;
+            gap: 0.5rem;
+            height: 8px;
+        }
+
+        .timeline-bar {
+            flex: 1;
+            border-radius: 4px;
+            background: var(--border);
+        }
+
+        .timeline-bar.active {
+            background: var(--coral-strong);
+        }
+
+        .process-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .process-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .process-check {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--coral-lightest);
+            color: var(--coral-strong);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .bento-grid {
+                grid-template-columns: 1fr 1fr;
+                grid-template-areas:
+                    "testimonial stat1"
+                    "testimonial process"
+                    "showcase   showcase"
+                    "timeline   stat2";
+            }
+        }
+
+        @media (max-width: 768px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "testimonial"
+                    "stat1"
+                    "showcase"
+                    "process"
+                    "timeline"
+                    "stat2";
+            }
+
+            .bento-section {
+                padding: 2rem 5vw;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <section class="bento-section">
+        <div class="bento-grid">
+            <div class="bento-card testimonial-card">
+                <p class="testimonial-text">"Flow Party saved me 40+ hours on my last client project. The Party Pack
+                    approach is genius—everything just works together."</p>
+                <div class="testimonial-author">
+                    <div class="avatar" style="background: linear-gradient(135deg, #ff531f 0%, #f093fb 100%);"></div>
+                    <div>
+                        <div class="author-name">Sarah Chen</div>
+                        <div class="author-role">Freelance Developer</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bento-card stat-card-1">
+                <div class="stat-header">
+                    <span class="stat-label">Time Saved</span>
+                    <div class="stat-icon">⏱</div>
+                </div>
+                <div class="stat-value">40<span>hrs</span></div>
+                <div class="stat-desc">Average per project launch</div>
+                <div class="watermark-number">40</div>
+            </div>
+
+            <div class="bento-card showcase-card"
+                style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="showcase-overlay">
+                    <h3>SaaS Starter Pack</h3>
+                    <p>Complete launch kit for your next product</p>
+                    <a href="#" class="link-arrow">View Pack →</a>
+                </div>
+            </div>
+
+            <div class="bento-card process-card">
+                <h3>What's Included</h3>
+                <div class="process-list">
+                    <div class="process-item"><span class="process-check">✓</span> Webflow Template</div>
+                    <div class="process-item"><span class="process-check">✓</span> Component Library</div>
+                    <div class="process-item"><span class="process-check">✓</span> Figma Source Files</div>
+                    <div class="process-item"><span class="process-check">✓</span> Launch Guide</div>
+                </div>
+            </div>
+
+            <div class="bento-card timeline-card">
+                <div class="timeline-header">
+                    <div class="timeline-title">From idea to launch</div>
+                    <div class="timeline-subtitle">Average project timeline</div>
+                </div>
+                <div class="timeline-bars">
+                    <div class="timeline-bar active"></div>
+                    <div class="timeline-bar active"></div>
+                    <div class="timeline-bar active"></div>
+                    <div class="timeline-bar"></div>
+                    <div class="timeline-bar"></div>
+                </div>
+            </div>
+
+            <div class="bento-card stat-card-2">
+                <div class="stat-header">
+                    <span class="stat-label">Resources</span>
+                    <div class="stat-icon">📦</div>
+                </div>
+                <div class="stat-value">140<span>+</span></div>
+                <div class="stat-desc">Premium assets in The Stash</div>
+                <div class="watermark-number">140</div>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>

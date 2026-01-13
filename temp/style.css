@@ -1,0 +1,87 @@
+/********************************************/
+/********************************************/
+/* Please ❤ this if you like it! */
+/* Follow Me https://codepen.io/designfenix */
+/********************************************/
+/********************************************/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+/**/
+body{
+	display: flex;
+	min-height:100vh;
+	justify-content: center;
+	align-items: center;
+	background: radial-gradient(circle at 50% 50%, #F4C6A5 0%, #F9D9C2 10%, #FFF3E9 30%);
+}
+
+svg{
+	max-width: 70vw;
+	max-height: 80vh;
+	aspect-ratio: 1/1;
+	#blobClip{
+    transform-origin: center;
+		transition: ease-out transform .4s;
+	}
+	&:hover{
+		#blobClip{
+			transform: scale(1.15) translate(0%, 0%);
+		}
+		.text-content{
+			fill: white;
+			mix-blend-mode: overlay;
+		}
+	}
+}
+.text-content {
+	font: 700 10px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+	letter-spacing: 1.5px;
+	text-transform: uppercase;
+	fill: black;
+	mix-blend-mode: normal;
+	transition: ease fill .5s;
+}
+
+/*Dev*/
+@import url("https://fonts.googleapis.com/css?family=Montserrat:400,600,700");
+#dev {
+	font-family: "Montserrat", sans-serif;
+	position: fixed;
+	font-size: 14px;
+	top: 10px;
+	left: 10px;
+	padding: 1em;
+	color: #333;
+	background-color: white;
+	border-radius: 25px;
+	cursor: pointer;
+	a {
+		text-decoration: none;
+		font-weight: bold;
+		color: #333;
+		transition: ease all 0.4s;
+		&:hover {
+			color: #ef5350;
+			text-decoration: underline;
+		}
+	}
+	span {
+		display: inline-block;
+		transition: ease all 0.4s;
+		color: pink;
+		&:hover {
+			transform: scale(1.2);
+		}
+	}
+}

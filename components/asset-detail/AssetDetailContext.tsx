@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Copy01Icon, FavouriteIcon } from "@hugeicons/core-free-icons";
 import { copyText, copyWebflowJson } from "@/lib/clipboard";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type Asset = Doc<"assets">;
 type Payload = Doc<"payloads">;
@@ -51,6 +57,27 @@ export function AssetDetailContext({ asset, payload }: AssetDetailContextProps) 
     () => !!payload?.codePayload && !payload.codePayload.includes("// TODO: Add implementation"),
     [payload?.codePayload]
   );
+
+  // Capability checks
+  const canPasteToWebflow = asset.pasteReliability === "full" || asset.pasteReliability === "partial";
+  const canCopyCode = asset.supportsCodeCopy !== false; // Default true if undefined
+
+  // Determine button states and messages
+  const webflowDisabled = !hasWebflowPayload || !canPasteToWebflow;
+  const codeDisabled = !hasCodePayload || !canCopyCode;
+
+  const getWebflowTooltip = () => {
+    if (!hasWebflowPayload) return "No Webflow payload available";
+    if (asset.pasteReliability === "none") return asset.capabilityNotes || "Webflow paste not supported - use Install Snippet";
+    if (asset.pasteReliability === "partial") return asset.capabilityNotes || "Paste works, but some features need manual setup";
+    return null;
+  };
+
+  const getCodeTooltip = () => {
+    if (!hasCodePayload) return "No code payload available";
+    if (!canCopyCode) return "Code copy not available for this asset";
+    return null;
+  };
 
   const handleCopyWebflow = async () => {
     if (!hasWebflowPayload) return;
@@ -107,34 +134,66 @@ export function AssetDetailContext({ asset, payload }: AssetDetailContextProps) 
           <CardTitle>Actions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <div className="space-y-1">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={handleCopyWebflow}
-              disabled={copyingWebflow || !hasWebflowPayload}
-            >
-              <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
-              {copyingWebflow ? "Copying..." : "Copy to Webflow"}
-            </Button>
-            {!hasWebflowPayload && (
-              <p className="text-xs text-muted-foreground pl-1">No payload yet</p>
-            )}
-          </div>
-          <div className="space-y-1">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={handleCopyCode}
-              disabled={copyingCode || !hasCodePayload}
-            >
-              <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
-              {copyingCode ? "Copying..." : "Copy Code"}
-            </Button>
-            {!hasCodePayload && (
-              <p className="text-xs text-muted-foreground pl-1">No payload yet</p>
-            )}
-          </div>
+          <TooltipProvider>
+            {/* Copy to Webflow Button */}
+            <div className="space-y-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={handleCopyWebflow}
+                      disabled={copyingWebflow || webflowDisabled}
+                    >
+                      <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
+                      {copyingWebflow ? "Copying..." : "Copy to Webflow"}
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {getWebflowTooltip() && (
+                  <TooltipContent side="left">
+                    <p className="max-w-[200px]">{getWebflowTooltip()}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+              {webflowDisabled && (
+                <p className="text-xs text-muted-foreground pl-1">
+                  {!hasWebflowPayload ? "No payload yet" : "Use Install Snippet instead"}
+                </p>
+              )}
+            </div>
+
+            {/* Copy Code Button */}
+            <div className="space-y-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={handleCopyCode}
+                      disabled={copyingCode || codeDisabled}
+                    >
+                      <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
+                      {copyingCode ? "Copying..." : "Copy Code"}
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {getCodeTooltip() && (
+                  <TooltipContent side="left">
+                    <p className="max-w-[200px]">{getCodeTooltip()}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+              {codeDisabled && (
+                <p className="text-xs text-muted-foreground pl-1">
+                  {!hasCodePayload ? "No payload yet" : "Not available"}
+                </p>
+              )}
+            </div>
+          </TooltipProvider>
+
           <Button
             variant="outline"
             className="w-full justify-start"

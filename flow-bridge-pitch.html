@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow Bridge — AI Meets Design Mastery</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Onest:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ============================================
+       CSS VARIABLES
+       ============================================ */
+    :root {
+      --color-light: #FAFAFA;
+      --color-dark: #1A1A1A;
+      --color-dark-75: rgba(26, 26, 26, 0.75);
+      --color-dark-65: rgba(26, 26, 26, 0.65);
+      --color-dark-40: rgba(26, 26, 26, 0.40);
+      --color-dark-10: rgba(26, 26, 26, 0.10);
+      --color-dark-05: rgba(26, 26, 26, 0.05);
+      
+      --font-display: "DM Serif Display", Georgia, serif;
+      --font-body: "Onest", -apple-system, BlinkMacSystemFont, sans-serif;
+      
+      --transition: 0.3s ease;
+      --transition-smooth: 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* ============================================
+       RESET & BASE
+       ============================================ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-size: 18px;
+      font-weight: 400;
+      line-height: 1.5;
+      letter-spacing: -0.01em;
+      color: var(--color-dark);
+      background-color: var(--color-light);
+    }
+
+    /* ============================================
+       PRESENTATION CONTAINER
+       ============================================ */
+    .presentation {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    /* ============================================
+       SLIDE BASE
+       ============================================ */
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 120px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(40px);
+      transition: opacity var(--transition-smooth), transform var(--transition-smooth), visibility 0s 0.6s;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0);
+      transition: opacity var(--transition-smooth), transform var(--transition-smooth), visibility 0s 0s;
+    }
+
+    .slide.prev {
+      transform: translateX(-40px);
+    }
+
+    /* ============================================
+       TYPOGRAPHY
+       ============================================ */
+    .slide-number {
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--color-dark-40);
+      margin-bottom: 16px;
+    }
+
+    .section-label {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      line-height: 1.04;
+      text-transform: uppercase;
+      color: var(--color-dark-65);
+      margin-bottom: 24px;
+    }
+
+    .display {
+      font-family: var(--font-display);
+      font-size: clamp(48px, 8vw, 96px);
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      line-height: 0.95;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .display-small {
+      font-size: clamp(36px, 5vw, 64px);
+    }
+
+    .subtitle {
+      font-family: var(--font-body);
+      font-size: clamp(20px, 2.5vw, 28px);
+      font-weight: 300;
+      line-height: 1.4;
+      color: var(--color-dark-75);
+      max-width: 700px;
+    }
+
+    .body-text {
+      font-size: 20px;
+      line-height: 1.6;
+      color: var(--color-dark-75);
+      max-width: 800px;
+    }
+
+    .highlight {
+      color: var(--color-dark);
+      font-weight: 500;
+    }
+
+    /* ============================================
+       LAYOUT COMPONENTS
+       ============================================ */
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+      margin-top: 48px;
+    }
+
+    .card {
+      background: var(--color-dark-03);
+      border: 1px solid var(--color-dark-10);
+      border-radius: 16px;
+      padding: 32px;
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(26, 26, 26, 0.08);
+    }
+
+    .card-number {
+      font-family: var(--font-display);
+      font-size: 14px;
+      color: var(--color-dark-40);
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 28px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .card-text {
+      font-size: 16px;
+      color: var(--color-dark-65);
+      line-height: 1.5;
+    }
+
+    /* ============================================
+       STATS ROW
+       ============================================ */
+    .stats-row {
+      display: flex;
+      gap: 80px;
+      margin-top: 48px;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 64px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: var(--color-dark-65);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* ============================================
+       FLOW DIAGRAM
+       ============================================ */
+    .flow-diagram {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-top: 48px;
+      flex-wrap: wrap;
+    }
+
+    .flow-step {
+      background: var(--color-dark);
+      color: var(--color-light);
+      padding: 20px 32px;
+      border-radius: 9999px;
+      font-size: 16px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .flow-arrow {
+      font-size: 24px;
+      color: var(--color-dark-40);
+    }
+
+    /* ============================================
+       LIST ITEMS
+       ============================================ */
+    .benefit-list {
+      margin-top: 40px;
+    }
+
+    .benefit-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--color-dark-10);
+    }
+
+    .benefit-item:last-child {
+      border-bottom: none;
+    }
+
+    .benefit-number {
+      font-family: var(--font-display);
+      font-size: 16px;
+      color: var(--color-dark-40);
+      flex-shrink: 0;
+    }
+
+    .benefit-content h3 {
+      font-family: var(--font-display);
+      font-size: 24px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .benefit-content p {
+      font-size: 16px;
+      color: var(--color-dark-65);
+      line-height: 1.5;
+    }
+
+    /* ============================================
+       THREAT SECTION
+       ============================================ */
+    .threat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      margin-top: 48px;
+    }
+
+    .threat-card {
+      padding: 32px;
+      border-left: 3px solid var(--color-dark);
+    }
+
+    .threat-card.mitigation {
+      border-left-color: var(--color-dark-40);
+      background: var(--color-dark-03);
+      border-radius: 0 16px 16px 0;
+    }
+
+    .threat-title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .threat-text {
+      font-size: 16px;
+      color: var(--color-dark-65);
+      line-height: 1.6;
+    }
+
+    /* ============================================
+       NAVIGATION
+       ============================================ */
+    .nav-controls {
+      position: fixed;
+      bottom: 40px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+      z-index: 100;
+    }
+
+    .nav-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--color-dark);
+      color: var(--color-light);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      transition: all var(--transition);
+    }
+
+    .nav-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 24px rgba(26, 26, 26, 0.2);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .progress-indicator {
+      display: flex;
+      gap: 8px;
+    }
+
+    .progress-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-dark-10);
+      transition: all var(--transition);
+    }
+
+    .progress-dot.active {
+      background: var(--color-dark);
+      width: 24px;
+      border-radius: 4px;
+    }
+
+    .slide-counter {
+      font-size: 14px;
+      color: var(--color-dark-40);
+    }
+
+    /* ============================================
+       TITLE SLIDE SPECIAL
+       ============================================ */
+    .slide-title {
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .slide-title .section-label {
+      margin-bottom: 32px;
+    }
+
+    .slide-title .display {
+      font-size: clamp(64px, 12vw, 140px);
+      margin-bottom: 24px;
+    }
+
+    .logo-mark {
+      font-family: var(--font-display);
+      font-size: 24px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--color-dark-40);
+      margin-bottom: 48px;
+    }
+
+    .tagline {
+      font-family: var(--font-body);
+      font-size: clamp(18px, 2vw, 24px);
+      font-weight: 300;
+      color: var(--color-dark-65);
+      max-width: 600px;
+      text-align: center;
+    }
+
+    /* ============================================
+       CLOSING SLIDE
+       ============================================ */
+    .closing-message {
+      text-align: center;
+    }
+
+    .closing-message .display {
+      margin-bottom: 48px;
+    }
+
+    .closing-stats {
+      display: flex;
+      justify-content: center;
+      gap: 120px;
+      margin-top: 64px;
+    }
+
+    /* ============================================
+       ANIMATIONS
+       ============================================ */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .slide.active .slide-number,
+    .slide.active .section-label,
+    .slide.active .display,
+    .slide.active .subtitle,
+    .slide.active .body-text,
+    .slide.active .card,
+    .slide.active .benefit-item,
+    .slide.active .flow-step,
+    .slide.active .stat,
+    .slide.active .threat-card {
+      animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .slide.active .section-label { animation-delay: 0.1s; }
+    .slide.active .display { animation-delay: 0.2s; }
+    .slide.active .subtitle { animation-delay: 0.3s; }
+    .slide.active .body-text { animation-delay: 0.35s; }
+    
+    .slide.active .card:nth-child(1) { animation-delay: 0.3s; }
+    .slide.active .card:nth-child(2) { animation-delay: 0.4s; }
+    .slide.active .card:nth-child(3) { animation-delay: 0.5s; }
+    .slide.active .card:nth-child(4) { animation-delay: 0.6s; }
+
+    .slide.active .benefit-item:nth-child(1) { animation-delay: 0.3s; }
+    .slide.active .benefit-item:nth-child(2) { animation-delay: 0.4s; }
+    .slide.active .benefit-item:nth-child(3) { animation-delay: 0.5s; }
+
+    .slide.active .flow-step:nth-child(1) { animation-delay: 0.3s; }
+    .slide.active .flow-step:nth-child(2) { animation-delay: 0.4s; }
+    .slide.active .flow-step:nth-child(3) { animation-delay: 0.5s; }
+    .slide.active .flow-step:nth-child(4) { animation-delay: 0.6s; }
+    .slide.active .flow-step:nth-child(5) { animation-delay: 0.7s; }
+
+    .slide.active .stat:nth-child(1) { animation-delay: 0.3s; }
+    .slide.active .stat:nth-child(2) { animation-delay: 0.4s; }
+    .slide.active .stat:nth-child(3) { animation-delay: 0.5s; }
+
+    .slide.active .threat-card:nth-child(1) { animation-delay: 0.3s; }
+    .slide.active .threat-card:nth-child(2) { animation-delay: 0.4s; }
+
+    .slide.active .flow-arrow {
+      animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation-delay: 0.35s;
+    }
+
+    /* Pre-animation state */
+    .slide-number,
+    .section-label,
+    .display,
+    .subtitle,
+    .body-text,
+    .card,
+    .benefit-item,
+    .flow-step,
+    .flow-arrow,
+    .stat,
+    .threat-card {
+      opacity: 0;
+    }
+
+    .slide.active .slide-number,
+    .slide.active .section-label,
+    .slide.active .display,
+    .slide.active .subtitle,
+    .slide.active .body-text {
+      opacity: 1;
+    }
+
+    /* ============================================
+       KEYBOARD HINT
+       ============================================ */
+    .keyboard-hint {
+      position: fixed;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: var(--color-dark-40);
+      display: flex;
+      gap: 16px;
+    }
+
+    .key {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .key kbd {
+      background: var(--color-dark-05);
+      border: 1px solid var(--color-dark-10);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-family: var(--font-body);
+      font-size: 11px;
+    }
+
+    /* ============================================
+       RESPONSIVE
+       ============================================ */
+    @media (max-width: 1200px) {
+      .slide {
+        padding: 60px 80px;
+      }
+      
+      .two-column {
+        gap: 60px;
+      }
+      
+      .stats-row {
+        gap: 60px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .slide {
+        padding: 40px;
+      }
+      
+      .two-column {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+      
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .threat-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .stats-row {
+        flex-wrap: wrap;
+        gap: 40px;
+      }
+      
+      .flow-diagram {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .flow-arrow {
+        transform: rotate(90deg);
+      }
+      
+      .closing-stats {
+        flex-direction: column;
+        gap: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="presentation">
+    
+    <!-- SLIDE 1: TITLE -->
+    <section class="slide slide-title active" data-slide="0">
+      <span class="logo-mark">Flow Party Presents</span>
+      <h1 class="display">Flow Bridge</h1>
+      <p class="tagline">Where AI speed meets designer precision. Import any AI-generated site into Webflow and make it truly yours.</p>
+    </section>
+
+    <!-- SLIDE 2: THE PROBLEM -->
+    <section class="slide" data-slide="1">
+      <span class="slide-number">(01)</span>
+      <span class="section-label">The Problem</span>
+      <h2 class="display display-small">Designers Are Panicking</h2>
+      <p class="subtitle">AI can now generate competent designs in seconds. What took days now takes minutes. The skill gap is closing—and creative professionals feel the ground shifting beneath them.</p>
+      <div class="stats-row">
+        <div class="stat">
+          <span class="stat-value">10×</span>
+          <span class="stat-label">Faster generation</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">80%</span>
+          <span class="stat-label">"Good enough" quality</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">↓</span>
+          <span class="stat-label">Design moats eroding</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: THE GAP -->
+    <section class="slide" data-slide="2">
+      <span class="slide-number">(02)</span>
+      <span class="section-label">The Gap</span>
+      <h2 class="display display-small">AI Generates. Editing Sucks.</h2>
+      <p class="subtitle">Cursor, v0, and other AI tools can output HTML/CSS/JS—but tweaking those outputs is painful. Meanwhile, Webflow has spent years perfecting visual editing.</p>
+      <div class="card-grid">
+        <div class="card">
+          <span class="card-number">(A)</span>
+          <h3 class="card-title">AI Code Editors</h3>
+          <p class="card-text">Generate fast, but editing is clunky. You're back to hunting through code. Design iteration feels primitive.</p>
+        </div>
+        <div class="card">
+          <span class="card-number">(B)</span>
+          <h3 class="card-title">Webflow</h3>
+          <p class="card-text">Years of refinement. Pixel-perfect control. Every designer's favorite canvas. But no AI generation built-in.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: THE OPPORTUNITY -->
+    <section class="slide" data-slide="3">
+      <span class="slide-number">(03)</span>
+      <span class="section-label">The Opportunity</span>
+      <h2 class="display display-small">Bridge The Gap</h2>
+      <p class="body-text">We build the missing link. Take any AI-generated website, break it into components, import to our platform, then push to Webflow. <span class="highlight">AI speed meets designer control.</span></p>
+      <div class="flow-diagram">
+        <span class="flow-step">AI Output</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Flow Bridge</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Components</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Webflow</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step">Perfection</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: BIG CLAIM -->
+    <section class="slide slide-title" data-slide="4">
+      <span class="section-label">The Promise</span>
+      <h2 class="display" style="font-size: clamp(56px, 10vw, 120px); max-width: 1100px;">Every AI Design Is Now Yours To Perfect</h2>
+      <p class="tagline">No more "good enough." No more settling. Import, refine, ship.</p>
+    </section>
+
+    <!-- SLIDE 6: PROFIT CENTER 1 -->
+    <section class="slide" data-slide="5">
+      <span class="slide-number">(05)</span>
+      <span class="section-label">Revenue Stream One</span>
+      <h2 class="display display-small">The Platform</h2>
+      <p class="subtitle">Subscription-based access to the import tool. Freemium model with pro features for agencies and power users.</p>
+      <div class="benefit-list">
+        <div class="benefit-item">
+          <span class="benefit-number">(01)</span>
+          <div class="benefit-content">
+            <h3>Import Any AI Site</h3>
+            <p>Paste HTML/CSS/JS from Cursor, v0, Bolt, or any AI tool. We parse and componentize automatically.</p>
+          </div>
+        </div>
+        <div class="benefit-item">
+          <span class="benefit-number">(02)</span>
+          <div class="benefit-content">
+            <h3>Smart Component Breakdown</h3>
+            <p>Our system identifies navbars, heroes, sections, footers—creating clean, reusable blocks.</p>
+          </div>
+        </div>
+        <div class="benefit-item">
+          <span class="benefit-number">(03)</span>
+          <div class="benefit-content">
+            <h3>One-Click Webflow Export</h3>
+            <p>Copy to clipboard in Webflow-native JSON format. Paste directly into the designer.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: BIG CLAIM - REVENUE -->
+    <section class="slide slide-title" data-slide="6">
+      <span class="section-label">The Model</span>
+      <h2 class="display" style="font-size: clamp(56px, 10vw, 120px); max-width: 1100px;">Two Revenue Streams. One Ecosystem.</h2>
+      <p class="tagline">The platform feeds the academy. The academy feeds the platform.</p>
+    </section>
+
+    <!-- SLIDE 8: PROFIT CENTER 2 -->
+    <section class="slide" data-slide="7">
+      <span class="slide-number">(07)</span>
+      <span class="section-label">Revenue Stream Two</span>
+      <h2 class="display display-small">The Academy</h2>
+      <p class="subtitle">Courses on transforming AI slop into award-worthy design. Position our team as the definitive experts in AI-to-quality workflows.</p>
+      <div class="card-grid">
+        <div class="card">
+          <span class="card-number">(01)</span>
+          <h3 class="card-title">AI → Polish</h3>
+          <p class="card-text">Step-by-step process for taking generic AI output and elevating it to professional-grade design.</p>
+        </div>
+        <div class="card">
+          <span class="card-number">(02)</span>
+          <h3 class="card-title">Webflow Mastery</h3>
+          <p class="card-text">Advanced techniques for refinement: interactions, responsive tweaks, micro-animations.</p>
+        </div>
+        <div class="card">
+          <span class="card-number">(03)</span>
+          <h3 class="card-title">Expert Authority</h3>
+          <p class="card-text">Build our reputation as the go-to resource for AI-enhanced design workflows.</p>
+        </div>
+        <div class="card">
+          <span class="card-number">(04)</span>
+          <h3 class="card-title">Community</h3>
+          <p class="card-text">Discord, critiques, challenges. Designers helping designers level up together.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: TARGET AUDIENCES -->
+    <section class="slide" data-slide="8">
+      <span class="slide-number">(08)</span>
+      <span class="section-label">Who We Serve</span>
+      <h2 class="display display-small">Two Markets, One Tool</h2>
+      <div class="card-grid" style="margin-top: 48px;">
+        <div class="card">
+          <span class="card-number">(A)</span>
+          <h3 class="card-title">AI Users</h3>
+          <p class="card-text">Anyone generating sites with AI who wants to actually <em>edit</em> them properly. Not just developers—founders, marketers, creators who hit the limits of AI editors.</p>
+        </div>
+        <div class="card">
+          <span class="card-number">(B)</span>
+          <h3 class="card-title">Webflow Users</h3>
+          <p class="card-text">Existing designers who want to ship faster. Use AI for the 80%, then apply their expertise for the 20% that matters.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: THE VALUE -->
+    <section class="slide" data-slide="9">
+      <span class="slide-number">(09)</span>
+      <span class="section-label">The Value Proposition</span>
+      <h2 class="display display-small">AI Speed + Human Skill</h2>
+      <p class="subtitle">We're not replacing designers. We're giving them superpowers. And reducing their anxiety about AI.</p>
+      <div class="benefit-list">
+        <div class="benefit-item">
+          <span class="benefit-number">(01)</span>
+          <div class="benefit-content">
+            <h3>Speed Without Sacrifice</h3>
+            <p>Get AI's velocity without losing design control. Best of both worlds.</p>
+          </div>
+        </div>
+        <div class="benefit-item">
+          <span class="benefit-number">(02)</span>
+          <div class="benefit-content">
+            <h3>Skills Still Matter</h3>
+            <p>Human judgment, taste, and refinement remain essential. We amplify them.</p>
+          </div>
+        </div>
+        <div class="benefit-item">
+          <span class="benefit-number">(03)</span>
+          <div class="benefit-content">
+            <h3>Anxiety → Opportunity</h3>
+            <p>Transform designer fear into designer advantage. AI becomes a tool, not a threat.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 11: THREATS -->
+    <section class="slide" data-slide="10">
+      <span class="slide-number">(10)</span>
+      <span class="section-label">Risks & Reality</span>
+      <h2 class="display display-small">The Threats We Face</h2>
+      <p class="subtitle">We're being honest. This idea is copyable. But first-mover advantage is real.</p>
+      <div class="threat-grid">
+        <div class="threat-card">
+          <h3 class="threat-title">The Risk</h3>
+          <p class="threat-text">Relume, Osmo, or Webflow themselves could build this. They have the tech. They have the audience. Once they see it working, implementation is straightforward.</p>
+        </div>
+        <div class="threat-card mitigation">
+          <h3 class="threat-title">Our Mitigation</h3>
+          <p class="threat-text"><strong>Speed is everything.</strong> First to market means first contacts, first community, first brand recognition. Even if copied, we've established authority. Worst case: we raise our profile massively. The courses, the community, the reputation—that compounds.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 12: CLOSING -->
+    <section class="slide slide-title" data-slide="11">
+      <span class="section-label">The Bottom Line</span>
+      <h2 class="display">Move First. Move Fast.</h2>
+      <p class="tagline">The window is open. AI-generated sites need a bridge to professional editing. We build that bridge—and own the toll road.</p>
+      <div class="closing-stats">
+        <div class="stat">
+          <span class="stat-value">2</span>
+          <span class="stat-label">Revenue streams</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">∞</span>
+          <span class="stat-label">Design possibilities</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">1</span>
+          <span class="stat-label">Clear opportunity</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav-controls">
+    <button class="nav-btn" id="prev-btn" aria-label="Previous slide">←</button>
+    <div class="progress-indicator" id="progress"></div>
+    <button class="nav-btn" id="next-btn" aria-label="Next slide">→</button>
+  </div>
+
+  <div class="keyboard-hint">
+    <span class="key"><kbd>←</kbd> Previous</span>
+    <span class="key"><kbd>→</kbd> Next</span>
+    <span class="key"><kbd>Space</kbd> Next</span>
+  </div>
+
+  <script>
+    // ============================================
+    // PRESENTATION LOGIC
+    // ============================================
+    
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentSlide = 0;
+
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const progress = document.getElementById('progress');
+
+    // Create progress dots
+    function createProgressDots() {
+      progress.innerHTML = '';
+      for (let i = 0; i < totalSlides; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'progress-dot' + (i === currentSlide ? ' active' : '');
+        dot.addEventListener('click', () => goToSlide(i));
+        progress.appendChild(dot);
+      }
+    }
+
+    function updateProgress() {
+      const dots = progress.querySelectorAll('.progress-dot');
+      dots.forEach((dot, index) => {
+        dot.classList.toggle('active', index === currentSlide);
+      });
+    }
+
+    function updateButtons() {
+      prevBtn.disabled = currentSlide === 0;
+      nextBtn.disabled = currentSlide === totalSlides - 1;
+    }
+
+    function goToSlide(index) {
+      if (index < 0 || index >= totalSlides || index === currentSlide) return;
+
+      const direction = index > currentSlide ? 1 : -1;
+      
+      // Remove classes from current slide
+      slides[currentSlide].classList.remove('active');
+      if (direction > 0) {
+        slides[currentSlide].classList.add('prev');
+      }
+      
+      // Update current slide
+      currentSlide = index;
+      
+      // Remove prev class from all slides and add active to current
+      slides.forEach(slide => slide.classList.remove('prev'));
+      slides[currentSlide].classList.add('active');
+      
+      updateProgress();
+      updateButtons();
+    }
+
+    function nextSlide() {
+      goToSlide(currentSlide + 1);
+    }
+
+    function prevSlide() {
+      goToSlide(currentSlide - 1);
+    }
+
+    // Event listeners
+    prevBtn.addEventListener('click', prevSlide);
+    nextBtn.addEventListener('click', nextSlide);
+
+    document.addEventListener('keydown', (e) => {
+      switch(e.key) {
+        case 'ArrowRight':
+        case ' ':
+          e.preventDefault();
+          nextSlide();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          prevSlide();
+          break;
+        case 'Home':
+          e.preventDefault();
+          goToSlide(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          goToSlide(totalSlides - 1);
+          break;
+      }
+    });
+
+    // Touch support
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+
+    document.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    });
+
+    function handleSwipe() {
+      const threshold = 50;
+      const diff = touchStartX - touchEndX;
+      
+      if (Math.abs(diff) > threshold) {
+        if (diff > 0) {
+          nextSlide();
+        } else {
+          prevSlide();
+        }
+      }
+    }
+
+    // Initialize
+    createProgressDots();
+    updateButtons();
+  </script>
+
+</body>
+</html>

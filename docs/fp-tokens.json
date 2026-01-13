@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "1.0",
+  "template": {
+    "name": "Flow Party",
+    "slug": "flow-party",
+    "namespace": "fp"
+  },
+  "modes": ["light", "dark"],
+  "variables": [
+    {
+      "path": "Colors / Background / Base",
+      "type": "color",
+      "cssVar": "--fp-bg",
+      "values": { "light": "#f5f5f5", "dark": "#2d2f2e" }
+    },
+    {
+      "path": "Colors / Background / Card",
+      "type": "color",
+      "cssVar": "--fp-bg-card",
+      "values": { "light": "#ffffff", "dark": "#434645" }
+    },
+    {
+      "path": "Colors / Text / Primary",
+      "type": "color",
+      "cssVar": "--fp-text",
+      "values": { "light": "#171717", "dark": "#ffffff" }
+    },
+    {
+      "path": "Colors / Text / Muted",
+      "type": "color",
+      "cssVar": "--fp-text-muted",
+      "values": { "light": "#afb6b4", "dark": "#767f7a" }
+    },
+    {
+      "path": "Colors / Border",
+      "type": "color",
+      "cssVar": "--fp-border",
+      "values": { "light": "#dddfde", "dark": "rgba(255, 255, 255, 0.1)" }
+    },
+    {
+      "path": "Colors / Accent / Lightest",
+      "type": "color",
+      "cssVar": "--fp-accent-lightest",
+      "values": { "light": "#fff0eb", "dark": "#fff0eb" }
+    },
+    {
+      "path": "Colors / Accent / Light",
+      "type": "color",
+      "cssVar": "--fp-accent-light",
+      "values": { "light": "#ffc8b8", "dark": "#ffc8b8" }
+    },
+    {
+      "path": "Colors / Accent / Medium",
+      "type": "color",
+      "cssVar": "--fp-accent-medium",
+      "values": { "light": "#ff9d80", "dark": "#ff9d80" }
+    },
+    {
+      "path": "Colors / Accent / Strong",
+      "type": "color",
+      "cssVar": "--fp-accent",
+      "values": { "light": "#ff531f", "dark": "#ff531f" }
+    },
+    {
+      "path": "Colors / Accent / Vivid",
+      "type": "color",
+      "cssVar": "--fp-accent-vivid",
+      "values": { "light": "#ff825c", "dark": "#ff825c" }
+    },
+    {
+      "path": "Colors / Link / Default",
+      "type": "color",
+      "cssVar": "--fp-link",
+      "values": { "light": "#ff531f", "dark": "#ffffff" }
+    },
+    {
+      "path": "Colors / Link / Hover",
+      "type": "color",
+      "cssVar": "--fp-link-hover",
+      "values": { "light": "#ff825c", "dark": "#ff825c" }
+    },
+    {
+      "path": "Typography / Body",
+      "type": "fontFamily",
+      "cssVar": "--fp-font-body",
+      "value": "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif"
+    },
+    {
+      "path": "Typography / Display",
+      "type": "fontFamily",
+      "cssVar": "--fp-font-display",
+      "value": "'Antonio', sans-serif"
+    }
+  ],
+  "baseStyles": [
+    ".fp-root { font-family: var(--fp-font-body, inherit); color: var(--fp-text, currentColor); background-color: var(--fp-bg, transparent); }",
+    ".fp-root a { color: var(--fp-link, currentColor); text-decoration: none; transition: color 0.2s ease; }",
+    ".fp-root a:hover { color: var(--fp-link-hover, currentColor); }"
+  ],
+  "darkOverrides": [
+    "[data-fp-theme=\"dark\"] { --fp-bg: #2d2f2e; --fp-bg-card: #434645; --fp-text: #ffffff; --fp-text-muted: #767f7a; --fp-border: rgba(255, 255, 255, 0.1); --fp-link: #ffffff; }"
+  ],
+  "fonts": {
+    "googleFonts": "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Antonio:wght@700&display=swap",
+    "headSnippet": "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Antonio:wght@700&display=swap\" rel=\"stylesheet\">"
+  }
+}

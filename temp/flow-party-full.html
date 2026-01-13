@@ -1,0 +1,2112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Party - Premium Webflow Asset Library</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Antonio:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           DESIGN TOKENS - Creative Studio Warmth
+           ============================================ */
+        :root {
+            /* Dark Palette */
+            --dark-bg: #2d2f2e;
+            --dark-secondary: #434645;
+            --text-light: #ffffff;
+            --text-muted-dark: #767f7a;
+            
+            /* Light Palette */
+            --light-bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-dark: #171717;
+            --text-muted: #afb6b4;
+            --border: #dddfde;
+            
+            /* Coral Gradient Scale */
+            --coral-lightest: #fff0eb;
+            --coral-light: #ffc8b8;
+            --coral-medium: #ff9d80;
+            --coral-strong: #ff531f;
+            --coral-vivid: #ff825c;
+            
+            /* Border Radius */
+            --radius-sm: 24px;
+            --radius-md: 32px;
+            --radius-lg: 40px;
+            --radius-xl: 48px;
+            --radius-pill: 9999px;
+            
+            /* Typography */
+            --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-logo: 'Antonio', sans-serif;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: var(--font-body);
+            background: var(--dark-bg);
+            color: var(--text-dark);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+        
+        img { max-width: 100%; height: auto; }
+        
+        /* ============================================
+           ANIMATIONS
+           ============================================ */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        @keyframes slideFromLeft {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        
+        @keyframes slideFromBottom {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        
+        .animate-fade-up {
+            animation: fadeUp 0.6s cubic-bezier(0.93, 0.03, 0.56, 1) forwards;
+            opacity: 0;
+        }
+        
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+        
+        /* ============================================
+           NAVIGATION
+           ============================================ */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1.25rem 5vw;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease, padding 0.3s ease;
+        }
+        
+        .nav.scrolled {
+            background: rgba(45, 47, 46, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 1rem 5vw;
+        }
+        
+        .logo {
+            font-family: var(--font-logo);
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-light);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+        
+        .logo-accent { color: var(--coral-strong); }
+        .logo-tm { font-size: 0.55rem; vertical-align: super; opacity: 0.6; }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            opacity: 0.85;
+            transition: opacity 0.2s ease;
+            position: relative;
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--coral-strong);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-links a:hover { opacity: 1; }
+        .nav-links a:hover::after { width: 100%; }
+        
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        
+        .nav-link-secondary {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            opacity: 0.85;
+            transition: opacity 0.2s ease;
+        }
+        
+        .nav-link-secondary:hover { opacity: 1; }
+        
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--coral-strong);
+            color: var(--text-light);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-pill);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            background: #e64a1a;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 83, 31, 0.3);
+        }
+        
+        .btn-primary:active { transform: translateY(0); }
+        
+        .btn-arrow { transition: transform 0.2s ease; }
+        .btn-primary:hover .btn-arrow { transform: translateX(3px); }
+        
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            color: var(--text-light);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-pill);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        
+        .btn-secondary:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .btn-dark {
+            background: var(--text-dark);
+            color: var(--text-light);
+        }
+        
+        .btn-dark:hover {
+            background: #333;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+        
+        .link-arrow {
+            color: var(--coral-strong);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: gap 0.2s ease;
+        }
+        
+        .link-arrow:hover { gap: 0.75rem; }
+        
+        /* Mobile Menu */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+        
+        .menu-toggle span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: currentColor;
+            margin: 6px 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .menu-state { display: none; }
+        .mobile-menu { display: none; }
+        .menu-overlay { display: none; }
+        
+        /* ============================================
+           HERO SECTION
+           ============================================ */
+        .hero {
+            min-height: 100vh;
+            background: var(--dark-bg);
+            padding: 8rem 5vw 6rem;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .hero-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-logo);
+            font-size: clamp(8rem, 20vw, 16rem);
+            font-weight: 700;
+            color: var(--dark-secondary);
+            opacity: 0.4;
+            pointer-events: none;
+            white-space: nowrap;
+            text-transform: uppercase;
+            animation: slideFromLeft 1.4s cubic-bezier(1, -0.13, 0.18, 0.96) forwards;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        
+        .hero-text { max-width: 560px; }
+        
+        .hero-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .hero-label-line {
+            width: 40px;
+            height: 1px;
+            background: var(--coral-strong);
+        }
+        
+        .hero-label-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--coral-strong);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        .hero-headline {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            color: var(--text-light);
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+        
+        .hero-headline-accent { color: var(--coral-strong); }
+        
+        .hero-description {
+            font-size: 1.1rem;
+            color: var(--text-muted-dark);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+            max-width: 480px;
+        }
+        
+        .hero-ctas {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .hero-image-wrapper {
+            display: flex;
+            justify-content: center;
+        }
+        
+        .hero-image {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.4);
+            animation: slideFromBottom 0.9s cubic-bezier(1, -0.13, 0.18, 0.96) 0.5s forwards;
+            transform: translateY(100%);
+        }
+        
+        .hero-image img {
+            width: 100%;
+            display: block;
+            aspect-ratio: 4/5;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+        
+        .hero-image:not(:has(img)) {
+            aspect-ratio: 4/5;
+            min-height: 400px;
+        }
+        
+        .hero-image:hover img { transform: scale(1.03); }
+        
+        .hero-image-badge {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 1.5rem;
+            background: rgba(45, 47, 46, 0.9);
+            backdrop-filter: blur(8px);
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-sm);
+        }
+        
+        .hero-badge-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-light);
+        }
+        
+        .hero-badge-label {
+            font-size: 0.75rem;
+            color: var(--text-muted-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .hero-services {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .hero-services-list {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .hero-service-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted-dark);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .hero-service-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--coral-strong);
+        }
+        
+        /* ============================================
+           CONTENT WRAPPER - Slides over hero
+           ============================================ */
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+            margin-top: -80px;
+            background: var(--light-bg);
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        }
+        
+        /* ============================================
+           CLIENT / TRUST BAR
+           ============================================ */
+        .client-bar {
+            padding: 3rem 5vw;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+        
+        .client-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        
+        .client-line {
+            flex: 0 0 60px;
+            height: 1px;
+            background: var(--border);
+        }
+        
+        .client-logos {
+            display: flex;
+            gap: 3rem;
+            flex-wrap: nowrap;
+        }
+        
+        .client-logos span {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            opacity: 0.5;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+        
+        .client-logos span:hover { opacity: 1; }
+        
+        /* ============================================
+           INTRO SECTION
+           ============================================ */
+        .intro-section {
+            padding: 5rem 5vw;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 4rem;
+        }
+        
+        .big-number {
+            font-size: clamp(4rem, 9vw, 7rem);
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 0.9;
+        }
+        
+        .intro-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+        }
+        
+        .brand-badge {
+            font-family: var(--font-logo);
+            font-size: 0.875rem;
+            font-weight: 700;
+        }
+        
+        .trust-signals {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+        
+        .avatar-stack { display: flex; }
+        
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid var(--light-bg);
+            margin-left: -10px;
+            background: linear-gradient(135deg, var(--coral-light), var(--coral-strong));
+            overflow: hidden;
+        }
+        
+        .avatar:first-child { margin-left: 0; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .avatar-count {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--text-dark);
+            color: var(--text-light);
+            font-size: 0.65rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: -10px;
+        }
+        
+        .trust-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .stars { color: var(--coral-strong); font-size: 0.875rem; }
+        
+        .intro-headline {
+            font-size: clamp(1.5rem, 2.5vw, 2rem);
+            font-weight: 600;
+            line-height: 1.3;
+            max-width: 520px;
+        }
+        
+        /* ============================================
+           BENTO GRID
+           ============================================ */
+        .bento-section { padding: 2rem 5vw 4rem; }
+        
+        .bento-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-areas:
+                "testimonial stat1     showcase"
+                "testimonial process   showcase"
+                "timeline    timeline  stat2";
+            gap: 1.5rem;
+        }
+        
+        .bento-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            min-height: 200px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .bento-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .testimonial-card { grid-area: testimonial; display: flex; flex-direction: column; justify-content: space-between; }
+        .stat-card-1 { grid-area: stat1; }
+        .stat-card-2 { grid-area: stat2; }
+        .showcase-card { grid-area: showcase; padding: 0; min-height: 400px; }
+        .process-card { grid-area: process; }
+        .timeline-card { grid-area: timeline; }
+        
+        .bento-card h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
+        .bento-card > p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
+        
+        .testimonial-text {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: var(--text-dark);
+        }
+        
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: auto;
+            padding-top: 1.5rem;
+        }
+        
+        .testimonial-author .avatar { margin-left: 0; }
+        .author-name { font-weight: 600; font-size: 0.875rem; }
+        .author-role { font-size: 0.75rem; color: var(--text-muted); }
+        
+        .watermark-number {
+            position: absolute;
+            bottom: 0.5rem;
+            right: 1rem;
+            font-size: 7rem;
+            font-weight: 700;
+            opacity: 0.03;
+            line-height: 1;
+            pointer-events: none;
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+        
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+        }
+        
+        .stat-value {
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value span { font-size: 0.5em; vertical-align: top; }
+        .stat-desc { font-size: 0.875rem; color: var(--text-muted); }
+        
+        .showcase-card img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .showcase-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 2rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+            color: var(--text-light);
+        }
+        
+        .showcase-overlay h3 { font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--text-light); }
+        .showcase-overlay p { font-size: 0.875rem; color: var(--text-muted-dark); margin-bottom: 1rem; }
+        
+        .timeline-header { margin-bottom: 1.5rem; }
+        .timeline-title { font-weight: 600; font-size: 0.9rem; }
+        .timeline-subtitle { font-size: 0.75rem; color: var(--text-muted); }
+        
+        .timeline-bars {
+            display: flex;
+            gap: 0.5rem;
+            height: 8px;
+        }
+        
+        .timeline-bar {
+            flex: 1;
+            border-radius: 4px;
+            background: var(--border);
+        }
+        
+        .timeline-bar.active { background: var(--coral-strong); }
+        
+        .process-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .process-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+        
+        .process-check {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--coral-lightest);
+            color: var(--coral-strong);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+        }
+        
+        /* ============================================
+           PRODUCT SECTION - THE STASH
+           ============================================ */
+        .product-section {
+            background: var(--dark-bg);
+            padding: 6rem 5vw;
+        }
+        
+        .product-header {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 4rem;
+            margin-bottom: 4rem;
+            padding-bottom: 3rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .product-label { font-size: 0.875rem; color: var(--text-muted-dark); }
+        
+        .product-intro h2 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            color: var(--text-light);
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+        
+        .product-intro p {
+            font-size: 1.1rem;
+            color: var(--text-muted-dark);
+            max-width: 500px;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+        
+        .product-card {
+            background: var(--dark-secondary);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 24px 48px rgba(0,0,0,0.3);
+        }
+        
+        .product-card-image {
+            aspect-ratio: 16/10;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .product-card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+        
+        .product-card:hover .product-card-image img {
+            transform: scale(1.05);
+        }
+        
+        .product-card-content {
+            padding: 1.5rem;
+        }
+        
+        .product-card-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--coral-strong);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+        
+        .product-card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+        }
+        
+        .product-card-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted-dark);
+            line-height: 1.4;
+        }
+        
+        .product-cta {
+            text-align: center;
+            margin-top: 4rem;
+        }
+        
+        /* ============================================
+           PARTY PACKS SECTION
+           ============================================ */
+        .packs-section {
+            background: var(--light-bg);
+            padding: 6rem 5vw;
+        }
+        
+        .packs-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 4rem;
+        }
+        
+        .packs-header h2 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .packs-header p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        
+        .packs-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+        
+        .pack-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 2.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .pack-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+        }
+        
+        .pack-card.featured {
+            grid-column: span 2;
+            background: var(--dark-bg);
+            color: var(--text-light);
+        }
+        
+        .pack-card.featured .pack-title { color: var(--text-light); }
+        .pack-card.featured .pack-desc { color: var(--text-muted-dark); }
+        .pack-card.featured .pack-includes span { color: var(--text-muted-dark); }
+        
+        .pack-image {
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            aspect-ratio: 4/3;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .pack-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .pack-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--coral-strong);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+        
+        .pack-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: var(--text-dark);
+        }
+        
+        .pack-desc {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+        
+        .pack-includes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .pack-includes span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--light-bg);
+            padding: 0.35rem 0.75rem;
+            border-radius: var(--radius-pill);
+        }
+        
+        .pack-card.featured .pack-includes span {
+            background: var(--dark-secondary);
+        }
+        
+        /* ============================================
+           SERVICES / FEATURES SECTION
+           ============================================ */
+        .features-section {
+            background: var(--dark-bg);
+            padding: 6rem 5vw;
+        }
+        
+        .features-header {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 4rem;
+            margin-bottom: 4rem;
+            padding-bottom: 3rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .features-label { font-size: 0.875rem; color: var(--text-muted-dark); }
+        
+        .features-intro p {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--text-light);
+            line-height: 1.4;
+            margin-bottom: 1.5rem;
+            max-width: 500px;
+        }
+        
+        .feature-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            padding: 2.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            cursor: default;
+            transition: padding-left 0.3s ease;
+        }
+        
+        .feature-row:hover { padding-left: 1rem; }
+        .feature-row:last-child { border-bottom: none; }
+        
+        .feature-name {
+            font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+            font-weight: 600;
+            color: var(--text-light);
+            transition: color 0.3s ease;
+        }
+        
+        .feature-row:hover .feature-name { color: var(--coral-vivid); }
+        
+        .feature-tags { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+        
+        .feature-tags span {
+            font-size: 0.875rem;
+            color: var(--text-muted-dark);
+            white-space: nowrap;
+        }
+        
+        /* ============================================
+           COLLABORATORS SECTION
+           ============================================ */
+        .collaborators-section {
+            background: var(--light-bg);
+            padding: 6rem 5vw;
+        }
+        
+        .collaborators-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 4rem;
+        }
+        
+        .collaborators-header h2 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+        }
+        
+        .collaborators-header p {
+            font-size: 1rem;
+            color: var(--text-muted);
+            max-width: 400px;
+            text-align: right;
+        }
+        
+        .collaborators-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+        
+        .collaborator-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .collaborator-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 32px rgba(0,0,0,0.08);
+        }
+        
+        .collaborator-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            background: linear-gradient(135deg, var(--coral-light), var(--coral-strong));
+            overflow: hidden;
+        }
+        
+        .collaborator-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .collaborator-name {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .collaborator-role {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+        
+        .collaborator-stats {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .collab-stat-value {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        
+        .collab-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        
+        /* ============================================
+           PRICING SECTION
+           ============================================ */
+        .pricing-section {
+            background: var(--card-bg);
+            padding: 6rem 5vw;
+        }
+        
+        .pricing-header {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 4rem;
+        }
+        
+        .pricing-header h2 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .pricing-header p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .pricing-card {
+            background: var(--light-bg);
+            border-radius: var(--radius-md);
+            padding: 2.5rem;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .pricing-card.popular {
+            background: var(--dark-bg);
+            color: var(--text-light);
+        }
+        
+        .pricing-card.popular .pricing-desc { color: var(--text-muted-dark); }
+        .pricing-card.popular .pricing-feature { color: var(--text-muted-dark); }
+        .pricing-card.popular .pricing-feature::before { background: var(--coral-strong); }
+        
+        .popular-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--coral-strong);
+            color: var(--text-light);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.4rem 1rem;
+            border-radius: var(--radius-pill);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .pricing-tier {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--coral-strong);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+        
+        .pricing-price {
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+        
+        .pricing-price span {
+            font-size: 1rem;
+            font-weight: 500;
+            opacity: 0.6;
+        }
+        
+        .pricing-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            line-height: 1.4;
+        }
+        
+        .pricing-features {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+        
+        .pricing-feature {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .pricing-feature::before {
+            content: '✓';
+            width: 18px;
+            height: 18px;
+            background: var(--coral-lightest);
+            color: var(--coral-strong);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            flex-shrink: 0;
+        }
+        
+        .pricing-card .btn-primary,
+        .pricing-card .btn-dark {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* ============================================
+           FAQ SECTION
+           ============================================ */
+        .faq-section {
+            background: var(--light-bg);
+            padding: 6rem 5vw;
+        }
+        
+        .faq-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 4rem;
+        }
+        
+        .faq-left h2 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+        
+        .faq-left > p {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            max-width: 280px;
+        }
+        
+        .faq-item {
+            padding: 1.5rem 0;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+        
+        .faq-question-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .faq-question {
+            font-size: 1rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .faq-item:hover .faq-question { color: var(--coral-strong); }
+        
+        .faq-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            opacity: 0.15;
+            transition: opacity 0.2s, color 0.2s;
+        }
+        
+        .faq-item:hover .faq-number,
+        .faq-item.active .faq-number {
+            opacity: 1;
+            color: var(--coral-strong);
+        }
+        
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+        }
+        
+        .faq-item.active .faq-answer {
+            max-height: 200px;
+            padding-top: 1rem;
+        }
+        
+        .faq-answer p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        /* ============================================
+           CTA SECTION
+           ============================================ */
+        .cta-section {
+            background: var(--dark-bg);
+            padding: 8rem 5vw;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cta-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-logo);
+            font-size: clamp(6rem, 15vw, 12rem);
+            font-weight: 700;
+            color: var(--dark-secondary);
+            opacity: 0.3;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        
+        .cta-content {
+            position: relative;
+            z-index: 1;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .cta-content h2 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+        }
+        
+        .cta-content p {
+            font-size: 1.1rem;
+            color: var(--text-muted-dark);
+            margin-bottom: 2.5rem;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .footer {
+            background: var(--card-bg);
+            margin: 2rem 5vw;
+            border-radius: var(--radius-md);
+            padding: 4rem;
+        }
+        
+        .footer-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 4rem;
+        }
+        
+        .footer-logo {
+            font-family: var(--font-logo);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .footer-logo-accent { color: var(--coral-strong); }
+        
+        .footer-links { display: flex; gap: 4rem; }
+        
+        .footer-col h4 {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1.25rem;
+        }
+        
+        .footer-col a {
+            display: block;
+            color: var(--text-dark);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+            transition: color 0.2s;
+        }
+        
+        .footer-col a:hover { color: var(--coral-strong); }
+        
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .footer-bottom span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 1024px) {
+            .hero-grid,
+            .intro-section,
+            .faq-container,
+            .features-header,
+            .product-header {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .hero-grid { text-align: center; }
+            .hero-text { max-width: 100%; display: flex; flex-direction: column; align-items: center; }
+            .hero-image-wrapper { order: -1; }
+            .hero-image { max-width: 380px; }
+            .hero-services-list { justify-content: center; }
+            
+            .bento-grid {
+                grid-template-columns: 1fr 1fr;
+                grid-template-areas:
+                    "testimonial stat1"
+                    "testimonial process"
+                    "showcase   showcase"
+                    "timeline   stat2";
+            }
+            
+            .product-grid { grid-template-columns: repeat(2, 1fr); }
+            .packs-grid { grid-template-columns: 1fr; }
+            .pack-card { grid-template-columns: 1fr; }
+            .pack-card.featured { grid-column: span 1; }
+            .feature-row { grid-template-columns: 1fr; gap: 1rem; }
+            .collaborators-grid { grid-template-columns: repeat(2, 1fr); }
+            .collaborators-header { flex-direction: column; gap: 1rem; align-items: flex-start; }
+            .collaborators-header p { text-align: left; }
+            .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+        }
+        
+        @media (max-width: 768px) {
+            .nav-links, .nav-link-secondary { display: none; }
+            .menu-toggle { display: block; }
+            
+            .mobile-menu {
+                display: block;
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 80%;
+                max-width: 320px;
+                height: 100vh;
+                background: var(--dark-bg);
+                padding: 6rem 2rem 2rem;
+                transition: right 0.3s ease;
+                z-index: 999;
+                border-left: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .menu-state:checked ~ .mobile-menu { right: 0; }
+            
+            .menu-state:checked ~ .nav .menu-toggle span:nth-child(1) {
+                transform: rotate(45deg) translate(6px, 6px);
+            }
+            .menu-state:checked ~ .nav .menu-toggle span:nth-child(2) { opacity: 0; }
+            .menu-state:checked ~ .nav .menu-toggle span:nth-child(3) {
+                transform: rotate(-45deg) translate(6px, -6px);
+            }
+            
+            .mobile-menu-links {
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+            
+            .mobile-menu-links a {
+                color: var(--text-light);
+                text-decoration: none;
+                font-size: 1.25rem;
+                font-weight: 500;
+            }
+            
+            .mobile-menu-cta { margin-top: 2rem; }
+            
+            .menu-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 998;
+            }
+            
+            .menu-state:checked ~ .menu-overlay { display: block; }
+            
+            .hero { padding: 7rem 5vw 4rem; }
+            .hero-headline { font-size: clamp(2rem, 8vw, 3rem); }
+            .hero-image { max-width: 280px; }
+            .hero-services-list { flex-direction: column; gap: 1rem; align-items: center; }
+            .hero-ctas { flex-direction: column; width: 100%; }
+            .hero-ctas .btn-primary, .hero-ctas .btn-secondary { width: 100%; justify-content: center; }
+            
+            .bento-grid {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "testimonial"
+                    "stat1"
+                    "showcase"
+                    "process"
+                    "timeline"
+                    "stat2";
+            }
+            
+            .product-grid { grid-template-columns: 1fr; }
+            .collaborators-grid { grid-template-columns: 1fr; }
+            .footer { margin: 1rem; padding: 2rem; }
+            .footer-top { flex-direction: column; gap: 2rem; }
+            .footer-links { flex-wrap: wrap; gap: 2rem; }
+        }
+        
+        @media (max-width: 480px) {
+            .nav { padding: 1rem 4vw; }
+            .logo { font-size: 1.15rem; }
+            .hero-watermark { font-size: 5rem; }
+            .cta-watermark { font-size: 4rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Menu State -->
+    <input type="checkbox" id="menu-state" class="menu-state">
+    <label for="menu-state" class="menu-overlay"></label>
+    
+    <!-- Mobile Menu -->
+    <nav class="mobile-menu">
+        <div class="mobile-menu-links">
+            <a href="#stash">The Stash</a>
+            <a href="#packs">Party Packs</a>
+            <a href="#collaborators">Collaborators</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#faq">FAQ</a>
+        </div>
+        <div class="mobile-menu-cta">
+            <a href="#signup" class="btn-primary">Get Started <span class="btn-arrow">→</span></a>
+        </div>
+    </nav>
+    
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+        <a href="#" class="logo">FLOW<span class="logo-accent">PARTY</span><span class="logo-tm">™</span></a>
+        <div class="nav-links">
+            <a href="#stash">The Stash</a>
+            <a href="#packs">Party Packs</a>
+            <a href="#collaborators">Collaborators</a>
+            <a href="#pricing">Pricing</a>
+        </div>
+        <div class="nav-right">
+            <a href="#login" class="nav-link-secondary">Log in</a>
+            <a href="#signup" class="btn-primary">Get Started <span class="btn-arrow">→</span></a>
+            <label for="menu-state" class="menu-toggle">
+                <span></span><span></span><span></span>
+            </label>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-watermark">FLOWPARTY</div>
+        <div class="hero-content">
+            <div class="hero-grid">
+                <div class="hero-text animate-fade-up delay-1">
+                    <div class="hero-label">
+                        <span class="hero-label-line"></span>
+                        <span class="hero-label-text">Premium Asset Library</span>
+                    </div>
+                    <h1 class="hero-headline">
+                        Ship faster with<br><span class="hero-headline-accent">complete launch kits</span>
+                    </h1>
+                    <p class="hero-description">
+                        The premium Webflow marketplace for creative developers. Templates, components, 
+                        and complete Party Packs to help you launch polished sites in record time.
+                    </p>
+                    <div class="hero-ctas">
+                        <a href="#stash" class="btn-primary">Explore The Stash <span class="btn-arrow">→</span></a>
+                        <a href="#demo" class="btn-secondary">Watch Demo</a>
+                    </div>
+                    <div class="hero-services">
+                        <div class="hero-services-list">
+                            <div class="hero-service-item"><span class="hero-service-dot"></span><span>Full Templates</span></div>
+                            <div class="hero-service-item"><span class="hero-service-dot"></span><span>UI Components</span></div>
+                            <div class="hero-service-item"><span class="hero-service-dot"></span><span>Figma Files</span></div>
+                            <div class="hero-service-item"><span class="hero-service-dot"></span><span>Launch Guides</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-image-wrapper animate-fade-up delay-2">
+                    <div class="hero-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);">
+                        <div class="hero-image-badge">
+                            <span class="hero-badge-value">140+</span>
+                            <span class="hero-badge-label">Premium Resources</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+        
+        <!-- Client Bar -->
+        <div class="client-bar">
+            <span class="client-label">Trusted by teams at</span>
+            <div class="client-line"></div>
+            <div class="client-logos">
+                <span>Vercel</span>
+                <span>Linear</span>
+                <span>Notion</span>
+                <span>Figma</span>
+                <span>Stripe</span>
+                <span>Framer</span>
+            </div>
+        </div>
+        
+        <!-- Intro Section -->
+        <section class="intro-section">
+            <div class="big-number">0→1</div>
+            <div class="intro-right">
+                <div class="intro-header">
+                    <span class="brand-badge">FLOWPARTY ™</span>
+                    <div class="trust-signals">
+                        <div class="avatar-stack">
+                            <div class="avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                            <div class="avatar" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                            <div class="avatar" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+                            <div class="avatar" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);"></div>
+                            <div class="avatar-count">50+</div>
+                        </div>
+                        <span class="trust-label">Creative developers shipping</span>
+                        <span class="stars">★★★★★</span>
+                    </div>
+                </div>
+                <h3 class="intro-headline">
+                    Stop piecing together components from five different libraries. 
+                    Get complete launch solutions—template, components, Figma file, and guides—in one Party Pack.
+                </h3>
+            </div>
+        </section>
+        
+        <!-- Bento Grid -->
+        <section class="bento-section">
+            <div class="bento-grid">
+                <div class="bento-card testimonial-card">
+                    <p class="testimonial-text">"Flow Party saved me 40+ hours on my last client project. The Party Pack approach is genius—everything just works together."</p>
+                    <div class="testimonial-author">
+                        <div class="avatar" style="background: linear-gradient(135deg, #ff531f 0%, #f093fb 100%);"></div>
+                        <div>
+                            <div class="author-name">Sarah Chen</div>
+                            <div class="author-role">Freelance Developer</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bento-card stat-card-1">
+                    <div class="stat-header">
+                        <span class="stat-label">Time Saved</span>
+                        <div class="stat-icon">⏱</div>
+                    </div>
+                    <div class="stat-value">40<span>hrs</span></div>
+                    <div class="stat-desc">Average per project launch</div>
+                    <div class="watermark-number">40</div>
+                </div>
+                
+                <div class="bento-card showcase-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="showcase-overlay">
+                        <h3>SaaS Starter Pack</h3>
+                        <p>Complete launch kit for your next product</p>
+                        <a href="#" class="link-arrow">View Pack →</a>
+                    </div>
+                </div>
+                
+                <div class="bento-card process-card">
+                    <h3>What's Included</h3>
+                    <div class="process-list">
+                        <div class="process-item"><span class="process-check">✓</span> Webflow Template</div>
+                        <div class="process-item"><span class="process-check">✓</span> Component Library</div>
+                        <div class="process-item"><span class="process-check">✓</span> Figma Source Files</div>
+                        <div class="process-item"><span class="process-check">✓</span> Launch Guide</div>
+                    </div>
+                </div>
+                
+                <div class="bento-card timeline-card">
+                    <div class="timeline-header">
+                        <div class="timeline-title">From idea to launch</div>
+                        <div class="timeline-subtitle">Average project timeline</div>
+                    </div>
+                    <div class="timeline-bars">
+                        <div class="timeline-bar active"></div>
+                        <div class="timeline-bar active"></div>
+                        <div class="timeline-bar active"></div>
+                        <div class="timeline-bar"></div>
+                        <div class="timeline-bar"></div>
+                    </div>
+                </div>
+                
+                <div class="bento-card stat-card-2">
+                    <div class="stat-header">
+                        <span class="stat-label">Resources</span>
+                        <div class="stat-icon">📦</div>
+                    </div>
+                    <div class="stat-value">140<span>+</span></div>
+                    <div class="stat-desc">Premium assets in The Stash</div>
+                    <div class="watermark-number">140</div>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <!-- The Stash Section -->
+    <section class="product-section" id="stash">
+        <div class="product-header">
+            <span class="product-label">(01)</span>
+            <div class="product-intro">
+                <h2>The Stash</h2>
+                <p>Premium Webflow resources curated for creative developers. Every component battle-tested, every interaction polished.</p>
+                <a href="#" class="link-arrow">Browse all resources →</a>
+            </div>
+        </div>
+        <div class="product-grid">
+            <div class="product-card">
+                <div class="product-card-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                <div class="product-card-content">
+                    <span class="product-card-tag">Component</span>
+                    <h4 class="product-card-title">Mega Navbar</h4>
+                    <p class="product-card-desc">Full-featured navigation with dropdown, mobile menu, and animations.</p>
+                </div>
+            </div>
+            <div class="product-card">
+                <div class="product-card-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                <div class="product-card-content">
+                    <span class="product-card-tag">Section</span>
+                    <h4 class="product-card-title">Split Hero</h4>
+                    <p class="product-card-desc">High-converting hero with animated text reveal and parallax.</p>
+                </div>
+            </div>
+            <div class="product-card">
+                <div class="product-card-image" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+                <div class="product-card-content">
+                    <span class="product-card-tag">Interaction</span>
+                    <h4 class="product-card-title">Scroll Reveal</h4>
+                    <p class="product-card-desc">GSAP-powered scroll animations with stagger effects.</p>
+                </div>
+            </div>
+        </div>
+        <div class="product-cta">
+            <a href="#" class="btn-primary">View All 140+ Resources <span class="btn-arrow">→</span></a>
+        </div>
+    </section>
+    
+    <!-- Party Packs Section -->
+    <section class="packs-section" id="packs">
+        <div class="packs-header">
+            <h2>Party Packs</h2>
+            <p>Complete launch solutions. Everything you need to ship a polished site—template, components, Figma, and guides—bundled together.</p>
+        </div>
+        <div class="packs-grid">
+            <div class="pack-card featured">
+                <div class="pack-image" style="background: linear-gradient(135deg, #ff531f 0%, #f093fb 100%);"></div>
+                <div class="pack-content">
+                    <span class="pack-badge">Most Popular</span>
+                    <h3 class="pack-title">SaaS Starter Pack</h3>
+                    <p class="pack-desc">Everything you need to launch your SaaS marketing site. Includes pricing tables, feature grids, testimonials, and full CMS setup.</p>
+                    <div class="pack-includes">
+                        <span>12-page template</span>
+                        <span>45 components</span>
+                        <span>Figma file</span>
+                        <span>Launch guide</span>
+                    </div>
+                    <a href="#" class="btn-primary">Get Pack <span class="btn-arrow">→</span></a>
+                </div>
+            </div>
+            <div class="pack-card">
+                <div class="pack-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                <div class="pack-content">
+                    <span class="pack-badge">New</span>
+                    <h3 class="pack-title">Agency Pack</h3>
+                    <p class="pack-desc">Premium agency portfolio with case studies, team pages, and service breakdowns.</p>
+                    <div class="pack-includes">
+                        <span>8-page template</span>
+                        <span>32 components</span>
+                        <span>Figma file</span>
+                    </div>
+                    <a href="#" class="btn-dark btn-primary">Get Pack <span class="btn-arrow">→</span></a>
+                </div>
+            </div>
+            <div class="pack-card">
+                <div class="pack-image" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);"></div>
+                <div class="pack-content">
+                    <span class="pack-badge">Creative</span>
+                    <h3 class="pack-title">Portfolio Pack</h3>
+                    <p class="pack-desc">Stunning portfolio for designers and developers with project showcases.</p>
+                    <div class="pack-includes">
+                        <span>6-page template</span>
+                        <span>28 components</span>
+                        <span>Figma file</span>
+                    </div>
+                    <a href="#" class="btn-dark btn-primary">Get Pack <span class="btn-arrow">→</span></a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+        <div class="features-header">
+            <span class="features-label">(02)</span>
+            <div class="features-intro">
+                <p>Built different. Every resource in The Stash is crafted with production quality in mind—not just pretty demos.</p>
+            </div>
+        </div>
+        <div class="feature-row">
+            <h3 class="feature-name">Copy & Paste Ready</h3>
+            <div class="feature-tags">
+                <span>Webflow native</span>
+                <span>No plugins required</span>
+                <span>Clean class naming</span>
+            </div>
+        </div>
+        <div class="feature-row">
+            <h3 class="feature-name">GSAP Interactions</h3>
+            <div class="feature-tags">
+                <span>ScrollTrigger</span>
+                <span>SplitText</span>
+                <span>Flip animations</span>
+            </div>
+        </div>
+        <div class="feature-row">
+            <h3 class="feature-name">Figma Included</h3>
+            <div class="feature-tags">
+                <span>Auto-layout</span>
+                <span>Design tokens</span>
+                <span>Component variants</span>
+            </div>
+        </div>
+        <div class="feature-row">
+            <h3 class="feature-name">Launch Guides</h3>
+            <div class="feature-tags">
+                <span>Setup walkthroughs</span>
+                <span>Customization tips</span>
+                <span>Best practices</span>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Collaborators Section -->
+    <section class="collaborators-section" id="collaborators">
+        <div class="collaborators-header">
+            <h2>Collaborators</h2>
+            <p>Learn from the best. Our collaborators are award-winning designers and developers who teach what they ship.</p>
+        </div>
+        <div class="collaborators-grid">
+            <div class="collaborator-card">
+                <div class="collaborator-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                <h4 class="collaborator-name">Alex Rivera</h4>
+                <p class="collaborator-role">Creative Developer</p>
+                <div class="collaborator-stats">
+                    <div><div class="collab-stat-value">12</div><div class="collab-stat-label">Resources</div></div>
+                    <div><div class="collab-stat-value">2.4k</div><div class="collab-stat-label">Downloads</div></div>
+                </div>
+            </div>
+            <div class="collaborator-card">
+                <div class="collaborator-avatar" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                <h4 class="collaborator-name">Maya Johnson</h4>
+                <p class="collaborator-role">UI/UX Designer</p>
+                <div class="collaborator-stats">
+                    <div><div class="collab-stat-value">8</div><div class="collab-stat-label">Resources</div></div>
+                    <div><div class="collab-stat-value">1.8k</div><div class="collab-stat-label">Downloads</div></div>
+                </div>
+            </div>
+            <div class="collaborator-card">
+                <div class="collaborator-avatar" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+                <h4 class="collaborator-name">James Park</h4>
+                <p class="collaborator-role">Motion Designer</p>
+                <div class="collaborator-stats">
+                    <div><div class="collab-stat-value">15</div><div class="collab-stat-label">Resources</div></div>
+                    <div><div class="collab-stat-value">3.1k</div><div class="collab-stat-label">Downloads</div></div>
+                </div>
+            </div>
+            <div class="collaborator-card">
+                <div class="collaborator-avatar" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);"></div>
+                <h4 class="collaborator-name">Emma Wilson</h4>
+                <p class="collaborator-role">Webflow Expert</p>
+                <div class="collaborator-stats">
+                    <div><div class="collab-stat-value">10</div><div class="collab-stat-label">Resources</div></div>
+                    <div><div class="collab-stat-value">2.2k</div><div class="collab-stat-label">Downloads</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <div class="pricing-header">
+            <h2>Simple pricing</h2>
+            <p>Choose the plan that fits your workflow. All plans include lifetime access to purchased resources.</p>
+        </div>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="pricing-tier">Starter</div>
+                <div class="pricing-price">$0 <span>/mo</span></div>
+                <p class="pricing-desc">Perfect for exploring what Flow Party offers.</p>
+                <div class="pricing-features">
+                    <div class="pricing-feature">5 free components</div>
+                    <div class="pricing-feature">Community access</div>
+                    <div class="pricing-feature">Email support</div>
+                </div>
+                <a href="#" class="btn-secondary" style="width:100%; justify-content:center; border-color: var(--border); color: var(--text-dark);">Get Started</a>
+            </div>
+            <div class="pricing-card popular">
+                <div class="popular-badge">Most Popular</div>
+                <div class="pricing-tier">Pro</div>
+                <div class="pricing-price">$29 <span>/mo</span></div>
+                <p class="pricing-desc">Full access to The Stash. Ship faster, every project.</p>
+                <div class="pricing-features">
+                    <div class="pricing-feature">All 140+ resources</div>
+                    <div class="pricing-feature">All Party Packs</div>
+                    <div class="pricing-feature">Figma files included</div>
+                    <div class="pricing-feature">Priority support</div>
+                    <div class="pricing-feature">New releases weekly</div>
+                </div>
+                <a href="#" class="btn-primary">Start Pro Trial <span class="btn-arrow">→</span></a>
+            </div>
+            <div class="pricing-card">
+                <div class="pricing-tier">Lifetime</div>
+                <div class="pricing-price">$299 <span>once</span></div>
+                <p class="pricing-desc">One payment, forever access. Best value for agencies.</p>
+                <div class="pricing-features">
+                    <div class="pricing-feature">Everything in Pro</div>
+                    <div class="pricing-feature">Lifetime updates</div>
+                    <div class="pricing-feature">Team sharing (5 seats)</div>
+                    <div class="pricing-feature">Early access</div>
+                </div>
+                <a href="#" class="btn-dark btn-primary">Get Lifetime <span class="btn-arrow">→</span></a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq">
+        <div class="faq-container">
+            <div class="faq-left">
+                <h2>FAQ</h2>
+                <p>Common questions about Flow Party and how it works.</p>
+                <a href="#" class="link-arrow">Contact support →</a>
+            </div>
+            <div class="faq-right">
+                <div class="faq-item" data-faq>
+                    <div class="faq-question-row">
+                        <span class="faq-question">How does copy & paste work?</span>
+                        <span class="faq-number">01</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Click copy on any component in The Stash, then paste directly into your Webflow Designer. The component arrives with all classes, interactions, and settings intact. No plugins required.</p>
+                    </div>
+                </div>
+                <div class="faq-item" data-faq>
+                    <div class="faq-question-row">
+                        <span class="faq-question">What's included in a Party Pack?</span>
+                        <span class="faq-number">02</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Each Party Pack includes a complete Webflow template, matching component library, Figma source files, and a detailed launch guide. Everything you need to ship a polished site.</p>
+                    </div>
+                </div>
+                <div class="faq-item" data-faq>
+                    <div class="faq-question-row">
+                        <span class="faq-question">Can I use resources for client projects?</span>
+                        <span class="faq-number">03</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes! All resources come with a commercial license. Use them for unlimited personal and client projects. The only restriction is redistributing or reselling the raw assets.</p>
+                    </div>
+                </div>
+                <div class="faq-item" data-faq>
+                    <div class="faq-question-row">
+                        <span class="faq-question">Do I need GSAP knowledge?</span>
+                        <span class="faq-number">04</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Nope. Interactions work out of the box. But if you want to customize, we include documentation explaining how each animation works so you can learn as you build.</p>
+                    </div>
+                </div>
+                <div class="faq-item" data-faq>
+                    <div class="faq-question-row">
+                        <span class="faq-question">What if I cancel my subscription?</span>
+                        <span class="faq-number">05</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>You keep access to everything you've already copied or downloaded. You just won't be able to access new resources or updates until you resubscribe.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="cta-watermark">PARTY</div>
+        <div class="cta-content">
+            <h2>Ready to ship faster?</h2>
+            <p>Join 500+ creative developers already building with Flow Party. Start with our free resources or go Pro for full access.</p>
+            <div class="cta-buttons">
+                <a href="#" class="btn-primary">Start Free <span class="btn-arrow">→</span></a>
+                <a href="#" class="btn-secondary">View Pricing</a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-top">
+            <span class="footer-logo">FLOW<span class="footer-logo-accent">PARTY</span>™</span>
+            <div class="footer-links">
+                <div class="footer-col">
+                    <h4>Product</h4>
+                    <a href="#">The Stash</a>
+                    <a href="#">Party Packs</a>
+                    <a href="#">Pricing</a>
+                    <a href="#">Changelog</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Community</h4>
+                    <a href="#">Collaborators</a>
+                    <a href="#">Discord</a>
+                    <a href="#">Showcase</a>
+                    <a href="#">Blog</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Resources</h4>
+                    <a href="#">Documentation</a>
+                    <a href="#">Tutorials</a>
+                    <a href="#">Support</a>
+                    <a href="#">FAQ</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Legal</h4>
+                    <a href="#">Terms</a>
+                    <a href="#">Privacy</a>
+                    <a href="#">Licensing</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2025 Flow Party. All rights reserved.</span>
+            <span>Built with Webflow</span>
+        </div>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script>
+        // Navigation scroll effect
+        const nav = document.getElementById('nav');
+        window.addEventListener('scroll', () => {
+            nav.classList.toggle('scrolled', window.scrollY > 50);
+        }, { passive: true });
+        
+        // FAQ accordion
+        document.querySelectorAll('[data-faq]').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('[data-faq]').forEach(other => {
+                    if (other !== item) other.classList.remove('active');
+                });
+                item.classList.toggle('active');
+            });
+        });
+        
+        // Close mobile menu on link click
+        document.querySelectorAll('.mobile-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.getElementById('menu-state').checked = false;
+            });
+        });
+        
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

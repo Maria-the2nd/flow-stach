@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flow Party — Premium Webflow Asset Library</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;500;600;700&family=Onest:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        /* === RESET & VARIABLES === */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root {
+            --color-light: #FAFAFA;
+            --color-dark: #1A1A1A;
+            --color-dark-75: rgba(26, 26, 26, 0.75);
+            --color-dark-65: rgba(26, 26, 26, 0.65);
+            --color-dark-40: rgba(26, 26, 26, 0.40);
+            --color-dark-10: rgba(26, 26, 26, 0.10);
+            --color-dark-05: rgba(26, 26, 26, 0.05);
+            --color-dark-03: rgba(26, 26, 26, 0.03);
+            
+            --font-display: "Antonio", sans-serif;
+            --font-body: "Onest", -apple-system, sans-serif;
+            
+            --section-padding: 88px;
+            --container-max: 1456px;
+            --container-padding: 24px;
+            --grid-gap: 40px;
+            
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+            
+            --transition: 0.2s ease;
+            --transition-slow: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        html {
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        body {
+            background: var(--color-light);
+            color: var(--color-dark);
+            font-family: var(--font-body);
+            font-size: 18px;
+            line-height: 1.5;
+        }
+        
+        img { max-width: 100%; height: auto; display: block; }
+        a { text-decoration: none; color: inherit; }
+        
+        /* === TYPOGRAPHY === */
+        .display {
+            font-family: var(--font-display);
+            font-size: 96px;
+            font-weight: 600;
+            line-height: 0.95;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+        }
+        
+        .h1 {
+            font-family: var(--font-body);
+            font-size: 80px;
+            font-weight: 300;
+            line-height: 0.92;
+            letter-spacing: -0.03em;
+        }
+        
+        .h2 {
+            font-family: var(--font-body);
+            font-size: 36px;
+            font-weight: 400;
+            line-height: 1.08;
+            letter-spacing: -0.02em;
+        }
+        
+        .section-label {
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--color-dark-65);
+        }
+        
+        .body-text {
+            font-size: 18px;
+            font-weight: 400;
+            line-height: 1.6;
+            letter-spacing: -0.01em;
+            color: var(--color-dark-75);
+        }
+        
+        /* === LAYOUT === */
+        .container {
+            max-width: var(--container-max);
+            margin: 0 auto;
+            padding: 0 var(--container-padding);
+        }
+        
+        .section {
+            padding: var(--section-padding) 0;
+        }
+        
+        .section-header {
+            margin-bottom: 64px;
+        }
+        
+        .section-header .section-label {
+            margin-bottom: 16px;
+            display: block;
+        }
+        
+        .section-header .display {
+            margin-bottom: 24px;
+        }
+        
+        /* === BUTTONS === */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: var(--font-body);
+            font-size: 16px;
+            font-weight: 500;
+            padding: 14px 28px;
+            border-radius: var(--radius-full);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        
+        .btn-primary {
+            background: var(--color-dark);
+            color: var(--color-light);
+            border-color: var(--color-dark);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(26, 26, 26, 0.2);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-dark);
+            border-color: var(--color-dark-10);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--color-dark-05);
+            border-color: var(--color-dark-40);
+        }
+        
+        /* === NAV === */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 16px 0;
+            background: rgba(250, 250, 250, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--color-dark-10);
+        }
+        
+        .nav-container {
+            max-width: var(--container-max);
+            margin: 0 auto;
+            padding: 0 var(--container-padding);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .nav-logo {
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        
+        .logo-name {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+        
+        .logo-tagline {
+            font-size: 11px;
+            color: var(--color-dark-40);
+            letter-spacing: 0.02em;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+        
+        .nav-link {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--color-dark-75);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color var(--transition);
+            white-space: nowrap;
+        }
+        
+        .nav-link:hover { color: var(--color-dark); }
+        
+        .nav-link-count {
+            font-size: 12px;
+            color: var(--color-dark-40);
+        }
+        
+        .nav-cta {
+            flex-shrink: 0;
+        }
+        
+        /* Mobile Menu Toggle */
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+            width: 32px;
+            height: 32px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+        }
+        
+        .nav-toggle span {
+            display: block;
+            width: 100%;
+            height: 2px;
+            background: var(--color-dark);
+            transition: all 0.3s ease;
+        }
+        
+        .nav-toggle.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        
+        .nav-toggle.active span:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .nav-toggle.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+        
+        /* Mobile Menu */
+        .nav-mobile {
+            display: none;
+            position: fixed;
+            top: 65px;
+            left: 0;
+            right: 0;
+            background: var(--color-light);
+            border-bottom: 1px solid var(--color-dark-10);
+            padding: 24px;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 99;
+        }
+        
+        .nav-mobile.active {
+            display: flex;
+        }
+        
+        .nav-mobile a {
+            font-size: 16px;
+            font-weight: 400;
+            color: var(--color-dark);
+            padding: 12px 0;
+            border-bottom: 1px solid var(--color-dark-10);
+        }
+        
+        .nav-mobile a:last-child {
+            border-bottom: none;
+        }
+        
+        /* === HERO === */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding-top: 120px;
+            background: linear-gradient(180deg, var(--color-light) 0%, rgba(250, 245, 240, 1) 100%);
+        }
+        
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+        
+        .hero-content {
+            max-width: 700px;
+        }
+        
+        .hero-label {
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--color-dark-40);
+            padding: 8px 16px;
+            background: var(--color-dark-05);
+            border-radius: var(--radius-full);
+            margin-bottom: 32px;
+        }
+        
+        .hero-title {
+            margin-bottom: 32px;
+        }
+        
+        .hero-title .thin {
+            font-weight: 300;
+            display: block;
+            font-size: 0.75em;
+            opacity: 0.7;
+        }
+        
+        .hero-tagline {
+            font-size: 20px;
+            line-height: 1.6;
+            color: var(--color-dark-65);
+            margin-bottom: 40px;
+            max-width: 500px;
+        }
+        
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 64px;
+        }
+        
+        .hero-stats {
+            display: flex;
+            gap: 48px;
+            padding-top: 32px;
+            border-top: 1px solid var(--color-dark-10);
+        }
+        
+        .hero-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .hero-stat-value {
+            font-size: 32px;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+        }
+        
+        .hero-stat-label {
+            font-size: 14px;
+            color: var(--color-dark-40);
+        }
+        
+        /* Hero Tabs (Product Selector) */
+        .hero-tabs {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .hero-tab {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 24px 28px;
+            background: var(--color-light);
+            border: 1px solid var(--color-dark-10);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition);
+            text-align: left;
+        }
+        
+        .hero-tab:hover {
+            background: var(--color-dark-03);
+            border-color: var(--color-dark-40);
+        }
+        
+        .hero-tab.active {
+            background: var(--color-dark);
+            color: var(--color-light);
+            border-color: var(--color-dark);
+        }
+        
+        .tab-number {
+            font-size: 14px;
+            color: var(--color-dark-40);
+        }
+        
+        .hero-tab.active .tab-number {
+            color: rgba(250, 250, 250, 0.5);
+        }
+        
+        .tab-name {
+            font-size: 20px;
+            font-weight: 400;
+            flex: 1;
+        }
+        
+        .tab-arrow {
+            font-size: 18px;
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+        
+        .hero-tab:hover .tab-arrow,
+        .hero-tab.active .tab-arrow {
+            opacity: 1;
+        }
+        
+        /* === PRODUCT CARDS (The Stash) === */
+        .stash-section {
+            background: var(--color-dark-03);
+        }
+        
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        
+        .product-card {
+            background: var(--color-light);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transition: all var(--transition-slow);
+            border: 1px solid var(--color-dark-10);
+        }
+        
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 24px 48px rgba(26, 26, 26, 0.08);
+        }
+        
+        .product-image {
+            aspect-ratio: 4/3;
+            overflow: hidden;
+        }
+        
+        .product-image-inner {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #E8DED5 0%, #D4C5B9 100%);
+            transition: transform 0.6s ease;
+        }
+        
+        .product-card:hover .product-image-inner {
+            transform: scale(1.05);
+        }
+        
+        .product-content {
+            padding: 28px;
+        }
+        
+        .product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .product-number {
+            font-size: 14px;
+            color: var(--color-dark-40);
+        }
+        
+        .product-tag {
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--color-dark-40);
+            padding: 4px 12px;
+            background: var(--color-dark-05);
+            border-radius: var(--radius-full);
+        }
+        
+        .product-title {
+            font-size: 22px;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+        
+        .product-desc {
+            font-size: 15px;
+            color: var(--color-dark-65);
+            line-height: 1.5;
+        }
+        
+        /* === PARTY PACKS === */
+        .packs-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 24px;
+        }
+        
+        .pack-card {
+            background: var(--color-light);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            border: 1px solid var(--color-dark-10);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .pack-card.featured {
+            grid-row: span 2;
+        }
+        
+        .pack-image {
+            aspect-ratio: 16/10;
+            overflow: hidden;
+        }
+        
+        .pack-card.featured .pack-image {
+            aspect-ratio: 16/14;
+            flex: 1;
+        }
+        
+        .pack-image-inner {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s ease;
+        }
+        
+        .pack-card:hover .pack-image-inner {
+            transform: scale(1.05);
+        }
+        
+        .pack-content {
+            padding: 32px;
+        }
+        
+        .pack-card.featured .pack-content {
+            padding: 40px;
+        }
+        
+        .pack-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .pack-badge {
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--color-dark-40);
+        }
+        
+        .pack-title {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        
+        .pack-card.featured .pack-title {
+            font-size: 36px;
+        }
+        
+        .pack-desc {
+            font-size: 16px;
+            color: var(--color-dark-65);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        
+        .pack-specs {
+            display: flex;
+            gap: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--color-dark-10);
+        }
+        
+        .pack-spec {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .pack-spec-value {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .pack-spec-label {
+            font-size: 13px;
+            color: var(--color-dark-40);
+        }
+        
+        /* === FEATURES === */
+        .features-intro {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            margin-bottom: 64px;
+            padding-bottom: 48px;
+            border-bottom: 1px solid var(--color-dark-10);
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+        }
+        
+        .feature-card {
+            padding: 32px;
+            background: var(--color-dark-03);
+            border-radius: var(--radius-md);
+            transition: all var(--transition);
+        }
+        
+        .feature-card:hover {
+            background: var(--color-dark-05);
+        }
+        
+        .feature-number {
+            font-family: var(--font-display);
+            font-size: 48px;
+            font-weight: 500;
+            color: var(--color-dark-10);
+            margin-bottom: 24px;
+        }
+        
+        .feature-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+        
+        .feature-desc {
+            font-size: 15px;
+            color: var(--color-dark-65);
+            line-height: 1.5;
+        }
+        
+        /* === COLLABORATORS === */
+        .collab-section {
+            background: var(--color-dark);
+            color: var(--color-light);
+        }
+        
+        .collab-section .section-label {
+            color: rgba(250, 250, 250, 0.4);
+        }
+        
+        .collab-section .display {
+            color: var(--color-light);
+        }
+        
+        .collab-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+        
+        .collab-card {
+            padding: 40px 32px;
+            background: rgba(250, 250, 250, 0.03);
+            border: 1px solid rgba(250, 250, 250, 0.08);
+            border-radius: var(--radius-md);
+            text-align: center;
+            transition: all var(--transition);
+        }
+        
+        .collab-card:hover {
+            background: rgba(250, 250, 250, 0.06);
+            border-color: rgba(250, 250, 250, 0.15);
+        }
+        
+        .collab-avatar {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            overflow: hidden;
+        }
+        
+        .collab-avatar-inner {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .collab-name {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .collab-role {
+            font-size: 14px;
+            color: rgba(250, 250, 250, 0.5);
+            margin-bottom: 24px;
+        }
+        
+        .collab-stats {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(250, 250, 250, 0.08);
+        }
+        
+        .collab-stat-value {
+            font-size: 20px;
+            font-weight: 400;
+        }
+        
+        .collab-stat-label {
+            font-size: 12px;
+            color: rgba(250, 250, 250, 0.4);
+        }
+        
+        /* === PRICING === */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        
+        .pricing-card {
+            padding: 48px 40px;
+            background: var(--color-light);
+            border: 1px solid var(--color-dark-10);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            transition: all var(--transition);
+        }
+        
+        .pricing-card:hover {
+            border-color: var(--color-dark-40);
+        }
+        
+        .pricing-card.featured {
+            background: var(--color-dark);
+            color: var(--color-light);
+            border-color: var(--color-dark);
+            transform: scale(1.02);
+        }
+        
+        .pricing-tier {
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--color-dark-40);
+            margin-bottom: 32px;
+        }
+        
+        .pricing-card.featured .pricing-tier {
+            color: rgba(250, 250, 250, 0.5);
+        }
+        
+        .pricing-price {
+            font-family: var(--font-display);
+            font-size: 72px;
+            font-weight: 600;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        
+        .pricing-period {
+            font-size: 15px;
+            color: var(--color-dark-40);
+            margin-bottom: 32px;
+        }
+        
+        .pricing-card.featured .pricing-period {
+            color: rgba(250, 250, 250, 0.5);
+        }
+        
+        .pricing-desc {
+            font-size: 16px;
+            color: var(--color-dark-65);
+            line-height: 1.5;
+            margin-bottom: 32px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--color-dark-10);
+        }
+        
+        .pricing-card.featured .pricing-desc {
+            color: rgba(250, 250, 250, 0.65);
+            border-color: rgba(250, 250, 250, 0.1);
+        }
+        
+        .pricing-features {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 40px;
+            flex: 1;
+        }
+        
+        .pricing-feature {
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .pricing-feature::before {
+            content: '✓';
+            font-size: 14px;
+            color: var(--color-dark-40);
+        }
+        
+        .pricing-card.featured .pricing-feature::before {
+            color: rgba(250, 250, 250, 0.5);
+        }
+        
+        .pricing-card .btn-primary {
+            width: 100%;
+        }
+        
+        .pricing-card.featured .btn-primary {
+            background: var(--color-light);
+            color: var(--color-dark);
+        }
+        
+        /* === FAQ === */
+        .faq-section {
+            background: var(--color-dark-03);
+        }
+        
+        .faq-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 80px;
+        }
+        
+        .faq-list {
+            border-top: 1px solid var(--color-dark-10);
+        }
+        
+        .faq-item {
+            border-bottom: 1px solid var(--color-dark-10);
+        }
+        
+        .faq-question {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 28px 0;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        
+        .faq-question:hover {
+            padding-left: 12px;
+        }
+        
+        .faq-question-text {
+            font-size: 18px;
+            font-weight: 400;
+        }
+        
+        .faq-number {
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--color-dark-40);
+            transition: color var(--transition);
+        }
+        
+        .faq-item:hover .faq-number,
+        .faq-item.active .faq-number {
+            color: var(--color-dark);
+        }
+        
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+        
+        .faq-item.active .faq-answer {
+            max-height: 200px;
+        }
+        
+        .faq-answer-inner {
+            padding-bottom: 28px;
+        }
+        
+        .faq-answer p {
+            font-size: 16px;
+            color: var(--color-dark-65);
+            line-height: 1.6;
+            max-width: 600px;
+        }
+        
+        /* === FOOTER === */
+        .footer {
+            background: var(--color-dark);
+            color: var(--color-light);
+            padding: 88px 0 48px;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 64px;
+            margin-bottom: 64px;
+            padding-bottom: 48px;
+            border-bottom: 1px solid rgba(250, 250, 250, 0.1);
+        }
+        
+        .footer-brand .logo-name {
+            color: var(--color-light);
+        }
+        
+        .footer-brand .logo-tagline {
+            color: rgba(250, 250, 250, 0.4);
+        }
+        
+        .footer-desc {
+            font-size: 15px;
+            color: rgba(250, 250, 250, 0.6);
+            line-height: 1.6;
+            margin-top: 20px;
+            max-width: 320px;
+        }
+        
+        .footer-column h4 {
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 24px;
+            color: rgba(250, 250, 250, 0.4);
+        }
+        
+        .footer-column a {
+            display: block;
+            font-size: 15px;
+            color: rgba(250, 250, 250, 0.7);
+            margin-bottom: 12px;
+            transition: color var(--transition);
+        }
+        
+        .footer-column a:hover {
+            color: var(--color-light);
+        }
+        
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: rgba(250, 250, 250, 0.4);
+        }
+        
+        /* === RESPONSIVE === */
+        @media screen and (max-width: 1199px) {
+            :root {
+                --section-padding: 64px;
+            }
+            
+            .display { font-size: 72px; }
+            .h1 { font-size: 56px; }
+            
+            .nav-links { gap: 24px; }
+            .nav-link-count { display: none; }
+            
+            .hero-grid { grid-template-columns: 1fr; gap: 48px; }
+            .hero-tabs { flex-direction: row; flex-wrap: wrap; }
+            .hero-tab { flex: 1; min-width: 200px; }
+            
+            .product-grid { grid-template-columns: repeat(2, 1fr); }
+            .packs-grid { grid-template-columns: 1fr; }
+            .pack-card.featured { grid-row: span 1; }
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .collab-grid { grid-template-columns: repeat(2, 1fr); }
+            .pricing-grid { grid-template-columns: 1fr; }
+            .pricing-card.featured { transform: none; }
+            .faq-grid { grid-template-columns: 1fr; gap: 48px; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+        }
+        
+        @media screen and (max-width: 991px) {
+            .nav-links { display: none; }
+            .nav-toggle { display: flex; }
+            .nav-cta { display: none; }
+        }
+        
+        @media screen and (max-width: 767px) {
+            :root {
+                --section-padding: 48px;
+                --container-padding: 20px;
+            }
+            
+            .display { font-size: 48px; }
+            .h1 { font-size: 36px; }
+            .h2 { font-size: 28px; }
+            
+            .hero { padding-top: 100px; }
+            .hero-stats { flex-direction: column; gap: 24px; }
+            .hero-tabs { flex-direction: column; }
+            .hero-tab { min-width: auto; }
+            
+            .product-grid { grid-template-columns: 1fr; }
+            .features-intro { grid-template-columns: 1fr; gap: 32px; }
+            .features-grid { grid-template-columns: 1fr; }
+            .collab-grid { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr; gap: 40px; }
+            .footer-bottom { flex-direction: column; gap: 8px; }
+        }
+        
+        @media screen and (max-width: 479px) {
+            .display { font-size: 36px; }
+            .h1 { font-size: 28px; }
+            
+            .hero-actions { flex-direction: column; }
+            .hero-actions .btn { width: 100%; }
+            
+            .pack-specs { flex-wrap: wrap; gap: 16px; }
+            .feature-card { padding: 24px; }
+            .pricing-card { padding: 32px 24px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- NAV -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <span class="logo-name">Flow Party</span>
+                <span class="logo-tagline">Premium Webflow Assets</span>
+            </a>
+            <div class="nav-links">
+                <a href="#stash" class="nav-link">The Stash <span class="nav-link-count">(140+)</span></a>
+                <a href="#packs" class="nav-link">Party Packs <span class="nav-link-count">(03)</span></a>
+                <a href="#collaborators" class="nav-link">Collaborators</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+            </div>
+            <button class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="#pricing" class="btn btn-primary nav-cta">Get Access</a>
+        </div>
+    </nav>
+    <div class="nav-mobile" id="navMobile">
+        <a href="#stash">The Stash (140+)</a>
+        <a href="#packs">Party Packs (03)</a>
+        <a href="#collaborators">Collaborators</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#pricing" class="btn btn-primary" style="text-align: center; margin-top: 8px;">Get Access</a>
+    </div>
+    
+    <!-- HERO -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-grid">
+                <div class="hero-content">
+                    <span class="hero-label">Premium Asset Library</span>
+                    <h1 class="display hero-title">
+                        Ship<br>Faster
+                        <span class="thin">With Complete Launch Kits</span>
+                    </h1>
+                    <p class="hero-tagline">Stop piecing together components from five different libraries. Get complete launch solutions—template, components, Figma file, and guides—in one Party Pack.</p>
+                    <div class="hero-actions">
+                        <a href="#pricing" class="btn btn-primary">Start Building →</a>
+                        <a href="#stash" class="btn btn-secondary">Browse Library</a>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="hero-stat">
+                            <span class="hero-stat-value">140+</span>
+                            <span class="hero-stat-label">Premium Resources</span>
+                        </div>
+                        <div class="hero-stat">
+                            <span class="hero-stat-value">40hrs</span>
+                            <span class="hero-stat-label">Saved Per Project</span>
+                        </div>
+                        <div class="hero-stat">
+                            <span class="hero-stat-value">500+</span>
+                            <span class="hero-stat-label">Creative Developers</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-tabs">
+                    <button class="hero-tab active">
+                        <span class="tab-number">(01)</span>
+                        <span class="tab-name">Components</span>
+                        <span class="tab-arrow">→</span>
+                    </button>
+                    <button class="hero-tab">
+                        <span class="tab-number">(02)</span>
+                        <span class="tab-name">Templates</span>
+                        <span class="tab-arrow">→</span>
+                    </button>
+                    <button class="hero-tab">
+                        <span class="tab-number">(03)</span>
+                        <span class="tab-name">Party Packs</span>
+                        <span class="tab-arrow">→</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- THE STASH -->
+    <section class="section stash-section" id="stash">
+        <div class="container">
+            <header class="section-header">
+                <span class="section-label">The Stash</span>
+                <h2 class="display">Premium<br>Resources</h2>
+            </header>
+            <div class="product-grid">
+                <div class="product-card">
+                    <div class="product-image">
+                        <div class="product-image-inner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                    </div>
+                    <div class="product-content">
+                        <div class="product-header">
+                            <span class="product-number">(01)</span>
+                            <span class="product-tag">Component</span>
+                        </div>
+                        <h3 class="product-title">Mega Navbar</h3>
+                        <p class="product-desc">Full-featured navigation with dropdown menus, mobile menu, and smooth animations.</p>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-image">
+                        <div class="product-image-inner" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                    </div>
+                    <div class="product-content">
+                        <div class="product-header">
+                            <span class="product-number">(02)</span>
+                            <span class="product-tag">Section</span>
+                        </div>
+                        <h3 class="product-title">Split Hero</h3>
+                        <p class="product-desc">High-converting hero section with animated text reveal and parallax imagery.</p>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-image">
+                        <div class="product-image-inner" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+                    </div>
+                    <div class="product-content">
+                        <div class="product-header">
+                            <span class="product-number">(03)</span>
+                            <span class="product-tag">Interaction</span>
+                        </div>
+                        <h3 class="product-title">Scroll Reveal</h3>
+                        <p class="product-desc">GSAP-powered scroll animations with stagger effects and smooth easing.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- PARTY PACKS -->
+    <section class="section" id="packs">
+        <div class="container">
+            <header class="section-header">
+                <span class="section-label">Party Packs</span>
+                <h2 class="display">Complete<br>Launch Kits</h2>
+            </header>
+            <div class="packs-grid">
+                <div class="pack-card featured">
+                    <div class="pack-image">
+                        <div class="pack-image-inner" style="background: linear-gradient(135deg, #ff531f 0%, #f093fb 100%);"></div>
+                    </div>
+                    <div class="pack-content">
+                        <div class="pack-header">
+                            <span class="pack-badge">Most Popular</span>
+                        </div>
+                        <h3 class="pack-title">SaaS Starter</h3>
+                        <p class="pack-desc">Everything you need to launch your SaaS marketing site. Includes pricing tables, feature grids, testimonials, and full CMS setup.</p>
+                        <div class="pack-specs">
+                            <div class="pack-spec">
+                                <span class="pack-spec-value">12</span>
+                                <span class="pack-spec-label">Pages</span>
+                            </div>
+                            <div class="pack-spec">
+                                <span class="pack-spec-value">45</span>
+                                <span class="pack-spec-label">Components</span>
+                            </div>
+                            <div class="pack-spec">
+                                <span class="pack-spec-value">✓</span>
+                                <span class="pack-spec-label">Figma</span>
+                            </div>
+                            <div class="pack-spec">
+                                <span class="pack-spec-value">✓</span>
+                                <span class="pack-spec-label">Guide</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pack-card">
+                    <div class="pack-image">
+                        <div class="pack-image-inner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                    </div>
+                    <div class="pack-content">
+                        <div class="pack-header">
+                            <span class="pack-badge">New</span>
+                        </div>
+                        <h3 class="pack-title">Agency</h3>
+                        <p class="pack-desc">Premium agency portfolio with case studies and team pages.</p>
+                        <div class="pack-specs">
+                            <div class="pack-spec">
+                                <span class="pack-spec-value">8</span>
+                                <span class="pack-spec-label">Pages</span>
+                            </div>
+                            <div class="pack-spec">
+                                <span class="pack-spec-value">32</span>
+                                <span class="pack-spec-label">Components</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pack-card">
+                    <div class="pack-image">
+                        <div class="pack-image-inner" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);"></div>
+                    </div>
+                    <div class="pack-content">
+                        <div class="pack-header">
+                            <span class="pack-badge">Creative</span>
+                        </div>
+                        <h3 class="pack-title">Portfolio</h3>
+                        <p class="pack-desc">Stunning portfolio for designers and developers.</p>
+                        <div class="pack-specs">
+                            <div class="pack-spec">
+                                <span class="pack-spec-value">6</span>
+                                <span class="pack-spec-label">Pages</span>
+                            </div>
+                            <div class="pack-spec">
+                                <span class="pack-spec-value">28</span>
+                                <span class="pack-spec-label">Components</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- FEATURES -->
+    <section class="section">
+        <div class="container">
+            <div class="features-intro">
+                <div>
+                    <span class="section-label">Features</span>
+                </div>
+                <h2 class="h2">Built different. Every resource crafted with production quality in mind.</h2>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-number">(01)</div>
+                    <h3 class="feature-title">Copy & Paste Ready</h3>
+                    <p class="feature-desc">Webflow native. No plugins required. Clean class naming throughout.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-number">(02)</div>
+                    <h3 class="feature-title">GSAP Interactions</h3>
+                    <p class="feature-desc">ScrollTrigger, SplitText, and Flip animations built in and ready to use.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-number">(03)</div>
+                    <h3 class="feature-title">Figma Included</h3>
+                    <p class="feature-desc">Auto-layout, design tokens, and component variants for every pack.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-number">(04)</div>
+                    <h3 class="feature-title">Launch Guides</h3>
+                    <p class="feature-desc">Setup walkthroughs, customization tips, and implementation best practices.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- COLLABORATORS -->
+    <section class="section collab-section" id="collaborators">
+        <div class="container">
+            <header class="section-header">
+                <span class="section-label">Collaborators</span>
+                <h2 class="display">Learn From<br>The Best</h2>
+            </header>
+            <div class="collab-grid">
+                <div class="collab-card">
+                    <div class="collab-avatar">
+                        <div class="collab-avatar-inner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                    </div>
+                    <h4 class="collab-name">Alex Rivera</h4>
+                    <p class="collab-role">Creative Developer</p>
+                    <div class="collab-stats">
+                        <div>
+                            <div class="collab-stat-value">12</div>
+                            <div class="collab-stat-label">Resources</div>
+                        </div>
+                        <div>
+                            <div class="collab-stat-value">2.4k</div>
+                            <div class="collab-stat-label">Downloads</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="collab-card">
+                    <div class="collab-avatar">
+                        <div class="collab-avatar-inner" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                    </div>
+                    <h4 class="collab-name">Maya Johnson</h4>
+                    <p class="collab-role">UI/UX Designer</p>
+                    <div class="collab-stats">
+                        <div>
+                            <div class="collab-stat-value">8</div>
+                            <div class="collab-stat-label">Resources</div>
+                        </div>
+                        <div>
+                            <div class="collab-stat-value">1.8k</div>
+                            <div class="collab-stat-label">Downloads</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="collab-card">
+                    <div class="collab-avatar">
+                        <div class="collab-avatar-inner" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+                    </div>
+                    <h4 class="collab-name">James Park</h4>
+                    <p class="collab-role">Motion Designer</p>
+                    <div class="collab-stats">
+                        <div>
+                            <div class="collab-stat-value">15</div>
+                            <div class="collab-stat-label">Resources</div>
+                        </div>
+                        <div>
+                            <div class="collab-stat-value">3.1k</div>
+                            <div class="collab-stat-label">Downloads</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="collab-card">
+                    <div class="collab-avatar">
+                        <div class="collab-avatar-inner" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);"></div>
+                    </div>
+                    <h4 class="collab-name">Emma Wilson</h4>
+                    <p class="collab-role">Webflow Expert</p>
+                    <div class="collab-stats">
+                        <div>
+                            <div class="collab-stat-value">10</div>
+                            <div class="collab-stat-label">Resources</div>
+                        </div>
+                        <div>
+                            <div class="collab-stat-value">2.2k</div>
+                            <div class="collab-stat-label">Downloads</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- PRICING -->
+    <section class="section" id="pricing">
+        <div class="container">
+            <header class="section-header" style="text-align: center;">
+                <span class="section-label">Pricing</span>
+                <h2 class="display">Simple<br>Pricing</h2>
+            </header>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <span class="pricing-tier">Starter</span>
+                    <div class="pricing-price">$0</div>
+                    <div class="pricing-period">Free Forever</div>
+                    <p class="pricing-desc">Perfect for exploring what Flow Party offers.</p>
+                    <div class="pricing-features">
+                        <div class="pricing-feature">5 Free Components</div>
+                        <div class="pricing-feature">Community Access</div>
+                        <div class="pricing-feature">Email Support</div>
+                    </div>
+                    <a href="#" class="btn btn-secondary" style="width: 100%;">Get Started</a>
+                </div>
+                <div class="pricing-card featured">
+                    <span class="pricing-tier">Pro — Popular</span>
+                    <div class="pricing-price">$29</div>
+                    <div class="pricing-period">Per Month</div>
+                    <p class="pricing-desc">Full access to The Stash. Ship faster, every project.</p>
+                    <div class="pricing-features">
+                        <div class="pricing-feature">All 140+ Resources</div>
+                        <div class="pricing-feature">All Party Packs</div>
+                        <div class="pricing-feature">Figma Files Included</div>
+                        <div class="pricing-feature">Priority Support</div>
+                        <div class="pricing-feature">Weekly New Releases</div>
+                    </div>
+                    <a href="#" class="btn btn-primary">Start Pro Trial</a>
+                </div>
+                <div class="pricing-card">
+                    <span class="pricing-tier">Lifetime</span>
+                    <div class="pricing-price">$299</div>
+                    <div class="pricing-period">One Time</div>
+                    <p class="pricing-desc">One payment, forever access. Best value for agencies.</p>
+                    <div class="pricing-features">
+                        <div class="pricing-feature">Everything in Pro</div>
+                        <div class="pricing-feature">Lifetime Updates</div>
+                        <div class="pricing-feature">Team Sharing (5 Seats)</div>
+                        <div class="pricing-feature">Early Access</div>
+                    </div>
+                    <a href="#" class="btn btn-secondary" style="width: 100%;">Get Lifetime</a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- FAQ -->
+    <section class="section faq-section" id="faq">
+        <div class="container">
+            <div class="faq-grid">
+                <div class="faq-left">
+                    <span class="section-label">FAQ</span>
+                    <h2 class="display">Common<br>Questions</h2>
+                </div>
+                <div class="faq-right">
+                    <div class="faq-list">
+                        <div class="faq-item" data-faq>
+                            <div class="faq-question">
+                                <span class="faq-question-text">How does copy & paste work?</span>
+                                <span class="faq-number">(01)</span>
+                            </div>
+                            <div class="faq-answer">
+                                <div class="faq-answer-inner">
+                                    <p>Click copy on any component in The Stash, then paste directly into your Webflow Designer. The component arrives with all classes, interactions, and settings intact.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="faq-item" data-faq>
+                            <div class="faq-question">
+                                <span class="faq-question-text">What's included in a Party Pack?</span>
+                                <span class="faq-number">(02)</span>
+                            </div>
+                            <div class="faq-answer">
+                                <div class="faq-answer-inner">
+                                    <p>Each Party Pack includes a complete Webflow template, matching component library, Figma source files, and a detailed launch guide.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="faq-item" data-faq>
+                            <div class="faq-question">
+                                <span class="faq-question-text">Can I use resources for client projects?</span>
+                                <span class="faq-number">(03)</span>
+                            </div>
+                            <div class="faq-answer">
+                                <div class="faq-answer-inner">
+                                    <p>Yes! All resources come with a commercial license. Use them for unlimited personal and client projects.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="faq-item" data-faq>
+                            <div class="faq-question">
+                                <span class="faq-question-text">Do I need GSAP knowledge?</span>
+                                <span class="faq-number">(04)</span>
+                            </div>
+                            <div class="faq-answer">
+                                <div class="faq-answer-inner">
+                                    <p>Nope. Interactions work out of the box. But if you want to customize, we include documentation explaining how each animation works.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="#" class="nav-logo">
+                        <span class="logo-name">Flow Party</span>
+                        <span class="logo-tagline">Premium Webflow Assets</span>
+                    </a>
+                    <p class="footer-desc">Premium Webflow components, templates, and complete launch solutions for creative developers.</p>
+                </div>
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <a href="#stash">The Stash</a>
+                    <a href="#packs">Party Packs</a>
+                    <a href="#pricing">Pricing</a>
+                    <a href="#">Updates</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Community</h4>
+                    <a href="#collaborators">Collaborators</a>
+                    <a href="#">Discord</a>
+                    <a href="#">Twitter</a>
+                    <a href="#">YouTube</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Support</h4>
+                    <a href="#faq">FAQ</a>
+                    <a href="#">Documentation</a>
+                    <a href="#">Contact</a>
+                    <a href="#">Terms</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>© 2025 Flow Party. All rights reserved.</span>
+                <span>Made with care for creative developers.</span>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- MINIMAL JS -->
+    <script>
+        // Mobile Nav Toggle
+        const navToggle = document.getElementById('navToggle');
+        const navMobile = document.getElementById('navMobile');
+        
+        navToggle.addEventListener('click', () => {
+            navToggle.classList.toggle('active');
+            navMobile.classList.toggle('active');
+        });
+        
+        // Close mobile nav on link click
+        navMobile.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                navToggle.classList.remove('active');
+                navMobile.classList.remove('active');
+            });
+        });
+        
+        // Hero Tabs
+        document.querySelectorAll('.hero-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.hero-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+        
+        // FAQ Accordion
+        document.querySelectorAll('[data-faq]').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('[data-faq]').forEach(other => {
+                    if (other !== item) other.classList.remove('active');
+                });
+                item.classList.toggle('active');
+            });
+        });
+    </script>
+</body>
+</html>
