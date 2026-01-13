@@ -1,17 +1,20 @@
 "use client"
 
+import { useState, useRef, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs"
 import { useAuth } from "@clerk/nextjs"
-import { useQuery } from "convex/react"
+import { useQuery, useMutation } from "convex/react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Upload04Icon, Database01Icon, FavouriteIcon } from "@hugeicons/core-free-icons"
 import { api } from "@/convex/_generated/api"
+import { Id } from "@/convex/_generated/dataModel"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "./ThemeToggle"
 import { ASSET_CATEGORIES, AssetCategory } from "@/lib/assets/categories"
+import { toast } from "sonner"
 
 export type Category = AssetCategory
 
@@ -35,10 +38,55 @@ export function Sidebar({ className }: SidebarProps) {
   const adminEmails = getAdminEmails()
   const isAdmin = isLoaded && isSignedIn && adminEmails.includes(userEmail)
 
+  // Template editing state
+  const [editingTemplateId, setEditingTemplateId] = useState<Id<"templates"> | null>(null)
+  const [editingName, setEditingName] = useState("")
+  const editInputRef = useRef<HTMLInputElement>(null)
+  const renameTemplate = useMutation(api.templates.rename)
+
   const templates = useQuery(
     api.templates.listWithCounts,
     isLoaded && isSignedIn ? {} : "skip"
   )
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (editingTemplateId && editInputRef.current) {
+      editInputRef.current.focus()
+      editInputRef.current.select()
+    }
+  }, [editingTemplateId])
+
+  const handleTemplateDoubleClick = (templateId: Id<"templates">, currentName: string) => {
+    if (!isAdmin) return
+    setEditingTemplateId(templateId)
+    setEditingName(currentName)
+  }
+
+  const handleTemplateSave = async () => {
+    if (!editingTemplateId || !editingName.trim()) {
+      setEditingTemplateId(null)
+      return
+    }
+
+    try {
+      await renameTemplate({ templateId: editingTemplateId, name: editingName.trim() })
+      toast.success("Template renamed")
+    } catch (error) {
+      console.error("[Sidebar] Failed to rename template:", error)
+      toast.error("Failed to rename template")
+    } finally {
+      setEditingTemplateId(null)
+    }
+  }
+
+  const handleTemplateKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleTemplateSave()
+    } else if (e.key === "Escape") {
+      setEditingTemplateId(null)
+    }
+  }
 
   const activeCategory = searchParams.get("cat") ?? ""
   const activeTemplate = searchParams.get("template") ?? ""
@@ -73,6 +121,8 @@ export function Sidebar({ className }: SidebarProps) {
       params.set("template", slug)
       params.delete("cat")
     }
+    params.delete("admin")
+    params.delete("favorites")
 
     const query = params.toString()
     const targetPath = "/assets"
@@ -87,6 +137,8 @@ export function Sidebar({ className }: SidebarProps) {
     } else {
       params.set("cat", slug)
     }
+    params.delete("admin")
+    params.delete("favorites")
 
     const query = params.toString()
     const targetPath = "/assets"
@@ -185,21 +237,36 @@ export function Sidebar({ className }: SidebarProps) {
               </li>
               {(templates ?? []).map((template) => {
                 const isActive = activeTemplate === template.slug
+                const isEditing = editingTemplateId === template._id
 
                 return (
                   <li key={template.slug}>
-                    <button
-                      type="button"
-                      onClick={() => handleTemplateClick(template.slug)}
-                      className={cn(
-                        "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors",
-                        isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      )}
-                    >
-                      <span>{template.name}</span>
-                    </button>
+                    {isEditing ? (
+                      <input
+                        ref={editInputRef}
+                        type="text"
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        onBlur={handleTemplateSave}
+                        onKeyDown={handleTemplateKeyDown}
+                        className="w-full rounded-md border border-primary bg-background px-2 py-1.5 text-sm outline-none"
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleTemplateClick(template.slug)}
+                        onDoubleClick={() => handleTemplateDoubleClick(template._id, template.name)}
+                        className={cn(
+                          "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors",
+                          isActive
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                            : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                        )}
+                        title={isAdmin ? "Double-click to rename" : undefined}
+                      >
+                        <span>{template.name}</span>
+                      </button>
+                    )}
                   </li>
                 )
               })}
@@ -250,28 +317,28 @@ export function Sidebar({ className }: SidebarProps) {
         </nav>
 
         <div className="mt-auto shrink-0">
-          {/* Admin Tools Section */}
-          {isAdmin && (
-            <div className="border-t border-sidebar-border px-6 py-4">
-              <span className="text-[11px] uppercase tracking-[0.28em] text-sidebar-foreground/50">
-                Admin Tools
-              </span>
-              <ul className="mt-3 space-y-0.5">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => handleAdminClick("import")}
-                    className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                      activeAdmin === "import"
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                    )}
-                  >
-                    <HugeiconsIcon icon={Upload04Icon} className="h-3.5 w-3.5" />
-                    <span>Import HTML</span>
-                  </button>
-                </li>
+          {/* Tools Section */}
+          <div className="border-t border-sidebar-border px-6 py-4">
+            <span className="text-[11px] uppercase tracking-[0.28em] text-sidebar-foreground/50">
+              Tools
+            </span>
+            <ul className="mt-3 space-y-0.5">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => handleAdminClick("import")}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                    activeAdmin === "import"
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  )}
+                >
+                  <HugeiconsIcon icon={Upload04Icon} className="h-3.5 w-3.5" />
+                  <span>Import HTML</span>
+                </button>
+              </li>
+              {isAdmin && (
                 <li>
                   <button
                     type="button"
@@ -287,9 +354,9 @@ export function Sidebar({ className }: SidebarProps) {
                     <span>Database</span>
                   </button>
                 </li>
-              </ul>
-            </div>
-          )}
+              )}
+            </ul>
+          </div>
 
           {/* User area */}
           <div className="flex items-center justify-between border-t border-sidebar-border px-6 py-3">

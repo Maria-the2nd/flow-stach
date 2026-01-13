@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth, useUser } from "@clerk/nextjs"
-import { useQuery } from "convex/react"
+import { useQuery, useMutation } from "convex/react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Search01Icon,
@@ -27,7 +27,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ASSET_CATEGORIES } from "@/lib/assets/categories"
+import { copyWebflowJson } from "@/lib/clipboard"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { toast } from "sonner"
 
 function getAdminEmails(): string[] {
   const envValue = process.env.NEXT_PUBLIC_ADMIN_EMAILS || ""
@@ -40,7 +42,19 @@ const MAX_VISIBLE_TAGS = 3
 
 function AssetCard({ asset }: { asset: Asset }) {
   const { isFavorited, toggle } = useFavorites()
+  const { isLoaded: isAuthLoaded, isSignedIn } = useAuth()
+  const router = useRouter()
   const favorited = isFavorited(asset.slug)
+  const isDesignToken = asset.category === "tokens"
+  const [copying, setCopying] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const deleteAsset = useMutation(api.assets.deleteById)
+
+  const payload = useQuery(
+    api.payloads.byAssetId,
+    isAuthLoaded && isSignedIn ? { assetId: asset._id } : "skip"
+  )
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -48,14 +62,51 @@ function AssetCard({ asset }: { asset: Asset }) {
     toggle(asset.slug)
   }
 
+  // Blue gradient for design tokens, orange for regular components
+  const cardGradient = isDesignToken
+    ? "bg-[linear-gradient(45deg,hsla(217,100%,50%,1),hsla(230,100%,60%,1),hsla(200,100%,50%,1))]"
+    : "bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]"
+
   const visibleTags = asset.tags.slice(0, MAX_VISIBLE_TAGS)
+  const isPayloadLoading = payload === undefined
+  const webflowDisabled = copying || isPayloadLoading
+
+  const handleCopyToWebflow = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (webflowDisabled) return
+    setCopying(true)
+    try {
+      await copyWebflowJson(payload?.webflowJson)
+    } finally {
+      setCopying(false)
+    }
+  }
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (deleting) return
+    if (!confirm(`Delete "${asset.title}"? This cannot be undone.`)) return
+    setDeleting(true)
+    try {
+      await deleteAsset({ assetId: asset._id })
+      toast.success("Asset deleted")
+      // Note: Convex queries are reactive, no manual refresh needed
+    } catch (error) {
+      console.error("Failed to delete asset:", error)
+      toast.error("Failed to delete asset")
+    } finally {
+      setDeleting(false)
+    }
+  }
   return (
     <Card className="group flex flex-col overflow-hidden transition-all duration-200 hover:shadow-lg hover:ring-2 hover:ring-primary/20">
       <Link href={`/assets/${asset.slug}`} className="block">
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]">
+        <div className={`relative aspect-[4/3] w-full overflow-hidden ${cardGradient}`}>
           <div className="relative flex h-full w-full flex-col items-start justify-end p-4">
             <span className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.24em] text-black/80">
-              Component
+              {isDesignToken ? "Design Tokens" : "Component"}
             </span>
           </div>
           {/* Overlay badges */}
@@ -101,17 +152,25 @@ function AssetCard({ asset }: { asset: Asset }) {
       </Link>
       <CardContent className="mt-auto border-t border-border/70 pt-3">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="flex-1 rounded-pill">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 rounded-pill"
+            onClick={handleCopyToWebflow}
+            disabled={webflowDisabled}
+          >
             <HugeiconsIcon icon={Copy01Icon} className="mr-1.5 h-3.5 w-3.5" />
-            Copy to Webflow
+            {copying ? "Copying..." : isPayloadLoading ? "Loading..." : "Copy to Webflow"}
           </Button>
           <Button
             variant="outline"
             size="sm"
             className="rounded-pill text-destructive border-destructive/40 hover:bg-destructive/10"
+            onClick={handleDelete}
+            disabled={deleting}
           >
             <HugeiconsIcon icon={Delete01Icon} className="mr-1.5 h-3.5 w-3.5" />
-            Delete
+            {deleting ? "Deleting..." : "Delete"}
           </Button>
         </div>
       </CardContent>
@@ -318,11 +377,22 @@ export function AssetsContent() {
       : "skip"
   )
 
-  // Apply client-side favorites filter
+  // Apply client-side favorites filter and sort design tokens first
   const filteredAssets = useMemo(() => {
     if (!assets) return []
-    if (!showFavoritesOnly) return assets
-    return assets.filter((asset) => favorites.has(asset.slug))
+    let result = showFavoritesOnly
+      ? assets.filter((asset) => favorites.has(asset.slug))
+      : [...assets]
+
+    // Sort: design tokens first, then by updatedAt
+    result.sort((a, b) => {
+      const aIsToken = a.category === "tokens" ? 0 : 1
+      const bIsToken = b.category === "tokens" ? 0 : 1
+      if (aIsToken !== bIsToken) return aIsToken - bIsToken
+      return b.updatedAt - a.updatedAt
+    })
+
+    return result
   }, [assets, showFavoritesOnly, favorites])
 
   const isLoading = !isAuthLoaded || (

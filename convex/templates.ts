@@ -1,5 +1,6 @@
-import { query } from "./_generated/server"
-import { requireAuth } from "./auth"
+import { query, mutation } from "./_generated/server"
+import { v } from "convex/values"
+import { requireAuth, requireAdmin } from "./auth"
 
 export const list = query({
   args: {},
@@ -34,5 +35,27 @@ export const listWithCounts = query({
         assetCount: counts.get(template._id) ?? 0,
       }))
       .sort((a, b) => a.name.localeCompare(b.name))
+  },
+})
+
+export const rename = mutation({
+  args: {
+    templateId: v.id("templates"),
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    const name = args.name.trim()
+    if (!name) {
+      throw new Error("Template name cannot be empty")
+    }
+
+    await ctx.db.patch(args.templateId, {
+      name,
+      updatedAt: Date.now(),
+    })
+
+    return { success: true }
   },
 })

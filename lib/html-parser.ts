@@ -405,6 +405,7 @@ export function extractClassNames(html: string): string[] {
 
 /**
  * Extract CSS rules that match the given selectors
+ * Handles: compound selectors, descendant selectors, pseudo-classes, pseudo-elements
  */
 export function extractCssForSection(
   fullCss: string,
@@ -447,9 +448,9 @@ export function extractCssForSection(
     }
   }
 
-  // Always include universal reset
+  // Always include universal reset (with ::before, ::after)
   if (settings.includeReset) {
-    const resetMatch = fullCss.match(/\*\s*\{[^}]+\}/);
+    const resetMatch = fullCss.match(/\*\s*,\s*\*::before\s*,\s*\*::after\s*\{[^}]+\}|\*\s*\{[^}]+\}/);
     if (resetMatch) {
       pushRule('\n' + resetMatch[0]);
     }
@@ -477,23 +478,59 @@ export function extractCssForSection(
     }
   }
 
-  // Build regex patterns for selectors
-  const selectorPatterns = selectors.map(s => escapeRegex(s));
+  // Match grouped tag selectors like "h1, h2, h3 { ... }"
+  const groupedTagRegex = /(?:^|\n)\s*((?:h[1-6]|p|a|ul|ol|li|span|strong|em)(?:\s*,\s*(?:h[1-6]|p|a|ul|ol|li|span|strong|em))*)\s*\{([^}]+)\}/gi;
+  for (const match of fullCss.matchAll(groupedTagRegex)) {
+    pushRule('\n' + match[0].trim());
+  }
 
-  // Extract matching CSS rules
-  // Match: .class-name { ... } or .class-name:hover { ... }
-  const ruleRegex = /([.#][\w-]+(?:[:\s][^{]*)?)\s*\{([^}]+)\}/g;
+  // Create a Set of class names for faster lookup
+  const selectorSet = new Set(selectors.map(s => s.toLowerCase()));
+
+  // Helper function to check if a CSS selector matches any of our classes
+  const selectorMatchesClasses = (cssSelector: string): boolean => {
+    // Extract all class names from the CSS selector
+    // Handles: .class, .class1.class2, .parent .child, .class:hover, .class::before
+    const classMatches = cssSelector.matchAll(/\.([a-zA-Z_-][a-zA-Z0-9_-]*)/g);
+    for (const match of classMatches) {
+      if (selectorSet.has(match[1].toLowerCase())) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Parse CSS rules more comprehensively
+  // This regex captures selectors that may include:
+  // - Single classes (.class)
+  // - Compound classes (.class1.class2)
+  // - Descendant selectors (.parent .child)
+  // - Pseudo-classes (.class:hover, .class:nth-child(1))
+  // - Pseudo-elements (.class::before)
+  // - IDs (#id)
+  // - Combinations of all above
+  const ruleRegex = /([^{}@]+)\{([^}]+)\}/g;
   let match;
 
   while ((match = ruleRegex.exec(fullCss)) !== null) {
-    const [fullRule, selector] = match;
+    const [fullRule, selectorPart] = match;
+    const selector = selectorPart.trim();
 
-    // Check if any of our selectors match
-    for (const pattern of selectorPatterns) {
-      if (selector.includes('.' + pattern) || selector.includes('#' + pattern)) {
-        pushRule('\n' + fullRule);
-        break;
-      }
+    // Skip @rules (they're handled separately)
+    if (selector.startsWith('@')) continue;
+
+    // Skip :root and similar
+    if (selector === ':root' || selector === '.fp-root') continue;
+
+    // Skip body, html (handled above)
+    if (selector === 'body' || selector === 'html') continue;
+
+    // Skip grouped tag selectors (handled above)
+    if (/^(?:h[1-6]|p|a|ul|ol|li)(?:\s*,\s*(?:h[1-6]|p|a|ul|ol|li))*$/.test(selector)) continue;
+
+    // Check if this selector references any of our classes
+    if (selectorMatchesClasses(selector)) {
+      pushRule('\n' + fullRule.trim());
     }
   }
 
@@ -502,12 +539,9 @@ export function extractCssForSection(
   while ((match = mediaRegex.exec(fullCss)) !== null) {
     const [fullMedia, mediaContent] = match;
 
-    // Check if media query contains any of our selectors
-    for (const pattern of selectorPatterns) {
-      if (mediaContent.includes('.' + pattern) || mediaContent.includes('#' + pattern)) {
-        pushRule('\n' + fullMedia);
-        break;
-      }
+    // Check if media query contains any of our classes
+    if (selectorMatchesClasses(mediaContent)) {
+      pushRule('\n' + fullMedia);
     }
   }
 

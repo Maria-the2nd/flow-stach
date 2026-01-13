@@ -23,10 +23,11 @@ export function DatabasePanel({ onActionComplete }: DatabasePanelProps) {
     deletedAssets: number
     deletedPayloads: number
     deletedFavorites: number
+    deletedTemplates: number
   } | null>(null)
 
   const handleClearAll = async () => {
-    if (!confirm("Are you sure you want to delete ALL assets, payloads, and favorites? This cannot be undone.")) {
+    if (!confirm("Are you sure you want to delete ALL assets, payloads, favorites, and templates? This cannot be undone.")) {
       return
     }
 
@@ -36,7 +37,9 @@ export function DatabasePanel({ onActionComplete }: DatabasePanelProps) {
     try {
       const res = await clearAllAssets()
       setClearResult(res)
-      toast.success(`Cleared ${res.deletedAssets} assets, ${res.deletedPayloads} payloads, ${res.deletedFavorites} favorites`)
+      toast.success(
+        `Cleared ${res.deletedAssets} assets, ${res.deletedPayloads} payloads, ${res.deletedFavorites} favorites, ${res.deletedTemplates} templates`
+      )
       onActionComplete?.()
     } catch (error) {
       console.error("Clear error:", error)
@@ -72,7 +75,7 @@ export function DatabasePanel({ onActionComplete }: DatabasePanelProps) {
           <div className="flex-1">
             <h3 className="text-sm font-medium">Clear All Data</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Permanently delete all assets, payloads, and favorites from the database. This action cannot be undone.
+              Permanently delete all assets, payloads, favorites, and templates from the database. This action cannot be undone.
             </p>
             <Button
               onClick={handleClearAll}
@@ -97,6 +100,7 @@ export function DatabasePanel({ onActionComplete }: DatabasePanelProps) {
             <span>Assets: {clearResult.deletedAssets}</span>
             <span>Payloads: {clearResult.deletedPayloads}</span>
             <span>Favorites: {clearResult.deletedFavorites}</span>
+            <span>Templates: {clearResult.deletedTemplates}</span>
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
-import { query } from "./_generated/server"
+import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
-import { requireAuth } from "./auth"
+import { requireAdmin, requireAuth } from "./auth"
 
 // List published assets with optional category and search filters
 export const list = query({
@@ -110,6 +110,41 @@ export const count = query({
       total: allAssets.length,
       published: published.length,
       draft: allAssets.length - published.length,
+    }
+  },
+})
+
+// Delete a single asset and its payload/favorites
+export const deleteById = mutation({
+  args: {
+    assetId: v.id("assets"),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    const payload = await ctx.db
+      .query("payloads")
+      .withIndex("by_asset_id", (q) => q.eq("assetId", args.assetId))
+      .unique()
+
+    if (payload) {
+      await ctx.db.delete(payload._id)
+    }
+
+    const favorites = await ctx.db
+      .query("favorites")
+      .filter((q) => q.eq(q.field("assetId"), args.assetId))
+      .collect()
+
+    for (const favorite of favorites) {
+      await ctx.db.delete(favorite._id)
+    }
+
+    await ctx.db.delete(args.assetId)
+
+    return {
+      deletedPayload: !!payload,
+      deletedFavorites: favorites.length,
     }
   },
 })

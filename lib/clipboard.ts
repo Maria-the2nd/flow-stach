@@ -91,7 +91,8 @@ function normalizeWebflowJson(jsonString: string): string {
     }
 
     return JSON.stringify(parsed);
-  } catch {
+  } catch (error) {
+    console.warn("[clipboard] normalizeWebflowJson failed:", error);
     return jsonString;
   }
 }
@@ -109,7 +110,8 @@ export async function copyText(text: string): Promise<CopyResult> {
     await navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
     return { success: true };
-  } catch {
+  } catch (error) {
+    console.error("[clipboard] copyText failed:", error);
     toast.error("Failed to copy to clipboard");
     return { success: false, reason: "clipboard_write_failed" };
   }
@@ -121,6 +123,32 @@ export async function copyText(text: string): Promise<CopyResult> {
  */
 function isExtensionInstalled(): boolean {
   return document.documentElement.hasAttribute("data-flowstach-extension");
+}
+
+/**
+ * Copy Webflow JSON using the modern Clipboard API with Blob.
+ * This is the preferred method - works in Chrome/Edge without extension.
+ * Webflow Designer recognizes application/json MIME type.
+ */
+async function copyWithClipboardApi(jsonString: string): Promise<CopyResult> {
+  try {
+    // Create blobs for both MIME types
+    const jsonBlob = new Blob([jsonString], { type: "application/json" });
+    const textBlob = new Blob([jsonString], { type: "text/plain" });
+
+    // Use ClipboardItem to write multiple formats
+    const clipboardItem = new ClipboardItem({
+      "application/json": jsonBlob,
+      "text/plain": textBlob,
+    });
+
+    await navigator.clipboard.write([clipboardItem]);
+    toast.success("Copied! Paste in Webflow Designer (Cmd/Ctrl+V)");
+    return { success: true };
+  } catch (error) {
+    console.warn("[clipboard] ClipboardItem API failed:", error);
+    return { success: false, reason: "clipboard_api_failed" };
+  }
 }
 
 /**
@@ -168,7 +196,7 @@ function copyViaExtension(jsonString: string): Promise<CopyResult> {
 
 /**
  * Fallback: Copy using document-based clipboard write.
- * This works for web-to-web paste but NOT for native apps like Webflow Designer.
+ * Last resort - may not work reliably in all browsers.
  */
 function copyFallback(jsonString: string): Promise<CopyResult> {
   return new Promise((resolve) => {
@@ -177,12 +205,7 @@ function copyFallback(jsonString: string): Promise<CopyResult> {
       e.clipboardData?.setData("application/json", jsonString);
       e.clipboardData?.setData("text/plain", jsonString);
       document.removeEventListener("copy", handler);
-      toast.warning("Copied (limited). Install extension for Webflow paste.", {
-        action: {
-          label: "Get Extension",
-          onClick: () => window.open("/extension", "_blank")
-        }
-      });
+      toast.success("Copied! Try pasting in Webflow (Cmd/Ctrl+V)");
       resolve({ success: true });
     };
 
@@ -201,7 +224,8 @@ function copyFallback(jsonString: string): Promise<CopyResult> {
     let success = false;
     try {
       success = document.execCommand("copy");
-    } catch {
+    } catch (error) {
+      console.warn("[clipboard] execCommand('copy') failed:", error);
       success = false;
     }
 
@@ -218,10 +242,10 @@ function copyFallback(jsonString: string): Promise<CopyResult> {
 /**
  * Copy Webflow JSON to clipboard.
  *
- * If the Flow Stach Chrome extension is installed, uses the extension
- * to write application/json to the native clipboard (works with Webflow Designer).
+ * Uses the modern Clipboard API (ClipboardItem) as the primary method,
+ * which works in Chrome/Edge without any extension.
  *
- * Otherwise, falls back to web-based copy which only works for web-to-web paste.
+ * Falls back to extension or document-based copy if needed.
  */
 export async function copyWebflowJson(jsonString: string | undefined): Promise<CopyResult> {
   if (!jsonString) {
@@ -237,11 +261,17 @@ export async function copyWebflowJson(jsonString: string | undefined): Promise<C
     return { success: false, reason: "no_payload" };
   }
 
-  // Use extension if available (required for Webflow Designer paste)
+  // Try modern Clipboard API first (works in Chrome/Edge without extension)
+  const clipboardResult = await copyWithClipboardApi(normalized);
+  if (clipboardResult.success) {
+    return clipboardResult;
+  }
+
+  // Fall back to extension if installed
   if (isExtensionInstalled()) {
     return copyViaExtension(normalized);
   }
 
-  // Fallback to web-based copy (won't work in Webflow Designer)
+  // Last resort: document-based copy
   return copyFallback(normalized);
 }

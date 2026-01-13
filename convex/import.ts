@@ -87,7 +87,7 @@ export const importSections = mutation({
       if (existingTokenAsset) {
         // Update existing
         await ctx.db.patch(existingTokenAsset._id, {
-          title: `${args.designSystemName} Design Tokens`,
+          title: "Design Tokens",
           status: "published",
           pasteReliability: tokenPasteReliability,
           capabilityNotes: tokenCapabilityNotes,
@@ -114,7 +114,7 @@ export const importSections = mutation({
         // Create new token asset
         const tokenAssetId = await ctx.db.insert("assets", {
           slug: tokenSlug,
-          title: `${args.designSystemName} Design Tokens`,
+          title: "Design Tokens",
           category: "tokens",
           description: `Design tokens for ${args.designSystemName}`,
           tags: ["tokens", "design-system", args.designSystemSlug],

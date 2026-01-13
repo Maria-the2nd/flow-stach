@@ -2,7 +2,7 @@ import { mutation } from "./_generated/server"
 import { requireAdmin } from "./auth"
 
 /**
- * Clear all assets, payloads, and favorites from the database.
+ * Clear all assets, payloads, favorites, and templates from the database.
  * Admin only - use for fresh start before importing new data.
  */
 export const clearAllAssets = mutation({
@@ -28,10 +28,17 @@ export const clearAllAssets = mutation({
       await ctx.db.delete(asset._id)
     }
 
+    // Delete all templates
+    const allTemplates = await ctx.db.query("templates").collect()
+    for (const template of allTemplates) {
+      await ctx.db.delete(template._id)
+    }
+
     return {
       deletedAssets: allAssets.length,
       deletedPayloads: allPayloads.length,
       deletedFavorites: allFavorites.length,
+      deletedTemplates: allTemplates.length,
     }
   },
 })
