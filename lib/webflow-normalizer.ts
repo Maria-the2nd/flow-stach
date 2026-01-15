@@ -232,10 +232,20 @@ export function normalizeHtmlCssForWebflow(
     warnings
   );
 
-  const normalizedCss = serializeCss(baseRules, mediaRules);
+  let normalizedCss = serializeCss(baseRules, mediaRules);
 
-  // IMPORTANT: Build ClassIndex from the FINAL normalized CSS so it matches
-  // the selectors/classes produced by normalization (descendant flattening, element → class, etc.)
+  const originalMinWidthBlocks =
+    css.match(/@media\s*([^{]*min-width[^)]*\)[^{]*)\{([\s\S]*?)\}\s*/gi) || [];
+  if (originalMinWidthBlocks.length > 0) {
+    const missingBlocks = originalMinWidthBlocks.filter((block) => !normalizedCss.includes(block));
+    if (missingBlocks.length > 0) {
+      normalizedCss = [normalizedCss, ...missingBlocks].filter(Boolean).join("\n\n");
+      warnings.push(
+        `Preserved ${missingBlocks.length} mobile-first @media block(s) that were dropped during normalization.`
+      );
+    }
+  }
+
   const finalParsed = parseCSS(normalizedCss);
   const classIndex = finalParsed.classIndex;
   warnings.push(...finalParsed.classIndex.warnings.map((w) => w.message));

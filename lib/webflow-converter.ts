@@ -33,6 +33,17 @@ export interface WebflowNode {
     xattr?: Array<{ name: string; value: string }>;
     link?: { mode: string; url: string; target?: string };
     attr?: { src?: string; alt?: string; loading?: string };
+    embed?: {
+      type: string;
+      meta: {
+        html: string;
+        div: boolean;
+        iframe: boolean;
+        script: boolean;
+        compilable: boolean;
+      };
+    };
+    insideRTE?: boolean;
   };
 }
 
@@ -1099,6 +1110,36 @@ export function buildTokenWebflowPayload(manifest: TokenManifest | TokenExtracti
 }
 
 /**
+ * Ensure content is wrapped in a page-wrapper div with default styles
+ */
+function ensurePageWrapper(html: string, css: string): { html: string; css: string } {
+  const wrapperClass = "page-wrapper";
+  let newHtml = html;
+  let newCss = css;
+
+  // Check if wrapper already exists in HTML
+  if (!newHtml.includes(`class="${wrapperClass}"`) && !newHtml.includes(`class='${wrapperClass}'`)) {
+    newHtml = `<div class="${wrapperClass}">\n${newHtml}\n</div>`;
+  }
+
+  // Check if wrapper style already exists in CSS
+  const wrapperRegex = /\.page-wrapper\s*\{/;
+  if (!wrapperRegex.test(newCss)) {
+    newCss = `${newCss}\n
+.page-wrapper {
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 5%;
+  padding-right: 5%;
+}`;
+  }
+
+  return { html: newHtml, css: newCss };
+}
+
+/**
  * Convert a DetectedSection to Webflow JSON payload
  */
 export function convertSectionToWebflow(
@@ -1110,7 +1151,10 @@ export function convertSectionToWebflow(
   const idGen = new IdGenerator(prefix);
   const collectedClasses = new Set<string>();
 
-  const normalized = normalizeHtmlCssForWebflow(section.htmlContent, section.cssContent);
+  // Ensure page wrapper exists
+  const { html, css } = ensurePageWrapper(section.htmlContent, section.cssContent);
+
+  const normalized = normalizeHtmlCssForWebflow(html, css);
   if (normalized.warnings.length > 0) {
     console.warn("[webflow-normalizer]", normalized.warnings.join(" | "));
   }
