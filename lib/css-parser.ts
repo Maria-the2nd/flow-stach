@@ -127,11 +127,13 @@ const WEBFLOW_SUPPORTED_PROPERTIES = new Set([
   "grid-row-gap", "grid-column-gap",
   "grid-template-columns", "grid-template-rows", "grid-column", "grid-row",
   "grid-column-start", "grid-column-end", "grid-row-start", "grid-row-end",
+  "grid-auto-rows", "grid-auto-columns", "grid-auto-flow",
   "width", "height", "min-width", "max-width", "min-height", "max-height", "aspect-ratio",
   "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
   "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
   "position", "top", "right", "bottom", "left", "z-index", "float", "clear",
   "background", "background-color", "background-image", "background-size", "background-position", "background-repeat",
+  "background-clip", "-webkit-background-clip", "-webkit-text-fill-color",
   "color", "font-family", "font-size", "font-weight", "font-style", "line-height", "letter-spacing",
   "text-align", "text-decoration", "text-transform", "text-indent", "text-shadow", "white-space",
   "border", "border-width", "border-style", "border-color",
@@ -213,12 +215,23 @@ export function resolveCssVariables(value: string, variables: Map<string, string
     depth++;
     result = result.replace(/var\(\s*(--[\w-]+)\s*(?:,\s*([^)]+))?\)/g, (_, varName, fallback) => {
       const resolved = variables.get(varName);
-      if (resolved !== undefined) return resolved;
-      if (fallback) return fallback.trim();
+      if (resolved !== undefined) {
+        // Strip any surrounding quotes from resolved value (shouldn't have them, but defensive)
+        const cleaned = resolved.trim().replace(/^['"]|['"]$/g, '');
+        return cleaned;
+      }
+      if (fallback) {
+        const cleanedFallback = fallback.trim().replace(/^['"]|['"]$/g, '');
+        return cleanedFallback;
+      }
       hasUnresolved = true;
       return `var(${varName})`;
     });
   }
+
+  // Final cleanup: ensure no unexpected quotes in the final result
+  // This catches cases where variable values themselves contained quotes
+  result = result.trim();
 
   return { resolved: result, hasUnresolved };
 }
@@ -339,6 +352,77 @@ function expandFlexShorthand(value: string): Record<string, string> {
   return {};
 }
 
+function expandBorderShorthand(value: string): Record<string, string> {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "none" || trimmed === "0") {
+    return {
+      "border-width": "0",
+      "border-style": "none",
+      "border-color": "transparent",
+    };
+  }
+
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return {};
+
+  const borderStyles = new Set([
+    "none", "hidden", "dotted", "dashed", "solid", "double",
+    "groove", "ridge", "inset", "outset"
+  ]);
+
+  let width: string | undefined;
+  let style: string | undefined;
+  let color: string | undefined;
+
+  for (const part of parts) {
+    // Check if it's a width (has units or is a number)
+    if (/^\d+(\.\d+)?(px|em|rem|pt|pc|in|cm|mm|ex|ch|vw|vh|vmin|vmax|%)$/.test(part) || 
+        /^(thin|medium|thick)$/.test(part)) {
+      if (!width) width = part;
+      continue;
+    }
+
+    // Check if it's a style keyword
+    if (borderStyles.has(part.toLowerCase())) {
+      if (!style) style = part;
+      continue;
+    }
+
+    // Otherwise, treat as color
+    if (!color) color = part;
+  }
+
+  const result: Record<string, string> = {};
+  if (width) result["border-width"] = width;
+  if (style) result["border-style"] = style;
+  if (color) result["border-color"] = color;
+
+  // If no explicit values, use defaults
+  if (!width && !style && !color && parts.length === 1) {
+    // Single value could be any of the three - most common is width
+    if (/^\d/.test(parts[0])) {
+      result["border-width"] = parts[0];
+      result["border-style"] = "solid";
+      result["border-color"] = "currentColor";
+    } else if (borderStyles.has(parts[0].toLowerCase())) {
+      result["border-width"] = "medium";
+      result["border-style"] = parts[0];
+      result["border-color"] = "currentColor";
+    } else {
+      result["border-width"] = "medium";
+      result["border-style"] = "solid";
+      result["border-color"] = parts[0];
+    }
+  } else {
+    // Set defaults for missing parts
+    if (!width) result["border-width"] = "medium";
+    if (!style) result["border-style"] = "none";
+    if (!color) result["border-color"] = "currentColor";
+  }
+
+  return result;
+}
+
 function parseProperties(propertiesStr: string, variables: Map<string, string>, warnings: CssWarning[]): Record<string, string> {
   const result: Record<string, string> = {};
   const properties: string[] = [];
@@ -379,6 +463,17 @@ function parseProperties(propertiesStr: string, variables: Map<string, string>, 
         Object.assign(result, expanded);
       } else {
         warnings.push({ type: "unsupported_property", message: `Unparsed flex shorthand: ${value}`, property: name });
+      }
+      continue;
+    }
+
+    // Expand border shorthand into explicit props (Webflow handles longhands more reliably)
+    if (name === "border") {
+      const expanded = expandBorderShorthand(value);
+      if (Object.keys(expanded).length > 0) {
+        Object.assign(result, expanded);
+      } else {
+        warnings.push({ type: "unsupported_property", message: `Unparsed border shorthand: ${value}`, property: name });
       }
       continue;
     }
@@ -485,6 +580,28 @@ function mapToStyleLess(map: Map<string, string>): string {
 }
 
 /**
+ * Validate styleLess string format - ensure no quoted property names or values.
+ * Webflow expects unquoted CSS property format: "property: value;"
+ * This function detects and strips any unexpected quotes.
+ */
+function validateStyleLess(styleLess: string): string {
+  if (!styleLess) return styleLess;
+  
+  // Check for quoted property names (e.g., "'background': '#08090b'")
+  // This pattern matches property names or values wrapped in single or double quotes
+  const quotedPattern = /(['"])([^'"]+)\1\s*:\s*(['"])([^'"]+)\3/g;
+  
+  if (quotedPattern.test(styleLess)) {
+    // Strip quotes from property names and values
+    return styleLess.replace(quotedPattern, (match, quote1, prop, quote2, val) => {
+      return `${prop}: ${val};`;
+    });
+  }
+  
+  return styleLess;
+}
+
+/**
  * Merge styleLess but preserve existing properties (existing wins).
  * Useful when backfilling mobile values into breakpoint variants.
  */
@@ -522,6 +639,7 @@ function applyMinWidthPropertiesToEntry(args: {
 }): void {
   const { entry, properties, minWidth } = args;
   const overrideBreakpoints = minWidthToOverrideBreakpoints(minWidth);
+  
   if (overrideBreakpoints.length === 0) {
     // Applies everywhere; just merge into base.
     entry.baseStyles = mergeStyleLess(entry.baseStyles, propertiesToStyleLess(properties));
@@ -1175,6 +1293,19 @@ function enforceExplicitLayoutProperties(
         props.set("grid-template-columns", "1fr");
         added.push("grid-template-columns: 1fr");
       }
+      // If grid has columns but no row definition, add explicit row defaults for Webflow UI
+      if (
+        props.has("grid-template-columns") &&
+        !props.has("grid-template-rows") &&
+        !props.has("grid-auto-rows")
+      ) {
+        props.set("grid-template-rows", "auto");
+        props.set("grid-auto-rows", "auto");
+        props.set("grid-auto-flow", "row");
+        added.push("grid-template-rows: auto");
+        added.push("grid-auto-rows: auto");
+        added.push("grid-auto-flow: row");
+      }
       if (!props.has("justify-items")) {
         props.set("justify-items", "stretch");
         added.push("justify-items: stretch");
@@ -1225,7 +1356,15 @@ export function classEntryToWebflowStyle(entry: ClassIndexEntry): WebflowStyle {
   }
 
   const baseStyles = normalizeGridStyleLess(entry.baseStyles, entry.isLayoutContainer);
-  logGridStyle(entry.className, baseStyles, entry.isLayoutContainer);
+  const validatedBaseStyles = validateStyleLess(baseStyles);
+  logGridStyle(entry.className, validatedBaseStyles, entry.isLayoutContainer);
+  
+  // Validate variant styleLess strings as well
+  const validatedVariants: Record<string, { styleLess: string }> = {};
+  for (const [key, variant] of Object.entries(variants)) {
+    validatedVariants[key] = { styleLess: validateStyleLess(variant.styleLess) };
+  }
+  
   return {
     _id: entry.className,
     fake: false,
@@ -1233,8 +1372,8 @@ export function classEntryToWebflowStyle(entry: ClassIndexEntry): WebflowStyle {
     name: entry.className,
     namespace: "",
     comb: entry.isComboClass ? "&" : "",
-    styleLess: baseStyles,
-    variants,
+    styleLess: validatedBaseStyles,
+    variants: validatedVariants,
     children: entry.children,
   };
 }

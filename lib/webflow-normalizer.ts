@@ -3,9 +3,10 @@
  * Rewrites HTML + CSS into class-only selectors that Webflow can import cleanly.
  */
 
-import { ELEMENT_TO_CLASS_MAP } from "./css-parser";
+import { ELEMENT_TO_CLASS_MAP, parseCSS, type ClassIndex } from "./css-parser";
 import { sanitizeGradientsForWebflow } from "./gradient-sanitizer";
 import { decoupleGradientsFromTransforms } from "./gradient-transform-decoupler";
+import { literalizeCssForWebflow } from "./webflow-literalizer";
 
 export interface NormalizationOptions {
   /** Throw when layout-critical properties are missing (default: false). */
@@ -16,6 +17,7 @@ export interface NormalizationResult {
   html: string;
   css: string;
   warnings: string[];
+  classIndex?: ClassIndex;
 }
 
 interface RawRule {
@@ -136,14 +138,41 @@ function removeProblematicAttributes(html: string): string {
 }
 
 /**
+ * Convert <br> tags inside headings to Webflow-safe format.
+ * Webflow's React parser (error #137) rejects <br> tags in certain contexts.
+ * We replace <br> tags inside h1-h6 with a styled span that creates a line break.
+ */
+function normalizeBrTagsInHeadings(html: string): string {
+  // Match <br> or <br/> or <br /> inside heading tags (h1-h6)
+  // This regex matches headings with their content, including nested tags
+  const headingBrPattern = /<(h[1-6])([^>]*)>([\s\S]*?)<\/(h[1-6])>/gi;
+  
+  return html.replace(headingBrPattern, (match, openTag, attrs, content, closeTag) => {
+    // Only process if open and close tags match
+    if (openTag.toLowerCase() !== closeTag.toLowerCase()) {
+      return match;
+    }
+    
+    // Replace <br>, <br/>, or <br /> with a styled span that creates a line break
+    // Using display: block to force a line break without using <br>
+    const normalizedContent = content.replace(/<br\s*\/?>/gi, '<span style="display: block;"></span>');
+    
+    return `<${openTag}${attrs}>${normalizedContent}</${closeTag}>`;
+  });
+}
+
+/**
  * Normalize HTML + CSS to class-only selectors and inject required classes.
  */
 export function normalizeHtmlCssForWebflow(
   html: string,
   css: string,
-  options: NormalizationOptions = {}
+  options: NormalizationOptions = {},
+  preParsedClassIndex?: ClassIndex
 ): NormalizationResult {
   const warnings: string[] = [];
+  const strictLayout = options.strictLayout === true;
+  void preParsedClassIndex;
   const context: NormalizationContext = {
     needsBodyWrapper: false,
     bodyExtraClasses: new Set(),
@@ -154,6 +183,8 @@ export function normalizeHtmlCssForWebflow(
   // This prevents React error #137 in Webflow's paste handler
   let normalizedHtml = normalizeSelfClosingTags(html);
   normalizedHtml = removeProblematicAttributes(normalizedHtml);
+  // Convert <br> tags in headings to Webflow-safe format (prevents React error #137)
+  normalizedHtml = normalizeBrTagsInHeadings(normalizedHtml);
 
   // Sanitize gradients for Webflow compatibility
   // This resolves CSS vars inside gradients and rounds percentages
@@ -163,6 +194,12 @@ export function normalizeHtmlCssForWebflow(
   }
   warnings.push(...gradientResult.warnings);
   let sanitizedCss = gradientResult.css;
+
+  // REORDERED: Literalize CSS variables BEFORE parsing
+  // This ensures all CSS variables are resolved before we parse into ClassIndex
+  const literalizedResult = literalizeCssForWebflow(sanitizedCss);
+  warnings.push(...literalizedResult.warnings);
+  sanitizedCss = literalizedResult.css;
 
   // Decouple gradients from transforms to prevent Webflow import race condition
   // This structurally separates gradient-bearing elements from transform-bearing elements
@@ -176,13 +213,14 @@ export function normalizeHtmlCssForWebflow(
   }
   warnings.push(...decoupledResult.warnings);
 
+  // Continue with selector normalization (element → class)
   const defaultFontFamily = findDefaultFontFamily(sanitizedCss);
   const parsed = parseCssBlocks(sanitizedCss);
 
-  const baseRules = normalizeRuleSet(parsed.baseRules, context, warnings, options);
+  const baseRules = normalizeRuleSet(parsed.baseRules, context, warnings);
   const mediaRules = parsed.mediaBlocks.map((block) => ({
     query: block.query,
-    rules: normalizeRuleSet(block.rules, context, warnings, options),
+    rules: normalizeRuleSet(block.rules, context, warnings),
   }));
 
   const htmlResult = normalizeHtml(normalizedHtml, context, warnings);
@@ -196,10 +234,28 @@ export function normalizeHtmlCssForWebflow(
 
   const normalizedCss = serializeCss(baseRules, mediaRules);
 
+  // IMPORTANT: Build ClassIndex from the FINAL normalized CSS so it matches
+  // the selectors/classes produced by normalization (descendant flattening, element → class, etc.)
+  const finalParsed = parseCSS(normalizedCss);
+  const classIndex = finalParsed.classIndex;
+  warnings.push(...finalParsed.classIndex.warnings.map((w) => w.message));
+
+  if (strictLayout) {
+    const injectedDefaults = finalParsed.classIndex.warnings.filter((w) =>
+      /missing explicit properties/i.test(w.message)
+    );
+    if (injectedDefaults.length > 0) {
+      throw new Error(
+        `Strict layout failed: ${injectedDefaults.length} layout containers required injected defaults.`
+      );
+    }
+  }
+
   return {
     html: htmlResult.html,
     css: normalizedCss,
     warnings,
+    classIndex,
   };
 }
 
@@ -240,8 +296,7 @@ function parseRulesFromContent(content: string): RawRule[] {
 function normalizeRuleSet(
   rules: RawRule[],
   context: NormalizationContext,
-  warnings: string[],
-  options: NormalizationOptions
+  warnings: string[]
 ): NormalizedRule[] {
   const normalized: NormalizedRule[] = [];
 
@@ -258,10 +313,8 @@ function normalizeRuleSet(
 
     const properties = parseProperties(rule.properties);
 
-    const hasClassSelector = normalizedSelectors.some((selector) => selector.includes("."));
-    if (hasClassSelector) {
-      enforceLayoutProperties(properties, normalizedSelectors, warnings, options);
-    }
+    // Note: Layout property enforcement is now handled by enforceExplicitLayoutProperties
+    // in css-parser.ts after ClassIndex is built, not during normalization
 
     for (const selector of normalizedSelectors) {
       if (/[>~+]/.test(selector) || /\s{1,}/.test(selector)) {
@@ -410,52 +463,6 @@ function serializeProperties(properties: Map<string, string>): string {
     .join(" ");
 }
 
-function enforceLayoutProperties(
-  properties: Map<string, string>,
-  selectors: string[],
-  warnings: string[],
-  options: NormalizationOptions
-): void {
-  const display = properties.get("display");
-  const hasGap = properties.has("gap") || properties.has("row-gap") || properties.has("column-gap");
-  const hasFlexHints = ["flex-direction", "justify-content", "align-items"].some((prop) => properties.has(prop));
-  const hasGridHints = ["grid-template-columns", "grid-template-rows"].some((prop) => properties.has(prop));
-
-  let layoutType: "flex" | "grid" | null = null;
-  if (display === "flex" || display === "inline-flex") layoutType = "flex";
-  else if (display === "grid" || display === "inline-grid") layoutType = "grid";
-  else if (hasGridHints) layoutType = "grid";
-  else if (hasFlexHints) layoutType = "flex";
-  else if (hasGap) layoutType = "flex";
-
-  if (!layoutType) return;
-
-  const missing: Array<{ prop: string; value: string }> = [];
-
-  if (layoutType === "flex") {
-    if (!properties.has("display")) missing.push({ prop: "display", value: "flex" });
-    if (!properties.has("flex-direction")) missing.push({ prop: "flex-direction", value: "row" });
-    if (!properties.has("justify-content")) missing.push({ prop: "justify-content", value: "flex-start" });
-    if (!properties.has("align-items")) missing.push({ prop: "align-items", value: "stretch" });
-  }
-
-  if (layoutType === "grid") {
-    if (!properties.has("display")) missing.push({ prop: "display", value: "grid" });
-    if (!properties.has("grid-template-columns")) missing.push({ prop: "grid-template-columns", value: "1fr" });
-  }
-
-  if (missing.length === 0) return;
-
-  const selectorList = selectors.join(", ");
-  for (const item of missing) {
-    properties.set(item.prop, item.value);
-    warnings.push(`Layout property missing on "${selectorList}": ${item.prop} → injected "${item.value}"`);
-  }
-
-  if (options.strictLayout) {
-    throw new Error(`Missing layout properties on "${selectorList}".`);
-  }
-}
 
 function normalizeHtml(
   html: string,

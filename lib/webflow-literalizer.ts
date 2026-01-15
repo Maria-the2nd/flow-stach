@@ -134,7 +134,9 @@ function processRules(
       if (hasUnresolved) {
         extractVarNames(entry.value).forEach((varName) => unresolved.add(varName));
       }
-      processed.push({ name, value: resolved });
+      // Ensure resolved value doesn't have unexpected quotes (defensive check)
+      const cleanedValue = resolved.trim().replace(/^['"]|['"]$/g, '');
+      processed.push({ name, value: cleanedValue });
     }
 
     if (removedCustomProps) {

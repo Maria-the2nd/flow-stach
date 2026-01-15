@@ -184,23 +184,26 @@ function parseStyleLessMap(styleLess: string): Map<string, string> {
   return map;
 }
 
-function countGridColumns(template: string | undefined): number {
-  if (!template) return 0;
-  const m = template.match(/repeat\(\s*(\d+)\s*,/i);
-  if (m) return parseInt(m[1], 10);
-  const tokens = template.trim().split(/\s+/);
-  return tokens.filter((t) => /1fr|minmax\(/i.test(t)).length;
-}
-
 function applyResponsiveGridFixes(styles: Map<string, WebflowStyle>): void {
   for (const style of styles.values()) {
     const base = parseStyleLessMap(style.styleLess);
     const display = (base.get("display") || "").toLowerCase();
+    
+    // Only target grid containers
     if (!display.includes("grid")) continue;
-    const cols = countGridColumns(base.get("grid-template-columns"));
-    if (cols < 3) continue;
-    appendVariant(style, "small", "grid-template-columns: repeat(3, minmax(0, 1fr));");
-    appendVariant(style, "tiny", "grid-template-columns: 1fr;");
+
+    // Fix 1: Ensure minimum one row exists (fixes "zero rows" issue)
+    // If no row templates are defined, Webflow often imports as 0 rows, locking the UI.
+    // We add 'auto' to ensure at least one implicit row exists.
+    if (!base.has("grid-template-rows") && !base.has("grid-auto-rows")) {
+      const currentStyle = (style.styleLess || "").trim();
+      const suffix = currentStyle.endsWith(";") ? "" : ";";
+      style.styleLess = `${currentStyle}${suffix} grid-template-rows: auto;`;
+    }
+
+    // Fix 2: Do NOT force mobile column reduction (removed previous logic)
+    // Previously we forced 1fr on mobile, but this breaks layouts that 
+    // intend to keep multiple columns on small screens.
   }
 }
 
@@ -487,8 +490,149 @@ function convertToWebflowNodes(
     }
   };
 
+  /**
+   * Serialize a ParsedElement (especially SVG) back to HTML string
+   */
+  function serializeElementToHtml(el: ParsedElement): string {
+    const attrs = Object.entries(el.attributes)
+      .map(([name, value]) => {
+        if (name === "class" && el.classes.length > 0) {
+          return `class="${el.classes.join(" ")}"`;
+        }
+        if (name === "id" && el.id) {
+          return `id="${el.id}"`;
+        }
+        if (value) {
+          return `${name}="${value.replace(/"/g, "&quot;")}"`;
+        }
+        return name;
+      })
+      .join(" ");
+
+    const openTag = attrs ? `<${el.tag} ${attrs}>` : `<${el.tag}>`;
+    
+    if (el.children.length === 0) {
+      // Self-closing for SVG elements that can be self-closing
+      if (["line", "polyline", "path", "circle", "rect", "ellipse", "polygon"].includes(el.tag)) {
+        return attrs ? `<${el.tag} ${attrs} />` : `<${el.tag} />`;
+      }
+      return openTag;
+    }
+
+    const childrenHtml = el.children
+      .map((child) => {
+        if (typeof child === "string") {
+          return child;
+        }
+        return serializeElementToHtml(child);
+      })
+      .join("");
+
+    return `${openTag}${childrenHtml}</${el.tag}>`;
+  }
+
+  function normalizeSvgSize(value: string | undefined): string | null {
+    if (!value) return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (/\d(px|em|rem|%|vh|vw)$/i.test(trimmed)) return trimmed;
+    if (/^\d+(\.\d+)?$/.test(trimmed)) return `${trimmed}px`;
+    return trimmed;
+  }
+
+  function getSvgSizeFromClassIndex(classes: string[]): { width?: string; height?: string } {
+    for (const className of classes) {
+      const entry = classIndex.classes[className];
+      if (!entry?.baseStyles) continue;
+      const props = parseStyleLessMap(entry.baseStyles);
+      const width = normalizeSvgSize(props.get("width"));
+      const height = normalizeSvgSize(props.get("height"));
+      if (width || height) {
+        return { width: width || undefined, height: height || undefined };
+      }
+    }
+    return {};
+  }
+
+  function parseViewBoxDimensions(viewBox: string | undefined): { width: number; height: number } | null {
+    if (!viewBox) return null;
+    const parts = viewBox.trim().split(/\s+/).map((part) => Number.parseFloat(part));
+    if (parts.length !== 4 || parts.some((n) => Number.isNaN(n))) return null;
+    const width = parts[2];
+    const height = parts[3];
+    if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
+    return { width, height };
+  }
+
   function processElement(el: ParsedElement): string {
     if (dropTags.has(el.tag)) return "";
+
+    // If this is an SVG element, convert to HtmlEmbed to preserve inline SVG behavior
+    if (el.tag === "svg" || el.tag === "SVG") {
+      const baseName = el.classes[0] || el.id || "svg";
+      const embedId = idGen.generate(`${baseName}-embed`);
+      const wrapperId = idGen.generate(baseName);
+
+      // Ensure SVG class styles are exported (e.g., .icon width/height)
+      el.classes.forEach((c) => collectedClasses.add(c));
+
+      const classSize = getSvgSizeFromClassIndex(el.classes);
+      let width = normalizeSvgSize(el.attributes.width) || classSize.width;
+      let height = normalizeSvgSize(el.attributes.height) || classSize.height;
+      if (!width && !height) {
+        const viewBoxDims = parseViewBoxDimensions(el.attributes.viewBox);
+        if (viewBoxDims) {
+          width = `${viewBoxDims.width}px`;
+          height = `${viewBoxDims.height}px`;
+        }
+      }
+
+      let svgHtml = serializeElementToHtml(el);
+      svgHtml = svgHtml.replace(/<svg\b([^>]*)>/i, (match, attrs) => {
+        let nextAttrs = attrs;
+        if (width && !/width=/.test(attrs)) nextAttrs += ` width="${width}"`;
+        if (height && !/height=/.test(attrs)) nextAttrs += ` height="${height}"`;
+        return `<svg${nextAttrs}>`;
+      });
+
+      nodes.push({
+        _id: embedId,
+        type: "HtmlEmbed",
+        tag: "div",
+        children: [],
+        v: svgHtml,
+        data: {
+          tag: "div",
+          text: false,
+          xattr: [],
+          embed: {
+            type: "html",
+            meta: {
+              html: svgHtml,
+              div: false,
+              iframe: false,
+              script: false,
+              compilable: false,
+            },
+          },
+          insideRTE: false,
+        },
+      });
+
+      if (el.classes.length === 0 && !el.id) {
+        return embedId;
+      }
+
+      nodes.push({
+        _id: wrapperId,
+        type: "Block",
+        tag: "div",
+        classes: el.classes,
+        children: [embedId],
+        data: { tag: "div", text: false, xattr: el.id ? [{ name: "id", value: el.id }] : [] },
+      });
+      return wrapperId;
+    }
 
     const normalizedTag = normalizeTagForWebflow(el.tag);
     const baseClasses = [...el.classes];
@@ -595,19 +739,6 @@ function convertToWebflowNodes(
 // CSS PARSER
 // ============================================
 
-interface ParsedCssRule {
-  selector: string;
-  className: string;
-  pseudoClass?: string;
-  properties: string;
-}
-
-interface ParsedMediaQuery {
-  query: string;
-  breakpoint: string | null;
-  rules: ParsedCssRule[];
-}
-
 function isGridClass(className: string, classIndex: ClassIndex): boolean {
   const entry = classIndex.classes[className];
   if (!entry || !entry.baseStyles) return false;
@@ -630,244 +761,45 @@ function styleLessToMap(styleLess: string): Map<string, string> {
   return props;
 }
 
-function detectWebflowBreakpoint(query: string): string | null {
-  const maxWidthMatch = query.match(/max-width:\s*(\d+)px/i);
-  if (maxWidthMatch) {
-    const width = parseInt(maxWidthMatch[1], 10);
-    if (width <= 479) return "tiny";
-    if (width <= 767) return "small";
-    if (width <= 991) return "medium";
-    if (width <= 1200) return "desktop";
-  }
 
-  const minWidthMatch = query.match(/min-width:\s*(\d+)px/i);
-  if (minWidthMatch) {
-    const width = parseInt(minWidthMatch[1], 10);
-    if (width >= 1920) return "xxl";
-    if (width >= 1440) return "xl";
-  }
-
-  return null;
-}
 
 /**
- * Parse CSS into rules and media queries
- */
-function parseCss(css: string): { rules: ParsedCssRule[]; mediaQueries: ParsedMediaQuery[] } {
-  const rules: ParsedCssRule[] = [];
-  const mediaQueries: ParsedMediaQuery[] = [];
-
-  // Remove comments
-  const cleanCss = css.replace(/\/\*[\s\S]*?\*\//g, "");
-
-  // Extract media queries first
-  const mediaRegex = /@media\s*([^{]+)\{([\s\S]*?)\}\s*\}/g;
-  let mediaMatch;
-
-  while ((mediaMatch = mediaRegex.exec(cleanCss)) !== null) {
-    const query = mediaMatch[1].trim();
-    const content = mediaMatch[2];
-
-    // Determine breakpoint name
-    const breakpoint = detectWebflowBreakpoint(query);
-    if (!breakpoint && /max-width|min-width/i.test(query)) {
-      console.warn(`[webflow-converter] Unmapped media query: ${query}`);
-    }
-
-    const mediaRules = parseRulesFromContent(content);
-    if (mediaRules.length > 0) {
-      mediaQueries.push({ query, breakpoint, rules: mediaRules });
-    }
-  }
-
-  // Remove media queries from CSS to parse remaining rules
-  const cssWithoutMedia = cleanCss.replace(mediaRegex, "");
-
-  // Parse base rules
-  rules.push(...parseRulesFromContent(cssWithoutMedia));
-
-  return { rules, mediaQueries };
-}
-
-/**
- * Parse CSS rules from content string
- * Handles both direct class selectors and descendant/child selectors
- */
-function parseRulesFromContent(content: string): ParsedCssRule[] {
-  const rules: ParsedCssRule[] = [];
-  const supportedPseudoClasses = new Set([
-    "hover",
-    "focus",
-    "active",
-    "visited",
-    "focus-visible",
-    "first-child",
-    "last-child",
-  ]);
-
-  // More permissive regex that matches any rule containing a class
-  // Captures: selector { properties }
-  const ruleRegex = /([^{}]+)\{([^{}]+)\}/g;
-  let match;
-
-  while ((match = ruleRegex.exec(content)) !== null) {
-    const selector = match[1].trim();
-    const properties = match[2].trim();
-
-    // Skip @-rules, element-only selectors
-    if (selector.startsWith("@") || !selector.includes(".")) continue;
-
-    // Handle comma-separated selectors
-    const selectors = selector.split(",").map(s => s.trim());
-
-    for (const sel of selectors) {
-      if (/::|:(?:before|after|first-letter|first-line|marker|placeholder|backdrop)\b/i.test(sel)) {
-        continue;
-      }
-
-      // Find all classes in this selector
-      const classMatches = sel.match(/\.([a-zA-Z_-][\w-]*)/g);
-      if (!classMatches || classMatches.length === 0) continue;
-
-      // Use the LAST class in the selector (most specific target)
-      const lastClass = classMatches[classMatches.length - 1].substring(1); // Remove the dot
-
-      // Check for pseudo-class on this selector
-      const pseudoMatch = sel.match(/:(\w+(?:-\w+)*)(?:\([^)]*\))?\s*$/);
-      const pseudoClass = pseudoMatch ? pseudoMatch[1] : undefined;
-      if (pseudoClass && !supportedPseudoClasses.has(pseudoClass)) {
-        continue;
-      }
-
-      rules.push({
-        selector: sel,
-        className: lastClass,
-        pseudoClass,
-        properties,
-      });
-    }
-  }
-
-  return rules;
-}
-
-/**
- * Convert CSS properties to styleLess format
- * Removes transitions (causes Webflow paste issues)
- */
-function toStyleLess(properties: string): string {
-  // Split into individual properties
-  const props = properties
-    .split(";")
-    .map((p) => p.trim())
-    .filter(Boolean);
-
-  // Filter out transitions and transform properties
-  const filtered = props.filter((prop) => {
-    const propName = prop.split(":")[0]?.trim().toLowerCase();
-    // Remove transition (causes paste issues)
-    if (propName === "transition") return false;
-    return true;
-  });
-
-  // Rejoin with proper formatting
-  return filtered.map((p) => (p.endsWith(";") ? p : p + ";")).join(" ");
-}
-
-/**
- * Map pseudo-class to Webflow variant name
- */
-function pseudoToVariant(pseudo: string | undefined): string | null {
-  if (!pseudo) return null;
-  const mapping: Record<string, string> = {
-    hover: "hover",
-    focus: "focus",
-    active: "pressed",
-    visited: "visited",
-    "focus-visible": "focus-visible",
-    "first-child": "first-child",
-    "last-child": "last-child",
-  };
-  return mapping[pseudo] || null;
-}
-
-/**
- * Convert parsed CSS to Webflow styles
+ * Convert ClassIndex to Webflow styles (using unified parser)
  */
 function convertToWebflowStyles(
-  css: string,
+  classIndex: ClassIndex,
   usedClasses: Set<string>
 ): WebflowStyle[] {
-  const { rules, mediaQueries } = parseCss(css);
+  const styles = classIndexToWebflowStyles(classIndex, usedClasses);
   const styleMap = new Map<string, WebflowStyle>();
-
-  // Process base rules
-  for (const rule of rules) {
-    if (!usedClasses.has(rule.className)) continue;
-
-    let style = styleMap.get(rule.className);
-    if (!style) {
-      style = {
-        _id: rule.className,
-        fake: false,
-        type: "class",
-        name: rule.className,
-        namespace: "",
-        comb: "",
-        styleLess: "",
-        variants: {},
-        children: [],
-      };
-      styleMap.set(rule.className, style);
-    }
-
-    const styleLess = toStyleLess(rule.properties);
-    const variant = pseudoToVariant(rule.pseudoClass);
-
-    if (variant) {
-      style.variants[variant] = { styleLess };
-    } else {
-      // Merge base styles
-      style.styleLess = style.styleLess
-        ? style.styleLess + " " + styleLess
-        : styleLess;
-    }
-  }
-
-  // Process media query rules
-  for (const mq of mediaQueries) {
-    if (!mq.breakpoint) continue;
-
-    for (const rule of mq.rules) {
-      if (!usedClasses.has(rule.className)) continue;
-
-      let style = styleMap.get(rule.className);
-      if (!style) {
-        style = {
-          _id: rule.className,
-          fake: false,
-          type: "class",
-          name: rule.className,
-          namespace: "",
-          comb: "",
-          styleLess: "",
-          variants: {},
-          children: [],
-        };
-        styleMap.set(rule.className, style);
-      }
-
-      const styleLess = toStyleLess(rule.properties);
-      const variant = rule.pseudoClass
-        ? `${mq.breakpoint}_${pseudoToVariant(rule.pseudoClass)}`
-        : mq.breakpoint;
-
-      style.variants[variant] = { styleLess };
-    }
+  
+  // Convert array to map for easier manipulation
+  for (const style of styles) {
+    styleMap.set(style.name, style);
   }
 
   applyResponsiveGridFixes(styleMap);
   return Array.from(styleMap.values());
+}
+
+/**
+ * Validate payload integrity - ensure all classes referenced in nodes exist in styles
+ */
+function validatePayloadIntegrity(
+  nodes: WebflowNode[],
+  styles: WebflowStyle[]
+): string[] {
+  const warnings: string[] = [];
+  const styleNames = new Set(styles.map(s => s.name));
+  
+  for (const node of nodes) {
+    for (const cls of node.classes || []) {
+      if (!styleNames.has(cls) && cls !== "w-layout-grid") {
+        warnings.push(`Node references undefined class: ${cls}`);
+      }
+    }
+  }
+  return warnings;
 }
 
 // ============================================
@@ -1190,13 +1122,24 @@ export function convertSectionToWebflow(
     return createEmptyPayload();
   }
 
-  const { classIndex } = parseCSS(normalized.css);
+  // Use ClassIndex from normalization if available, otherwise parse
+  let classIndex = normalized.classIndex;
+  if (!classIndex) {
+    const parsedResult = parseCSS(normalized.css);
+    classIndex = parsedResult.classIndex;
+  }
 
   // Convert HTML to nodes
   const { nodes } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex);
 
-  // Convert CSS to styles
-  const styles = convertToWebflowStyles(normalized.css, collectedClasses);
+  // Convert CSS to styles using unified ClassIndex
+  const styles = convertToWebflowStyles(classIndex, collectedClasses);
+
+  // Validate payload integrity
+  const integrityWarnings = validatePayloadIntegrity(nodes, styles);
+  if (integrityWarnings.length > 0) {
+    console.warn("[webflow-converter] Integrity issues:", integrityWarnings);
+  }
 
   return {
     type: "@webflow/XscpData",
@@ -1522,6 +1465,13 @@ export function buildComponentPayload(
     for (const [variant, entry] of Object.entries(style.variants)) {
       style.variants[variant] = { styleLess: sanitizeStyleLessVisibility(entry.styleLess) };
     }
+  }
+
+  // Validate payload integrity
+  const integrityWarnings = validatePayloadIntegrity(nodes, componentStyles);
+  if (integrityWarnings.length > 0) {
+    warnings.push(...integrityWarnings);
+    console.warn(`[webflow-converter] Component "${component.name}" integrity issues:`, integrityWarnings);
   }
 
   return {

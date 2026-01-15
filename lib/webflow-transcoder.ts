@@ -45,6 +45,7 @@ const CLAUDE_SYSTEM_PROMPT = [
   "- Use grid-column-start: auto; grid-column-end: span 2; for spanning",
   "- Do NOT simplify or reduce column counts",
   "- Bento grids require explicit span values on children to maintain layout",
+  "- Ensure grid-template-rows is never empty; default to 'auto' if undefined",
   "",
   "You MUST output VALID JSON ONLY.",
   "No prose. No markdown. No explanations outside JSON.",

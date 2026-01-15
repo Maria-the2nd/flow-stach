@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { useAuth, useUser } from "@clerk/nextjs"
+import { useAuth } from "@clerk/nextjs"
 import { useQuery, useMutation } from "convex/react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -368,7 +368,6 @@ export function AssetsContent() {
   const [searchQuery, setSearchQuery] = useState("")
   const { favorites } = useFavorites()
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth()
-  const { user } = useUser()
 
   const templateFilter = searchParams.get("template")
   const categoryFilter = searchParams.get("cat")

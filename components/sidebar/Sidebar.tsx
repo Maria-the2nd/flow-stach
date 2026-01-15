@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs"
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
 import { useAuth } from "@clerk/nextjs"
 import { useQuery, useMutation } from "convex/react"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -26,7 +26,6 @@ export function Sidebar({ className }: SidebarProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { isLoaded, isSignedIn } = useAuth()
-  const { user } = useUser()
 
   // Template editing state
   const [editingTemplateId, setEditingTemplateId] = useState<Id<"templates"> | null>(null)

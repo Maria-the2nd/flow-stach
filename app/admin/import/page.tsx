@@ -806,7 +806,7 @@ function JsTab({ scriptsJs, jsHooks, componentTree }: JsTabProps) {
 // ============================================
 
 function ImportWizard() {
-  const { isLoaded: isUserLoaded, user } = useUser()
+  const { isLoaded: isUserLoaded } = useUser()
   const importProject = useMutation(api.import.importProject)
 
   // Step state

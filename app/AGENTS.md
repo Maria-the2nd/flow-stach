@@ -69,6 +69,7 @@ See `app/layout.tsx` for the exact implementation.
 | `globals.css` | Global styles, Tailwind directives, CSS variables |
 | `providers/ConvexClientProvider.tsx` | Convex client setup with Clerk auth |
 | `providers/ThemeProvider.tsx` | Theme context (light/dark mode) |
+| `admin/import/page.tsx` | Webflow Import Wizard (Full Page/Component conversion) |
 | `assets/layout.tsx` | Layout for assets pages |
 | `assets/page.tsx` | Assets list page |
 | `assets/[slug]/page.tsx` | Asset detail page |

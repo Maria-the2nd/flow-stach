@@ -596,7 +596,7 @@ function JsTab({ scriptsJs }: { scriptsJs: string }) {
 }
 
 export function ImportWizard() {
-  const { isLoaded: isUserLoaded, user } = useUser()
+  const { isLoaded: isUserLoaded } = useUser()
   const importProject = useMutation(api.import.importProject)
 
   const [step, setStep] = useState<Step>("input")

@@ -60,6 +60,26 @@ export function cn(...inputs: ClassValue[]) {
 | `clipboard.ts` | Copy-to-clipboard helpers |
 | `favorites.ts` | Favorites state/logic helpers |
 | `fakeAssets.ts` | Mock data for development/seeding |
+| `webflow-*.ts` | Webflow conversion pipeline (converter, normalizer, transcoder) |
+
+## Webflow Conversion Pipeline
+
+The project includes a robust pipeline for converting HTML/CSS into Webflow-compatible JSON payloads (`@webflow/XscpData`).
+
+### Core Modules
+
+1. **Converter** (`webflow-converter.ts`): Orchestrates the conversion, handles token mapping, and builds the final JSON structure.
+2. **Normalizer** (`webflow-normalizer.ts`): Ensures HTML/CSS compatibility:
+   - **Self-closing tags**: Enforces strict XHTML (e.g., `<img />`, `<br />`) to prevent React #137 errors in Webflow.
+   - **Gradients**: Sanitizes complex gradients and decouples them from transforms.
+   - **Selectors**: Flattens descendant selectors where possible.
+3. **Transcoder** (`webflow-transcoder.ts`): Handles deterministic class generation and CSS property mapping.
+
+### Full Page vs. Component Copy
+
+- **Components**: Copying a single component *excludes* global styles (root variables, reset, body) to avoid conflicts.
+- **Full Page**: Copying a full page *includes* all global styles (root, body, html, reset) to ensure faithful reproduction.
+  - *Note*: When pasting full pages into Webflow, these global styles can sometimes conflict with Webflow's default site settings.
 
 ## JIT Index
 

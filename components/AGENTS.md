@@ -83,6 +83,7 @@ components/
 | `ui/card.tsx` | Card container component |
 | `ui/dialog.tsx` | Modal dialog component |
 | `ui/input.tsx` | Form input component |
+| `admin/ImportWizard.tsx` | Webflow Import Interface (Payload generation) |
 | `layout/MainShell.tsx` | Main layout wrapper with sidebar |
 | `sidebar/AppSidebar.tsx` | Application navigation sidebar |
 | `asset-detail/AssetDetailContext.tsx` | Asset detail state management |
