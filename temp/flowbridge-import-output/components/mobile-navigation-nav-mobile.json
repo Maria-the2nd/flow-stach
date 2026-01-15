@@ -1,0 +1,210 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "nav-nav-mobile-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "nav-mobile"
+        ],
+        "children": [
+          "nav-nav-mobile-link-001",
+          "nav-nav-mobile-link-002",
+          "nav-nav-mobile-link-003",
+          "nav-nav-mobile-link-004",
+          "nav-btn-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "navMobile"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "nav-btn-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn",
+          "btn-primary",
+          "nav-mobile-link"
+        ],
+        "children": [
+          "nav-text-005"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#pricing"
+          }
+        }
+      },
+      {
+        "_id": "nav-text-005",
+        "text": true,
+        "v": "Get Access"
+      },
+      {
+        "_id": "nav-nav-mobile-link-004",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-mobile-link"
+        ],
+        "children": [
+          "nav-text-004"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#pricing"
+          }
+        }
+      },
+      {
+        "_id": "nav-text-004",
+        "text": true,
+        "v": "Pricing"
+      },
+      {
+        "_id": "nav-nav-mobile-link-003",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-mobile-link"
+        ],
+        "children": [
+          "nav-text-003"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#collaborators"
+          }
+        }
+      },
+      {
+        "_id": "nav-text-003",
+        "text": true,
+        "v": "Collaborators"
+      },
+      {
+        "_id": "nav-nav-mobile-link-002",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-mobile-link"
+        ],
+        "children": [
+          "nav-text-002"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#packs"
+          }
+        }
+      },
+      {
+        "_id": "nav-text-002",
+        "text": true,
+        "v": "Party Packs (03)"
+      },
+      {
+        "_id": "nav-nav-mobile-link-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-mobile-link"
+        ],
+        "children": [
+          "nav-text-001"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#stash"
+          }
+        }
+      },
+      {
+        "_id": "nav-text-001",
+        "text": true,
+        "v": "The Stash (140+)"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "nav-mobile",
+        "fake": false,
+        "type": "class",
+        "name": "nav-mobile",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: none; position: fixed; top: 65px; left: 0; right: 0; background: #FAFAFA; border-bottom: 1px solid rgba(26, 26, 26, 0.10); padding-top: 24px; padding-right: 24px; padding-bottom: 24px; padding-left: 24px; flex-direction: column; row-gap: 16px; column-gap: 16px; z-index: 99; justify-content: flex-start; align-items: stretch;",
+        "variants": {},
+        "children": [
+          "active"
+        ]
+      },
+      {
+        "_id": "nav-mobile-link",
+        "fake": false,
+        "type": "class",
+        "name": "nav-mobile-link",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 16px; font-weight: 400; color: #1A1A1A; padding-top: 12px; padding-right: 0; padding-bottom: 12px; padding-left: 0; border-bottom: 1px solid rgba(26, 26, 26, 0.10);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn",
+        "fake": false,
+        "type": "class",
+        "name": "btn",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-flex; align-items: center; justify-content: center; row-gap: 8px; column-gap: 8px; font-family: \"Onest\", -apple-system, sans-serif; font-size: 16px; font-weight: 500; padding-top: 14px; padding-right: 28px; padding-bottom: 14px; padding-left: 28px; border-top-left-radius: 9999px; border-top-right-radius: 9999px; border-bottom-right-radius: 9999px; border-bottom-left-radius: 9999px; border: 1px solid transparent; cursor: pointer; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-primary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-primary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #1A1A1A; color: #FAFAFA; border-color: #1A1A1A;",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26, 26, 26, 0.2);"
+          }
+        },
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

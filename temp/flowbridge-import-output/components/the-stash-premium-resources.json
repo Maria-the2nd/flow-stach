@@ -1,0 +1,918 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "wf-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "section",
+          "stash-section"
+        ],
+        "children": [
+          "wf-container-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "stash"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "wf-container-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "container"
+        ],
+        "children": [
+          "wf-section-header-001",
+          "wf-product-grid-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-grid-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-grid",
+          "w-layout-grid"
+        ],
+        "children": [
+          "wf-product-card-001",
+          "wf-product-card-002",
+          "wf-product-card-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-card-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-card"
+        ],
+        "children": [
+          "wf-product-image-003",
+          "wf-product-content-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-content-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-content"
+        ],
+        "children": [
+          "wf-product-header-003",
+          "wf-product-title-003",
+          "wf-product-desc-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-desc-003",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "product-desc",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-015"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-015",
+        "text": true,
+        "v": "GSAP-powered scroll animations with stagger effects and smooth easing."
+      },
+      {
+        "_id": "wf-product-title-003",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "product-title",
+          "heading-h3"
+        ],
+        "children": [
+          "wf-text-014"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-014",
+        "text": true,
+        "v": "Scroll Reveal"
+      },
+      {
+        "_id": "wf-product-header-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-header"
+        ],
+        "children": [
+          "wf-product-number-003",
+          "wf-product-tag-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-tag-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "product-tag"
+        ],
+        "children": [
+          "wf-text-013"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-013",
+        "text": true,
+        "v": "Interaction"
+      },
+      {
+        "_id": "wf-product-number-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "product-number"
+        ],
+        "children": [
+          "wf-text-012"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-012",
+        "text": true,
+        "v": "(03)"
+      },
+      {
+        "_id": "wf-product-image-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-image"
+        ],
+        "children": [
+          "wf-product-image-inner-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-image-inner-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-image-inner"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-card-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-card"
+        ],
+        "children": [
+          "wf-product-image-002",
+          "wf-product-content-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-content-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-content"
+        ],
+        "children": [
+          "wf-product-header-002",
+          "wf-product-title-002",
+          "wf-product-desc-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-desc-002",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "product-desc",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-011"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-011",
+        "text": true,
+        "v": "High-converting hero section with animated text reveal and parallax imagery."
+      },
+      {
+        "_id": "wf-product-title-002",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "product-title",
+          "heading-h3"
+        ],
+        "children": [
+          "wf-text-010"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-010",
+        "text": true,
+        "v": "Split Hero"
+      },
+      {
+        "_id": "wf-product-header-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-header"
+        ],
+        "children": [
+          "wf-product-number-002",
+          "wf-product-tag-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-tag-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "product-tag"
+        ],
+        "children": [
+          "wf-text-009"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-009",
+        "text": true,
+        "v": "Section"
+      },
+      {
+        "_id": "wf-product-number-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "product-number"
+        ],
+        "children": [
+          "wf-text-008"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-008",
+        "text": true,
+        "v": "(02)"
+      },
+      {
+        "_id": "wf-product-image-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-image"
+        ],
+        "children": [
+          "wf-product-image-inner-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-image-inner-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-image-inner"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-card-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-card"
+        ],
+        "children": [
+          "wf-product-image-001",
+          "wf-product-content-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-content-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-content"
+        ],
+        "children": [
+          "wf-product-header-001",
+          "wf-product-title-001",
+          "wf-product-desc-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-desc-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "product-desc",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-007"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-007",
+        "text": true,
+        "v": "Full-featured navigation with dropdown menus, mobile menu, and smooth animations."
+      },
+      {
+        "_id": "wf-product-title-001",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "product-title",
+          "heading-h3"
+        ],
+        "children": [
+          "wf-text-006"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-006",
+        "text": true,
+        "v": "Mega Navbar"
+      },
+      {
+        "_id": "wf-product-header-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-header"
+        ],
+        "children": [
+          "wf-product-number-001",
+          "wf-product-tag-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-tag-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "product-tag"
+        ],
+        "children": [
+          "wf-text-005"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-005",
+        "text": true,
+        "v": "Component"
+      },
+      {
+        "_id": "wf-product-number-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "product-number"
+        ],
+        "children": [
+          "wf-text-004"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-004",
+        "text": true,
+        "v": "(01)"
+      },
+      {
+        "_id": "wf-product-image-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-image"
+        ],
+        "children": [
+          "wf-product-image-inner-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-product-image-inner-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-image-inner"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-section-header-001",
+        "type": "Block",
+        "tag": "header",
+        "classes": [
+          "section-header"
+        ],
+        "children": [
+          "wf-section-label-001",
+          "wf-display-001"
+        ],
+        "data": {
+          "tag": "header",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-display-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "display",
+          "section-header-display",
+          "heading-h2"
+        ],
+        "children": [
+          "wf-text-002",
+          "wf-br-001",
+          "wf-text-003"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-003",
+        "text": true,
+        "v": "Resources"
+      },
+      {
+        "_id": "wf-br-001",
+        "type": "Block",
+        "tag": "br",
+        "classes": [],
+        "children": [],
+        "data": {
+          "tag": "br",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-002",
+        "text": true,
+        "v": "Premium"
+      },
+      {
+        "_id": "wf-section-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "section-label",
+          "section-header-section-label"
+        ],
+        "children": [
+          "wf-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-001",
+        "text": true,
+        "v": "The Stash"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "section",
+        "fake": false,
+        "type": "class",
+        "name": "section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 88px; padding-right: 0; padding-bottom: 88px; padding-left: 0;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "stash-section",
+        "fake": false,
+        "type": "class",
+        "name": "stash-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: rgba(26, 26, 26, 0.03);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "container",
+        "fake": false,
+        "type": "class",
+        "name": "container",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 1456px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto; padding-top: 0; padding-right: 24px; padding-bottom: 0; padding-left: 24px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header",
+        "fake": false,
+        "type": "class",
+        "name": "section-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 64px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-label",
+        "fake": false,
+        "type": "class",
+        "name": "section-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Antonio\", sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(26, 26, 26, 0.65);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header-section-label",
+        "fake": false,
+        "type": "class",
+        "name": "section-header-section-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 16px; display: block;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "display",
+        "fake": false,
+        "type": "class",
+        "name": "display",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Antonio\", sans-serif; font-size: 96px; font-weight: 600; line-height: 0.95; letter-spacing: -0.02em; text-transform: uppercase;",
+        "variants": {
+          "desktop": {
+            "styleLess": "font-size: 72px;"
+          },
+          "small": {
+            "styleLess": "font-size: 48px;"
+          },
+          "tiny": {
+            "styleLess": "font-size: 36px;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "section-header-display",
+        "fake": false,
+        "type": "class",
+        "name": "section-header-display",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 24px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-grid",
+        "fake": false,
+        "type": "class",
+        "name": "product-grid",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr 1fr 1fr; justify-items: stretch; align-items: stretch; grid-row-gap: 24px; grid-column-gap: 24px;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr 1fr; display: grid;"
+          },
+          "small": {
+            "styleLess": "grid-template-columns: 1fr; display: grid;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "product-card",
+        "fake": false,
+        "type": "class",
+        "name": "product-card",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #FAFAFA; border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; overflow: hidden; border: 1px solid rgba(26, 26, 26, 0.10);",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translateY(-8px); box-shadow: 0 24px 48px rgba(26, 26, 26, 0.08);"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "product-image",
+        "fake": false,
+        "type": "class",
+        "name": "product-image",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "aspect-ratio: 4/3; overflow: hidden;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-image-inner",
+        "fake": false,
+        "type": "class",
+        "name": "product-image-inner",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "width: 100%; height: 100%; background: linear-gradient(135deg, #E8DED5 0%, #D4C5B9 100%); transform: scale(1.05);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-content",
+        "fake": false,
+        "type": "class",
+        "name": "product-content",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 28px; padding-right: 28px; padding-bottom: 28px; padding-left: 28px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-header",
+        "fake": false,
+        "type": "class",
+        "name": "product-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-number",
+        "fake": false,
+        "type": "class",
+        "name": "product-number",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 14px; color: rgba(26, 26, 26, 0.40);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-tag",
+        "fake": false,
+        "type": "class",
+        "name": "product-tag",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 12px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(26, 26, 26, 0.40); padding-top: 4px; padding-right: 12px; padding-bottom: 4px; padding-left: 12px; background: rgba(26, 26, 26, 0.05); border-top-left-radius: 9999px; border-top-right-radius: 9999px; border-bottom-right-radius: 9999px; border-bottom-left-radius: 9999px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-title",
+        "fake": false,
+        "type": "class",
+        "name": "product-title",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 22px; font-weight: 400; margin-bottom: 8px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h3",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h3",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-desc",
+        "fake": false,
+        "type": "class",
+        "name": "product-desc",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 15px; color: rgba(26, 26, 26, 0.65); line-height: 1.5;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

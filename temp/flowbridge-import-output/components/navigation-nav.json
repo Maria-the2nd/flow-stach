@@ -3,39 +3,15 @@
   "payload": {
     "nodes": [
       {
-        "_id": "wf-nav-001",
-        "type": "Block",
-        "tag": "nav",
-        "classes": [
-          "nav"
-        ],
-        "children": [
-          "wf-logo-001",
-          "wf-nav-links-001",
-          "wf-nav-right-001"
-        ],
-        "data": {
-          "tag": "nav",
-          "text": false,
-          "xattr": [
-            {
-              "name": "id",
-              "value": "nav"
-            }
-          ]
-        }
-      },
-      {
-        "_id": "wf-nav-right-001",
+        "_id": "wf-wf-body-001",
         "type": "Block",
         "tag": "div",
         "classes": [
-          "nav-right"
+          "wf-body"
         ],
         "children": [
-          "wf-nav-link-secondary-001",
-          "wf-btn-primary-001",
-          "wf-menu-toggle-001"
+          "wf-nav-001",
+          "wf-nav-mobile-001"
         ],
         "data": {
           "tag": "div",
@@ -44,135 +20,265 @@
         }
       },
       {
-        "_id": "wf-menu-toggle-001",
+        "_id": "wf-nav-mobile-001",
         "type": "Block",
-        "tag": "label",
+        "tag": "div",
         "classes": [
-          "menu-toggle"
+          "nav-mobile"
         ],
         "children": [
-          "wf-menu-toggle-span-001",
-          "wf-menu-toggle-span-002",
-          "wf-menu-toggle-span-003"
+          "wf-nav-mobile-link-001",
+          "wf-nav-mobile-link-002",
+          "wf-nav-mobile-link-003",
+          "wf-nav-mobile-link-004",
+          "wf-btn-002"
         ],
         "data": {
-          "tag": "label",
+          "tag": "div",
           "text": false,
           "xattr": [
             {
-              "name": "for",
-              "value": "menu-state"
+              "name": "id",
+              "value": "navMobile"
             }
           ]
         }
       },
       {
-        "_id": "wf-menu-toggle-span-003",
-        "type": "Block",
-        "tag": "span",
-        "classes": [
-          "menu-toggle-span"
-        ],
-        "children": [],
-        "data": {
-          "tag": "span",
-          "text": false,
-          "xattr": []
-        }
-      },
-      {
-        "_id": "wf-menu-toggle-span-002",
-        "type": "Block",
-        "tag": "span",
-        "classes": [
-          "menu-toggle-span"
-        ],
-        "children": [],
-        "data": {
-          "tag": "span",
-          "text": false,
-          "xattr": []
-        }
-      },
-      {
-        "_id": "wf-menu-toggle-span-001",
-        "type": "Block",
-        "tag": "span",
-        "classes": [
-          "menu-toggle-span"
-        ],
-        "children": [],
-        "data": {
-          "tag": "span",
-          "text": false,
-          "xattr": []
-        }
-      },
-      {
-        "_id": "wf-btn-primary-001",
+        "_id": "wf-btn-002",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "btn-primary"
+          "btn",
+          "btn-primary",
+          "nav-mobile-link"
         ],
         "children": [
-          "wf-text-009",
-          "wf-btn-arrow-001"
+          "wf-text-014"
         ],
         "data": {
           "link": {
             "mode": "external",
-            "url": "#signup"
+            "url": "#pricing"
           }
         }
       },
       {
-        "_id": "wf-btn-arrow-001",
-        "type": "Block",
-        "tag": "span",
+        "_id": "wf-text-014",
+        "text": true,
+        "v": "Get Access"
+      },
+      {
+        "_id": "wf-nav-mobile-link-004",
+        "type": "Link",
+        "tag": "a",
         "classes": [
-          "btn-arrow"
+          "nav-mobile-link"
+        ],
+        "children": [
+          "wf-text-013"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#pricing"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-013",
+        "text": true,
+        "v": "Pricing"
+      },
+      {
+        "_id": "wf-nav-mobile-link-003",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-mobile-link"
+        ],
+        "children": [
+          "wf-text-012"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#collaborators"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-012",
+        "text": true,
+        "v": "Collaborators"
+      },
+      {
+        "_id": "wf-nav-mobile-link-002",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-mobile-link"
+        ],
+        "children": [
+          "wf-text-011"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#packs"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-011",
+        "text": true,
+        "v": "Party Packs (03)"
+      },
+      {
+        "_id": "wf-nav-mobile-link-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-mobile-link"
         ],
         "children": [
           "wf-text-010"
         ],
         "data": {
+          "link": {
+            "mode": "external",
+            "url": "#stash"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-010",
+        "text": true,
+        "v": "The Stash (140+)"
+      },
+      {
+        "_id": "wf-nav-001",
+        "type": "Block",
+        "tag": "nav",
+        "classes": [
+          "nav"
+        ],
+        "children": [
+          "wf-nav-container-001"
+        ],
+        "data": {
+          "tag": "nav",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-nav-container-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "nav-container"
+        ],
+        "children": [
+          "wf-nav-logo-001",
+          "wf-nav-links-001",
+          "wf-nav-toggle-001",
+          "wf-btn-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-btn-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn",
+          "btn-primary",
+          "nav-cta"
+        ],
+        "children": [
+          "wf-text-009"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#pricing"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-009",
+        "text": true,
+        "v": "Get Access"
+      },
+      {
+        "_id": "wf-nav-toggle-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "nav-toggle"
+        ],
+        "children": [
+          "wf-nav-toggle-span-001",
+          "wf-nav-toggle-span-002",
+          "wf-nav-toggle-span-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "navToggle"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "wf-nav-toggle-span-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "nav-toggle-span"
+        ],
+        "children": [],
+        "data": {
           "tag": "span",
           "text": false,
           "xattr": []
         }
       },
       {
-        "_id": "wf-text-010",
-        "text": true,
-        "v": "→"
-      },
-      {
-        "_id": "wf-text-009",
-        "text": true,
-        "v": "Get Started"
-      },
-      {
-        "_id": "wf-nav-link-secondary-001",
-        "type": "Link",
-        "tag": "a",
+        "_id": "wf-nav-toggle-span-002",
+        "type": "Block",
+        "tag": "span",
         "classes": [
-          "nav-link-secondary"
+          "nav-toggle-span"
         ],
-        "children": [
-          "wf-text-008"
-        ],
+        "children": [],
         "data": {
-          "link": {
-            "mode": "external",
-            "url": "#login"
-          }
+          "tag": "span",
+          "text": false,
+          "xattr": []
         }
       },
       {
-        "_id": "wf-text-008",
-        "text": true,
-        "v": "Log in"
+        "_id": "wf-nav-toggle-span-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "nav-toggle-span"
+        ],
+        "children": [],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
       },
       {
         "_id": "wf-nav-links-001",
@@ -201,7 +307,7 @@
           "nav-link"
         ],
         "children": [
-          "wf-text-007"
+          "wf-text-008"
         ],
         "data": {
           "link": {
@@ -211,7 +317,7 @@
         }
       },
       {
-        "_id": "wf-text-007",
+        "_id": "wf-text-008",
         "text": true,
         "v": "Pricing"
       },
@@ -223,7 +329,7 @@
           "nav-link"
         ],
         "children": [
-          "wf-text-006"
+          "wf-text-007"
         ],
         "data": {
           "link": {
@@ -233,7 +339,7 @@
         }
       },
       {
-        "_id": "wf-text-006",
+        "_id": "wf-text-007",
         "text": true,
         "v": "Collaborators"
       },
@@ -245,7 +351,8 @@
           "nav-link"
         ],
         "children": [
-          "wf-text-005"
+          "wf-text-005",
+          "wf-nav-link-count-002"
         ],
         "data": {
           "link": {
@@ -253,6 +360,27 @@
             "url": "#packs"
           }
         }
+      },
+      {
+        "_id": "wf-nav-link-count-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "nav-link-count"
+        ],
+        "children": [
+          "wf-text-006"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-006",
+        "text": true,
+        "v": "(03)"
       },
       {
         "_id": "wf-text-005",
@@ -267,7 +395,8 @@
           "nav-link"
         ],
         "children": [
-          "wf-text-004"
+          "wf-text-003",
+          "wf-nav-link-count-001"
         ],
         "data": {
           "link": {
@@ -277,21 +406,41 @@
         }
       },
       {
+        "_id": "wf-nav-link-count-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "nav-link-count"
+        ],
+        "children": [
+          "wf-text-004"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
         "_id": "wf-text-004",
+        "text": true,
+        "v": "(140+)"
+      },
+      {
+        "_id": "wf-text-003",
         "text": true,
         "v": "The Stash"
       },
       {
-        "_id": "wf-logo-001",
+        "_id": "wf-nav-logo-001",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "logo"
+          "nav-logo"
         ],
         "children": [
-          "wf-text-001",
-          "wf-logo-accent-001",
-          "wf-logo-tm-001"
+          "wf-logo-name-001",
+          "wf-logo-tagline-001"
         ],
         "data": {
           "link": {
@@ -301,32 +450,11 @@
         }
       },
       {
-        "_id": "wf-logo-tm-001",
+        "_id": "wf-logo-tagline-001",
         "type": "Block",
         "tag": "span",
         "classes": [
-          "logo-tm"
-        ],
-        "children": [
-          "wf-text-003"
-        ],
-        "data": {
-          "tag": "span",
-          "text": false,
-          "xattr": []
-        }
-      },
-      {
-        "_id": "wf-text-003",
-        "text": true,
-        "v": "™"
-      },
-      {
-        "_id": "wf-logo-accent-001",
-        "type": "Block",
-        "tag": "span",
-        "classes": [
-          "logo-accent"
+          "logo-tagline"
         ],
         "children": [
           "wf-text-002"
@@ -340,15 +468,42 @@
       {
         "_id": "wf-text-002",
         "text": true,
-        "v": "PARTY"
+        "v": "Premium Webflow Assets"
+      },
+      {
+        "_id": "wf-logo-name-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "logo-name"
+        ],
+        "children": [
+          "wf-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
       },
       {
         "_id": "wf-text-001",
         "text": true,
-        "v": "FLOW"
+        "v": "Flow Party"
       }
     ],
     "styles": [
+      {
+        "_id": "wf-body",
+        "fake": false,
+        "type": "class",
+        "name": "wf-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #FAFAFA; color: #1A1A1A; font-family: \"Onest\", -apple-system, sans-serif; font-size: 18px; line-height: 1.5;",
+        "variants": {},
+        "children": []
+      },
       {
         "_id": "nav",
         "fake": false,
@@ -356,48 +511,51 @@
         "name": "nav",
         "namespace": "",
         "comb": "",
-        "styleLess": "position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding-top: 1.25rem; padding-right: 5vw; padding-bottom: 1.25rem; padding-left: 5vw; display: flex; justify-content: space-between; align-items: center; flex-direction: row; flex-wrap: nowrap;",
-        "variants": {
-          "small": {
-            "styleLess": "padding-top: 1rem; padding-right: 4vw; padding-bottom: 1rem; padding-left: 4vw;"
-          }
-        },
-        "children": []
-      },
-      {
-        "_id": "logo",
-        "fake": false,
-        "type": "class",
-        "name": "logo",
-        "namespace": "",
-        "comb": "",
-        "styleLess": "font-family: 'Antonio', sans-serif; font-size: 1.35rem; font-weight: 700; color: #ffffff; text-decoration: none; text-transform: uppercase; letter-spacing: 0.02em;",
-        "variants": {
-          "small": {
-            "styleLess": "font-size: 1.15rem;"
-          }
-        },
-        "children": []
-      },
-      {
-        "_id": "logo-accent",
-        "fake": false,
-        "type": "class",
-        "name": "logo-accent",
-        "namespace": "",
-        "comb": "",
-        "styleLess": "color: #ff531f;",
+        "styleLess": "position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding-top: 16px; padding-right: 0; padding-bottom: 16px; padding-left: 0; background: rgba(250, 250, 250, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(26, 26, 26, 0.10);",
         "variants": {},
         "children": []
       },
       {
-        "_id": "logo-tm",
+        "_id": "nav-container",
         "fake": false,
         "type": "class",
-        "name": "logo-tm",
+        "name": "nav-container",
         "namespace": "",
         "comb": "",
-        "styleLess": "font-size: 0.55rem; opacity: 0.6;",
+        "styleLess": "max-width: 1456px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto; padding-top: 0; padding-right: 24px; padding-bottom: 0; padding-left: 24px; display: flex; align-items: center; justify-content: space-between; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "nav-logo",
+        "fake": false,
+        "type": "class",
+        "name": "nav-logo",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; flex-direction: column; flex-shrink: 0; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "logo-name",
+        "fake": false,
+        "type": "class",
+        "name": "logo-name",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Antonio\", sans-serif; font-size: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "logo-tagline",
+        "fake": false,
+        "type": "class",
+        "name": "logo-tagline",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 11px; color: rgba(26, 26, 26, 0.40); letter-spacing: 0.02em;",
         "variants": {},
         "children": []
       },
@@ -408,8 +566,11 @@
         "name": "nav-links",
         "namespace": "",
         "comb": "",
-        "styleLess": "display: flex; row-gap: 2rem; column-gap: 2rem; align-items: center; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "styleLess": "display: flex; row-gap: 32px; column-gap: 32px; flex-direction: row; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap;",
         "variants": {
+          "desktop": {
+            "styleLess": "row-gap: 24px; column-gap: 24px; display: flex; flex-direction: row; justify-content: flex-start; align-items: stretch;"
+          },
           "medium": {
             "styleLess": "display: none;"
           }
@@ -423,41 +584,60 @@
         "name": "nav-link",
         "namespace": "",
         "comb": "",
-        "styleLess": "color: #ffffff; text-decoration: none; font-weight: 500; font-size: 0.9rem; opacity: 0.85; position: relative;",
+        "styleLess": "font-size: 14px; font-weight: 400; color: rgba(26, 26, 26, 0.75); display: flex; align-items: center; row-gap: 4px; column-gap: 4px; white-space: nowrap; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
         "variants": {
           "hover": {
-            "styleLess": "opacity: 1;"
+            "styleLess": "color: #1A1A1A;"
           }
         },
         "children": []
       },
       {
-        "_id": "nav-right",
+        "_id": "nav-link-count",
         "fake": false,
         "type": "class",
-        "name": "nav-right",
+        "name": "nav-link-count",
         "namespace": "",
         "comb": "",
-        "styleLess": "display: flex; align-items: center; row-gap: 1.5rem; column-gap: 1.5rem; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "styleLess": "font-size: 12px; color: rgba(26, 26, 26, 0.40);",
+        "variants": {
+          "desktop": {
+            "styleLess": "display: none;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "nav-toggle",
+        "fake": false,
+        "type": "class",
+        "name": "nav-toggle",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: none; flex-direction: column; justify-content: center; row-gap: 5px; column-gap: 5px; width: 32px; height: 32px; background: none; border: none; cursor: pointer; padding-top: 4px; padding-right: 4px; padding-bottom: 4px; padding-left: 4px; align-items: stretch;",
         "variants": {},
         "children": []
       },
       {
-        "_id": "nav-link-secondary",
+        "_id": "nav-toggle-span",
         "fake": false,
         "type": "class",
-        "name": "nav-link-secondary",
+        "name": "nav-toggle-span",
         "namespace": "",
         "comb": "",
-        "styleLess": "color: #ffffff; text-decoration: none; font-weight: 500; font-size: 0.9rem; opacity: 0.85;",
-        "variants": {
-          "hover": {
-            "styleLess": "opacity: 1;"
-          },
-          "medium": {
-            "styleLess": "display: none;"
-          }
-        },
+        "styleLess": "display: block; width: 100%; height: 2px; background: #1A1A1A;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn",
+        "fake": false,
+        "type": "class",
+        "name": "btn",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-flex; align-items: center; justify-content: center; row-gap: 8px; column-gap: 8px; font-family: \"Onest\", -apple-system, sans-serif; font-size: 16px; font-weight: 500; padding-top: 14px; padding-right: 28px; padding-bottom: 14px; padding-left: 28px; border-top-left-radius: 9999px; border-top-right-radius: 9999px; border-bottom-right-radius: 9999px; border-bottom-left-radius: 9999px; border: 1px solid transparent; cursor: pointer; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {},
         "children": []
       },
       {
@@ -467,51 +647,46 @@
         "name": "btn-primary",
         "namespace": "",
         "comb": "",
-        "styleLess": "display: inline-flex; align-items: center; row-gap: 0.5rem; column-gap: 0.5rem; background: #ff531f; color: #ffffff; padding-top: 0.75rem; padding-right: 1.5rem; padding-bottom: 0.75rem; padding-left: 1.5rem; border-top-left-radius: 9999px; border-top-right-radius: 9999px; border-bottom-right-radius: 9999px; border-bottom-left-radius: 9999px; text-decoration: none; font-weight: 600; font-size: 0.875rem; border: none; cursor: pointer; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "styleLess": "background: #1A1A1A; color: #FAFAFA; border-color: #1A1A1A;",
         "variants": {
           "hover": {
-            "styleLess": "background: #e64a1a; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255, 83, 31, 0.3);"
-          },
-          "pressed": {
-            "styleLess": "transform: translateY(0);"
+            "styleLess": "transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26, 26, 26, 0.2);"
           }
         },
         "children": []
       },
       {
-        "_id": "btn-arrow",
+        "_id": "nav-cta",
         "fake": false,
         "type": "class",
-        "name": "btn-arrow",
+        "name": "nav-cta",
         "namespace": "",
         "comb": "",
-        "styleLess": "transform: translateX(3px);",
+        "styleLess": "flex-shrink: 0;",
         "variants": {},
         "children": []
       },
       {
-        "_id": "menu-toggle",
+        "_id": "nav-mobile",
         "fake": false,
         "type": "class",
-        "name": "menu-toggle",
+        "name": "nav-mobile",
         "namespace": "",
         "comb": "",
-        "styleLess": "display: none; background: none; border: none; color: #ffffff; cursor: pointer; padding-top: 0.5rem; padding-right: 0.5rem; padding-bottom: 0.5rem; padding-left: 0.5rem;",
-        "variants": {
-          "medium": {
-            "styleLess": "display: block;"
-          }
-        },
-        "children": []
+        "styleLess": "display: none; position: fixed; top: 65px; left: 0; right: 0; background: #FAFAFA; border-bottom: 1px solid rgba(26, 26, 26, 0.10); padding-top: 24px; padding-right: 24px; padding-bottom: 24px; padding-left: 24px; flex-direction: column; row-gap: 16px; column-gap: 16px; z-index: 99; justify-content: flex-start; align-items: stretch;",
+        "variants": {},
+        "children": [
+          "active"
+        ]
       },
       {
-        "_id": "menu-toggle-span",
+        "_id": "nav-mobile-link",
         "fake": false,
         "type": "class",
-        "name": "menu-toggle-span",
+        "name": "nav-mobile-link",
         "namespace": "",
         "comb": "",
-        "styleLess": "display: block; width: 24px; height: 2px; background: currentColor; margin-top: 6px; margin-right: 0; margin-bottom: 6px; margin-left: 0;",
+        "styleLess": "font-size: 16px; font-weight: 400; color: #1A1A1A; padding-top: 12px; padding-right: 0; padding-bottom: 12px; padding-left: 0; border-bottom: 1px solid rgba(26, 26, 26, 0.10);",
         "variants": {},
         "children": []
       }

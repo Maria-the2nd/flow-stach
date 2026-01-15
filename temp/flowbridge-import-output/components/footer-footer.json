@@ -10,11 +10,27 @@
           "footer"
         ],
         "children": [
-          "wf-footer-top-001",
-          "wf-footer-bottom-001"
+          "wf-container-001"
         ],
         "data": {
           "tag": "footer",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-container-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "container"
+        ],
+        "children": [
+          "wf-footer-grid-001",
+          "wf-footer-bottom-001"
+        ],
+        "data": {
+          "tag": "div",
           "text": false,
           "xattr": []
         }
@@ -27,8 +43,8 @@
           "footer-bottom"
         ],
         "children": [
-          "wf-footer-bottom-span-001",
-          "wf-footer-bottom-span-002"
+          "wf-span-001",
+          "wf-span-002"
         ],
         "data": {
           "tag": "div",
@@ -37,181 +53,34 @@
         }
       },
       {
-        "_id": "wf-footer-bottom-span-002",
+        "_id": "wf-span-002",
         "type": "Block",
         "tag": "span",
-        "classes": [
-          "footer-bottom-span"
-        ],
-        "children": [
-          "wf-text-024"
-        ],
-        "data": {
-          "tag": "span",
-          "text": false,
-          "xattr": []
-        }
-      },
-      {
-        "_id": "wf-text-024",
-        "text": true,
-        "v": "Built with Webflow"
-      },
-      {
-        "_id": "wf-footer-bottom-span-001",
-        "type": "Block",
-        "tag": "span",
-        "classes": [
-          "footer-bottom-span"
-        ],
-        "children": [
-          "wf-text-023"
-        ],
-        "data": {
-          "tag": "span",
-          "text": false,
-          "xattr": []
-        }
-      },
-      {
-        "_id": "wf-text-023",
-        "text": true,
-        "v": "© 2025 Flow Party. All rights reserved."
-      },
-      {
-        "_id": "wf-footer-top-001",
-        "type": "Block",
-        "tag": "div",
-        "classes": [
-          "footer-top"
-        ],
-        "children": [
-          "wf-footer-logo-001",
-          "wf-footer-links-001"
-        ],
-        "data": {
-          "tag": "div",
-          "text": false,
-          "xattr": []
-        }
-      },
-      {
-        "_id": "wf-footer-links-001",
-        "type": "Block",
-        "tag": "div",
-        "classes": [
-          "footer-links"
-        ],
-        "children": [
-          "wf-footer-col-001",
-          "wf-footer-col-002",
-          "wf-footer-col-003",
-          "wf-footer-col-004"
-        ],
-        "data": {
-          "tag": "div",
-          "text": false,
-          "xattr": []
-        }
-      },
-      {
-        "_id": "wf-footer-col-004",
-        "type": "Block",
-        "tag": "div",
-        "classes": [
-          "footer-col"
-        ],
-        "children": [
-          "wf-footer-col-h4-004",
-          "wf-footer-col-link-013",
-          "wf-footer-col-link-014",
-          "wf-footer-col-link-015"
-        ],
-        "data": {
-          "tag": "div",
-          "text": false,
-          "xattr": []
-        }
-      },
-      {
-        "_id": "wf-footer-col-link-015",
-        "type": "Link",
-        "tag": "a",
-        "classes": [
-          "footer-col-link"
-        ],
-        "children": [
-          "wf-text-022"
-        ],
-        "data": {
-          "link": {
-            "mode": "external",
-            "url": "#"
-          }
-        }
-      },
-      {
-        "_id": "wf-text-022",
-        "text": true,
-        "v": "Licensing"
-      },
-      {
-        "_id": "wf-footer-col-link-014",
-        "type": "Link",
-        "tag": "a",
-        "classes": [
-          "footer-col-link"
-        ],
-        "children": [
-          "wf-text-021"
-        ],
-        "data": {
-          "link": {
-            "mode": "external",
-            "url": "#"
-          }
-        }
-      },
-      {
-        "_id": "wf-text-021",
-        "text": true,
-        "v": "Privacy"
-      },
-      {
-        "_id": "wf-footer-col-link-013",
-        "type": "Link",
-        "tag": "a",
-        "classes": [
-          "footer-col-link"
-        ],
+        "classes": [],
         "children": [
           "wf-text-020"
         ],
         "data": {
-          "link": {
-            "mode": "external",
-            "url": "#"
-          }
+          "tag": "span",
+          "text": false,
+          "xattr": []
         }
       },
       {
         "_id": "wf-text-020",
         "text": true,
-        "v": "Terms"
+        "v": "Made with care for creative developers."
       },
       {
-        "_id": "wf-footer-col-h4-004",
-        "type": "Heading",
-        "tag": "h4",
-        "classes": [
-          "footer-col-h4",
-          "heading-h4"
-        ],
+        "_id": "wf-span-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [],
         "children": [
           "wf-text-019"
         ],
         "data": {
-          "tag": "h4",
+          "tag": "span",
           "text": false,
           "xattr": []
         }
@@ -219,21 +88,21 @@
       {
         "_id": "wf-text-019",
         "text": true,
-        "v": "Legal"
+        "v": "© 2025 Flow Party. All rights reserved."
       },
       {
-        "_id": "wf-footer-col-003",
+        "_id": "wf-footer-grid-001",
         "type": "Block",
         "tag": "div",
         "classes": [
-          "footer-col"
+          "footer-grid",
+          "w-layout-grid"
         ],
         "children": [
-          "wf-footer-col-h4-003",
-          "wf-footer-col-link-009",
-          "wf-footer-col-link-010",
-          "wf-footer-col-link-011",
-          "wf-footer-col-link-012"
+          "wf-footer-brand-001",
+          "wf-footer-column-001",
+          "wf-footer-column-002",
+          "wf-footer-column-003"
         ],
         "data": {
           "tag": "div",
@@ -242,11 +111,31 @@
         }
       },
       {
-        "_id": "wf-footer-col-link-012",
+        "_id": "wf-footer-column-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "footer-column"
+        ],
+        "children": [
+          "wf-footer-column-h4-003",
+          "wf-footer-column-link-009",
+          "wf-footer-column-link-010",
+          "wf-footer-column-link-011",
+          "wf-footer-column-link-012"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-footer-column-link-012",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "footer-col-link"
+          "footer-column-link"
         ],
         "children": [
           "wf-text-018"
@@ -261,14 +150,14 @@
       {
         "_id": "wf-text-018",
         "text": true,
-        "v": "FAQ"
+        "v": "Terms"
       },
       {
-        "_id": "wf-footer-col-link-011",
+        "_id": "wf-footer-column-link-011",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "footer-col-link"
+          "footer-column-link"
         ],
         "children": [
           "wf-text-017"
@@ -283,14 +172,14 @@
       {
         "_id": "wf-text-017",
         "text": true,
-        "v": "Support"
+        "v": "Contact"
       },
       {
-        "_id": "wf-footer-col-link-010",
+        "_id": "wf-footer-column-link-010",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "footer-col-link"
+          "footer-column-link"
         ],
         "children": [
           "wf-text-016"
@@ -305,14 +194,14 @@
       {
         "_id": "wf-text-016",
         "text": true,
-        "v": "Tutorials"
+        "v": "Documentation"
       },
       {
-        "_id": "wf-footer-col-link-009",
+        "_id": "wf-footer-column-link-009",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "footer-col-link"
+          "footer-column-link"
         ],
         "children": [
           "wf-text-015"
@@ -320,21 +209,21 @@
         "data": {
           "link": {
             "mode": "external",
-            "url": "#"
+            "url": "#faq"
           }
         }
       },
       {
         "_id": "wf-text-015",
         "text": true,
-        "v": "Documentation"
+        "v": "FAQ"
       },
       {
-        "_id": "wf-footer-col-h4-003",
+        "_id": "wf-footer-column-h4-003",
         "type": "Heading",
         "tag": "h4",
         "classes": [
-          "footer-col-h4",
+          "footer-column-h4",
           "heading-h4"
         ],
         "children": [
@@ -349,21 +238,21 @@
       {
         "_id": "wf-text-014",
         "text": true,
-        "v": "Resources"
+        "v": "Support"
       },
       {
-        "_id": "wf-footer-col-002",
+        "_id": "wf-footer-column-002",
         "type": "Block",
         "tag": "div",
         "classes": [
-          "footer-col"
+          "footer-column"
         ],
         "children": [
-          "wf-footer-col-h4-002",
-          "wf-footer-col-link-005",
-          "wf-footer-col-link-006",
-          "wf-footer-col-link-007",
-          "wf-footer-col-link-008"
+          "wf-footer-column-h4-002",
+          "wf-footer-column-link-005",
+          "wf-footer-column-link-006",
+          "wf-footer-column-link-007",
+          "wf-footer-column-link-008"
         ],
         "data": {
           "tag": "div",
@@ -372,11 +261,11 @@
         }
       },
       {
-        "_id": "wf-footer-col-link-008",
+        "_id": "wf-footer-column-link-008",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "footer-col-link"
+          "footer-column-link"
         ],
         "children": [
           "wf-text-013"
@@ -391,14 +280,14 @@
       {
         "_id": "wf-text-013",
         "text": true,
-        "v": "Blog"
+        "v": "YouTube"
       },
       {
-        "_id": "wf-footer-col-link-007",
+        "_id": "wf-footer-column-link-007",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "footer-col-link"
+          "footer-column-link"
         ],
         "children": [
           "wf-text-012"
@@ -413,14 +302,14 @@
       {
         "_id": "wf-text-012",
         "text": true,
-        "v": "Showcase"
+        "v": "Twitter"
       },
       {
-        "_id": "wf-footer-col-link-006",
+        "_id": "wf-footer-column-link-006",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "footer-col-link"
+          "footer-column-link"
         ],
         "children": [
           "wf-text-011"
@@ -438,11 +327,11 @@
         "v": "Discord"
       },
       {
-        "_id": "wf-footer-col-link-005",
+        "_id": "wf-footer-column-link-005",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "footer-col-link"
+          "footer-column-link"
         ],
         "children": [
           "wf-text-010"
@@ -450,7 +339,7 @@
         "data": {
           "link": {
             "mode": "external",
-            "url": "#"
+            "url": "#collaborators"
           }
         }
       },
@@ -460,11 +349,11 @@
         "v": "Collaborators"
       },
       {
-        "_id": "wf-footer-col-h4-002",
+        "_id": "wf-footer-column-h4-002",
         "type": "Heading",
         "tag": "h4",
         "classes": [
-          "footer-col-h4",
+          "footer-column-h4",
           "heading-h4"
         ],
         "children": [
@@ -482,18 +371,18 @@
         "v": "Community"
       },
       {
-        "_id": "wf-footer-col-001",
+        "_id": "wf-footer-column-001",
         "type": "Block",
         "tag": "div",
         "classes": [
-          "footer-col"
+          "footer-column"
         ],
         "children": [
-          "wf-footer-col-h4-001",
-          "wf-footer-col-link-001",
-          "wf-footer-col-link-002",
-          "wf-footer-col-link-003",
-          "wf-footer-col-link-004"
+          "wf-footer-column-h4-001",
+          "wf-footer-column-link-001",
+          "wf-footer-column-link-002",
+          "wf-footer-column-link-003",
+          "wf-footer-column-link-004"
         ],
         "data": {
           "tag": "div",
@@ -502,11 +391,11 @@
         }
       },
       {
-        "_id": "wf-footer-col-link-004",
+        "_id": "wf-footer-column-link-004",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "footer-col-link"
+          "footer-column-link"
         ],
         "children": [
           "wf-text-008"
@@ -521,14 +410,14 @@
       {
         "_id": "wf-text-008",
         "text": true,
-        "v": "Changelog"
+        "v": "Updates"
       },
       {
-        "_id": "wf-footer-col-link-003",
+        "_id": "wf-footer-column-link-003",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "footer-col-link"
+          "footer-column-link"
         ],
         "children": [
           "wf-text-007"
@@ -536,7 +425,7 @@
         "data": {
           "link": {
             "mode": "external",
-            "url": "#"
+            "url": "#pricing"
           }
         }
       },
@@ -546,11 +435,11 @@
         "v": "Pricing"
       },
       {
-        "_id": "wf-footer-col-link-002",
+        "_id": "wf-footer-column-link-002",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "footer-col-link"
+          "footer-column-link"
         ],
         "children": [
           "wf-text-006"
@@ -558,7 +447,7 @@
         "data": {
           "link": {
             "mode": "external",
-            "url": "#"
+            "url": "#packs"
           }
         }
       },
@@ -568,11 +457,11 @@
         "v": "Party Packs"
       },
       {
-        "_id": "wf-footer-col-link-001",
+        "_id": "wf-footer-column-link-001",
         "type": "Link",
         "tag": "a",
         "classes": [
-          "footer-col-link"
+          "footer-column-link"
         ],
         "children": [
           "wf-text-005"
@@ -580,7 +469,7 @@
         "data": {
           "link": {
             "mode": "external",
-            "url": "#"
+            "url": "#stash"
           }
         }
       },
@@ -590,11 +479,11 @@
         "v": "The Stash"
       },
       {
-        "_id": "wf-footer-col-h4-001",
+        "_id": "wf-footer-column-h4-001",
         "type": "Heading",
         "tag": "h4",
         "classes": [
-          "footer-col-h4",
+          "footer-column-h4",
           "heading-h4"
         ],
         "children": [
@@ -612,19 +501,35 @@
         "v": "Product"
       },
       {
-        "_id": "wf-footer-logo-001",
+        "_id": "wf-footer-brand-001",
         "type": "Block",
-        "tag": "span",
+        "tag": "div",
         "classes": [
-          "footer-logo"
+          "footer-brand"
         ],
         "children": [
-          "wf-text-001",
-          "wf-footer-logo-accent-001",
+          "wf-nav-logo-001",
+          "wf-footer-desc-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-footer-desc-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "footer-desc",
+          "text-body"
+        ],
+        "children": [
           "wf-text-003"
         ],
         "data": {
-          "tag": "span",
+          "tag": "p",
           "text": false,
           "xattr": []
         }
@@ -632,14 +537,33 @@
       {
         "_id": "wf-text-003",
         "text": true,
-        "v": "™"
+        "v": "Premium Webflow components, templates, and complete launch solutions for creative developers."
       },
       {
-        "_id": "wf-footer-logo-accent-001",
+        "_id": "wf-nav-logo-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-logo"
+        ],
+        "children": [
+          "wf-logo-name-001",
+          "wf-logo-tagline-001"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "wf-logo-tagline-001",
         "type": "Block",
         "tag": "span",
         "classes": [
-          "footer-logo-accent"
+          "logo-tagline",
+          "footer-brand-logo-tagline"
         ],
         "children": [
           "wf-text-002"
@@ -653,12 +577,29 @@
       {
         "_id": "wf-text-002",
         "text": true,
-        "v": "PARTY"
+        "v": "Premium Webflow Assets"
+      },
+      {
+        "_id": "wf-logo-name-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "logo-name",
+          "footer-brand-logo-name"
+        ],
+        "children": [
+          "wf-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
       },
       {
         "_id": "wf-text-001",
         "text": true,
-        "v": "FLOW"
+        "v": "Flow Party"
       }
     ],
     "styles": [
@@ -669,66 +610,117 @@
         "name": "footer",
         "namespace": "",
         "comb": "",
-        "styleLess": "background: #ffffff; margin-top: 2rem; margin-right: 5vw; margin-bottom: 2rem; margin-left: 5vw; border-top-left-radius: 32px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; border-bottom-left-radius: 32px; padding-top: 4rem; padding-right: 4rem; padding-bottom: 4rem; padding-left: 4rem;",
-        "variants": {
-          "medium": {
-            "styleLess": "margin-top: 1rem; margin-right: 1rem; margin-bottom: 1rem; margin-left: 1rem; padding-top: 2rem; padding-right: 2rem; padding-bottom: 2rem; padding-left: 2rem;"
-          }
-        },
-        "children": []
-      },
-      {
-        "_id": "footer-top",
-        "fake": false,
-        "type": "class",
-        "name": "footer-top",
-        "namespace": "",
-        "comb": "",
-        "styleLess": "display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4rem; flex-direction: row; flex-wrap: nowrap;",
+        "styleLess": "background: #1A1A1A; color: #FAFAFA; padding-top: 88px; padding-right: 0; padding-bottom: 48px; padding-left: 0;",
         "variants": {},
         "children": []
       },
       {
-        "_id": "footer-logo",
+        "_id": "container",
         "fake": false,
         "type": "class",
-        "name": "footer-logo",
+        "name": "container",
         "namespace": "",
         "comb": "",
-        "styleLess": "font-family: 'Antonio', sans-serif; font-size: 1.5rem; font-weight: 700;",
+        "styleLess": "max-width: 1456px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto; padding-top: 0; padding-right: 24px; padding-bottom: 0; padding-left: 24px;",
         "variants": {},
         "children": []
       },
       {
-        "_id": "footer-logo-accent",
+        "_id": "footer-grid",
         "fake": false,
         "type": "class",
-        "name": "footer-logo-accent",
+        "name": "footer-grid",
         "namespace": "",
         "comb": "",
-        "styleLess": "color: #ff531f;",
+        "styleLess": "display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; margin-bottom: 64px; padding-bottom: 48px; border-bottom: 1px solid rgba(250, 250, 250, 0.1); justify-items: stretch; align-items: stretch; grid-row-gap: 64px; grid-column-gap: 64px;",
         "variants": {},
         "children": []
       },
       {
-        "_id": "footer-links",
+        "_id": "nav-logo",
         "fake": false,
         "type": "class",
-        "name": "footer-links",
+        "name": "nav-logo",
         "namespace": "",
         "comb": "",
-        "styleLess": "display: flex; row-gap: 4rem; column-gap: 4rem; flex-direction: row; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap;",
+        "styleLess": "display: flex; flex-direction: column; flex-shrink: 0; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap;",
         "variants": {},
         "children": []
       },
       {
-        "_id": "footer-col-h4",
+        "_id": "logo-name",
         "fake": false,
         "type": "class",
-        "name": "footer-col-h4",
+        "name": "logo-name",
         "namespace": "",
         "comb": "",
-        "styleLess": "font-size: 0.7rem; font-weight: 600; color: #afb6b4; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.25rem;",
+        "styleLess": "font-family: \"Antonio\", sans-serif; font-size: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "footer-brand-logo-name",
+        "fake": false,
+        "type": "class",
+        "name": "footer-brand-logo-name",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #FAFAFA;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "logo-tagline",
+        "fake": false,
+        "type": "class",
+        "name": "logo-tagline",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 11px; color: rgba(26, 26, 26, 0.40); letter-spacing: 0.02em;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "footer-brand-logo-tagline",
+        "fake": false,
+        "type": "class",
+        "name": "footer-brand-logo-tagline",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: rgba(250, 250, 250, 0.4);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "footer-desc",
+        "fake": false,
+        "type": "class",
+        "name": "footer-desc",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 15px; color: rgba(250, 250, 250, 0.6); line-height: 1.6; margin-top: 20px; max-width: 320px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "footer-column-h4",
+        "fake": false,
+        "type": "class",
+        "name": "footer-column-h4",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Antonio\", sans-serif; font-size: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 24px; color: rgba(250, 250, 250, 0.4);",
         "variants": {},
         "children": []
       },
@@ -739,21 +731,21 @@
         "name": "heading-h4",
         "namespace": "",
         "comb": "",
-        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
         "variants": {},
         "children": []
       },
       {
-        "_id": "footer-col-link",
+        "_id": "footer-column-link",
         "fake": false,
         "type": "class",
-        "name": "footer-col-link",
+        "name": "footer-column-link",
         "namespace": "",
         "comb": "",
-        "styleLess": "display: block; color: #171717; text-decoration: none; font-size: 0.9rem; margin-bottom: 0.75rem;",
+        "styleLess": "display: block; font-size: 15px; color: rgba(250, 250, 250, 0.7); margin-bottom: 12px;",
         "variants": {
           "hover": {
-            "styleLess": "color: #ff531f;"
+            "styleLess": "color: #FAFAFA;"
           }
         },
         "children": []
@@ -765,18 +757,7 @@
         "name": "footer-bottom",
         "namespace": "",
         "comb": "",
-        "styleLess": "display: flex; justify-content: space-between; padding-top: 2rem; border-top: 1px solid #dddfde; flex-direction: row; align-items: stretch; flex-wrap: nowrap;",
-        "variants": {},
-        "children": []
-      },
-      {
-        "_id": "footer-bottom-span",
-        "fake": false,
-        "type": "class",
-        "name": "footer-bottom-span",
-        "namespace": "",
-        "comb": "",
-        "styleLess": "font-size: 0.8rem; color: #afb6b4;",
+        "styleLess": "display: flex; justify-content: space-between; font-size: 14px; color: rgba(250, 250, 250, 0.4); flex-direction: row; align-items: stretch; flex-wrap: nowrap;",
         "variants": {},
         "children": []
       }

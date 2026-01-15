@@ -1,0 +1,1324 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "wf-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "section",
+          "collab-section"
+        ],
+        "children": [
+          "wf-container-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "collaborators"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "wf-container-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "container"
+        ],
+        "children": [
+          "wf-section-header-001",
+          "wf-collab-grid-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-grid-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-grid",
+          "w-layout-grid"
+        ],
+        "children": [
+          "wf-collab-card-001",
+          "wf-collab-card-002",
+          "wf-collab-card-003",
+          "wf-collab-card-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-card-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-card"
+        ],
+        "children": [
+          "wf-collab-avatar-004",
+          "wf-collab-name-004",
+          "wf-collab-role-004",
+          "wf-collab-stats-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-stats-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stats"
+        ],
+        "children": [
+          "wf-div-007",
+          "wf-div-008"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-div-008",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "wf-collab-stat-value-008",
+          "wf-collab-stat-label-008"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-stat-label-008",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "wf-text-027"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-027",
+        "text": true,
+        "v": "Downloads"
+      },
+      {
+        "_id": "wf-collab-stat-value-008",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "wf-text-026"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-026",
+        "text": true,
+        "v": "2.2k"
+      },
+      {
+        "_id": "wf-div-007",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "wf-collab-stat-value-007",
+          "wf-collab-stat-label-007"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-stat-label-007",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "wf-text-025"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-025",
+        "text": true,
+        "v": "Resources"
+      },
+      {
+        "_id": "wf-collab-stat-value-007",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "wf-text-024"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-024",
+        "text": true,
+        "v": "10"
+      },
+      {
+        "_id": "wf-collab-role-004",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "collab-role",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-023"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-023",
+        "text": true,
+        "v": "Webflow Expert"
+      },
+      {
+        "_id": "wf-collab-name-004",
+        "type": "Heading",
+        "tag": "h4",
+        "classes": [
+          "collab-name",
+          "heading-h4"
+        ],
+        "children": [
+          "wf-text-022"
+        ],
+        "data": {
+          "tag": "h4",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-022",
+        "text": true,
+        "v": "Emma Wilson"
+      },
+      {
+        "_id": "wf-collab-avatar-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-avatar"
+        ],
+        "children": [
+          "wf-collab-avatar-inner-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-avatar-inner-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-avatar-inner"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-card-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-card"
+        ],
+        "children": [
+          "wf-collab-avatar-003",
+          "wf-collab-name-003",
+          "wf-collab-role-003",
+          "wf-collab-stats-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-stats-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stats"
+        ],
+        "children": [
+          "wf-div-005",
+          "wf-div-006"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-div-006",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "wf-collab-stat-value-006",
+          "wf-collab-stat-label-006"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-stat-label-006",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "wf-text-021"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-021",
+        "text": true,
+        "v": "Downloads"
+      },
+      {
+        "_id": "wf-collab-stat-value-006",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "wf-text-020"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-020",
+        "text": true,
+        "v": "3.1k"
+      },
+      {
+        "_id": "wf-div-005",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "wf-collab-stat-value-005",
+          "wf-collab-stat-label-005"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-stat-label-005",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "wf-text-019"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-019",
+        "text": true,
+        "v": "Resources"
+      },
+      {
+        "_id": "wf-collab-stat-value-005",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "wf-text-018"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-018",
+        "text": true,
+        "v": "15"
+      },
+      {
+        "_id": "wf-collab-role-003",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "collab-role",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-017"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-017",
+        "text": true,
+        "v": "Motion Designer"
+      },
+      {
+        "_id": "wf-collab-name-003",
+        "type": "Heading",
+        "tag": "h4",
+        "classes": [
+          "collab-name",
+          "heading-h4"
+        ],
+        "children": [
+          "wf-text-016"
+        ],
+        "data": {
+          "tag": "h4",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-016",
+        "text": true,
+        "v": "James Park"
+      },
+      {
+        "_id": "wf-collab-avatar-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-avatar"
+        ],
+        "children": [
+          "wf-collab-avatar-inner-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-avatar-inner-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-avatar-inner"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-card-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-card"
+        ],
+        "children": [
+          "wf-collab-avatar-002",
+          "wf-collab-name-002",
+          "wf-collab-role-002",
+          "wf-collab-stats-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-stats-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stats"
+        ],
+        "children": [
+          "wf-div-003",
+          "wf-div-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-div-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "wf-collab-stat-value-004",
+          "wf-collab-stat-label-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-stat-label-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "wf-text-015"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-015",
+        "text": true,
+        "v": "Downloads"
+      },
+      {
+        "_id": "wf-collab-stat-value-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "wf-text-014"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-014",
+        "text": true,
+        "v": "1.8k"
+      },
+      {
+        "_id": "wf-div-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "wf-collab-stat-value-003",
+          "wf-collab-stat-label-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-stat-label-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "wf-text-013"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-013",
+        "text": true,
+        "v": "Resources"
+      },
+      {
+        "_id": "wf-collab-stat-value-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "wf-text-012"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-012",
+        "text": true,
+        "v": "8"
+      },
+      {
+        "_id": "wf-collab-role-002",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "collab-role",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-011"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-011",
+        "text": true,
+        "v": "UI/UX Designer"
+      },
+      {
+        "_id": "wf-collab-name-002",
+        "type": "Heading",
+        "tag": "h4",
+        "classes": [
+          "collab-name",
+          "heading-h4"
+        ],
+        "children": [
+          "wf-text-010"
+        ],
+        "data": {
+          "tag": "h4",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-010",
+        "text": true,
+        "v": "Maya Johnson"
+      },
+      {
+        "_id": "wf-collab-avatar-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-avatar"
+        ],
+        "children": [
+          "wf-collab-avatar-inner-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-avatar-inner-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-avatar-inner"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-card-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-card"
+        ],
+        "children": [
+          "wf-collab-avatar-001",
+          "wf-collab-name-001",
+          "wf-collab-role-001",
+          "wf-collab-stats-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-stats-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stats"
+        ],
+        "children": [
+          "wf-div-001",
+          "wf-div-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-div-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "wf-collab-stat-value-002",
+          "wf-collab-stat-label-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-stat-label-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "wf-text-009"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-009",
+        "text": true,
+        "v": "Downloads"
+      },
+      {
+        "_id": "wf-collab-stat-value-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "wf-text-008"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-008",
+        "text": true,
+        "v": "2.4k"
+      },
+      {
+        "_id": "wf-div-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "wf-collab-stat-value-001",
+          "wf-collab-stat-label-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-stat-label-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "wf-text-007"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-007",
+        "text": true,
+        "v": "Resources"
+      },
+      {
+        "_id": "wf-collab-stat-value-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "wf-text-006"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-006",
+        "text": true,
+        "v": "12"
+      },
+      {
+        "_id": "wf-collab-role-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "collab-role",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-005"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-005",
+        "text": true,
+        "v": "Creative Developer"
+      },
+      {
+        "_id": "wf-collab-name-001",
+        "type": "Heading",
+        "tag": "h4",
+        "classes": [
+          "collab-name",
+          "heading-h4"
+        ],
+        "children": [
+          "wf-text-004"
+        ],
+        "data": {
+          "tag": "h4",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-004",
+        "text": true,
+        "v": "Alex Rivera"
+      },
+      {
+        "_id": "wf-collab-avatar-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-avatar"
+        ],
+        "children": [
+          "wf-collab-avatar-inner-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-collab-avatar-inner-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-avatar-inner"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-section-header-001",
+        "type": "Block",
+        "tag": "header",
+        "classes": [
+          "section-header"
+        ],
+        "children": [
+          "wf-section-label-001",
+          "wf-display-001"
+        ],
+        "data": {
+          "tag": "header",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-display-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "display",
+          "section-header-display",
+          "collab-section-display",
+          "heading-h2"
+        ],
+        "children": [
+          "wf-text-002",
+          "wf-br-001",
+          "wf-text-003"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-003",
+        "text": true,
+        "v": "The Best"
+      },
+      {
+        "_id": "wf-br-001",
+        "type": "Block",
+        "tag": "br",
+        "classes": [],
+        "children": [],
+        "data": {
+          "tag": "br",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-002",
+        "text": true,
+        "v": "Learn From"
+      },
+      {
+        "_id": "wf-section-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "section-label",
+          "section-header-section-label",
+          "collab-section-section-label"
+        ],
+        "children": [
+          "wf-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-001",
+        "text": true,
+        "v": "Collaborators"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "section",
+        "fake": false,
+        "type": "class",
+        "name": "section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 88px; padding-right: 0; padding-bottom: 88px; padding-left: 0;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collab-section",
+        "fake": false,
+        "type": "class",
+        "name": "collab-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #1A1A1A; color: #FAFAFA;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "container",
+        "fake": false,
+        "type": "class",
+        "name": "container",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 1456px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto; padding-top: 0; padding-right: 24px; padding-bottom: 0; padding-left: 24px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header",
+        "fake": false,
+        "type": "class",
+        "name": "section-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 64px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-label",
+        "fake": false,
+        "type": "class",
+        "name": "section-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Antonio\", sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(26, 26, 26, 0.65);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header-section-label",
+        "fake": false,
+        "type": "class",
+        "name": "section-header-section-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 16px; display: block;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collab-section-section-label",
+        "fake": false,
+        "type": "class",
+        "name": "collab-section-section-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: rgba(250, 250, 250, 0.4);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "display",
+        "fake": false,
+        "type": "class",
+        "name": "display",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Antonio\", sans-serif; font-size: 96px; font-weight: 600; line-height: 0.95; letter-spacing: -0.02em; text-transform: uppercase;",
+        "variants": {
+          "desktop": {
+            "styleLess": "font-size: 72px;"
+          },
+          "small": {
+            "styleLess": "font-size: 48px;"
+          },
+          "tiny": {
+            "styleLess": "font-size: 36px;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "section-header-display",
+        "fake": false,
+        "type": "class",
+        "name": "section-header-display",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 24px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collab-section-display",
+        "fake": false,
+        "type": "class",
+        "name": "collab-section-display",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #FAFAFA;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collab-grid",
+        "fake": false,
+        "type": "class",
+        "name": "collab-grid",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; justify-items: stretch; align-items: stretch; grid-row-gap: 24px; grid-column-gap: 24px;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr 1fr; display: grid;"
+          },
+          "small": {
+            "styleLess": "grid-template-columns: 1fr; display: grid;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "collab-card",
+        "fake": false,
+        "type": "class",
+        "name": "collab-card",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 40px; padding-right: 32px; padding-bottom: 40px; padding-left: 32px; background: rgba(250, 250, 250, 0.03); border: 1px solid rgba(250, 250, 250, 0.08); border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-right-radius: 12px; border-bottom-left-radius: 12px; text-align: center;",
+        "variants": {
+          "hover": {
+            "styleLess": "background: rgba(250, 250, 250, 0.06); border-color: rgba(250, 250, 250, 0.15);"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "collab-avatar",
+        "fake": false,
+        "type": "class",
+        "name": "collab-avatar",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "width: 88px; height: 88px; border-top-left-radius: 50%; border-top-right-radius: 50%; border-bottom-right-radius: 50%; border-bottom-left-radius: 50%; margin-top: 0; margin-right: auto; margin-bottom: 24px; margin-left: auto; overflow: hidden;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collab-avatar-inner",
+        "fake": false,
+        "type": "class",
+        "name": "collab-avatar-inner",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "width: 100%; height: 100%;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collab-name",
+        "fake": false,
+        "type": "class",
+        "name": "collab-name",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 18px; font-weight: 500; margin-bottom: 4px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h4",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h4",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collab-role",
+        "fake": false,
+        "type": "class",
+        "name": "collab-role",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 14px; color: rgba(250, 250, 250, 0.5); margin-bottom: 24px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collab-stats",
+        "fake": false,
+        "type": "class",
+        "name": "collab-stats",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; justify-content: center; row-gap: 32px; column-gap: 32px; padding-top: 20px; border-top: 1px solid rgba(250, 250, 250, 0.08); flex-direction: row; align-items: stretch; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collab-stat-value",
+        "fake": false,
+        "type": "class",
+        "name": "collab-stat-value",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 20px; font-weight: 400;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collab-stat-label",
+        "fake": false,
+        "type": "class",
+        "name": "collab-stat-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 12px; color: rgba(250, 250, 250, 0.4);",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

@@ -299,9 +299,13 @@ interface GroupCardProps {
 
 function GroupCard({ label, slug, count, index, templateSlug }: GroupCardProps) {
   const isTokens = slug === "tokens"
+  const isFullPage = slug === "full-page"
+  // Blue for tokens, green/yellow for full-page, orange for others
   const cardGradient = isTokens
     ? "bg-[linear-gradient(45deg,hsla(217,100%,50%,1),hsla(230,100%,60%,1),hsla(200,100%,50%,1))]"
-    : "bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]"
+    : isFullPage
+      ? "bg-[linear-gradient(to_right,#24FE41,#FDFC47)]"
+      : "bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]"
   const displayCount = isTokens ? 1 : count
   return (
     <Link href={`/assets?template=${templateSlug}&cat=${slug}`}>
@@ -368,14 +372,14 @@ export function AssetsContent() {
   const assets = useQuery(
     api.assets.list,
     isAuthLoaded &&
-    isSignedIn &&
-    !adminPanel &&
-    (showFavoritesOnly || (!!activeTemplate && !!categoryFilter))
+      isSignedIn &&
+      !adminPanel &&
+      (showFavoritesOnly || (!!activeTemplate && !!categoryFilter))
       ? {
-          category: categoryFilter ?? undefined,
-          search: searchQuery || undefined,
-          templateId: activeTemplate?._id ?? undefined,
-        }
+        category: categoryFilter ?? undefined,
+        search: searchQuery || undefined,
+        templateId: activeTemplate?._id ?? undefined,
+      }
       : "skip"
   )
 
@@ -445,13 +449,13 @@ export function AssetsContent() {
   const tokensAssets = useQuery(
     api.assets.list,
     isAuthLoaded &&
-    isSignedIn &&
-    showGroupLibrary &&
-    activeTemplate
+      isSignedIn &&
+      showGroupLibrary &&
+      activeTemplate
       ? {
-          category: "tokens",
-          templateId: activeTemplate._id,
-        }
+        category: "tokens",
+        templateId: activeTemplate._id,
+      }
       : "skip"
   )
 
@@ -460,11 +464,11 @@ export function AssetsContent() {
   const tokenPayload = useQuery(
     api.payloads.byAssetId,
     isAuthLoaded &&
-    isSignedIn &&
-    tokenAsset
+      isSignedIn &&
+      tokenAsset
       ? {
-          assetId: tokenAsset._id,
-        }
+        assetId: tokenAsset._id,
+      }
       : "skip"
   )
 
@@ -606,12 +610,54 @@ export function AssetsContent() {
               <p className="mt-1 text-sm text-muted-foreground">
                 Choose a group to browse the components inside.
               </p>
-              {groupFontUrl && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Google Fonts: <span className="break-all">{groupFontUrl}</span>
-                </p>
-              )}
             </div>
+          </div>
+
+          {/* Step-by-step instructions */}
+          <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* Step 1: Fonts */}
+            <Card className="border-2 border-blue-500/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg font-bold text-blue-600">
+                  Step 1: Install Google Fonts
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {groupFontUrl ? (
+                  <div className="space-y-3">
+                    <p className="text-2xl font-extrabold">Please install the fonts and wait</p>
+                    <p className="text-xs text-muted-foreground break-all bg-muted/50 p-2 rounded">{groupFontUrl}</p>
+                    <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+                      <li>Go to <strong>Site Settings → Fonts</strong> in Webflow</li>
+                      <li>Add the fonts via <strong>Google Fonts</strong></li>
+                      <li><strong>Wait</strong> for them to load in Designer</li>
+                    </ol>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No Google Fonts URL specified for this template.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Step 2: Tokens */}
+            <Card className="border-2 border-primary/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                  Step 2: Copy Design Tokens
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-2xl font-extrabold">Paste tokens FIRST</p>
+                  <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+                    <li>Click &quot;Design Tokens&quot; group below</li>
+                    <li>Copy and paste into Webflow</li>
+                    <li><strong>Delete the div</strong> you just created</li>
+                    <li>Then copy individual components</li>
+                  </ol>
+                </div>
+              </CardContent>
+            </Card>
           </div>
           {isTemplatesLoading ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">

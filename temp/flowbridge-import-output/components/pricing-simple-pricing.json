@@ -1,0 +1,1186 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "wf-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "section"
+        ],
+        "children": [
+          "wf-container-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "pricing"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "wf-container-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "container"
+        ],
+        "children": [
+          "wf-section-header-001",
+          "wf-pricing-grid-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-pricing-grid-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-grid",
+          "w-layout-grid"
+        ],
+        "children": [
+          "wf-pricing-card-001",
+          "wf-pricing-card-002",
+          "wf-pricing-card-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-pricing-card-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-card"
+        ],
+        "children": [
+          "wf-pricing-tier-003",
+          "wf-pricing-price-003",
+          "wf-pricing-period-003",
+          "wf-pricing-desc-003",
+          "wf-pricing-features-003",
+          "wf-btn-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-btn-003",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn",
+          "btn-secondary"
+        ],
+        "children": [
+          "wf-text-030"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-030",
+        "text": true,
+        "v": "Get Lifetime"
+      },
+      {
+        "_id": "wf-pricing-features-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-features"
+        ],
+        "children": [
+          "wf-pricing-feature-009",
+          "wf-pricing-feature-010",
+          "wf-pricing-feature-011",
+          "wf-pricing-feature-012"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-pricing-feature-012",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-feature"
+        ],
+        "children": [
+          "wf-text-029"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-029",
+        "text": true,
+        "v": "Early Access"
+      },
+      {
+        "_id": "wf-pricing-feature-011",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-feature"
+        ],
+        "children": [
+          "wf-text-028"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-028",
+        "text": true,
+        "v": "Team Sharing (5 Seats)"
+      },
+      {
+        "_id": "wf-pricing-feature-010",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-feature"
+        ],
+        "children": [
+          "wf-text-027"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-027",
+        "text": true,
+        "v": "Lifetime Updates"
+      },
+      {
+        "_id": "wf-pricing-feature-009",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-feature"
+        ],
+        "children": [
+          "wf-text-026"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-026",
+        "text": true,
+        "v": "Everything in Pro"
+      },
+      {
+        "_id": "wf-pricing-desc-003",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "pricing-desc",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-025"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-025",
+        "text": true,
+        "v": "One payment, forever access. Best value for agencies."
+      },
+      {
+        "_id": "wf-pricing-period-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-period"
+        ],
+        "children": [
+          "wf-text-024"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-024",
+        "text": true,
+        "v": "One Time"
+      },
+      {
+        "_id": "wf-pricing-price-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-price"
+        ],
+        "children": [
+          "wf-text-023"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-023",
+        "text": true,
+        "v": "$299"
+      },
+      {
+        "_id": "wf-pricing-tier-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pricing-tier"
+        ],
+        "children": [
+          "wf-text-022"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-022",
+        "text": true,
+        "v": "Lifetime"
+      },
+      {
+        "_id": "wf-pricing-card-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-card",
+          "featured"
+        ],
+        "children": [
+          "wf-pricing-tier-002",
+          "wf-pricing-price-002",
+          "wf-pricing-period-002",
+          "wf-pricing-desc-002",
+          "wf-pricing-features-002",
+          "wf-btn-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-btn-002",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn",
+          "btn-primary",
+          "pricing-card-btn-primary",
+          "featured-btn-primary"
+        ],
+        "children": [
+          "wf-text-021"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-021",
+        "text": true,
+        "v": "Start Pro Trial"
+      },
+      {
+        "_id": "wf-pricing-features-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-features"
+        ],
+        "children": [
+          "wf-pricing-feature-004",
+          "wf-pricing-feature-005",
+          "wf-pricing-feature-006",
+          "wf-pricing-feature-007",
+          "wf-pricing-feature-008"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-pricing-feature-008",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-feature",
+          "featured-pricing-feature"
+        ],
+        "children": [
+          "wf-text-020"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-020",
+        "text": true,
+        "v": "Weekly New Releases"
+      },
+      {
+        "_id": "wf-pricing-feature-007",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-feature",
+          "featured-pricing-feature"
+        ],
+        "children": [
+          "wf-text-019"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-019",
+        "text": true,
+        "v": "Priority Support"
+      },
+      {
+        "_id": "wf-pricing-feature-006",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-feature",
+          "featured-pricing-feature"
+        ],
+        "children": [
+          "wf-text-018"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-018",
+        "text": true,
+        "v": "Figma Files Included"
+      },
+      {
+        "_id": "wf-pricing-feature-005",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-feature",
+          "featured-pricing-feature"
+        ],
+        "children": [
+          "wf-text-017"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-017",
+        "text": true,
+        "v": "All Party Packs"
+      },
+      {
+        "_id": "wf-pricing-feature-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-feature",
+          "featured-pricing-feature"
+        ],
+        "children": [
+          "wf-text-016"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-016",
+        "text": true,
+        "v": "All 140+ Resources"
+      },
+      {
+        "_id": "wf-pricing-desc-002",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "pricing-desc",
+          "featured-pricing-desc",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-015"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-015",
+        "text": true,
+        "v": "Full access to The Stash. Ship faster, every project."
+      },
+      {
+        "_id": "wf-pricing-period-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-period",
+          "featured-pricing-period"
+        ],
+        "children": [
+          "wf-text-014"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-014",
+        "text": true,
+        "v": "Per Month"
+      },
+      {
+        "_id": "wf-pricing-price-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-price"
+        ],
+        "children": [
+          "wf-text-013"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-013",
+        "text": true,
+        "v": "$29"
+      },
+      {
+        "_id": "wf-pricing-tier-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pricing-tier",
+          "featured-pricing-tier"
+        ],
+        "children": [
+          "wf-text-012"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-012",
+        "text": true,
+        "v": "Pro — Popular"
+      },
+      {
+        "_id": "wf-pricing-card-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-card"
+        ],
+        "children": [
+          "wf-pricing-tier-001",
+          "wf-pricing-price-001",
+          "wf-pricing-period-001",
+          "wf-pricing-desc-001",
+          "wf-pricing-features-001",
+          "wf-btn-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-btn-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn",
+          "btn-secondary"
+        ],
+        "children": [
+          "wf-text-011"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-011",
+        "text": true,
+        "v": "Get Started"
+      },
+      {
+        "_id": "wf-pricing-features-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-features"
+        ],
+        "children": [
+          "wf-pricing-feature-001",
+          "wf-pricing-feature-002",
+          "wf-pricing-feature-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-pricing-feature-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-feature"
+        ],
+        "children": [
+          "wf-text-010"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-010",
+        "text": true,
+        "v": "Email Support"
+      },
+      {
+        "_id": "wf-pricing-feature-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-feature"
+        ],
+        "children": [
+          "wf-text-009"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-009",
+        "text": true,
+        "v": "Community Access"
+      },
+      {
+        "_id": "wf-pricing-feature-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-feature"
+        ],
+        "children": [
+          "wf-text-008"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-008",
+        "text": true,
+        "v": "5 Free Components"
+      },
+      {
+        "_id": "wf-pricing-desc-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "pricing-desc",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-007"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-007",
+        "text": true,
+        "v": "Perfect for exploring what Flow Party offers."
+      },
+      {
+        "_id": "wf-pricing-period-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-period"
+        ],
+        "children": [
+          "wf-text-006"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-006",
+        "text": true,
+        "v": "Free Forever"
+      },
+      {
+        "_id": "wf-pricing-price-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pricing-price"
+        ],
+        "children": [
+          "wf-text-005"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-005",
+        "text": true,
+        "v": "$0"
+      },
+      {
+        "_id": "wf-pricing-tier-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pricing-tier"
+        ],
+        "children": [
+          "wf-text-004"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-004",
+        "text": true,
+        "v": "Starter"
+      },
+      {
+        "_id": "wf-section-header-001",
+        "type": "Block",
+        "tag": "header",
+        "classes": [
+          "section-header"
+        ],
+        "children": [
+          "wf-section-label-001",
+          "wf-display-001"
+        ],
+        "data": {
+          "tag": "header",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-display-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "display",
+          "section-header-display",
+          "heading-h2"
+        ],
+        "children": [
+          "wf-text-002",
+          "wf-br-001",
+          "wf-text-003"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-003",
+        "text": true,
+        "v": "Pricing"
+      },
+      {
+        "_id": "wf-br-001",
+        "type": "Block",
+        "tag": "br",
+        "classes": [],
+        "children": [],
+        "data": {
+          "tag": "br",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-002",
+        "text": true,
+        "v": "Simple"
+      },
+      {
+        "_id": "wf-section-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "section-label",
+          "section-header-section-label"
+        ],
+        "children": [
+          "wf-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-001",
+        "text": true,
+        "v": "Pricing"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "section",
+        "fake": false,
+        "type": "class",
+        "name": "section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 88px; padding-right: 0; padding-bottom: 88px; padding-left: 0;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "container",
+        "fake": false,
+        "type": "class",
+        "name": "container",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 1456px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto; padding-top: 0; padding-right: 24px; padding-bottom: 0; padding-left: 24px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header",
+        "fake": false,
+        "type": "class",
+        "name": "section-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 64px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-label",
+        "fake": false,
+        "type": "class",
+        "name": "section-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Antonio\", sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(26, 26, 26, 0.65);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header-section-label",
+        "fake": false,
+        "type": "class",
+        "name": "section-header-section-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 16px; display: block;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "display",
+        "fake": false,
+        "type": "class",
+        "name": "display",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Antonio\", sans-serif; font-size: 96px; font-weight: 600; line-height: 0.95; letter-spacing: -0.02em; text-transform: uppercase;",
+        "variants": {
+          "desktop": {
+            "styleLess": "font-size: 72px;"
+          },
+          "small": {
+            "styleLess": "font-size: 48px;"
+          },
+          "tiny": {
+            "styleLess": "font-size: 36px;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "section-header-display",
+        "fake": false,
+        "type": "class",
+        "name": "section-header-display",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 24px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "pricing-grid",
+        "fake": false,
+        "type": "class",
+        "name": "pricing-grid",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr 1fr 1fr; justify-items: stretch; align-items: stretch; grid-row-gap: 24px; grid-column-gap: 24px;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr; display: grid;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "pricing-card",
+        "fake": false,
+        "type": "class",
+        "name": "pricing-card",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 48px; padding-right: 40px; padding-bottom: 48px; padding-left: 40px; background: #FAFAFA; border: 1px solid rgba(26, 26, 26, 0.10); border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "border-color: rgba(26, 26, 26, 0.40);"
+          }
+        },
+        "children": [
+          "featured"
+        ]
+      },
+      {
+        "_id": "pricing-tier",
+        "fake": false,
+        "type": "class",
+        "name": "pricing-tier",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(26, 26, 26, 0.40); margin-bottom: 32px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "pricing-price",
+        "fake": false,
+        "type": "class",
+        "name": "pricing-price",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Antonio\", sans-serif; font-size: 72px; font-weight: 600; line-height: 1; margin-bottom: 8px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "pricing-period",
+        "fake": false,
+        "type": "class",
+        "name": "pricing-period",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 15px; color: rgba(26, 26, 26, 0.40); margin-bottom: 32px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "pricing-desc",
+        "fake": false,
+        "type": "class",
+        "name": "pricing-desc",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 16px; color: rgba(26, 26, 26, 0.65); line-height: 1.5; margin-bottom: 32px; padding-bottom: 32px; border-bottom: 1px solid rgba(26, 26, 26, 0.10);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "pricing-features",
+        "fake": false,
+        "type": "class",
+        "name": "pricing-features",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; flex-direction: column; row-gap: 16px; column-gap: 16px; margin-bottom: 40px; flex: 1; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "pricing-feature",
+        "fake": false,
+        "type": "class",
+        "name": "pricing-feature",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 15px; display: flex; align-items: center; row-gap: 12px; column-gap: 12px; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn",
+        "fake": false,
+        "type": "class",
+        "name": "btn",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-flex; align-items: center; justify-content: center; row-gap: 8px; column-gap: 8px; font-family: \"Onest\", -apple-system, sans-serif; font-size: 16px; font-weight: 500; padding-top: 14px; padding-right: 28px; padding-bottom: 14px; padding-left: 28px; border-top-left-radius: 9999px; border-top-right-radius: 9999px; border-bottom-right-radius: 9999px; border-bottom-left-radius: 9999px; border: 1px solid transparent; cursor: pointer; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-secondary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-secondary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: transparent; color: #1A1A1A; border-color: rgba(26, 26, 26, 0.10);",
+        "variants": {
+          "hover": {
+            "styleLess": "background: rgba(26, 26, 26, 0.05); border-color: rgba(26, 26, 26, 0.40);"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "featured",
+        "fake": false,
+        "type": "class",
+        "name": "featured",
+        "namespace": "",
+        "comb": "&",
+        "styleLess": "grid-row-start: auto; grid-row-end: span 2; background: #1A1A1A; color: #FAFAFA; border-color: #1A1A1A; transform: scale(1.02);",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-row-start: auto; grid-row-end: span 1; transform: none;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "featured-pricing-tier",
+        "fake": false,
+        "type": "class",
+        "name": "featured-pricing-tier",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: rgba(250, 250, 250, 0.5);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "featured-pricing-period",
+        "fake": false,
+        "type": "class",
+        "name": "featured-pricing-period",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: rgba(250, 250, 250, 0.5);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "featured-pricing-desc",
+        "fake": false,
+        "type": "class",
+        "name": "featured-pricing-desc",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: rgba(250, 250, 250, 0.65); border-color: rgba(250, 250, 250, 0.1);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-primary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-primary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #1A1A1A; color: #FAFAFA; border-color: #1A1A1A;",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26, 26, 26, 0.2);"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "pricing-card-btn-primary",
+        "fake": false,
+        "type": "class",
+        "name": "pricing-card-btn-primary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "width: 100%;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "featured-btn-primary",
+        "fake": false,
+        "type": "class",
+        "name": "featured-btn-primary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #FAFAFA; color: #1A1A1A;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

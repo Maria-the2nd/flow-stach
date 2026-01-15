@@ -1,0 +1,645 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "wf-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "section"
+        ],
+        "children": [
+          "wf-container-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-container-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "container"
+        ],
+        "children": [
+          "wf-features-intro-001",
+          "wf-features-grid-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-features-grid-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "features-grid",
+          "w-layout-grid"
+        ],
+        "children": [
+          "wf-feature-card-001",
+          "wf-feature-card-002",
+          "wf-feature-card-003",
+          "wf-feature-card-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-feature-card-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-card"
+        ],
+        "children": [
+          "wf-feature-number-004",
+          "wf-feature-title-004",
+          "wf-feature-desc-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-feature-desc-004",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "feature-desc",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-014"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-014",
+        "text": true,
+        "v": "Setup walkthroughs, customization tips, and implementation best practices."
+      },
+      {
+        "_id": "wf-feature-title-004",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "feature-title",
+          "heading-h3"
+        ],
+        "children": [
+          "wf-text-013"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-013",
+        "text": true,
+        "v": "Launch Guides"
+      },
+      {
+        "_id": "wf-feature-number-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-number"
+        ],
+        "children": [
+          "wf-text-012"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-012",
+        "text": true,
+        "v": "(04)"
+      },
+      {
+        "_id": "wf-feature-card-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-card"
+        ],
+        "children": [
+          "wf-feature-number-003",
+          "wf-feature-title-003",
+          "wf-feature-desc-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-feature-desc-003",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "feature-desc",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-011"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-011",
+        "text": true,
+        "v": "Auto-layout, design tokens, and component variants for every pack."
+      },
+      {
+        "_id": "wf-feature-title-003",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "feature-title",
+          "heading-h3"
+        ],
+        "children": [
+          "wf-text-010"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-010",
+        "text": true,
+        "v": "Figma Included"
+      },
+      {
+        "_id": "wf-feature-number-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-number"
+        ],
+        "children": [
+          "wf-text-009"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-009",
+        "text": true,
+        "v": "(03)"
+      },
+      {
+        "_id": "wf-feature-card-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-card"
+        ],
+        "children": [
+          "wf-feature-number-002",
+          "wf-feature-title-002",
+          "wf-feature-desc-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-feature-desc-002",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "feature-desc",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-008"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-008",
+        "text": true,
+        "v": "ScrollTrigger, SplitText, and Flip animations built in and ready to use."
+      },
+      {
+        "_id": "wf-feature-title-002",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "feature-title",
+          "heading-h3"
+        ],
+        "children": [
+          "wf-text-007"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-007",
+        "text": true,
+        "v": "GSAP Interactions"
+      },
+      {
+        "_id": "wf-feature-number-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-number"
+        ],
+        "children": [
+          "wf-text-006"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-006",
+        "text": true,
+        "v": "(02)"
+      },
+      {
+        "_id": "wf-feature-card-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-card"
+        ],
+        "children": [
+          "wf-feature-number-001",
+          "wf-feature-title-001",
+          "wf-feature-desc-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-feature-desc-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "feature-desc",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-005"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-005",
+        "text": true,
+        "v": "Webflow native. No plugins required. Clean class naming throughout."
+      },
+      {
+        "_id": "wf-feature-title-001",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "feature-title",
+          "heading-h3"
+        ],
+        "children": [
+          "wf-text-004"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-004",
+        "text": true,
+        "v": "Copy & Paste Ready"
+      },
+      {
+        "_id": "wf-feature-number-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-number"
+        ],
+        "children": [
+          "wf-text-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-003",
+        "text": true,
+        "v": "(01)"
+      },
+      {
+        "_id": "wf-features-intro-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "features-intro",
+          "w-layout-grid"
+        ],
+        "children": [
+          "wf-div-001",
+          "wf-h2-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-h2-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "h2",
+          "heading-h2"
+        ],
+        "children": [
+          "wf-text-002"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-002",
+        "text": true,
+        "v": "Built different. Every resource crafted with production quality in mind."
+      },
+      {
+        "_id": "wf-div-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "wf-section-label-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-section-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "section-label"
+        ],
+        "children": [
+          "wf-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-001",
+        "text": true,
+        "v": "Features"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "section",
+        "fake": false,
+        "type": "class",
+        "name": "section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 88px; padding-right: 0; padding-bottom: 88px; padding-left: 0;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "container",
+        "fake": false,
+        "type": "class",
+        "name": "container",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 1456px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto; padding-top: 0; padding-right: 24px; padding-bottom: 0; padding-left: 24px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "features-intro",
+        "fake": false,
+        "type": "class",
+        "name": "features-intro",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 64px; padding-bottom: 48px; border-bottom: 1px solid rgba(26, 26, 26, 0.10); justify-items: stretch; align-items: stretch; grid-row-gap: 80px; grid-column-gap: 80px;",
+        "variants": {
+          "small": {
+            "styleLess": "grid-template-columns: 1fr; display: grid; grid-row-gap: 32px; grid-column-gap: 32px;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "section-label",
+        "fake": false,
+        "type": "class",
+        "name": "section-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Antonio\", sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(26, 26, 26, 0.65);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "h2",
+        "fake": false,
+        "type": "class",
+        "name": "h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif; font-size: 36px; font-weight: 400; line-height: 1.08; letter-spacing: -0.02em;",
+        "variants": {
+          "small": {
+            "styleLess": "font-size: 28px;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "features-grid",
+        "fake": false,
+        "type": "class",
+        "name": "features-grid",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; justify-items: stretch; align-items: stretch; grid-row-gap: 40px; grid-column-gap: 40px;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr 1fr; display: grid;"
+          },
+          "small": {
+            "styleLess": "grid-template-columns: 1fr; display: grid;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "feature-card",
+        "fake": false,
+        "type": "class",
+        "name": "feature-card",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 32px; padding-right: 32px; padding-bottom: 32px; padding-left: 32px; background: rgba(26, 26, 26, 0.03); border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-right-radius: 12px; border-bottom-left-radius: 12px;",
+        "variants": {
+          "hover": {
+            "styleLess": "background: rgba(26, 26, 26, 0.05);"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "feature-number",
+        "fake": false,
+        "type": "class",
+        "name": "feature-number",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Antonio\", sans-serif; font-size: 48px; font-weight: 500; color: rgba(26, 26, 26, 0.10); margin-bottom: 24px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "feature-title",
+        "fake": false,
+        "type": "class",
+        "name": "feature-title",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 18px; font-weight: 500; margin-bottom: 12px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h3",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h3",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "feature-desc",
+        "fake": false,
+        "type": "class",
+        "name": "feature-desc",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 15px; color: rgba(26, 26, 26, 0.65); line-height: 1.5;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: \"Onest\", -apple-system, sans-serif;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

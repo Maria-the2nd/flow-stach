@@ -206,7 +206,7 @@ export function Sidebar({ className }: SidebarProps) {
             Template Library
           </span>
           <span className="mt-2 text-base font-semibold uppercase tracking-[0.18em] text-sidebar-foreground">
-            Flow Bridge
+            Asset Vault
           </span>
         </div>
 
