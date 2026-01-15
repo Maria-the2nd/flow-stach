@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flow Bridge — Turn AI websites into Webflow components</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --cream: #F2F1EC;
+      --cream-dark: #E5E4DF;
+      --sage: #C5D1C8;
+      --sage-dark: #A8B8AC;
+      --charcoal: #1E1E1E;
+      --charcoal-light: #2D2D2D;
+      --text-dark: #1E1E1E;
+      --text-muted: #6B6B6B;
+      --text-light: #F2F1EC;
+      --radius-lg: 24px;
+      --radius-pill: 100px;
+      --gap: 16px;
+      --padding-card: 28px;
+    }
+    
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    
+    body {
+      background-color: var(--cream);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text-dark);
+      line-height: 1.5;
+    }
+    
+    /* Typography */
+    .display {
+      font-size: clamp(2.5rem, 7vw, 5rem);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+    .h1 {
+      font-size: clamp(2rem, 5vw, 3.25rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+    .h2 {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .stat-number {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .body-large {
+      font-size: 1.125rem;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+    .body {
+      font-size: 0.9375rem;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+    .accent { color: var(--sage-dark); }
+    
+    .label {
+      display: inline-block;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.5rem 1rem;
+      background: rgba(0,0,0,0.05);
+      border-radius: var(--radius-pill);
+    }
+    .label.dark {
+      background: var(--charcoal);
+      color: var(--text-light);
+    }
+    
+    /* Layout */
+    .page {
+      padding: 0 clamp(1.5rem, 5vw, 4rem);
+    }
+    .container {
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    section {
+      padding: 4rem 0;
+    }
+    
+    /* Nav */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--cream);
+      padding: 1rem 0;
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+    }
+    .nav-links a:not(.btn) {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-dark);
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .nav-links a:not(.btn):hover { opacity: 0.6; }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+    }
+    
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid var(--charcoal);
+      cursor: pointer;
+      transition: all 0.2s;
+      border-radius: var(--radius-pill);
+      background: transparent;
+      color: var(--text-dark);
+    }
+    .btn:hover {
+      background: var(--charcoal);
+      color: var(--text-light);
+    }
+    .btn-dark {
+      background: var(--charcoal);
+      color: #ffffff;
+      border-color: var(--charcoal);
+    }
+    .btn-dark:hover {
+      background: var(--charcoal-light);
+      color: #ffffff;
+    }
+    
+    /* Cards */
+    .card {
+      background: var(--cream-dark);
+      border-radius: var(--radius-lg);
+      padding: var(--padding-card);
+    }
+    .card.dark {
+      background: var(--charcoal);
+      color: var(--text-light);
+    }
+    .card.sage {
+      background: var(--sage);
+    }
+    
+    /* Hero */
+    .hero {
+      padding: 6rem 0 4rem;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 3rem;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .hero-label {
+      margin-bottom: 1.5rem;
+    }
+    .hero-description {
+      margin-top: 1.5rem;
+      max-width: 600px;
+      color: var(--text-muted);
+    }
+    .hero-ctas {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+    .hero-note {
+      margin-top: 2rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      max-width: 500px;
+    }
+    .hero-visual {
+      background: var(--cream-dark);
+      border-radius: var(--radius-lg);
+      height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+    
+    /* Section Headers */
+    .section-header {
+      margin-bottom: 2rem;
+    }
+    .section-header .label {
+      margin-bottom: 1rem;
+    }
+    .section-header p {
+      margin-top: 0.5rem;
+      color: var(--text-muted);
+    }
+    
+    /* Bento Grid */
+    .bento-grid {
+      display: grid;
+      gap: var(--gap);
+    }
+    .bento-grid-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .bento-grid-4 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    @media (max-width: 900px) {
+      .bento-grid-3, .bento-grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 600px) {
+      .bento-grid-3, .bento-grid-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+    .bento-card {
+      background: var(--cream-dark);
+      border-radius: var(--radius-lg);
+      padding: var(--padding-card);
+      display: flex;
+      flex-direction: column;
+    }
+    .bento-card.dark {
+      background: var(--charcoal);
+      color: var(--text-light);
+    }
+    .bento-card.sage {
+      background: var(--sage);
+    }
+    .bento-card h3 {
+      margin-bottom: 0.75rem;
+    }
+    .bento-card p {
+      color: var(--text-muted);
+      font-size: 0.9375rem;
+    }
+    .bento-card.dark p {
+      color: rgba(255,255,255,0.7);
+    }
+    
+    /* Gap Section */
+    .gap-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap);
+    }
+    @media (max-width: 768px) {
+      .gap-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .gap-card {
+      background: var(--cream-dark);
+      border-radius: var(--radius-lg);
+      padding: var(--padding-card);
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+    }
+    .gap-card h3 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .gap-card p {
+      color: var(--text-muted);
+    }
+    .gap-card.solution {
+      background: var(--charcoal);
+      color: var(--text-light);
+    }
+    .gap-card.solution p {
+      color: rgba(255,255,255,0.7);
+    }
+    
+    /* Steps */
+    .steps-list {
+      margin-top: 2rem;
+    }
+    .step-item {
+      display: grid;
+      grid-template-columns: 80px 180px 1fr auto;
+      gap: 1.5rem;
+      align-items: center;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .step-item:first-child {
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
+    @media (max-width: 768px) {
+      .step-item {
+        grid-template-columns: 60px 1fr;
+        gap: 1rem;
+      }
+      .step-item .step-desc,
+      .step-item .step-link {
+        display: none;
+      }
+    }
+    .step-number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--sage-dark);
+    }
+    .step-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+    .step-desc {
+      color: var(--text-muted);
+    }
+    .step-link {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--sage-dark);
+      text-decoration: none;
+    }
+    
+    /* Stats Bento */
+    .stats-bento {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: var(--gap);
+      min-height: 320px;
+    }
+    @media (max-width: 900px) {
+      .stats-bento {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto;
+      }
+    }
+    @media (max-width: 600px) {
+      .stats-bento {
+        grid-template-columns: 1fr;
+      }
+    }
+    .stat-card {
+      background: var(--cream-dark);
+      border-radius: var(--radius-lg);
+      padding: var(--padding-card);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat-card.dark {
+      background: var(--charcoal);
+      color: var(--text-light);
+    }
+    .stat-card.sage {
+      background: var(--sage);
+    }
+    .stat-label {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+    .stat-card.dark .stat-label {
+      color: rgba(255,255,255,0.5);
+    }
+    .stat-icon {
+      width: 36px;
+      height: 36px;
+      border: 1px solid currentColor;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: auto;
+      opacity: 0.4;
+    }
+    .stat-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+    
+    /* Features */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap);
+    }
+    @media (max-width: 768px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .feature-card {
+      background: var(--cream-dark);
+      border-radius: var(--radius-lg);
+      padding: var(--padding-card);
+    }
+    .feature-letter {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--sage-dark);
+      margin-bottom: 1rem;
+    }
+    .feature-card h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .feature-card p {
+      color: var(--text-muted);
+    }
+    .features-tagline {
+      margin-top: 2rem;
+      text-align: center;
+    }
+    
+    /* Audience */
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--gap);
+    }
+    @media (max-width: 768px) {
+      .audience-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .audience-card {
+      background: var(--cream-dark);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+    }
+    .audience-card .label {
+      margin-bottom: 1rem;
+    }
+    .audience-card h3 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .audience-card p {
+      color: var(--text-muted);
+    }
+    .audience-tagline {
+      margin-top: 3rem;
+      text-align: center;
+    }
+    .audience-tagline p {
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+    
+    /* Demo */
+    .demo-card {
+      background: var(--charcoal);
+      border-radius: var(--radius-lg);
+      padding: 3rem;
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .demo-badge {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: var(--sage);
+      color: var(--text-dark);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .demo-play {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: var(--sage);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .demo-play:hover {
+      transform: scale(1.08);
+    }
+    .demo-play svg {
+      width: 32px;
+      height: 32px;
+      fill: var(--charcoal);
+      margin-left: 4px;
+    }
+    
+    /* Pricing */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap);
+    }
+    @media (max-width: 768px) {
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .pricing-card {
+      background: var(--cream-dark);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      text-align: center;
+    }
+    .pricing-card.featured {
+      background: var(--charcoal);
+      color: var(--text-light);
+    }
+    .pricing-card h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .pricing-card .price {
+      font-size: 3rem;
+      font-weight: 700;
+      margin: 1rem 0;
+    }
+    .pricing-card .price span {
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+    .pricing-card.featured .price span {
+      color: rgba(255,255,255,0.6);
+    }
+    .pricing-card p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+    .pricing-card.featured p {
+      color: rgba(255,255,255,0.6);
+    }
+    .pricing-card .btn {
+      width: 100%;
+    }
+    
+    /* Academy */
+    .academy-card {
+      background: var(--sage);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+    }
+    .academy-card .label {
+      margin-bottom: 1.5rem;
+    }
+    .academy-preview {
+      margin-top: 2rem;
+      background: rgba(0,0,0,0.08);
+      border-radius: var(--radius-lg);
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+    }
+    
+    /* FAQ */
+    .faq-list {
+      max-width: 800px;
+    }
+    .faq-item {
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .faq-item:first-child {
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
+    .faq-question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 0;
+      cursor: pointer;
+    }
+    .faq-question:hover { opacity: 0.7; }
+    .faq-question h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+    .faq-toggle {
+      font-size: 1.5rem;
+      font-weight: 300;
+      color: var(--sage-dark);
+      transition: transform 0.3s;
+    }
+    .faq-item.active .faq-toggle {
+      transform: rotate(45deg);
+    }
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .faq-item.active .faq-answer {
+      max-height: 200px;
+    }
+    .faq-answer p {
+      padding-bottom: 1.25rem;
+      color: var(--text-muted);
+    }
+    
+    /* CTA */
+    .cta-card {
+      background: var(--charcoal);
+      border-radius: var(--radius-lg);
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+    .cta-card .h1 {
+      color: var(--text-light);
+    }
+    .cta-card p {
+      color: rgba(255,255,255,0.6);
+      margin: 1rem auto 1.5rem;
+      max-width: 400px;
+    }
+    .cta-card .btn {
+      background: var(--sage);
+      color: var(--charcoal);
+      border-color: var(--sage);
+    }
+    
+    /* Footer */
+    .footer {
+      padding: 3rem 0;
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+    .footer-brand {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .footer-links a {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .footer-links a:hover {
+      color: var(--text-dark);
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+  <div class="container">
+    
+    <!-- NAV -->
+    <nav class="nav">
+      <div class="nav-inner">
+        <a href="#" class="nav-logo">Flow Bridge</a>
+        <div class="nav-links">
+          <a href="#how">How it Works</a>
+          <a href="#features">Features</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#faq">FAQ</a>
+          <a href="#" class="btn btn-dark">Get Started</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-grid">
+        <div class="hero-content">
+          <span class="label hero-label">Welcome</span>
+          <h1 class="display">Turn AI websites into Webflow components. <span class="accent">Instantly.</span></h1>
+          <p class="body-large hero-description">AI can generate HTML/CSS/JS fast. Editing it is misery. Flow Bridge turns that output into clean, reusable components you can paste into Webflow and polish like a pro.</p>
+          
+          <div class="hero-ctas">
+            <a href="#" class="btn btn-dark">Try the Import</a>
+            <a href="#demo" class="btn">Demo Coming Soon</a>
+          </div>
+          
+          <p class="hero-note">Works with Cursor, v0, Bolt, and "whatever your AI tool vomited out today".<br>Currently supports single-page HTML/CSS/JS exports only. No React, TypeScript, or Tailwind.</p>
+        </div>
+        <div class="hero-visual">[ Hero Visual / Canvas preview ]</div>
+      </div>
+    </section>
+
+    <!-- THE GAP -->
+    <section>
+      <div class="section-header">
+        <h2 class="h1">The Gap</h2>
+        <p class="body-large">AI generates. Editing sucks.</p>
+      </div>
+      
+      <div class="gap-grid">
+        <div class="gap-card">
+          <h3>The Old Way</h3>
+          <p>Stay in AI editors and fight messy code when you want real design control.</p>
+        </div>
+        <div class="gap-card">
+          <h3>The Other Way</h3>
+          <p>Stay in Webflow and miss out on AI speed.</p>
+        </div>
+        <div class="gap-card solution">
+          <h3>Flow Bridge</h3>
+          <p>The missing link between AI velocity and designer precision.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how">
+      <div class="section-header">
+        <span class="label">Section 1</span>
+        <h2 class="h1">How it works</h2>
+        <p class="body-large">From AI output → Webflow canvas</p>
+      </div>
+      
+      <div class="steps-list">
+        <div class="step-item">
+          <span class="step-number">01</span>
+          <span class="step-title">Paste</span>
+          <span class="step-desc">Drop in your AI-generated HTML/CSS/JS.</span>
+          <a href="#" class="step-link">Details →</a>
+        </div>
+        <div class="step-item">
+          <span class="step-number">02</span>
+          <span class="step-title">Componentize</span>
+          <span class="step-desc">We detect layout patterns and turn them into reusable blocks.</span>
+          <a href="#" class="step-link">Details →</a>
+        </div>
+        <div class="step-item">
+          <span class="step-number">03</span>
+          <span class="step-title">Export to Webflow</span>
+          <span class="step-desc">Copy in Webflow-native format. Paste straight into the Designer.</span>
+          <a href="#demo" class="step-link">See example →</a>
+        </div>
+      </div>
+      
+      <!-- Stats Bento -->
+      <div class="stats-bento" style="margin-top: 3rem;">
+        <div class="stat-card sage" style="grid-column: 1; grid-row: 1;">
+          <div>
+            <span class="stat-number">3 Steps</span>
+            <span class="stat-label">paste, componentize, export</span>
+          </div>
+        </div>
+        <div class="stat-card" style="grid-column: 2; grid-row: 1 / 3; display: flex; align-items: center; justify-content: center;">
+          <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity: 0.3;">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
+        </div>
+        <div class="stat-card" style="grid-column: 3; grid-row: 1 / 3;">
+          <div>
+            <span class="stat-number">80%</span>
+            <span class="stat-label">instant</span>
+          </div>
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stat-card dark" style="grid-column: 1; grid-row: 2;">
+          <div>
+            <span class="stat-number" style="color: var(--sage);">20%</span>
+            <span class="stat-label">your taste</span>
+          </div>
+          <div class="stat-icon" style="border-color: rgba(255,255,255,0.3);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAIN POINTS / OPPORTUNITY -->
+    <section>
+      <div class="section-header">
+        <span class="label">The Opportunity</span>
+        <h2 class="h1">Why Flow Bridge exists</h2>
+      </div>
+      
+      <div class="bento-grid bento-grid-3">
+        <div class="bento-card sage" style="min-height: 240px;">
+          <h3>Pain Points</h3>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+            <li style="font-size: 0.9375rem;">• AI output is messy, uneditable code</li>
+            <li style="font-size: 0.9375rem;">• Stuck in "good enough" with no design control</li>
+            <li style="font-size: 0.9375rem;">• Webflow users miss AI speed</li>
+            <li style="font-size: 0.9375rem;">• No bridge between generation and polish</li>
+          </ul>
+        </div>
+        <div class="bento-card dark" style="min-height: 240px;">
+          <h3>Future Objectives</h3>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; color: rgba(255,255,255,0.7);">
+            <li style="font-size: 0.9375rem;">• Import any AI-generated site</li>
+            <li style="font-size: 0.9375rem;">• Auto-detect layout patterns</li>
+            <li style="font-size: 0.9375rem;">• Export Webflow-native components</li>
+            <li style="font-size: 0.9375rem;">• Team features & unlimited imports</li>
+          </ul>
+        </div>
+        <div class="bento-card" style="min-height: 240px;">
+          <h3>Facts</h3>
+          <p style="margin-top: 0.5rem;">Works with Cursor, v0, Bolt, and "whatever your AI tool vomited out today". Currently supports single-page HTML/CSS/JS exports. No React, TypeScript, or Tailwind yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features">
+      <div class="section-header">
+        <h2 class="h1">Features</h2>
+        <p class="body-large">Designer control, without losing AI speed</p>
+      </div>
+      
+      <div class="features-grid">
+        <div class="feature-card">
+          <span class="feature-letter">A</span>
+          <h3>Import any AI site</h3>
+          <p>Paste output from Cursor, v0, Bolt, or any generator.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-letter">B</span>
+          <h3>Smart breakdown</h3>
+          <p>We split pages into clean blocks you'll actually reuse.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-letter">C</span>
+          <h3>One-click Export</h3>
+          <p>Clipboard-ready for the Designer. No weird rituals.</p>
+        </div>
+      </div>
+      
+      <div class="features-tagline">
+        <p class="h2">You get the 80% instantly—then win the last 20% with taste.</p>
+      </div>
+    </section>
+
+    <!-- WHO IT'S FOR -->
+    <section>
+      <div class="section-header">
+        <h2 class="h1">Who it's for</h2>
+        <p class="body-large">Two markets. One tool.</p>
+      </div>
+      
+      <div class="audience-grid">
+        <div class="audience-card">
+          <span class="label">For AI users</span>
+          <h3>Founders, Marketers, Creators</h3>
+          <p>Stop getting trapped in "good enough". Bring it into Webflow and make it real.</p>
+        </div>
+        <div class="audience-card">
+          <span class="label">For Webflow designers</span>
+          <h3>Agencies, Freelancers</h3>
+          <p>Ship faster without sacrificing craft. Use AI for velocity, Webflow for precision.</p>
+        </div>
+      </div>
+      
+      <div class="audience-tagline">
+        <p class="h2">Every AI design is now yours to perfect.</p>
+        <p class="body-large">No more settling. Import, refine, ship.</p>
+      </div>
+    </section>
+
+    <!-- DEMO -->
+    <section id="demo">
+      <div class="section-header">
+        <h2 class="h1">Make it real</h2>
+        <p class="body-large">Watch an AI site become editable components</p>
+        <p class="body" style="color: var(--text-muted);">See how Flow Bridge breaks down a messy AI page into a tidy Webflow-ready component set.</p>
+      </div>
+      
+      <div class="demo-card">
+        <span class="demo-badge">Demo Coming Soon</span>
+        <div class="demo-play">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRICING -->
+    <section id="pricing">
+      <div class="section-header">
+        <h2 class="h1">Pricing</h2>
+        <p class="body-large">Simple, per-site pricing. No subscriptions.</p>
+      </div>
+      
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <h3>Single Site</h3>
+          <div class="price">$60 <span>/ site</span></div>
+          <p>Perfect for one-off projects or testing the waters.</p>
+          <a href="#" class="btn">Get Started</a>
+        </div>
+        <div class="pricing-card featured">
+          <h3>Two Sites</h3>
+          <div class="price">$45 <span>/ site</span></div>
+          <p>Best for freelancers with a couple projects lined up.</p>
+          <a href="#" class="btn btn-dark" style="background: var(--sage); color: var(--charcoal); border-color: var(--sage);">Get Started</a>
+        </div>
+        <div class="pricing-card">
+          <h3>10-Pack</h3>
+          <div class="price">$25 <span>/ site</span></div>
+          <p>For agencies shipping at scale. Best value.</p>
+          <a href="#" class="btn">Get Started</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ACADEMY -->
+    <section>
+      <div class="academy-card">
+        <span class="label dark">Coming Soon</span>
+        <h2 class="h1" style="margin-top: 0;">The Academy</h2>
+        <p class="h2" style="margin-top: 0.5rem; color: var(--text-muted); font-weight: 500;">Learn the craft: AI → award-worthy</p>
+        <p class="body" style="margin-top: 1rem; max-width: 600px; color: var(--text-muted);">Flow Bridge gives you speed. The Academy teaches you how to turn "AI slop" into work you're proud to put your name on—Webflow polish, responsive finesse, micro-interactions, the good stuff.</p>
+        <div class="academy-preview">[ Academy Course Preview ]</div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq">
+      <div class="section-header">
+        <h2 class="h1">Common Questions</h2>
+      </div>
+      
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-question">
+            <h3>Do I need to code?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>Nope. Flow Bridge handles the technical translation. You just paste AI output and get Webflow-ready components. If you can copy-paste, you're qualified.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">
+            <h3>Does this replace Webflow?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>No—it makes Webflow even better. Flow Bridge is the bridge between AI generation and Webflow's design system. You still polish in Webflow.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">
+            <h3>What AI tools do you support?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>Anything that exports HTML/CSS/JS. Cursor, v0, Bolt, Claude artifacts, ChatGPT exports—if it's valid HTML, we work with it.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">
+            <h3>Will it be perfect every time?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>Let's be real: no. AI output varies wildly. But we get you 80% there instantly. The last 20% is where your taste shines.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section>
+      <div class="cta-card">
+        <h2 class="h1">Move fast. Make it yours.</h2>
+        <p class="body-large">AI can generate the draft. Flow Bridge helps you own the final.</p>
+        <a href="#" class="btn">Try Flow Bridge</a>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <span class="footer-brand">© 2026 Flow Bridge. Flow Party Presents.</span>
+        <div class="footer-links">
+          <a href="#">Docs</a>
+          <a href="#">Changelog</a>
+          <a href="#">Support</a>
+          <a href="#">Terms</a>
+          <a href="#">Privacy</a>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.faq-question').forEach(question => {
+    question.addEventListener('click', () => {
+      const item = question.parentElement;
+      const isActive = item.classList.contains('active');
+      document.querySelectorAll('.faq-item').forEach(faq => faq.classList.remove('active'));
+      if (!isActive) item.classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      const href = this.getAttribute('href');
+      if (href !== '#') {
+        e.preventDefault();
+        document.querySelector(href)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

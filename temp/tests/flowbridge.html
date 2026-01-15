@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flow Bridge — Turn AI websites into Webflow components</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    /* === RESET & BASE === */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --cream: #FAF0E6;
+      --cream-dark: #F5E6D3;
+      --coral: #E8524B;
+      --coral-dark: #D64541;
+      --text-dark: #1a1a1a;
+      --text-muted: #666;
+      --footer-bg: #1a1a1a;
+    }
+    
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    body {
+      background-color: var(--cream);
+      font-family: 'Inter', sans-serif;
+      color: var(--text-dark);
+      line-height: 1.6;
+    }
+    
+    /* === TYPOGRAPHY === */
+    .display {
+      font-family: 'Anton', sans-serif;
+      font-size: clamp(3rem, 12vw, 9rem);
+      font-weight: 400;
+      line-height: 0.95;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      color: var(--coral);
+    }
+    
+    .h1 {
+      font-family: 'Anton', sans-serif;
+      font-size: clamp(2.5rem, 8vw, 6rem);
+      font-weight: 400;
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      color: var(--coral);
+    }
+    
+    .h2 {
+      font-family: 'Anton', sans-serif;
+      font-size: clamp(1.5rem, 4vw, 2.5rem);
+      font-weight: 400;
+      line-height: 1.1;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      color: var(--coral);
+    }
+    
+    .h3 {
+      font-family: 'Anton', sans-serif;
+      font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+      font-weight: 400;
+      line-height: 1.2;
+      text-transform: uppercase;
+      color: var(--text-dark);
+    }
+    
+    .body-large {
+      font-size: clamp(1.1rem, 2vw, 1.35rem);
+      font-weight: 300;
+      line-height: 1.5;
+      color: var(--text-dark);
+    }
+    
+    .body {
+      font-size: 1rem;
+      font-weight: 400;
+      line-height: 1.6;
+      color: var(--text-dark);
+    }
+    
+    .body-small {
+      font-size: 0.875rem;
+      font-weight: 400;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+    
+    .label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--coral);
+    }
+    
+    /* === LAYOUT === */
+    .container {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+    
+    @media (max-width: 768px) {
+      .container { padding: 0 1.25rem; }
+    }
+    
+    section {
+      padding: 5rem 0;
+    }
+    
+    @media (max-width: 768px) {
+      section { padding: 3rem 0; }
+    }
+    
+    /* === NAV === */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: var(--cream);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 0;
+    }
+    
+    .nav-logo {
+      font-family: 'Anton', sans-serif;
+      font-size: 1.25rem;
+      text-transform: uppercase;
+      color: var(--coral);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+    }
+    
+    .nav-links a {
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--text-dark);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .nav-links a:hover {
+      color: var(--coral);
+    }
+    
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+    }
+    
+    /* === HERO === */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-top: 6rem;
+    }
+    
+    .hero-content {
+      max-width: 900px;
+    }
+    
+    .hero-tagline {
+      margin-bottom: 1.5rem;
+    }
+    
+    .hero-description {
+      max-width: 600px;
+      margin: 2rem 0;
+    }
+    
+    .hero-ctas {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 2rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: var(--coral);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--coral-dark);
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-dark);
+      border: 1px solid var(--text-dark);
+    }
+    
+    .btn-secondary:hover {
+      background: var(--text-dark);
+      color: var(--cream);
+    }
+    
+    .hero-note {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      max-width: 500px;
+    }
+    
+    .hero-note p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    
+    .hero-visual {
+      margin-top: 4rem;
+      background: var(--cream-dark);
+      border: 1px solid rgba(0,0,0,0.08);
+      padding: 3rem;
+      text-align: center;
+    }
+    
+    .hero-visual-placeholder {
+      font-family: 'Anton', sans-serif;
+      font-size: 1.25rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      opacity: 0.5;
+    }
+    
+    /* === GAP SECTION === */
+    .gap-section {
+      background: var(--cream-dark);
+    }
+    
+    .gap-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+    
+    @media (max-width: 768px) {
+      .gap-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .gap-card {
+      padding: 2rem;
+      background: var(--cream);
+    }
+    
+    .gap-card h3 {
+      margin-bottom: 1rem;
+      font-family: 'Anton', sans-serif;
+      font-size: 1.2rem;
+      text-transform: uppercase;
+    }
+    
+    .gap-card.is-solution {
+      background: var(--coral);
+      color: white;
+    }
+    
+    .gap-card.is-solution h3 {
+      color: white;
+    }
+    
+    .gap-card.is-solution p {
+      color: rgba(255,255,255,0.9);
+    }
+    
+    /* === HOW IT WORKS === */
+    .steps-list {
+      margin-top: 3rem;
+      border-top: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .step-row {
+      display: grid;
+      grid-template-columns: 80px 200px 1fr 120px;
+      gap: 2rem;
+      align-items: center;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      transition: background 0.2s;
+    }
+    
+    .step-row:hover {
+      background: var(--cream-dark);
+      margin: 0 -2rem;
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+    
+    @media (max-width: 768px) {
+      .step-row {
+        grid-template-columns: 60px 1fr;
+        gap: 1rem;
+      }
+      .step-row:hover {
+        margin: 0 -1.25rem;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+    }
+    
+    .step-number {
+      font-family: 'Anton', sans-serif;
+      font-size: 2.5rem;
+      color: var(--coral);
+    }
+    
+    .step-title {
+      font-family: 'Anton', sans-serif;
+      font-size: 1.3rem;
+      text-transform: uppercase;
+    }
+    
+    .step-desc {
+      color: var(--text-muted);
+    }
+    
+    @media (max-width: 768px) {
+      .step-desc { display: none; }
+    }
+    
+    .step-link {
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--coral);
+      text-decoration: none;
+    }
+    
+    @media (max-width: 768px) {
+      .step-link { display: none; }
+    }
+    
+    /* === FEATURES === */
+    .features-section {
+      background: var(--cream-dark);
+    }
+    
+    .features-list {
+      margin-top: 3rem;
+      border-top: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .feature-row {
+      display: grid;
+      grid-template-columns: 50px 1fr;
+      gap: 2rem;
+      padding: 2rem 0;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      transition: background 0.2s;
+    }
+    
+    .feature-row:hover {
+      background: var(--cream);
+      margin: 0 -2rem;
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+    
+    @media (max-width: 768px) {
+      .feature-row:hover {
+        margin: 0 -1.25rem;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+    }
+    
+    .feature-letter {
+      font-family: 'Anton', sans-serif;
+      font-size: 2rem;
+      color: var(--coral);
+    }
+    
+    .feature-content h3 {
+      font-family: 'Anton', sans-serif;
+      font-size: 1.2rem;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    
+    .feature-content p {
+      color: var(--text-muted);
+    }
+    
+    .features-tagline {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    /* === WHO ITS FOR === */
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      margin-top: 3rem;
+      background: rgba(0,0,0,0.1);
+    }
+    
+    @media (max-width: 768px) {
+      .audience-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .audience-card {
+      background: var(--cream);
+      padding: 3rem;
+    }
+    
+    .audience-card .label {
+      margin-bottom: 1rem;
+    }
+    
+    .audience-card h3 {
+      font-family: 'Anton', sans-serif;
+      font-size: 1.8rem;
+      text-transform: uppercase;
+      color: var(--coral);
+      margin-bottom: 1rem;
+    }
+    
+    .audience-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+    
+    .audience-tagline {
+      margin-top: 3rem;
+      text-align: center;
+    }
+    
+    /* === VIDEO DEMO === */
+    .demo-section {
+      background: var(--cream-dark);
+    }
+    
+    .demo-visual {
+      margin-top: 3rem;
+      aspect-ratio: 16/9;
+      background: var(--text-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .demo-play {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--coral);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    
+    .demo-play:hover {
+      transform: scale(1.1);
+    }
+    
+    .demo-play svg {
+      width: 30px;
+      height: 30px;
+      fill: white;
+      margin-left: 4px;
+    }
+    
+    .demo-badge {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: var(--coral);
+      color: white;
+      padding: 0.5rem 1rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    /* === PRICING === */
+    .pricing-card {
+      margin-top: 3rem;
+      padding: 3rem;
+      background: var(--cream-dark);
+      max-width: 600px;
+    }
+    
+    .pricing-card h3 {
+      font-family: 'Anton', sans-serif;
+      font-size: 1.5rem;
+      text-transform: uppercase;
+      color: var(--coral);
+      margin-bottom: 1rem;
+    }
+    
+    .pricing-card p {
+      margin-bottom: 2rem;
+      color: var(--text-muted);
+    }
+    
+    /* === ACADEMY === */
+    .academy-section {
+      background: var(--coral);
+      color: white;
+    }
+    
+    .academy-section .h1 {
+      color: white;
+    }
+    
+    .academy-section .h2 {
+      color: white;
+    }
+    
+    .academy-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 0.5rem 1rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2rem;
+    }
+    
+    .academy-content p {
+      color: rgba(255,255,255,0.85);
+      max-width: 600px;
+      margin-top: 1.5rem;
+    }
+    
+    .academy-preview {
+      margin-top: 3rem;
+      aspect-ratio: 16/9;
+      background: rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .academy-preview span {
+      font-size: 0.9rem;
+      opacity: 0.6;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    /* === FAQ === */
+    .faq-list {
+      margin-top: 3rem;
+      border-top: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .faq-item {
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .faq-question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 0;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    
+    .faq-question:hover {
+      color: var(--coral);
+    }
+    
+    .faq-question h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      font-weight: 400;
+      text-transform: none;
+    }
+    
+    .faq-toggle {
+      font-size: 1.5rem;
+      font-weight: 300;
+      color: var(--coral);
+      transition: transform 0.3s;
+    }
+    
+    .faq-item.active .faq-toggle {
+      transform: rotate(45deg);
+    }
+    
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    
+    .faq-item.active .faq-answer {
+      max-height: 200px;
+    }
+    
+    .faq-answer p {
+      padding-bottom: 1.5rem;
+      color: var(--text-muted);
+    }
+    
+    /* === CTA SECTION === */
+    .cta-section {
+      background: var(--text-dark);
+      color: white;
+      text-align: center;
+    }
+    
+    .cta-section .h1 {
+      color: var(--coral);
+    }
+    
+    .cta-section p {
+      color: rgba(255,255,255,0.7);
+      margin: 1.5rem auto 2rem;
+      max-width: 500px;
+    }
+    
+    .cta-section .btn-primary {
+      background: var(--coral);
+    }
+    
+    /* === FOOTER === */
+    .footer {
+      background: var(--text-dark);
+      color: white;
+      padding: 3rem 0;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+    
+    .footer-brand {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.5);
+    }
+    
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    
+    .footer-links a {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.5);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .footer-links a:hover {
+      color: white;
+    }
+    
+    /* === ANIMATIONS === */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .animate-in {
+      opacity: 0;
+      animation: fadeInUp 0.6s ease-out forwards;
+    }
+    
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="container">
+      <div class="nav-inner">
+        <a href="#" class="nav-logo">Flow Bridge</a>
+        <div class="nav-links">
+          <a href="#how">How it Works</a>
+          <a href="#features">Features</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#faq">FAQ</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="display animate-in">Flow Bridge</h1>
+        <p class="body-large hero-tagline animate-in delay-1">Turn AI websites into Webflow components. Instantly.</p>
+        <p class="body hero-description animate-in delay-2">AI can generate HTML/CSS/JS fast. Editing it is misery. Flow Bridge turns that output into clean, reusable components you can paste into Webflow and polish like a pro.</p>
+        
+        <div class="hero-ctas animate-in delay-3">
+          <a href="#" class="btn btn-primary">Try the Import</a>
+          <a href="#demo" class="btn btn-secondary">Demo Coming Soon</a>
+        </div>
+        
+        <div class="hero-note animate-in delay-4">
+          <p>Works with Cursor, v0, Bolt, and "whatever your AI tool vomited out today".</p>
+          <p style="margin-top: 0.75rem;">Currently supports single-page HTML/CSS/JS exports only. No React, TypeScript, or Tailwind.</p>
+        </div>
+      </div>
+      
+      <div class="hero-visual animate-in delay-4">
+        <span class="hero-visual-placeholder">[ Hero Visual / Canvas preview ]</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- THE GAP -->
+  <section class="gap-section">
+    <div class="container">
+      <h2 class="h1">The Gap</h2>
+      <p class="body-large" style="margin-top: 1rem;">AI generates. Editing sucks.</p>
+      
+      <div class="gap-grid">
+        <div class="gap-card">
+          <h3>The Old Way</h3>
+          <p class="body">Stay in AI editors and fight messy code when you want real design control.</p>
+        </div>
+        <div class="gap-card">
+          <h3>The Other Way</h3>
+          <p class="body">Stay in Webflow and miss out on AI speed.</p>
+        </div>
+        <div class="gap-card is-solution">
+          <h3>Flow Bridge</h3>
+          <p class="body">The missing link between AI velocity and designer precision.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <div class="container">
+      <h2 class="h1">How it works</h2>
+      <p class="body-large" style="margin-top: 1rem;">From AI output → Webflow canvas</p>
+      
+      <div class="steps-list">
+        <div class="step-row">
+          <span class="step-number">01</span>
+          <span class="step-title">Paste</span>
+          <span class="step-desc body">Drop in your AI-generated HTML/CSS/JS.</span>
+          <a href="#" class="step-link">Details →</a>
+        </div>
+        <div class="step-row">
+          <span class="step-number">02</span>
+          <span class="step-title">Componentize</span>
+          <span class="step-desc body">We detect layout patterns and turn them into reusable blocks.</span>
+          <a href="#" class="step-link">Details →</a>
+        </div>
+        <div class="step-row">
+          <span class="step-number">03</span>
+          <span class="step-title">Export to Webflow</span>
+          <span class="step-desc body">Copy in Webflow-native format. Paste straight into the Designer.</span>
+          <a href="#demo" class="step-link">See example →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="features-section">
+    <div class="container">
+      <h2 class="h1">Features</h2>
+      <p class="body-large" style="margin-top: 1rem;">Designer control, without losing AI speed</p>
+      
+      <div class="features-list">
+        <div class="feature-row">
+          <span class="feature-letter">A</span>
+          <div class="feature-content">
+            <h3>Import any AI site</h3>
+            <p class="body">Paste output from Cursor, v0, Bolt, or any generator.</p>
+          </div>
+        </div>
+        <div class="feature-row">
+          <span class="feature-letter">B</span>
+          <div class="feature-content">
+            <h3>Smart breakdown</h3>
+            <p class="body">We split pages into clean blocks you'll actually reuse.</p>
+          </div>
+        </div>
+        <div class="feature-row">
+          <span class="feature-letter">C</span>
+          <div class="feature-content">
+            <h3>One-click Export</h3>
+            <p class="body">Clipboard-ready for the Designer. No weird rituals.</p>
+          </div>
+        </div>
+      </div>
+      
+      <p class="h2 features-tagline">You get the 80% instantly—then win the last 20% with taste.</p>
+    </div>
+  </section>
+
+  <!-- WHO IT'S FOR -->
+  <section>
+    <div class="container">
+      <h2 class="h1">Who it's for</h2>
+      <p class="body-large" style="margin-top: 1rem;">Two markets. One tool.</p>
+      
+      <div class="audience-grid">
+        <div class="audience-card">
+          <span class="label">For AI users</span>
+          <h3>Founders, Marketers, Creators</h3>
+          <p class="body">Stop getting trapped in "good enough". Bring it into Webflow and make it real.</p>
+        </div>
+        <div class="audience-card">
+          <span class="label">For Webflow designers</span>
+          <h3>Agencies, Freelancers</h3>
+          <p class="body">Ship faster without sacrificing craft. Use AI for velocity, Webflow for precision.</p>
+        </div>
+      </div>
+      
+      <div class="audience-tagline">
+        <p class="h2">Every AI design is now yours to perfect.</p>
+        <p class="body-large" style="margin-top: 1rem; color: var(--text-muted);">No more settling. Import, refine, ship.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEMO -->
+  <section id="demo" class="demo-section">
+    <div class="container">
+      <h2 class="h1">Make it real</h2>
+      <p class="body-large" style="margin-top: 1rem;">Watch an AI site become editable components</p>
+      <p class="body" style="margin-top: 0.5rem; color: var(--text-muted);">See how Flow Bridge breaks down a messy AI page into a tidy Webflow-ready component set.</p>
+      
+      <div class="demo-visual">
+        <div class="demo-badge">Demo Coming Soon</div>
+        <div class="demo-play">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing">
+    <div class="container">
+      <h2 class="h1">Pricing</h2>
+      <p class="body-large" style="margin-top: 1rem;">Free for now. Paid plans coming soon.</p>
+      
+      <div class="pricing-card">
+        <h3>Free Beta</h3>
+        <p>Flow Bridge is currently free to use. We're building paid plans with team features, unlimited imports, and more.</p>
+        <a href="#" class="btn btn-primary">Get Started Free</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACADEMY -->
+  <section class="academy-section">
+    <div class="container">
+      <span class="academy-badge">Coming Soon</span>
+      <h2 class="h1">The Academy</h2>
+      <p class="h2" style="margin-top: 1rem;">Learn the craft: AI → award-worthy</p>
+      
+      <div class="academy-content">
+        <p class="body-large">Flow Bridge gives you speed. The Academy teaches you how to turn "AI slop" into work you're proud to put your name on—Webflow polish, responsive finesse, micro-interactions, the good stuff.</p>
+      </div>
+      
+      <div class="academy-preview">
+        <span>[ Academy Course Preview ]</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="container">
+      <h2 class="h1">Common Questions</h2>
+      
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-question">
+            <h3>Do I need to code?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>Nope. Flow Bridge handles the technical translation. You just paste AI output and get Webflow-ready components. If you can copy-paste, you're qualified.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">
+            <h3>Does this replace Webflow?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>No—it makes Webflow even better. Flow Bridge is the bridge between AI generation and Webflow's design system. You still do all the polishing in Webflow.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">
+            <h3>What AI tools do you support?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>Anything that exports HTML/CSS/JS. Cursor, v0, Bolt, Claude artifacts, ChatGPT exports—if it's valid HTML, we can work with it.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">
+            <h3>Will it be perfect every time?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>Let's be real: no. AI output varies wildly. But we get you 80% there instantly. The last 20% is where your designer taste shines—and that's the point.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="container">
+      <h2 class="h1">Move fast. Make it yours.</h2>
+      <p class="body-large">AI can generate the draft. Flow Bridge helps you own the final.</p>
+      <a href="#" class="btn btn-primary">Try Flow Bridge</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <span class="footer-brand">© 2026 Flow Bridge. Flow Party Presents.</span>
+        <div class="footer-links">
+          <a href="#">Docs</a>
+          <a href="#">Changelog</a>
+          <a href="#">Support</a>
+          <a href="#">Terms</a>
+          <a href="#">Privacy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // FAQ Accordion
+    document.querySelectorAll('.faq-question').forEach(question => {
+      question.addEventListener('click', () => {
+        const item = question.parentElement;
+        const isActive = item.classList.contains('active');
+        
+        // Close all
+        document.querySelectorAll('.faq-item').forEach(faq => {
+          faq.classList.remove('active');
+        });
+        
+        // Open clicked if wasn't active
+        if (!isActive) {
+          item.classList.add('active');
+        }
+      });
+    });
+
+    // Smooth scroll for nav links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        if (href !== '#') {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      });
+    });
+
+    // Intersection Observer for scroll animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, observerOptions);
+
+    // Observe section headings for subtle entrance
+    document.querySelectorAll('section .h1, section .h2').forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      observer.observe(el);
+    });
+  </script>
+
+</body>
+</html>

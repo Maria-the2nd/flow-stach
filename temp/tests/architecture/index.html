@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KORU Architecture Studio</title>
+    
+    <!-- Essential External Libraries Only -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Import Map to resolve @google/genai specifier -->
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://esm.sh/@google/genai"
+      }
+    }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            overflow-x: hidden;
+            cursor: none; /* Custom interaction cursor */
+        }
+
+        ::selection { background: #000; color: #fff; }
+
+        /* Custom Cursor */
+        #cursor {
+            position: fixed;
+            width: 8px; height: 8px;
+            background: #000;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            mix-blend-difference: difference;
+            background: white;
+        }
+        #cursor-follower {
+            position: fixed;
+            width: 40px; height: 40px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.15s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        /* G-Step Texture */
+        .noise {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 9998;
+            pointer-events: none;
+            opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Ffilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Progress indicator */
+        .scroll-progress {
+            position: fixed;
+            top: 0; left: 0; height: 2px;
+            background: #000;
+            z-index: 10001;
+            width: 0%;
+        }
+
+        /* Interaction wrappers */
+        .img-mask {
+            overflow: hidden;
+            background: #f7f7f7;
+            perspective: 1200px;
+        }
+
+        .project-image {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: grayscale(1) brightness(0.9);
+            transform: scale(1.15);
+            opacity: 0;
+            transition: opacity 1.5s ease, filter 2s ease, transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .project-image.revealed {
+            opacity: 1;
+            filter: grayscale(0) brightness(1);
+            transform: scale(1.05);
+        }
+
+        .nav-link {
+            position: relative;
+            display: inline-block;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px; left: 0;
+            width: 0%; height: 1px;
+            background: currentColor;
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .nav-link:hover::after { width: 100%; }
+
+        .loader-shimmer {
+            background: linear-gradient(90deg, #f0f0f0 0%, #e0e0e0 50%, #f0f0f0 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <div id="cursor"></div>
+    <div id="cursor-follower"></div>
+    <div class="noise"></div>
+    <div class="scroll-progress" id="progressBar"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-50 px-6 py-8 md:px-12 md:py-10 flex justify-between items-start mix-blend-difference text-white pointer-events-none">
+        <div class="pointer-events-auto magnetic-wrap" data-strength="25">
+            <span class="block text-2xl font-black tracking-tighter uppercase leading-none">Koru</span>
+            <span class="block text-[8px] tracking-[0.5em] uppercase opacity-60 mt-1">Architecture</span>
+        </div>
+        <div class="flex gap-10 text-[10px] uppercase tracking-[0.2em] pt-1 pointer-events-auto">
+            <a href="#work" class="nav-link magnetic-wrap" data-strength="15">Work</a>
+            <a href="#about" class="nav-link magnetic-wrap" data-strength="15">Studio</a>
+            <a href="#contact" class="nav-link magnetic-wrap" data-strength="15">Contact</a>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="h-screen flex flex-col justify-center px-6 md:px-12 relative overflow-hidden bg-white">
+            <div class="z-10 mt-auto mb-20">
+                <div class="overflow-hidden mb-6">
+                    <span id="heroLabel" class="block text-[11px] uppercase tracking-[0.6em] text-neutral-400">Minimalist Practice — Est. 2022</span>
+                </div>
+                <h1 id="heroTitle" class="text-[18vw] md:text-[14vw] font-black uppercase leading-[0.75] tracking-tighter mb-16">
+                    SILENT<br/>FORMS.
+                </h1>
+                <div class="flex flex-col md:flex-row justify-between items-end gap-12 border-t border-black/5 pt-12">
+                    <p id="heroText" class="max-w-md text-lg md:text-2xl font-light italic leading-snug">
+                        Translating human emotion into architectural proportion. Restrained, raw, and essential.
+                    </p>
+                    <div class="flex flex-col items-end">
+                        <span class="text-[9px] uppercase tracking-widest font-bold opacity-30">Scroll Down</span>
+                        <div class="w-[1px] h-32 bg-black/10 mt-6 relative overflow-hidden">
+                            <div id="scrollIndicator" class="absolute top-0 left-0 w-full h-full bg-black origin-top scale-y-0"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Parallax BG Layer -->
+            <div id="parallaxText" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[48vw] font-black opacity-[0.012] select-none pointer-events-none leading-none">
+                VOID
+            </div>
+        </section>
+
+        <!-- Gallery Section -->
+        <section id="work" class="px-6 md:px-12 py-32 bg-white">
+            <div class="flex justify-between items-end mb-24 border-b border-black/10 pb-16">
+                <h2 class="text-6xl md:text-9xl font-light tracking-tighter uppercase stagger-reveal">Selected<br/>Works</h2>
+                <div class="text-[10px] font-mono opacity-30 text-right leading-relaxed">
+                    ARCHIVE 01-04<br/>REDEFINING SPACE
+                </div>
+            </div>
+
+            <div id="projectContainer" class="flex flex-col gap-32 md:gap-56">
+                <!-- Projects are injected via JS -->
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="px-6 md:px-12 py-48 bg-black text-white relative overflow-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-24 relative z-10">
+                <div class="stagger-reveal">
+                    <h2 class="text-7xl md:text-9xl font-black tracking-tighter leading-none mb-12">BEYOND<br/>FUNCTION.</h2>
+                    <div class="w-32 h-[1px] bg-white/30"></div>
+                </div>
+                <div class="flex flex-col justify-end stagger-reveal">
+                    <p class="text-2xl md:text-4xl font-light leading-tight mb-12">
+                        We believe that architecture is the art of organizing light and material to evoke stillness.
+                    </p>
+                    <p class="text-sm opacity-40 leading-relaxed max-w-sm">
+                        Operating from Zurich and Tokyo, Koru Studio merges European brutalist honesty with Japanese spatial philosophy. Every line is intentional. Every void is considered.
+                    </p>
+                </div>
+            </div>
+            <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10 mix-blend-overlay"></div>
+        </section>
+
+        <!-- Footer -->
+        <footer id="contact" class="px-6 md:px-12 py-40 bg-white border-t border-black/5">
+            <div class="flex flex-col md:flex-row justify-between items-start gap-24">
+                <div class="stagger-reveal">
+                    <span class="text-[10px] uppercase tracking-[0.4em] font-bold opacity-30 block mb-12">Collaborate</span>
+                    <a href="mailto:studio@koru.arch" class="text-5xl md:text-9xl font-light hover:italic transition-all duration-700 magnetic-wrap inline-block" data-strength="50">
+                        studio@koru.arch
+                    </a>
+                </div>
+                <div class="flex flex-col gap-6 text-[11px] pt-4 stagger-reveal">
+                    <div class="flex gap-16 uppercase tracking-widest">
+                        <a href="#" class="nav-link">Instagram</a>
+                        <a href="#" class="nav-link">LinkedIn</a>
+                        <a href="#" class="nav-link">Journal</a>
+                    </div>
+                    <p class="mt-20 opacity-20 uppercase tracking-[0.3em]">© 2025 Koru Studio. Built for the void.</p>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+
+        // Project Content
+        const PROJECTS = [
+            { id: "01", title: "Concrete Monolith", loc: "Valle de Bravo, MX", year: "2024", prompt: "brutalist concrete architecture house in the forest, raw texture, geometric shapes, morning light, high contrast" },
+            { id: "02", title: "Glass Pavilion", loc: "Bern, CH", year: "2023", prompt: "minimalist glass house in snow, structural steel, reflection, winter architectural photography, professional lighting" },
+            { id: "03", title: "The Dark Chapel", loc: "Kyoto, JP", year: "2025", prompt: "modern dark wood sacred space, single light ray, charred timber texture, minimalist interior, serenity" },
+            { id: "04", title: "Limestone Peak", loc: "Alps, AT", year: "2022", prompt: "modernist limestone residential structure, sharp edges, mountain landscape, sunset architectural shot" }
+        ];
+
+        // AI Setup
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+        async function fetchImage(prompt) {
+            try {
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash-image',
+                    contents: { parts: [{ text: `High-end architectural photography, ${prompt}. Minimalist, 8k, professional, neutral tones, cinematic.` }] },
+                    config: { imageConfig: { aspectRatio: "16:9" } }
+                });
+                for (const part of response.candidates?.[0]?.content?.parts || []) {
+                    if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+                }
+            } catch (e) {
+                return `https://picsum.photos/1600/900?random=${Math.random()}`;
+            }
+        }
+
+        // GSAP & Interactions
+        gsap.registerPlugin(ScrollTrigger);
+
+        const cursor = document.getElementById('cursor');
+        const follower = document.getElementById('cursor-follower');
+
+        window.addEventListener('mousemove', e => {
+            gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
+            gsap.to(follower, { x: e.clientX, y: e.clientY, duration: 0.3 });
+        });
+
+        // Magnetic Effect
+        document.querySelectorAll('.magnetic-wrap').forEach(el => {
+            el.addEventListener('mousemove', e => {
+                const rect = el.getBoundingClientRect();
+                const str = el.dataset.strength || 20;
+                const x = (e.clientX - rect.left - rect.width / 2) / rect.width * str;
+                const y = (e.clientY - rect.top - rect.height / 2) / rect.height * str;
+                gsap.to(el, { x, y, duration: 0.3, ease: "power2.out" });
+                gsap.to(cursor, { scale: 3.5, duration: 0.2 });
+            });
+            el.addEventListener('mouseleave', () => {
+                gsap.to(el, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+                gsap.to(cursor, { scale: 1, duration: 0.2 });
+            });
+        });
+
+        // Scroll Logic
+        gsap.to("#progressBar", {
+            width: "100%",
+            ease: "none",
+            scrollTrigger: { scrub: 0.3 }
+        });
+
+        gsap.to("#scrollIndicator", {
+            scaleY: 1,
+            ease: "none",
+            scrollTrigger: { trigger: "main", start: "top top", end: "bottom bottom", scrub: true }
+        });
+
+        gsap.to("#parallaxText", {
+            y: "35%",
+            scrollTrigger: { scrub: true }
+        });
+
+        // Build Projects
+        const container = document.getElementById('projectContainer');
+
+        function initProjects() {
+            PROJECTS.forEach(p => {
+                const el = document.createElement('div');
+                el.className = 'project-row grid grid-cols-1 md:grid-cols-12 gap-16 items-start opacity-0 translate-y-24';
+                el.innerHTML = `
+                    <div class="md:col-span-4 h-full flex flex-col justify-between pt-4">
+                        <div class="stagger-group">
+                            <span class="text-[10px] font-mono opacity-30 mb-2 block tracking-widest">NO. ${p.id}</span>
+                            <h3 class="text-5xl md:text-7xl font-light uppercase tracking-tighter hover:italic transition-all duration-700 cursor-pointer magnetic-wrap" data-strength="30">${p.title}</h3>
+                        </div>
+                        <div class="mt-16 md:mt-auto">
+                            <p class="text-[10px] uppercase tracking-[0.4em] opacity-40 mb-2">${p.loc} — ${p.year}</p>
+                            <div class="h-[1px] w-full bg-black/10 origin-left scale-x-0 line-reveal"></div>
+                        </div>
+                    </div>
+                    <div class="md:col-span-8 img-mask aspect-video relative group cursor-pointer overflow-hidden magnetic-wrap" data-strength="10">
+                        <div class="absolute inset-0 loader-shimmer z-0 opacity-20"></div>
+                        <img class="project-image z-10" data-prompt="${p.prompt}" alt="${p.title}">
+                    </div>
+                `;
+                container.appendChild(el);
+
+                // Reveal trigger
+                gsap.to(el, {
+                    opacity: 1, y: 0, duration: 1.6, ease: "power4.out",
+                    scrollTrigger: { trigger: el, start: "top 90%" }
+                });
+
+                gsap.to(el.querySelector('.line-reveal'), {
+                    scaleX: 1, duration: 1.5, ease: "power4.out",
+                    scrollTrigger: { trigger: el, start: "top 80%" }
+                });
+
+                // Load Visual
+                const img = el.querySelector('.project-image');
+                const loader = el.querySelector('.loader-shimmer');
+                fetchImage(p.prompt).then(src => {
+                    img.src = src;
+                    img.onload = () => {
+                        img.classList.add('revealed');
+                        loader.style.display = 'none';
+                    };
+                });
+
+                // Image 3D Hover
+                const mask = el.querySelector('.img-mask');
+                mask.addEventListener('mousemove', e => {
+                    const rect = mask.getBoundingClientRect();
+                    const x = (e.clientX - rect.left - rect.width / 2) / rect.width;
+                    const y = (e.clientY - rect.top - rect.height / 2) / rect.height;
+                    gsap.to(img, { 
+                        x: x * 40, y: y * 40, 
+                        rotateY: x * 15, rotateX: -y * 15,
+                        duration: 0.8, ease: "power3.out" 
+                    });
+                });
+                mask.addEventListener('mouseleave', () => {
+                    gsap.to(img, { x: 0, y: 0, rotateY: 0, rotateX: 0, duration: 1.5, ease: "power4.out" });
+                });
+            });
+        }
+
+        // Entrance Animation
+        function startEntrance() {
+            const tl = gsap.timeline();
+            tl.from("#heroTitle", { y: 150, opacity: 0, duration: 1.8, ease: "power4.out" })
+              .from("#heroLabel", { opacity: 0, y: 20, duration: 1, delay: -1.2 })
+              .from("#heroText", { opacity: 0, y: 30, duration: 1.2, delay: -1 });
+
+            document.querySelectorAll('.stagger-reveal').forEach(el => {
+                gsap.from(el, {
+                    y: 80, opacity: 0, duration: 1.6, ease: "power4.out",
+                    scrollTrigger: { trigger: el, start: "top 95%" }
+                });
+            });
+        }
+
+        window.addEventListener('load', () => {
+            initProjects();
+            startEntrance();
+        });
+    </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

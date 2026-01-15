@@ -272,17 +272,40 @@ export function normalizeHtmlCssForWebflow(
 function parseCssBlocks(css: string): { baseRules: RawRule[]; mediaBlocks: MediaBlock[] } {
   const cleanCss = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const mediaBlocks: MediaBlock[] = [];
-  const mediaRegex = /@media\s*([^{]+)\{([\s\S]*?)\}\s*\}/g;
 
-  let mediaMatch;
-  while ((mediaMatch = mediaRegex.exec(cleanCss)) !== null) {
-    const query = mediaMatch[1].trim();
-    const content = mediaMatch[2];
-    const rules = parseRulesFromContent(content);
-    mediaBlocks.push({ query, rules });
+  // Use proper brace matching to extract media blocks
+  // (The simple regex /@media\s*([^{]+)\{([\s\S]*?)\}\s*\}/g fails for nested braces)
+  const mediaStartRegex = /@media\s*([^{]+)\s*\{/g;
+  const fullMatches: string[] = [];
+  let match;
+
+  while ((match = mediaStartRegex.exec(cleanCss)) !== null) {
+    const query = match[1].trim();
+    const openBraceIndex = match.index + match[0].length - 1;
+
+    // Find the matching closing brace using brace counting
+    let braceCount = 1;
+    let i = openBraceIndex + 1;
+    while (i < cleanCss.length && braceCount > 0) {
+      if (cleanCss[i] === "{") braceCount++;
+      else if (cleanCss[i] === "}") braceCount--;
+      i++;
+    }
+
+    if (braceCount === 0) {
+      const content = cleanCss.slice(openBraceIndex + 1, i - 1);
+      const fullMatch = cleanCss.slice(match.index, i);
+      fullMatches.push(fullMatch);
+      const rules = parseRulesFromContent(content);
+      mediaBlocks.push({ query, rules });
+    }
   }
 
-  const baseContent = cleanCss.replace(mediaRegex, "");
+  // Remove all media blocks from CSS to get base rules
+  let baseContent = cleanCss;
+  for (const fullMatch of fullMatches) {
+    baseContent = baseContent.replace(fullMatch, "");
+  }
   const baseRules = parseRulesFromContent(baseContent);
 
   return { baseRules, mediaBlocks };
@@ -541,6 +564,19 @@ function normalizeHtmlWithDomParser(
     });
   }
 
+  // Inject wf-* classes on structural elements (section, nav, header, footer, etc.)
+  // This preserves spacing from element selectors like `section { padding: 80px 0; }`
+  const STRUCTURAL_TAGS = ["section", "nav", "header", "footer", "main", "article", "aside"];
+  for (const structuralTag of STRUCTURAL_TAGS) {
+    wrapper.querySelectorAll(structuralTag).forEach((el) => {
+      const element = el as HTMLElement;
+      const wfClass = ELEMENT_TO_CLASS_MAP[structuralTag];
+      if (wfClass && !element.classList.contains(wfClass)) {
+        element.classList.add(wfClass);
+      }
+    });
+  }
+
   wrapper.querySelectorAll("p").forEach((el) => {
     const element = el as HTMLElement;
     const textClasses = Array.from(element.classList).filter((name) => name.startsWith("text-"));
@@ -605,6 +641,9 @@ export function normalizeHtmlWithFallback(
     });
   }
 
+  // Structural elements that get wf-* classes for spacing preservation
+  const STRUCTURAL_TAGS_SET = new Set(["section", "nav", "header", "footer", "main", "article", "aside"]);
+
   walkElements(parsed, (element) => {
     if (HEADING_TAGS.includes(element.tag)) {
       const headingClasses = element.classes.filter((name) => name.startsWith("heading-"));
@@ -614,6 +653,14 @@ export function normalizeHtmlWithFallback(
         requiredTypographyClasses.add(injected);
       } else {
         headingClasses.forEach((name) => requiredTypographyClasses.add(name));
+      }
+    }
+
+    // Inject wf-* classes on structural elements (section, nav, header, footer, etc.)
+    if (STRUCTURAL_TAGS_SET.has(element.tag)) {
+      const wfClass = ELEMENT_TO_CLASS_MAP[element.tag];
+      if (wfClass && !element.classes.includes(wfClass)) {
+        element.classes.push(wfClass);
       }
     }
 

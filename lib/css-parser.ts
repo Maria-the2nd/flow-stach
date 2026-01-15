@@ -93,6 +93,7 @@ export type ElementTypographyMap = Record<string, ElementTypography>;
  * This is the canonical mapping used throughout the converter.
  */
 export const ELEMENT_TO_CLASS_MAP: Record<string, string> = {
+  // Typography elements
   body: "wf-body",
   h1: "heading-h1",
   h2: "heading-h2",
@@ -102,7 +103,48 @@ export const ELEMENT_TO_CLASS_MAP: Record<string, string> = {
   h6: "heading-h6",
   p: "text-body",
   a: "link",
+  // Structural elements (for spacing preservation)
+  section: "wf-section",
+  nav: "wf-nav",
+  header: "wf-header",
+  footer: "wf-footer",
+  main: "wf-main",
+  article: "wf-article",
+  aside: "wf-aside",
 };
+
+/** Structural elements that can have spacing extracted */
+const STRUCTURAL_ELEMENTS = new Set([
+  "section", "nav", "header", "footer", "main", "article", "aside"
+]);
+
+/** Spacing properties we want to extract from structural element selectors */
+const SPACING_PROPERTIES = new Set([
+  "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
+  "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
+  "gap", "row-gap", "column-gap",
+]);
+
+/**
+ * Spacing properties extracted from structural element selectors.
+ */
+export interface ElementSpacing {
+  padding?: string;
+  paddingTop?: string;
+  paddingRight?: string;
+  paddingBottom?: string;
+  paddingLeft?: string;
+  margin?: string;
+  marginTop?: string;
+  marginRight?: string;
+  marginBottom?: string;
+  marginLeft?: string;
+  gap?: string;
+  rowGap?: string;
+  columnGap?: string;
+}
+
+export type ElementSpacingMap = Record<string, ElementSpacing>;
 
 /** Typography properties we want to extract from element selectors */
 const TYPOGRAPHY_PROPERTIES = new Set([
@@ -206,10 +248,33 @@ export function extractCssVariables(css: string): Map<string, string> {
   return variables;
 }
 
-export function resolveCssVariables(value: string, variables: Map<string, string>, maxDepth = 5): { resolved: string; hasUnresolved: boolean } {
+export function resolveCssVariables(
+  value: string,
+  variables: Map<string, string>,
+  maxDepth = 5,
+  propertyName?: string
+): { resolved: string; hasUnresolved: boolean } {
   let result = value;
   let hasUnresolved = false;
   let depth = 0;
+
+  // Font-family values need quotes preserved for font names with spaces
+  const isFontFamily = propertyName?.toLowerCase() === "font-family";
+
+  const stripQuotes = (val: string) => {
+    const trimmed = val.trim();
+    // NEVER strip quotes for font-family - quotes are semantically meaningful
+    if (isFontFamily) {
+      return trimmed;
+    }
+    if (trimmed.length < 2) return trimmed;
+    const first = trimmed.charAt(0);
+    const last = trimmed.charAt(trimmed.length - 1);
+    if ((first === '"' || first === "'") && first === last) {
+      return trimmed.slice(1, -1);
+    }
+    return trimmed;
+  };
 
   while (result.includes("var(") && depth < maxDepth) {
     depth++;
@@ -217,12 +282,10 @@ export function resolveCssVariables(value: string, variables: Map<string, string
       const resolved = variables.get(varName);
       if (resolved !== undefined) {
         // Strip any surrounding quotes from resolved value (shouldn't have them, but defensive)
-        const cleaned = resolved.trim().replace(/^['"]|['"]$/g, '');
-        return cleaned;
+        return stripQuotes(resolved);
       }
       if (fallback) {
-        const cleanedFallback = fallback.trim().replace(/^['"]|['"]$/g, '');
-        return cleanedFallback;
+        return stripQuotes(fallback);
       }
       hasUnresolved = true;
       return `var(${varName})`;
@@ -285,10 +348,26 @@ export function expandShorthand(property: string, value: string): Record<string,
 // CSS PARSING
 // ============================================
 
+/**
+ * Convert a CSS length value to pixels.
+ * Handles px, rem, em units (assumes 16px base for rem/em).
+ */
+function cssLengthToPixels(value: number, unit: string): number {
+  const lowerUnit = unit.toLowerCase();
+  if (lowerUnit === "px") return value;
+  if (lowerUnit === "rem" || lowerUnit === "em") return value * 16;
+  // For other units (%, vh, vw, etc.), we can't reliably convert
+  return NaN;
+}
+
 function detectBreakpoint(query: string): "desktop" | "medium" | "small" | "tiny" | null {
-  const maxWidth = query.match(/max-width:\s*(\d+)px/i);
+  // Match max-width with any common unit (px, rem, em)
+  const maxWidth = query.match(/max-width:\s*([\d.]+)(px|rem|em)/i);
   if (!maxWidth) return null;
-  const width = parseInt(maxWidth[1], 10);
+  const value = parseFloat(maxWidth[1]);
+  const unit = maxWidth[2];
+  const width = cssLengthToPixels(value, unit);
+  if (isNaN(width)) return null;
   if (width <= 479) return "tiny";
   if (width <= 767) return "small";
   if (width <= 991) return "medium";
@@ -297,9 +376,14 @@ function detectBreakpoint(query: string): "desktop" | "medium" | "small" | "tiny
 }
 
 function detectMinWidth(query: string): number | null {
-  const minWidth = query.match(/min-width:\s*(\d+)px/i);
+  // Match min-width with any common unit (px, rem, em)
+  const minWidth = query.match(/min-width:\s*([\d.]+)(px|rem|em)/i);
   if (!minWidth) return null;
-  return parseInt(minWidth[1], 10);
+  const value = parseFloat(minWidth[1]);
+  const unit = minWidth[2];
+  const pixels = cssLengthToPixels(value, unit);
+  if (isNaN(pixels)) return null;
+  return pixels;
 }
 
 function expandFlexShorthand(value: string): Record<string, string> {
@@ -450,7 +534,7 @@ function parseProperties(propertiesStr: string, variables: Map<string, string>, 
 
     if (STRIP_PROPERTIES.has(name)) continue;
 
-    const { resolved, hasUnresolved } = resolveCssVariables(value, variables);
+    const { resolved, hasUnresolved } = resolveCssVariables(value, variables, 5, name);
     if (hasUnresolved) {
       warnings.push({ type: "variable_unresolved", message: `Unresolved CSS variable in: ${name}: ${value}`, property: name });
     }
@@ -886,9 +970,10 @@ export function parseCSS(css: string): ParsedCssResult {
   const cleanCss = css.replace(/:root\s*\{[^}]+\}/g, "").trim();
 
   // ============================================
-  // STEP 1: Extract element typography FIRST
+  // STEP 1: Extract element typography and spacing FIRST
   // ============================================
   const elementTypography = extractElementTypography(cleanCss, variables, warnings);
+  const elementSpacing = extractElementSpacing(cleanCss, variables, warnings);
 
   // Generic rule regex that matches selector { properties }
   const ruleRegex = /([^{}]+)\{([^{}]+)\}/g;
@@ -974,9 +1059,10 @@ export function parseCSS(css: string): ParsedCssResult {
   }
 
   // ============================================
-  // STEP 2: Merge element typography into class styles
+  // STEP 2: Merge element typography and spacing into class styles
   // ============================================
   mergeElementTypographyIntoClasses(elementTypography, classes, warnings);
+  mergeElementSpacingIntoClasses(elementSpacing, classes, warnings);
 
   // ============================================
   // STEP 3: Enforce explicit layout properties on containers
@@ -1085,8 +1171,8 @@ function parseTypographyProperties(
     // Only process typography properties
     if (!TYPOGRAPHY_PROPERTIES.has(name)) continue;
 
-    // Resolve CSS variables
-    const { resolved, hasUnresolved } = resolveCssVariables(value, variables);
+    // Resolve CSS variables (pass property name to preserve font-family quotes)
+    const { resolved, hasUnresolved } = resolveCssVariables(value, variables, 5, name);
     if (hasUnresolved) {
       warnings.push({
         type: "variable_unresolved",
@@ -1195,6 +1281,205 @@ function typographyToStyleLess(typography: ElementTypography): string {
   return parts.join(" ");
 }
 
+// ============================================
+// STRUCTURAL ELEMENT SPACING EXTRACTION
+// ============================================
+
+/**
+ * Extract spacing properties from structural element selectors (section, nav, header, footer, etc.).
+ * These selectors don't have classes but we need their spacing to be preserved.
+ */
+function extractElementSpacing(
+  css: string,
+  variables: Map<string, string>,
+  warnings: CssWarning[]
+): ElementSpacingMap {
+  const result: ElementSpacingMap = {};
+
+  // Match rules: selector { properties }
+  const ruleRegex = /([^{}@]+)\{([^{}]+)\}/g;
+  let match;
+
+  while ((match = ruleRegex.exec(css)) !== null) {
+    const selectorPart = match[1].trim();
+    const propertiesStr = match[2].trim();
+
+    // Handle comma-separated selectors (e.g., "section, nav { ... }")
+    const selectors = selectorPart.split(",").map(s => s.trim());
+
+    for (const selector of selectors) {
+      const normalizedSelector = selector.toLowerCase();
+
+      // Match exact structural element selectors only (no classes, no descendants)
+      if (STRUCTURAL_ELEMENTS.has(normalizedSelector) && !selector.includes(".") && !selector.includes(" ")) {
+        const spacing = parseSpacingProperties(propertiesStr, variables, warnings);
+
+        if (Object.keys(spacing).length > 0) {
+          // Merge into existing or create new
+          result[normalizedSelector] = {
+            ...result[normalizedSelector],
+            ...spacing,
+          };
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Parse CSS properties string and extract only spacing-related properties.
+ * Resolves CSS variables to actual values and expands shorthands.
+ */
+function parseSpacingProperties(
+  propertiesStr: string,
+  variables: Map<string, string>,
+  warnings: CssWarning[]
+): ElementSpacing {
+  const result: ElementSpacing = {};
+
+  // Split properties, handling values with parentheses
+  const properties: string[] = [];
+  let current = "";
+  let parenDepth = 0;
+
+  for (const char of propertiesStr) {
+    if (char === "(") parenDepth++;
+    else if (char === ")") parenDepth--;
+    if (char === ";" && parenDepth === 0) {
+      if (current.trim()) properties.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) properties.push(current.trim());
+
+  for (const prop of properties) {
+    const colonIndex = prop.indexOf(":");
+    if (colonIndex === -1) continue;
+
+    const name = prop.substring(0, colonIndex).trim().toLowerCase();
+    let value = prop.substring(colonIndex + 1).trim().replace(/\s*!important\s*$/i, "");
+
+    // Only process spacing properties
+    if (!SPACING_PROPERTIES.has(name)) continue;
+
+    // Resolve CSS variables
+    const { resolved, hasUnresolved } = resolveCssVariables(value, variables, 5, name);
+    if (hasUnresolved) {
+      warnings.push({
+        type: "variable_unresolved",
+        message: `Unresolved CSS variable in spacing: ${name}: ${value}`,
+        property: name
+      });
+    }
+    value = resolved;
+
+    // Handle shorthand expansion for padding/margin
+    if (name === "padding" || name === "margin") {
+      const expanded = parseSpacingValues(value);
+      if (expanded.length === 4) {
+        if (name === "padding") {
+          result.paddingTop = expanded[0];
+          result.paddingRight = expanded[1];
+          result.paddingBottom = expanded[2];
+          result.paddingLeft = expanded[3];
+        } else {
+          result.marginTop = expanded[0];
+          result.marginRight = expanded[1];
+          result.marginBottom = expanded[2];
+          result.marginLeft = expanded[3];
+        }
+      }
+      continue;
+    }
+
+    // Map to ElementSpacing keys (camelCase)
+    switch (name) {
+      case "padding-top": result.paddingTop = value; break;
+      case "padding-right": result.paddingRight = value; break;
+      case "padding-bottom": result.paddingBottom = value; break;
+      case "padding-left": result.paddingLeft = value; break;
+      case "margin-top": result.marginTop = value; break;
+      case "margin-right": result.marginRight = value; break;
+      case "margin-bottom": result.marginBottom = value; break;
+      case "margin-left": result.marginLeft = value; break;
+      case "gap": result.gap = value; break;
+      case "row-gap": result.rowGap = value; break;
+      case "column-gap": result.columnGap = value; break;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Merge element spacing into corresponding class entries.
+ * Creates class entries if they don't exist.
+ *
+ * This preserves spacing from `section { padding: 80px 0; }`
+ * as `.wf-section { padding-top: 80px; padding-bottom: 80px; }` in Webflow.
+ */
+function mergeElementSpacingIntoClasses(
+  elementSpacing: ElementSpacingMap,
+  classes: Record<string, ClassIndexEntry>,
+  _warnings: CssWarning[]
+): void {
+  void _warnings;
+  for (const [element, spacing] of Object.entries(elementSpacing)) {
+    const className = ELEMENT_TO_CLASS_MAP[element];
+    if (!className) continue;
+
+    // Convert ElementSpacing to styleLess format
+    const spacingStyles = spacingToStyleLess(spacing);
+    if (!spacingStyles) continue;
+
+    // Create or merge into class entry
+    if (!classes[className]) {
+      classes[className] = {
+        className,
+        selectors: [`.${className}`],
+        baseStyles: spacingStyles,
+        mediaQueries: {},
+        isComboClass: false,
+        children: [],
+        parentClasses: [],
+        isLayoutContainer: false,
+      };
+      console.log(`[css-parser] Created .${className} from ${element} selector with spacing: ${spacingStyles}`);
+    } else {
+      // Merge spacing into existing class
+      classes[className].baseStyles = mergeTypographyIntoStyles(
+        classes[className].baseStyles,
+        spacingStyles
+      );
+    }
+  }
+}
+
+/**
+ * Convert ElementSpacing to styleLess format.
+ */
+function spacingToStyleLess(spacing: ElementSpacing): string {
+  const parts: string[] = [];
+
+  if (spacing.paddingTop) parts.push(`padding-top: ${spacing.paddingTop};`);
+  if (spacing.paddingRight) parts.push(`padding-right: ${spacing.paddingRight};`);
+  if (spacing.paddingBottom) parts.push(`padding-bottom: ${spacing.paddingBottom};`);
+  if (spacing.paddingLeft) parts.push(`padding-left: ${spacing.paddingLeft};`);
+  if (spacing.marginTop) parts.push(`margin-top: ${spacing.marginTop};`);
+  if (spacing.marginRight) parts.push(`margin-right: ${spacing.marginRight};`);
+  if (spacing.marginBottom) parts.push(`margin-bottom: ${spacing.marginBottom};`);
+  if (spacing.marginLeft) parts.push(`margin-left: ${spacing.marginLeft};`);
+  if (spacing.gap) parts.push(`gap: ${spacing.gap};`);
+  if (spacing.rowGap) parts.push(`row-gap: ${spacing.rowGap};`);
+  if (spacing.columnGap) parts.push(`column-gap: ${spacing.columnGap};`);
+
+  return parts.join(" ");
+}
+
 /**
  * Merge typography styles into existing styleLess.
  * Typography properties (font-family, font-size, etc.) from element selectors
@@ -1268,10 +1553,9 @@ function enforceExplicitLayoutProperties(
         props.set("flex-direction", "row");
         added.push("flex-direction: row");
       }
-      if (!props.has("flex-wrap")) {
-        props.set("flex-wrap", "nowrap");
-        added.push("flex-wrap: nowrap");
-      }
+      // NOTE: We intentionally do NOT inject flex-wrap: nowrap
+      // Browser default is nowrap, so explicit injection is redundant
+      // AND it blocks responsive designs where wrapping should occur naturally
       if (!props.has("justify-content")) {
         props.set("justify-content", "flex-start");
         added.push("justify-content: flex-start");
@@ -1476,13 +1760,13 @@ function buildExplicitGridTemplate(template: string): string | null {
 }
 
 function extractMinmaxPixels(template: string): number | null {
-  const match = template.match(/minmax\(\s*([\d.]+)\s*(px|rem)\s*,/i);
+  // Match minmax() with common units (px, rem, em)
+  const match = template.match(/minmax\(\s*([\d.]+)\s*(px|rem|em)\s*,/i);
   if (!match) return null;
   const value = Number.parseFloat(match[1]);
   if (Number.isNaN(value)) return null;
-  const unit = match[2].toLowerCase();
-  if (unit === "rem") return value * 16;
-  return value;
+  const unit = match[2];
+  return cssLengthToPixels(value, unit);
 }
 
 function expandRepeatTemplate(template: string): string | null {

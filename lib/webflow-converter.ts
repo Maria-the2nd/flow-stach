@@ -449,9 +449,13 @@ function convertToWebflowNodes(
   element: ParsedElement,
   idGen: IdGenerator,
   collectedClasses: Set<string>,
-  classIndex: ClassIndex
-): { nodes: WebflowNode[]; rootId: string } {
+  classIndex: ClassIndex,
+  inlineStyles?: Map<string, string>,
+  spanClasses?: Set<string>
+): { nodes: WebflowNode[]; rootId: string; spanClasses: Set<string> } {
   const nodes: WebflowNode[] = [];
+  // Track classes used on span elements to ensure they have display: inline
+  const localSpanClasses = spanClasses || new Set<string>();
   const dropTags = new Set([
     "head",
     "meta",
@@ -575,6 +579,49 @@ function convertToWebflowNodes(
     return { width, height };
   }
 
+  function normalizeInlineStyle(style: string | undefined): string | null {
+    if (!style) return null;
+    const parts = style.split(";").map((p) => p.trim()).filter(Boolean);
+    const entries: Array<[string, string]> = [];
+    for (const part of parts) {
+      const idx = part.indexOf(":");
+      if (idx === -1) continue;
+      const rawName = part.slice(0, idx).trim();
+      const rawValue = part.slice(idx + 1).trim();
+      if (!rawName || !rawValue) continue;
+      const name = rawName.startsWith("--") ? rawName : rawName.toLowerCase();
+      entries.push([name, rawValue]);
+    }
+    if (entries.length === 0) return null;
+    entries.sort((a, b) => a[0].localeCompare(b[0]));
+    return entries.map(([name, value]) => `${name}: ${value};`).join(" ");
+  }
+
+  function applyInlineStyleClass(el: ParsedElement, baseClasses: string[]): void {
+    if (!inlineStyles) return;
+    const styleLess = normalizeInlineStyle(el.attributes.style);
+    if (!styleLess) return;
+
+    let className: string | undefined;
+    for (const [existingClass, existingStyle] of inlineStyles.entries()) {
+      if (existingStyle === styleLess) {
+        className = existingClass;
+        break;
+      }
+    }
+
+    if (!className) {
+      className = `inline-${inlineStyles.size + 1}`;
+      inlineStyles.set(className, styleLess);
+    }
+
+    if (!baseClasses.includes(className)) {
+      baseClasses.push(className);
+    }
+
+    delete el.attributes.style;
+  }
+
   function processElement(el: ParsedElement): string {
     if (dropTags.has(el.tag)) return "";
 
@@ -647,6 +694,7 @@ function convertToWebflowNodes(
 
     const normalizedTag = normalizeTagForWebflow(el.tag);
     const baseClasses = [...el.classes];
+    applyInlineStyleClass(el, baseClasses);
     const hasGrid = baseClasses.some((cls) => isGridClass(cls, classIndex));
     const nodeClasses = hasGrid && !baseClasses.includes("w-layout-grid")
       ? [...baseClasses, "w-layout-grid"]
@@ -654,6 +702,11 @@ function convertToWebflowNodes(
 
     // Collect classes for style extraction (skip w-layout-grid)
     baseClasses.forEach((c) => collectedClasses.add(c));
+
+    // Track classes used on span elements (they need display: inline)
+    if (el.tag === "span") {
+      baseClasses.forEach((c) => localSpanClasses.add(c));
+    }
 
     // Determine node type
     const nodeType = mapTagToType(normalizedTag);
@@ -743,7 +796,7 @@ function convertToWebflowNodes(
   const rootId = processElement(element);
 
   // Reverse to get correct order (root first, then children)
-  return { nodes: nodes.reverse(), rootId };
+  return { nodes: nodes.reverse(), rootId, spanClasses: localSpanClasses };
 }
 
 // ============================================
@@ -861,7 +914,6 @@ export function buildTokenWebflowPayload(manifest: TokenManifest | TokenExtracti
   );
   const mainBgValue = mainBgToken?.values?.light ?? mainBgToken?.value ?? "";
 
-  // Find page/section spacing tokens for wrapper
   const pagePaddingToken = spacingTokens.find(t =>
     t.cssVar.includes("page-padding") ||
     t.cssVar.includes("section-padding") ||
@@ -872,9 +924,8 @@ export function buildTokenWebflowPayload(manifest: TokenManifest | TokenExtracti
     t.cssVar.includes("section-margin")
   );
 
-  // Default wrapper padding if no spacing tokens found
-  const wrapperPaddingX = pagePaddingToken?.value ?? "5vw";
-  const wrapperPaddingY = pageMarginToken?.value ?? "0";
+  const wrapperPaddingX = pagePaddingToken?.value ?? "";
+  const wrapperPaddingY = pageMarginToken?.value ?? "";
 
   // =========================================
   // 1. PAGE WRAPPER CLASS (most important!)
@@ -882,22 +933,16 @@ export function buildTokenWebflowPayload(manifest: TokenManifest | TokenExtracti
   // This class should wrap ALL page content to ensure consistent margins
   const pageWrapperClass = `${namespace}-page-wrapper`;
   const pageWrapperStyles = [
-    `padding-left: ${wrapperPaddingX};`,
-    `padding-right: ${wrapperPaddingX};`,
-    `padding-top: ${wrapperPaddingY};`,
-    `padding-bottom: ${wrapperPaddingY};`,
+    wrapperPaddingX ? `padding-left: ${wrapperPaddingX};` : "",
+    wrapperPaddingX ? `padding-right: ${wrapperPaddingX};` : "",
+    wrapperPaddingY ? `padding-top: ${wrapperPaddingY};` : "",
+    wrapperPaddingY ? `padding-bottom: ${wrapperPaddingY};` : "",
     `width: 100%;`,
-    `min-height: 100vh;`,
     mainBgValue ? `background-color: ${mainBgValue};` : "",
   ].filter(Boolean).join(" ");
 
   const pageWrapperStyle = createStyle(pageWrapperClass, pageWrapperStyles);
-  // Add responsive variants for wrapper
-  pageWrapperStyle.variants = {
-    medium: { styleLess: "padding-left: 4vw; padding-right: 4vw;" },
-    small: { styleLess: "padding-left: 5vw; padding-right: 5vw;" },
-    tiny: { styleLess: "padding-left: 4vw; padding-right: 4vw;" },
-  };
+  pageWrapperStyle.variants = {};
   styles.push(pageWrapperStyle);
   classNames.push(pageWrapperClass);
 
@@ -1086,8 +1131,17 @@ export function buildTokenWebflowPayload(manifest: TokenManifest | TokenExtracti
     data: { tag: "div", text: false },
   };
 
-  // Add grid style
-  styles.push(createStyle(`${namespace}-token-grid`, "display: flex; flex-wrap: wrap; gap: 1rem; padding: 2rem;"));
+  const tokenGridStyles: string[] = [
+    "display: flex;",
+    "flex-wrap: wrap;",
+  ];
+  const firstSpacing = spacingTokens[0]?.value ?? "";
+  const firstSpacingRem = firstSpacing ? toRem(firstSpacing) : "";
+  if (firstSpacingRem) {
+    tokenGridStyles.push(`gap: ${firstSpacingRem};`);
+    tokenGridStyles.push(`padding: ${firstSpacingRem};`);
+  }
+  styles.push(createStyle(`${namespace}-token-grid`, tokenGridStyles.join(" ")));
 
   return {
     type: "@webflow/XscpData",
@@ -1123,6 +1177,7 @@ function ensurePageWrapper(html: string, css: string): { html: string; css: stri
   }
 
   // Check if wrapper style already exists in CSS
+  // NOTE: We no longer inject hardcoded padding - spacing must come from source CSS
   const wrapperRegex = /\.page-wrapper\s*\{/;
   if (!wrapperRegex.test(newCss)) {
     newCss = `${newCss}\n
@@ -1131,8 +1186,6 @@ function ensurePageWrapper(html: string, css: string): { html: string; css: stri
   max-width: 100%;
   margin-left: auto;
   margin-right: auto;
-  padding-left: 5%;
-  padding-right: 5%;
 }`;
   }
 
@@ -1150,6 +1203,7 @@ export function convertSectionToWebflow(
   const prefix = options.idPrefix || extractPrefix(section.className) || "wf";
   const idGen = new IdGenerator(prefix);
   const collectedClasses = new Set<string>();
+  const inlineStyles = new Map<string, string>();
 
   // Ensure page wrapper exists
   const { html, css } = ensurePageWrapper(section.htmlContent, section.cssContent);
@@ -1174,10 +1228,30 @@ export function convertSectionToWebflow(
   }
 
   // Convert HTML to nodes
-  const { nodes } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex);
+  const { nodes, spanClasses } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex, inlineStyles);
 
-  // Convert CSS to styles using unified ClassIndex
   const styles = convertToWebflowStyles(classIndex, collectedClasses);
+
+  // Ensure span classes have display: inline to maintain inline text flow
+  for (const style of styles) {
+    if (spanClasses.has(style.name) && !style.styleLess.includes("display:")) {
+      style.styleLess = `display: inline; ${style.styleLess}`;
+    }
+  }
+
+  for (const [className, styleLess] of inlineStyles.entries()) {
+    styles.push({
+      _id: className,
+      fake: false,
+      type: "class",
+      name: className,
+      namespace: "",
+      comb: "",
+      styleLess,
+      variants: {},
+      children: [],
+    });
+  }
 
   // Validate payload integrity
   const integrityWarnings = validatePayloadIntegrity(nodes, styles);
@@ -1459,6 +1533,7 @@ export function buildComponentPayload(
   const prefix = options.idPrefix || extractPrefix(component.primaryClass) || "wf";
   const idGen = new IdGenerator(prefix);
   const collectedClasses = new Set<string>();
+  const inlineStyles = new Map<string, string>();
 
   // Parse component HTML
   const parsed = parseHtmlString(component.htmlContent) ?? parseHtmlString(`<div>${component.htmlContent}</div>`);
@@ -1471,13 +1546,18 @@ export function buildComponentPayload(
     };
   }
 
-  // Convert HTML to nodes (this collects all class names used)
-  const { nodes } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex);
+  const { nodes, spanClasses } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex, inlineStyles);
 
   // Build styles array based on options
   const componentStyles: WebflowStyle[] = [];
 
+  // Track which styles are for span classes
+  const spanClassSet = spanClasses;
+
   for (const className of collectedClasses) {
+    if (inlineStyles.has(className)) {
+      continue;
+    }
     // Optionally skip classes that were already established (user's choice)
     if (skipEstablishedStyles && establishedClasses.has(className)) {
       skippedClasses.push(className);
@@ -1494,6 +1574,24 @@ export function buildComponentPayload(
     }
   }
 
+  for (const [className, styleLess] of inlineStyles.entries()) {
+    if (skipEstablishedStyles && establishedClasses.has(className)) {
+      skippedClasses.push(className);
+      continue;
+    }
+    componentStyles.push({
+      _id: className,
+      fake: false,
+      type: "class",
+      name: className,
+      namespace: "",
+      comb: "",
+      styleLess,
+      variants: {},
+      children: [],
+    });
+  }
+
   if (skippedClasses.length > 0) {
     warnings.push(`Skipped ${skippedClasses.length} established classes (assumed already in Webflow)`);
   }
@@ -1506,6 +1604,10 @@ export function buildComponentPayload(
 
   for (const style of componentStyles) {
     style.styleLess = sanitizeStyleLessVisibility(style.styleLess);
+    // Ensure span classes have display: inline to maintain inline text flow
+    if (spanClassSet.has(style.name) && !style.styleLess.includes("display:")) {
+      style.styleLess = `display: inline; ${style.styleLess}`;
+    }
     for (const [variant, entry] of Object.entries(style.variants)) {
       style.variants[variant] = { styleLess: sanitizeStyleLessVisibility(entry.styleLess) };
     }

@@ -71,17 +71,40 @@ export function literalizeCssForWebflow(
 function parseCssBlocks(css: string): { baseRules: RawRule[]; mediaBlocks: MediaBlock[] } {
   const cleanCss = css.replace(COMMENT_REGEX, "");
   const mediaBlocks: MediaBlock[] = [];
-  const mediaRegex = /@media\s*([^{]+)\{([\s\S]*?)\}\s*\}/g;
 
-  let mediaMatch;
-  while ((mediaMatch = mediaRegex.exec(cleanCss)) !== null) {
-    const query = mediaMatch[1].trim();
-    const content = mediaMatch[2];
-    const rules = parseRulesFromContent(content);
-    mediaBlocks.push({ query, rules });
+  // Use proper brace matching to extract media blocks
+  // (The simple regex /@media\s*([^{]+)\{([\s\S]*?)\}\s*\}/g fails for nested braces)
+  const mediaStartRegex = /@media\s*([^{]+)\s*\{/g;
+  const fullMatches: string[] = [];
+  let match;
+
+  while ((match = mediaStartRegex.exec(cleanCss)) !== null) {
+    const query = match[1].trim();
+    const openBraceIndex = match.index + match[0].length - 1;
+
+    // Find the matching closing brace using brace counting
+    let braceCount = 1;
+    let i = openBraceIndex + 1;
+    while (i < cleanCss.length && braceCount > 0) {
+      if (cleanCss[i] === "{") braceCount++;
+      else if (cleanCss[i] === "}") braceCount--;
+      i++;
+    }
+
+    if (braceCount === 0) {
+      const content = cleanCss.slice(openBraceIndex + 1, i - 1);
+      const fullMatch = cleanCss.slice(match.index, i);
+      fullMatches.push(fullMatch);
+      const rules = parseRulesFromContent(content);
+      mediaBlocks.push({ query, rules });
+    }
   }
 
-  const baseContent = cleanCss.replace(mediaRegex, "");
+  // Remove all media blocks from CSS to get base rules
+  let baseContent = cleanCss;
+  for (const fullMatch of fullMatches) {
+    baseContent = baseContent.replace(fullMatch, "");
+  }
   const baseRules = parseRulesFromContent(baseContent);
 
   return { baseRules, mediaBlocks };
@@ -122,26 +145,32 @@ function processRules(
 
     for (const entry of entries) {
       const name = entry.name;
-      if (name.startsWith("--")) {
-        removedCustomProps = true;
-        continue;
-      }
+      // Don't strip custom properties - they act as fallback for unresolved vars
+      // if (name.startsWith("--")) {
+      //   removedCustomProps = true;
+      //   continue;
+      // }
       if (name.toLowerCase() === "content") {
         warnings.push(`Removed unsupported content property on "${rule.selector}".`);
         continue;
       }
-      const { resolved, hasUnresolved } = resolveCssVariables(entry.value, variables, 8);
+      // Pass property name to preserve font-family quotes
+      const { resolved, hasUnresolved } = resolveCssVariables(entry.value, variables, 8, name);
       if (hasUnresolved) {
         extractVarNames(entry.value).forEach((varName) => unresolved.add(varName));
       }
       // Ensure resolved value doesn't have unexpected quotes (defensive check)
-      const cleanedValue = resolved.trim().replace(/^['"]|['"]$/g, '');
+      // BUT preserve quotes for font-family - they're semantically meaningful
+      const cleanedValue = name.toLowerCase() === "font-family"
+        ? resolved
+        : stripSurroundingQuotes(resolved);
       processed.push({ name, value: cleanedValue });
     }
 
-    if (removedCustomProps) {
-      warnings.push(`Removed CSS custom properties from "${rule.selector}".`);
-    }
+    // Keep custom properties to support unresolved variables
+    // if (removedCustomProps) {
+    //   warnings.push(`Removed CSS custom properties from "${rule.selector}".`);
+    // }
 
     if (processed.length === 0) continue;
 
@@ -209,4 +238,15 @@ function extractVarNames(value: string): string[] {
   const matches = value.match(/var\(\s*(--[\w-]+)/g);
   if (!matches) return [];
   return matches.map((match) => match.replace(/var\(\s*/, "").trim());
+}
+
+function stripSurroundingQuotes(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length < 2) return trimmed;
+  const first = trimmed.charAt(0);
+  const last = trimmed.charAt(trimmed.length - 1);
+  if ((first === '"' || first === "'") && first === last) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
 }
