@@ -1,0 +1,1135 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "packs-packs-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "packs-section"
+        ],
+        "children": [
+          "packs-packs-header-001",
+          "packs-packs-grid-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "packs"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "packs-packs-grid-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "packs-grid",
+          "w-layout-grid"
+        ],
+        "children": [
+          "packs-pack-card-001",
+          "packs-pack-card-002",
+          "packs-pack-card-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-pack-card-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pack-card",
+          "w-layout-grid"
+        ],
+        "children": [
+          "packs-pack-image-003",
+          "packs-pack-content-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-pack-content-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pack-content"
+        ],
+        "children": [
+          "packs-pack-badge-003",
+          "packs-pack-title-003",
+          "packs-pack-desc-003",
+          "packs-pack-includes-003",
+          "packs-btn-dark-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-btn-dark-002",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn-dark",
+          "btn-primary"
+        ],
+        "children": [
+          "packs-text-026",
+          "packs-btn-arrow-003"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "packs-btn-arrow-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "btn-arrow"
+        ],
+        "children": [
+          "packs-text-027"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-027",
+        "text": true,
+        "v": "→"
+      },
+      {
+        "_id": "packs-text-026",
+        "text": true,
+        "v": "Get Pack"
+      },
+      {
+        "_id": "packs-pack-includes-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pack-includes"
+        ],
+        "children": [
+          "packs-pack-includes-span-008",
+          "packs-pack-includes-span-009",
+          "packs-pack-includes-span-010"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-pack-includes-span-010",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-includes-span"
+        ],
+        "children": [
+          "packs-text-025"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-025",
+        "text": true,
+        "v": "Figma file"
+      },
+      {
+        "_id": "packs-pack-includes-span-009",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-includes-span"
+        ],
+        "children": [
+          "packs-text-024"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-024",
+        "text": true,
+        "v": "28 components"
+      },
+      {
+        "_id": "packs-pack-includes-span-008",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-includes-span"
+        ],
+        "children": [
+          "packs-text-023"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-023",
+        "text": true,
+        "v": "6-page template"
+      },
+      {
+        "_id": "packs-pack-desc-003",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "pack-desc",
+          "text-body"
+        ],
+        "children": [
+          "packs-text-022"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-022",
+        "text": true,
+        "v": "Stunning portfolio for designers and developers with project showcases."
+      },
+      {
+        "_id": "packs-pack-title-003",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "pack-title",
+          "heading-h3"
+        ],
+        "children": [
+          "packs-text-021"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-021",
+        "text": true,
+        "v": "Portfolio Pack"
+      },
+      {
+        "_id": "packs-pack-badge-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-badge"
+        ],
+        "children": [
+          "packs-text-020"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-020",
+        "text": true,
+        "v": "Creative"
+      },
+      {
+        "_id": "packs-pack-image-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pack-image"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-pack-card-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pack-card",
+          "w-layout-grid"
+        ],
+        "children": [
+          "packs-pack-image-002",
+          "packs-pack-content-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-pack-content-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pack-content"
+        ],
+        "children": [
+          "packs-pack-badge-002",
+          "packs-pack-title-002",
+          "packs-pack-desc-002",
+          "packs-pack-includes-002",
+          "packs-btn-dark-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-btn-dark-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn-dark",
+          "btn-primary"
+        ],
+        "children": [
+          "packs-text-018",
+          "packs-btn-arrow-002"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "packs-btn-arrow-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "btn-arrow"
+        ],
+        "children": [
+          "packs-text-019"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-019",
+        "text": true,
+        "v": "→"
+      },
+      {
+        "_id": "packs-text-018",
+        "text": true,
+        "v": "Get Pack"
+      },
+      {
+        "_id": "packs-pack-includes-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pack-includes"
+        ],
+        "children": [
+          "packs-pack-includes-span-005",
+          "packs-pack-includes-span-006",
+          "packs-pack-includes-span-007"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-pack-includes-span-007",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-includes-span"
+        ],
+        "children": [
+          "packs-text-017"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-017",
+        "text": true,
+        "v": "Figma file"
+      },
+      {
+        "_id": "packs-pack-includes-span-006",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-includes-span"
+        ],
+        "children": [
+          "packs-text-016"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-016",
+        "text": true,
+        "v": "32 components"
+      },
+      {
+        "_id": "packs-pack-includes-span-005",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-includes-span"
+        ],
+        "children": [
+          "packs-text-015"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-015",
+        "text": true,
+        "v": "8-page template"
+      },
+      {
+        "_id": "packs-pack-desc-002",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "pack-desc",
+          "text-body"
+        ],
+        "children": [
+          "packs-text-014"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-014",
+        "text": true,
+        "v": "Premium agency portfolio with case studies, team pages, and service breakdowns."
+      },
+      {
+        "_id": "packs-pack-title-002",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "pack-title",
+          "heading-h3"
+        ],
+        "children": [
+          "packs-text-013"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-013",
+        "text": true,
+        "v": "Agency Pack"
+      },
+      {
+        "_id": "packs-pack-badge-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-badge"
+        ],
+        "children": [
+          "packs-text-012"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-012",
+        "text": true,
+        "v": "New"
+      },
+      {
+        "_id": "packs-pack-image-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pack-image"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-pack-card-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pack-card",
+          "featured",
+          "w-layout-grid"
+        ],
+        "children": [
+          "packs-pack-image-001",
+          "packs-pack-content-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-pack-content-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pack-content"
+        ],
+        "children": [
+          "packs-pack-badge-001",
+          "packs-pack-title-001",
+          "packs-pack-desc-001",
+          "packs-pack-includes-001",
+          "packs-btn-primary-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-btn-primary-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn-primary"
+        ],
+        "children": [
+          "packs-text-010",
+          "packs-btn-arrow-001"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "packs-btn-arrow-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "btn-arrow"
+        ],
+        "children": [
+          "packs-text-011"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-011",
+        "text": true,
+        "v": "→"
+      },
+      {
+        "_id": "packs-text-010",
+        "text": true,
+        "v": "Get Pack"
+      },
+      {
+        "_id": "packs-pack-includes-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pack-includes"
+        ],
+        "children": [
+          "packs-pack-includes-span-001",
+          "packs-pack-includes-span-002",
+          "packs-pack-includes-span-003",
+          "packs-pack-includes-span-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-pack-includes-span-004",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-includes-span"
+        ],
+        "children": [
+          "packs-text-009"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-009",
+        "text": true,
+        "v": "Launch guide"
+      },
+      {
+        "_id": "packs-pack-includes-span-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-includes-span"
+        ],
+        "children": [
+          "packs-text-008"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-008",
+        "text": true,
+        "v": "Figma file"
+      },
+      {
+        "_id": "packs-pack-includes-span-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-includes-span"
+        ],
+        "children": [
+          "packs-text-007"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-007",
+        "text": true,
+        "v": "45 components"
+      },
+      {
+        "_id": "packs-pack-includes-span-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-includes-span"
+        ],
+        "children": [
+          "packs-text-006"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-006",
+        "text": true,
+        "v": "12-page template"
+      },
+      {
+        "_id": "packs-pack-desc-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "pack-desc",
+          "featured-pack-desc",
+          "text-body"
+        ],
+        "children": [
+          "packs-text-005"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-005",
+        "text": true,
+        "v": "Everything you need to launch your SaaS marketing site. Includes pricing tables, feature grids, testimonials, and full CMS setup."
+      },
+      {
+        "_id": "packs-pack-title-001",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "pack-title",
+          "featured-pack-title",
+          "heading-h3"
+        ],
+        "children": [
+          "packs-text-004"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-004",
+        "text": true,
+        "v": "SaaS Starter Pack"
+      },
+      {
+        "_id": "packs-pack-badge-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "pack-badge"
+        ],
+        "children": [
+          "packs-text-003"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-003",
+        "text": true,
+        "v": "Most Popular"
+      },
+      {
+        "_id": "packs-pack-image-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "pack-image"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-packs-header-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "packs-header"
+        ],
+        "children": [
+          "packs-packs-header-h2-001",
+          "packs-packs-header-p-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-packs-header-p-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "packs-header-p",
+          "text-body"
+        ],
+        "children": [
+          "packs-text-002"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-002",
+        "text": true,
+        "v": "Complete launch solutions. Everything you need to ship a polished site—template, components, Figma, and guides—bundled together."
+      },
+      {
+        "_id": "packs-packs-header-h2-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "packs-header-h2",
+          "heading-h2"
+        ],
+        "children": [
+          "packs-text-001"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "packs-text-001",
+        "text": true,
+        "v": "Party Packs"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "packs-section",
+        "fake": false,
+        "type": "class",
+        "name": "packs-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #f5f5f5; padding-top: 6rem; padding-right: 5vw; padding-bottom: 6rem; padding-left: 5vw;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "packs-header",
+        "fake": false,
+        "type": "class",
+        "name": "packs-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "text-align: center; max-width: 700px; margin-top: 0; margin-right: auto; margin-bottom: 4rem; margin-left: auto;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "packs-header-h2",
+        "fake": false,
+        "type": "class",
+        "name": "packs-header-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700; margin-bottom: 1rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "packs-header-p",
+        "fake": false,
+        "type": "class",
+        "name": "packs-header-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1.1rem; color: #afb6b4; line-height: 1.5;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "packs-grid",
+        "fake": false,
+        "type": "class",
+        "name": "packs-grid",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr 1fr; justify-items: stretch; align-items: stretch; grid-row-gap: 2rem; grid-column-gap: 2rem;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr; display: grid;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "pack-card",
+        "fake": false,
+        "type": "class",
+        "name": "pack-card",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #ffffff; border-top-left-radius: 32px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; border-bottom-left-radius: 32px; padding-top: 2.5rem; padding-right: 2.5rem; padding-bottom: 2.5rem; padding-left: 2.5rem; display: grid; grid-template-columns: 1fr 1fr; align-items: center; justify-items: stretch; grid-row-gap: 2rem; grid-column-gap: 2rem;",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.08);"
+          },
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr; display: grid;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "featured",
+        "fake": false,
+        "type": "class",
+        "name": "featured",
+        "namespace": "",
+        "comb": "&",
+        "styleLess": "grid-column-start: auto; grid-column-end: span 2; background: #2d2f2e; color: #ffffff;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-column-start: auto; grid-column-end: span 1;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "pack-image",
+        "fake": false,
+        "type": "class",
+        "name": "pack-image",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "border-top-left-radius: 24px; border-top-right-radius: 24px; border-bottom-right-radius: 24px; border-bottom-left-radius: 24px; overflow: hidden; aspect-ratio: 4/3; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "pack-badge",
+        "fake": false,
+        "type": "class",
+        "name": "pack-badge",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-block; font-size: 0.7rem; font-weight: 600; color: #ff531f; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "pack-title",
+        "fake": false,
+        "type": "class",
+        "name": "pack-title",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1.5rem; font-weight: 700; margin-bottom: 0.75rem; color: #171717;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "featured-pack-title",
+        "fake": false,
+        "type": "class",
+        "name": "featured-pack-title",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #ffffff;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h3",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h3",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "pack-desc",
+        "fake": false,
+        "type": "class",
+        "name": "pack-desc",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.95rem; color: #afb6b4; line-height: 1.5; margin-bottom: 1.5rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "featured-pack-desc",
+        "fake": false,
+        "type": "class",
+        "name": "featured-pack-desc",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #767f7a;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "pack-includes",
+        "fake": false,
+        "type": "class",
+        "name": "pack-includes",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; flex-wrap: wrap; row-gap: 0.5rem; column-gap: 0.5rem; margin-bottom: 1.5rem; flex-direction: row; justify-content: flex-start; align-items: stretch;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "pack-includes-span",
+        "fake": false,
+        "type": "class",
+        "name": "pack-includes-span",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #afb6b4; font-size: 0.8rem; background: #434645; padding-top: 0.35rem; padding-right: 0.75rem; padding-bottom: 0.35rem; padding-left: 0.75rem; border-top-left-radius: 9999px; border-top-right-radius: 9999px; border-bottom-right-radius: 9999px; border-bottom-left-radius: 9999px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-primary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-primary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-flex; align-items: center; row-gap: 0.5rem; column-gap: 0.5rem; background: #ff531f; color: #ffffff; padding-top: 0.75rem; padding-right: 1.5rem; padding-bottom: 0.75rem; padding-left: 1.5rem; border-top-left-radius: 9999px; border-top-right-radius: 9999px; border-bottom-right-radius: 9999px; border-bottom-left-radius: 9999px; text-decoration: none; font-weight: 600; font-size: 0.875rem; border: none; cursor: pointer; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "background: #e64a1a; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255, 83, 31, 0.3);"
+          },
+          "pressed": {
+            "styleLess": "transform: translateY(0);"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "btn-arrow",
+        "fake": false,
+        "type": "class",
+        "name": "btn-arrow",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "transform: translateX(3px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-dark",
+        "fake": false,
+        "type": "class",
+        "name": "btn-dark",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #171717; color: #ffffff;",
+        "variants": {
+          "hover": {
+            "styleLess": "background: #333; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);"
+          }
+        },
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

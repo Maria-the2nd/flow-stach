@@ -1,0 +1,1225 @@
+/**
+ * CSS Parser Module
+ * Deterministic CSS → Webflow styleLess conversion
+ */
+
+import type { WebflowStyle } from "./webflow-converter";
+
+// ============================================
+// TYPES
+// ============================================
+
+export interface ClassIndexEntry {
+  className: string;
+  selectors: string[];
+  baseStyles: string;
+  hoverStyles?: string;
+  focusStyles?: string;
+  activeStyles?: string;
+  visitedStyles?: string;
+  mediaQueries: {
+    desktop?: string;
+    medium?: string;
+    small?: string;
+    tiny?: string;
+  };
+  isComboClass: boolean;
+  parentClass?: string;
+  children: string[];
+  /**
+   * Parent classes this class appears under in descendant selectors.
+   * E.g., for ".card-grid .card", card would have parentClasses: ["card-grid"]
+   * This helps identify layout dependencies.
+   */
+  parentClasses: string[];
+  /**
+   * Indicates this class is used as a layout container (has display: flex/grid).
+   * Used to ensure explicit layout properties are present.
+   */
+  isLayoutContainer: boolean;
+}
+
+export interface ClassIndex {
+  classes: Record<string, ClassIndexEntry>;
+  mediaBreakpoints: {
+    desktop: string;
+    medium: string;
+    small: string;
+    tiny: string;
+  };
+  warnings: CssWarning[];
+}
+
+export interface CssWarning {
+  type: "unsupported_property" | "unsupported_selector" | "complex_selector" | "animation" | "variable_unresolved" | "breakpoint_unmapped";
+  message: string;
+  selector?: string;
+  property?: string;
+}
+
+export interface ParsedCssResult {
+  classIndex: ClassIndex;
+  tokensCss: string;
+  cleanCss: string;
+  cssVariables: Map<string, string>;
+  /** Typography styles extracted from element selectors (body, h1-h6, p, a) */
+  elementTypography: ElementTypographyMap;
+}
+
+/**
+ * Typography properties extracted from element selectors.
+ * These need to be merged into the corresponding class styles.
+ */
+export interface ElementTypography {
+  fontFamily?: string;
+  fontSize?: string;
+  fontWeight?: string;
+  fontStyle?: string;
+  lineHeight?: string;
+  letterSpacing?: string;
+  color?: string;
+  textTransform?: string;
+  textDecoration?: string;
+}
+
+/**
+ * Map of element selector → typography properties.
+ * Keys: body, h1, h2, h3, h4, h5, h6, p, a
+ */
+export type ElementTypographyMap = Record<string, ElementTypography>;
+
+/**
+ * Mapping from element selectors to Webflow class names.
+ * This is the canonical mapping used throughout the converter.
+ */
+export const ELEMENT_TO_CLASS_MAP: Record<string, string> = {
+  body: "wf-body",
+  h1: "heading-h1",
+  h2: "heading-h2",
+  h3: "heading-h3",
+  h4: "heading-h4",
+  h5: "heading-h5",
+  h6: "heading-h6",
+  p: "text-body",
+  a: "link",
+};
+
+/** Typography properties we want to extract from element selectors */
+const TYPOGRAPHY_PROPERTIES = new Set([
+  "font-family",
+  "font-size",
+  "font-weight",
+  "font-style",
+  "line-height",
+  "letter-spacing",
+  "color",
+  "text-transform",
+  "text-decoration",
+]);
+
+// ============================================
+// WEBFLOW PROPERTY WHITELIST
+// ============================================
+
+const WEBFLOW_SUPPORTED_PROPERTIES = new Set([
+  "display", "flex-direction", "flex-wrap", "justify-content", "align-items", "align-content",
+  "align-self", "flex", "flex-grow", "flex-shrink", "flex-basis", "order", "gap", "row-gap", "column-gap",
+  "grid-row-gap", "grid-column-gap",
+  "grid-template-columns", "grid-template-rows", "grid-column", "grid-row",
+  "grid-column-start", "grid-column-end", "grid-row-start", "grid-row-end",
+  "width", "height", "min-width", "max-width", "min-height", "max-height", "aspect-ratio",
+  "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
+  "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
+  "position", "top", "right", "bottom", "left", "z-index", "float", "clear",
+  "background", "background-color", "background-image", "background-size", "background-position", "background-repeat",
+  "color", "font-family", "font-size", "font-weight", "font-style", "line-height", "letter-spacing",
+  "text-align", "text-decoration", "text-transform", "text-indent", "text-shadow", "white-space",
+  "border", "border-width", "border-style", "border-color",
+  "border-top", "border-top-width", "border-top-style", "border-top-color",
+  "border-right", "border-right-width", "border-right-style", "border-right-color",
+  "border-bottom", "border-bottom-width", "border-bottom-style", "border-bottom-color",
+  "border-left", "border-left-width", "border-left-style", "border-left-color",
+  "border-radius", "border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius",
+  "opacity", "box-shadow", "filter", "backdrop-filter", "mix-blend-mode",
+  "overflow", "overflow-x", "overflow-y",
+  "transform", "transform-origin",
+  "visibility", "cursor", "pointer-events", "user-select",
+  "list-style", "list-style-type", "list-style-position",
+  "object-fit", "object-position",
+  "outline", "outline-width", "outline-style", "outline-color", "outline-offset",
+]);
+
+const STRIP_PROPERTIES = new Set([
+  "transition", "transition-property", "transition-duration", "transition-timing-function", "transition-delay",
+  "animation", "animation-name", "animation-duration", "animation-timing-function",
+  "-webkit-transition", "-webkit-animation", "-moz-transition", "-moz-animation",
+  "-webkit-font-smoothing", "-moz-osx-font-smoothing",
+]);
+
+const SHORTHAND_EXPANSIONS: Record<string, string[]> = {
+  padding: ["padding-top", "padding-right", "padding-bottom", "padding-left"],
+  margin: ["margin-top", "margin-right", "margin-bottom", "margin-left"],
+  "border-radius": ["border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius"],
+  gap: ["row-gap", "column-gap"],
+};
+
+// ============================================
+// CSS VARIABLE RESOLUTION
+// ============================================
+
+export function extractCssVariables(css: string): Map<string, string> {
+  const variables = new Map<string, string>();
+
+  // Find all :root blocks (there might be multiple)
+  const rootRegex = /:root\s*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}/g;
+  let rootMatch;
+
+  while ((rootMatch = rootRegex.exec(css)) !== null) {
+    const content = rootMatch[1];
+
+    // Parse variable declarations - handle complex values with quotes and parens
+    const varRegex = /--([\w-]+)\s*:\s*([^;]+);/g;
+    let match;
+    while ((match = varRegex.exec(content)) !== null) {
+      const varName = `--${match[1]}`;
+      const varValue = match[2].trim();
+      // Don't overwrite if already set (first definition wins)
+      if (!variables.has(varName)) {
+        variables.set(varName, varValue);
+      }
+    }
+  }
+
+  // Also look for variables defined outside :root (in html, body, etc.)
+  const globalVarRegex = /(?:html|body|\*)\s*\{[^}]*(--([\w-]+)\s*:\s*([^;]+);)/g;
+  let globalMatch;
+  while ((globalMatch = globalVarRegex.exec(css)) !== null) {
+    const varName = `--${globalMatch[2]}`;
+    const varValue = globalMatch[3].trim();
+    if (!variables.has(varName)) {
+      variables.set(varName, varValue);
+    }
+  }
+
+  return variables;
+}
+
+export function resolveCssVariables(value: string, variables: Map<string, string>, maxDepth = 5): { resolved: string; hasUnresolved: boolean } {
+  let result = value;
+  let hasUnresolved = false;
+  let depth = 0;
+
+  while (result.includes("var(") && depth < maxDepth) {
+    depth++;
+    result = result.replace(/var\(\s*(--[\w-]+)\s*(?:,\s*([^)]+))?\)/g, (_, varName, fallback) => {
+      const resolved = variables.get(varName);
+      if (resolved !== undefined) return resolved;
+      if (fallback) return fallback.trim();
+      hasUnresolved = true;
+      return `var(${varName})`;
+    });
+  }
+
+  return { resolved: result, hasUnresolved };
+}
+
+// ============================================
+// SHORTHAND EXPANSION
+// ============================================
+
+function parseSpacingValues(value: string): string[] {
+  const parts: string[] = [];
+  let current = "";
+  let parenDepth = 0;
+
+  for (const char of value) {
+    if (char === "(") parenDepth++;
+    else if (char === ")") parenDepth--;
+    if (char === " " && parenDepth === 0 && current.trim()) {
+      parts.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) parts.push(current.trim());
+
+  switch (parts.length) {
+    case 1: return [parts[0], parts[0], parts[0], parts[0]];
+    case 2: return [parts[0], parts[1], parts[0], parts[1]];
+    case 3: return [parts[0], parts[1], parts[2], parts[1]];
+    case 4: return parts;
+    default: return [value, value, value, value];
+  }
+}
+
+export function expandShorthand(property: string, value: string): Record<string, string> {
+  const expansion = SHORTHAND_EXPANSIONS[property];
+  if (!expansion) return { [property]: value };
+
+  if (property === "gap") {
+    const parts = parseSpacingValues(value);
+    return { "row-gap": parts[0], "column-gap": parts[1] || parts[0] };
+  }
+
+  const values = parseSpacingValues(value);
+  const result: Record<string, string> = {};
+  expansion.forEach((prop, index) => { result[prop] = values[index] || values[0]; });
+  return result;
+}
+
+// ============================================
+// CSS PARSING
+// ============================================
+
+function detectBreakpoint(query: string): "desktop" | "medium" | "small" | "tiny" | null {
+  const maxWidth = query.match(/max-width:\s*(\d+)px/i);
+  if (!maxWidth) return null;
+  const width = parseInt(maxWidth[1], 10);
+  if (width <= 479) return "tiny";
+  if (width <= 767) return "small";
+  if (width <= 991) return "medium";
+  if (width <= 1200) return "desktop";
+  return null;
+}
+
+function parseProperties(propertiesStr: string, variables: Map<string, string>, warnings: CssWarning[]): Record<string, string> {
+  const result: Record<string, string> = {};
+  const properties: string[] = [];
+  let current = "";
+  let parenDepth = 0;
+
+  for (const char of propertiesStr) {
+    if (char === "(") parenDepth++;
+    else if (char === ")") parenDepth--;
+    if (char === ";" && parenDepth === 0) {
+      if (current.trim()) properties.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) properties.push(current.trim());
+
+  for (const prop of properties) {
+    const colonIndex = prop.indexOf(":");
+    if (colonIndex === -1) continue;
+
+    const name = prop.substring(0, colonIndex).trim().toLowerCase();
+    let value = prop.substring(colonIndex + 1).trim().replace(/\s*!important\s*$/i, "");
+
+    if (STRIP_PROPERTIES.has(name)) continue;
+
+    const { resolved, hasUnresolved } = resolveCssVariables(value, variables);
+    if (hasUnresolved) {
+      warnings.push({ type: "variable_unresolved", message: `Unresolved CSS variable in: ${name}: ${value}`, property: name });
+    }
+    value = resolved;
+
+    if (!WEBFLOW_SUPPORTED_PROPERTIES.has(name) && !SHORTHAND_EXPANSIONS[name]) {
+      warnings.push({ type: "unsupported_property", message: `Unsupported CSS property: ${name}`, property: name });
+      continue;
+    }
+
+    if (SHORTHAND_EXPANSIONS[name]) {
+      Object.assign(result, expandShorthand(name, value));
+    } else {
+      if (name === "grid-column" || name === "grid-row") {
+        const placement = parseGridPlacement(value);
+        if (placement) {
+          if (name === "grid-column") {
+            result["grid-column-start"] = placement.start;
+            result["grid-column-end"] = placement.end;
+          } else {
+            result["grid-row-start"] = placement.start;
+            result["grid-row-end"] = placement.end;
+          }
+          continue;
+        }
+      }
+      result[name] = value;
+    }
+  }
+
+  return result;
+}
+
+function parseGridPlacement(value: string): { start: string; end: string } | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith("span ")) {
+    const spanValue = trimmed.replace(/\s+/g, " ");
+    return { start: "auto", end: spanValue };
+  }
+
+  if (trimmed.includes("/")) {
+    const parts = trimmed.split("/").map((part) => part.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      const start = parts[0];
+      const end = parts[1];
+      return { start, end };
+    }
+  }
+
+  if (/^-?\d+$/.test(trimmed)) {
+    return { start: trimmed, end: "auto" };
+  }
+
+  return null;
+}
+
+export function propertiesToStyleLess(properties: Record<string, string>): string {
+  return Object.entries(properties).map(([prop, val]) => `${prop}: ${val};`).join(" ");
+}
+
+function mergeStyleLess(existing: string | undefined, newStyles: string): string {
+  if (!existing) return newStyles;
+  if (!newStyles) return existing;
+
+  const existingProps = new Map<string, string>();
+  existing.split(";").forEach((prop) => {
+    const parts = prop.split(":");
+    if (parts.length >= 2) {
+      const name = parts[0]?.trim();
+      const value = parts.slice(1).join(":").trim();
+      if (name && value) existingProps.set(name, value);
+    }
+  });
+
+  newStyles.split(";").forEach((prop) => {
+    const parts = prop.split(":");
+    if (parts.length >= 2) {
+      const name = parts[0]?.trim();
+      const value = parts.slice(1).join(":").trim();
+      if (name && value) existingProps.set(name, value);
+    }
+  });
+
+  return Array.from(existingProps.entries()).map(([prop, val]) => `${prop}: ${val};`).join(" ");
+}
+
+interface ParsedSelectorResult {
+  className: string | null;
+  pseudoClass: string | null;
+  isCombo: boolean;
+  comboParentClass: string | null;
+  /** Parent classes from descendant selectors (e.g., ".parent .child" -> ["parent"]) */
+  parentClasses: string[];
+  /** Whether this is a descendant selector */
+  isDescendant: boolean;
+}
+
+/**
+ * Extract the last class name from a selector and check for pseudo-class.
+ * Also extracts parent classes from descendant selectors.
+ */
+function parseSelector(selector: string): ParsedSelectorResult {
+  // Find all classes in the selector
+  const classMatches = selector.match(/\.([a-zA-Z_-][\w-]*)/g);
+  if (!classMatches || classMatches.length === 0) {
+    return {
+      className: null,
+      pseudoClass: null,
+      isCombo: false,
+      comboParentClass: null,
+      parentClasses: [],
+      isDescendant: false,
+    };
+  }
+
+  // Check for pseudo-class (remove it for class analysis)
+  const pseudoMatch = selector.match(/:(\w+(?:-\w+)*)(?:\([^)]*\))?\s*$/);
+  const pseudoClass = pseudoMatch ? pseudoMatch[1] : null;
+
+  // Check if it's a combo class (e.g., .btn.primary - no space between)
+  const isCombo = /\.[a-zA-Z_-][\w-]*\.[a-zA-Z_-][\w-]*/.test(selector);
+
+  // Check if it's a descendant selector (has space or > between classes)
+  const isDescendant = /\.[a-zA-Z_-][\w-]*[\s>]+/.test(selector);
+
+  const comboParentClass =
+    isCombo && !isDescendant && classMatches.length >= 2
+      ? classMatches[classMatches.length - 2].substring(1)
+      : null;
+
+  // Extract parent classes (all classes except the last one in descendant selectors)
+  const parentClasses: string[] = [];
+  if (isDescendant && classMatches.length > 1) {
+    for (let i = 0; i < classMatches.length - 1; i++) {
+      parentClasses.push(classMatches[i].substring(1)); // Remove the dot
+    }
+  }
+
+  // Use the LAST class (most specific target)
+  const className = classMatches[classMatches.length - 1].substring(1);
+
+  return { className, pseudoClass, isCombo, comboParentClass, parentClasses, isDescendant };
+}
+
+/**
+ * Detect if properties indicate a layout container (flex or grid).
+ */
+function isLayoutContainerProps(properties: Record<string, string>): boolean {
+  const display = properties["display"]?.toLowerCase();
+  return display === "flex" || display === "inline-flex" || display === "grid" || display === "inline-grid";
+}
+
+/**
+ * Process a single CSS rule and add to classes map
+ */
+function processRule(
+  selector: string,
+  propertiesStr: string,
+  variables: Map<string, string>,
+  classes: Record<string, ClassIndexEntry>,
+  warnings: CssWarning[],
+  breakpoint?: "desktop" | "medium" | "small" | "tiny"
+): void {
+  const { className, pseudoClass, isCombo, comboParentClass, parentClasses, isDescendant } =
+    parseSelector(selector);
+  if (!className) return;
+
+  const properties = parseProperties(propertiesStr, variables, warnings);
+  const styleLess = propertiesToStyleLess(properties);
+  if (!styleLess) return;
+
+  // Detect if this is a layout container
+  const isLayoutContainer = isLayoutContainerProps(properties);
+
+  if (!classes[className]) {
+    classes[className] = {
+      className,
+      selectors: [],
+      baseStyles: "",
+      mediaQueries: {},
+      isComboClass: isCombo,
+      children: [],
+      parentClasses: [],
+      isLayoutContainer: false,
+    };
+  }
+
+  const entry = classes[className];
+  entry.selectors.push(selector);
+  if (isCombo) entry.isComboClass = true;
+  if (isLayoutContainer) entry.isLayoutContainer = true;
+
+  if (comboParentClass) {
+    entry.parentClass = comboParentClass;
+    if (!classes[comboParentClass]) {
+      classes[comboParentClass] = {
+        className: comboParentClass,
+        selectors: [],
+        baseStyles: "",
+        mediaQueries: {},
+        isComboClass: false,
+        children: [],
+        parentClasses: [],
+        isLayoutContainer: false,
+      };
+    }
+    if (!classes[comboParentClass].children.includes(className)) {
+      classes[comboParentClass].children.push(className);
+    }
+  }
+
+  // Track parent-child relationships for descendant selectors
+  if (isDescendant && parentClasses.length > 0) {
+    for (const parentClass of parentClasses) {
+      if (!entry.parentClasses.includes(parentClass)) {
+        entry.parentClasses.push(parentClass);
+      }
+      // Also ensure parent class entry exists and tracks this as a child
+      if (!classes[parentClass]) {
+        classes[parentClass] = {
+          className: parentClass,
+          selectors: [],
+          baseStyles: "",
+          mediaQueries: {},
+          isComboClass: false,
+          children: [],
+          parentClasses: [],
+          isLayoutContainer: false,
+        };
+      }
+      if (!classes[parentClass].children.includes(className)) {
+        classes[parentClass].children.push(className);
+      }
+    }
+    // Warn about descendant selectors that may not work in Webflow
+    if (!breakpoint && !pseudoClass) {
+      warnings.push({
+        type: "complex_selector",
+        message: `Descendant selector "${selector}" flattened to .${className}. Parent context from .${parentClasses.join(", .")} may be lost.`,
+        selector,
+      });
+    }
+  }
+
+  if (breakpoint) {
+    // Media query styles
+    if (!pseudoClass) {
+      entry.mediaQueries[breakpoint] = mergeStyleLess(entry.mediaQueries[breakpoint], styleLess);
+    }
+    // TODO: handle pseudo + breakpoint variants if needed
+  } else {
+    // Base styles
+    if (pseudoClass === "hover") {
+      entry.hoverStyles = mergeStyleLess(entry.hoverStyles, styleLess);
+    } else if (pseudoClass === "focus" || pseudoClass === "focus-visible") {
+      entry.focusStyles = mergeStyleLess(entry.focusStyles, styleLess);
+    } else if (pseudoClass === "active") {
+      entry.activeStyles = mergeStyleLess(entry.activeStyles, styleLess);
+    } else if (pseudoClass === "visited") {
+      entry.visitedStyles = mergeStyleLess(entry.visitedStyles, styleLess);
+    } else if (!pseudoClass) {
+      entry.baseStyles = mergeStyleLess(entry.baseStyles, styleLess);
+    }
+  }
+}
+
+/**
+ * Extract @media blocks using proper brace matching.
+ * Returns array of { query, content, fullMatch } for each @media block.
+ */
+function extractMediaBlocks(css: string): Array<{ query: string; content: string; fullMatch: string }> {
+  const results: Array<{ query: string; content: string; fullMatch: string }> = [];
+  const mediaStartRegex = /@media\s*([^{]+)\s*\{/g;
+  let match;
+
+  while ((match = mediaStartRegex.exec(css)) !== null) {
+    const query = match[1].trim();
+    const startIndex = match.index;
+    const openBraceIndex = match.index + match[0].length - 1;
+
+    // Find the matching closing brace using brace counting
+    let braceCount = 1;
+    let i = openBraceIndex + 1;
+    while (i < css.length && braceCount > 0) {
+      if (css[i] === "{") braceCount++;
+      else if (css[i] === "}") braceCount--;
+      i++;
+    }
+
+    if (braceCount === 0) {
+      const content = css.slice(openBraceIndex + 1, i - 1);
+      const fullMatch = css.slice(startIndex, i);
+      results.push({ query, content, fullMatch });
+    }
+  }
+
+  return results;
+}
+
+export function parseCSS(css: string): ParsedCssResult {
+  const warnings: CssWarning[] = [];
+  const classes: Record<string, ClassIndexEntry> = {};
+  const variables = extractCssVariables(css);
+
+  const rootMatch = css.match(/:root\s*\{[^}]+\}/);
+  const tokensCss = rootMatch ? rootMatch[0] : "";
+  const cleanCss = css.replace(/:root\s*\{[^}]+\}/g, "").trim();
+
+  // ============================================
+  // STEP 1: Extract element typography FIRST
+  // ============================================
+  const elementTypography = extractElementTypography(cleanCss, variables, warnings);
+
+  // Generic rule regex that matches selector { properties }
+  const ruleRegex = /([^{}]+)\{([^{}]+)\}/g;
+
+  // Parse media queries - use a proper brace-matching approach
+  let cssWithoutMedia = cleanCss;
+  const mediaBlocks = extractMediaBlocks(cleanCss);
+
+  for (const { query, content } of mediaBlocks) {
+    const breakpoint = detectBreakpoint(query);
+    if (!breakpoint) {
+      warnings.push({ type: "breakpoint_unmapped", message: `Unmapped media query: ${query}` });
+      continue;
+    }
+
+    // Parse rules inside media query
+    let ruleMatch;
+    const innerRegex = /([^{}]+)\{([^{}]+)\}/g;
+    while ((ruleMatch = innerRegex.exec(content)) !== null) {
+      const selectors = ruleMatch[1].trim();
+      const propertiesStr = ruleMatch[2].trim();
+
+      // Skip non-class selectors
+      if (!selectors.includes(".")) continue;
+
+      // Handle comma-separated selectors
+      for (const sel of selectors.split(",")) {
+        processRule(sel.trim(), propertiesStr, variables, classes, warnings, breakpoint);
+      }
+    }
+  }
+
+  // Remove all media blocks from CSS for base rule parsing
+  for (const { fullMatch } of mediaBlocks) {
+    cssWithoutMedia = cssWithoutMedia.replace(fullMatch, "");
+  }
+
+  // Parse base rules (outside media queries)
+  let baseMatch;
+  while ((baseMatch = ruleRegex.exec(cssWithoutMedia)) !== null) {
+    const selectors = baseMatch[1].trim();
+    const propertiesStr = baseMatch[2].trim();
+
+    // Skip @-rules and non-class selectors
+    if (selectors.startsWith("@") || !selectors.includes(".")) continue;
+
+    // Handle comma-separated selectors
+    for (const sel of selectors.split(",")) {
+      processRule(sel.trim(), propertiesStr, variables, classes, warnings);
+    }
+  }
+
+  // ============================================
+  // STEP 2: Merge element typography into class styles
+  // ============================================
+  mergeElementTypographyIntoClasses(elementTypography, classes, warnings);
+
+  // ============================================
+  // STEP 3: Enforce explicit layout properties on containers
+  // ============================================
+  enforceExplicitLayoutProperties(classes, warnings);
+
+  return {
+    classIndex: {
+      classes,
+      mediaBreakpoints: {
+        desktop: "max-width: 1200px",
+        medium: "max-width: 991px",
+        small: "max-width: 767px",
+        tiny: "max-width: 479px",
+      },
+      warnings,
+    },
+    tokensCss,
+    cleanCss,
+    cssVariables: variables,
+    elementTypography,
+  };
+}
+
+/**
+ * Extract typography properties from element selectors (body, h1-h6, p, a).
+ * These selectors don't have classes but we need their typography.
+ */
+function extractElementTypography(
+  css: string,
+  variables: Map<string, string>,
+  warnings: CssWarning[]
+): ElementTypographyMap {
+  const result: ElementTypographyMap = {};
+  const elementSelectors = Object.keys(ELEMENT_TO_CLASS_MAP);
+
+  // Match rules: selector { properties }
+  const ruleRegex = /([^{}@]+)\{([^{}]+)\}/g;
+  let match;
+
+  while ((match = ruleRegex.exec(css)) !== null) {
+    const selectorPart = match[1].trim();
+    const propertiesStr = match[2].trim();
+
+    // Handle comma-separated selectors (e.g., "h1, h2, h3 { ... }")
+    const selectors = selectorPart.split(",").map(s => s.trim());
+
+    for (const selector of selectors) {
+      // Check if this is a pure element selector (no classes, no descendants)
+      const normalizedSelector = selector.toLowerCase();
+
+      // Match exact element selectors only (body, h1, p, etc.)
+      // Also match grouped like "h1" from "h1, h2, h3"
+      if (elementSelectors.includes(normalizedSelector) && !selector.includes(".") && !selector.includes(" ")) {
+        const typography = parseTypographyProperties(propertiesStr, variables, warnings);
+
+        if (Object.keys(typography).length > 0) {
+          // Merge into existing or create new
+          result[normalizedSelector] = {
+            ...result[normalizedSelector],
+            ...typography,
+          };
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Parse CSS properties string and extract only typography-related properties.
+ * Resolves CSS variables to actual values.
+ */
+function parseTypographyProperties(
+  propertiesStr: string,
+  variables: Map<string, string>,
+  warnings: CssWarning[]
+): ElementTypography {
+  const result: ElementTypography = {};
+
+  // Split properties, handling values with parentheses
+  const properties: string[] = [];
+  let current = "";
+  let parenDepth = 0;
+
+  for (const char of propertiesStr) {
+    if (char === "(") parenDepth++;
+    else if (char === ")") parenDepth--;
+    if (char === ";" && parenDepth === 0) {
+      if (current.trim()) properties.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) properties.push(current.trim());
+
+  for (const prop of properties) {
+    const colonIndex = prop.indexOf(":");
+    if (colonIndex === -1) continue;
+
+    const name = prop.substring(0, colonIndex).trim().toLowerCase();
+    let value = prop.substring(colonIndex + 1).trim().replace(/\s*!important\s*$/i, "");
+
+    // Only process typography properties
+    if (!TYPOGRAPHY_PROPERTIES.has(name)) continue;
+
+    // Resolve CSS variables
+    const { resolved, hasUnresolved } = resolveCssVariables(value, variables);
+    if (hasUnresolved) {
+      warnings.push({
+        type: "variable_unresolved",
+        message: `Unresolved CSS variable in typography: ${name}: ${value}`,
+        property: name
+      });
+    }
+    value = resolved;
+
+    // Map to ElementTypography keys (camelCase)
+    switch (name) {
+      case "font-family":
+        result.fontFamily = value;
+        break;
+      case "font-size":
+        result.fontSize = value;
+        break;
+      case "font-weight":
+        result.fontWeight = value;
+        break;
+      case "font-style":
+        result.fontStyle = value;
+        break;
+      case "line-height":
+        result.lineHeight = value;
+        break;
+      case "letter-spacing":
+        result.letterSpacing = value;
+        break;
+      case "color":
+        result.color = value;
+        break;
+      case "text-transform":
+        result.textTransform = value;
+        break;
+      case "text-decoration":
+        result.textDecoration = value;
+        break;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Merge element typography into corresponding class entries.
+ * Creates class entries if they don't exist.
+ *
+ * This is the KEY fix: typography from `h1 { font-family: ... }`
+ * becomes `.heading-h1 { font-family: ... }` in Webflow.
+ */
+function mergeElementTypographyIntoClasses(
+  elementTypography: ElementTypographyMap,
+  classes: Record<string, ClassIndexEntry>,
+  _warnings: CssWarning[]
+): void {
+  void _warnings;
+  for (const [element, typography] of Object.entries(elementTypography)) {
+    const className = ELEMENT_TO_CLASS_MAP[element];
+    if (!className) continue;
+
+    // Convert ElementTypography to styleLess format
+    const typographyStyles = typographyToStyleLess(typography);
+    if (!typographyStyles) continue;
+
+    // Create or merge into class entry
+    if (!classes[className]) {
+      classes[className] = {
+        className,
+        selectors: [`.${className}`],
+        baseStyles: typographyStyles,
+        mediaQueries: {},
+        isComboClass: false,
+        children: [],
+        parentClasses: [],
+        isLayoutContainer: false,
+      };
+      // Log that we created a typography class from element selector
+      console.log(`[css-parser] Created .${className} from ${element} selector with: ${typographyStyles}`);
+    } else {
+      // Merge typography into existing class, typography takes precedence for font properties
+      classes[className].baseStyles = mergeTypographyIntoStyles(
+        classes[className].baseStyles,
+        typographyStyles
+      );
+    }
+  }
+}
+
+/**
+ * Convert ElementTypography to styleLess format.
+ */
+function typographyToStyleLess(typography: ElementTypography): string {
+  const parts: string[] = [];
+
+  if (typography.fontFamily) parts.push(`font-family: ${typography.fontFamily};`);
+  if (typography.fontSize) parts.push(`font-size: ${typography.fontSize};`);
+  if (typography.fontWeight) parts.push(`font-weight: ${typography.fontWeight};`);
+  if (typography.fontStyle) parts.push(`font-style: ${typography.fontStyle};`);
+  if (typography.lineHeight) parts.push(`line-height: ${typography.lineHeight};`);
+  if (typography.letterSpacing) parts.push(`letter-spacing: ${typography.letterSpacing};`);
+  if (typography.color) parts.push(`color: ${typography.color};`);
+  if (typography.textTransform) parts.push(`text-transform: ${typography.textTransform};`);
+  if (typography.textDecoration) parts.push(`text-decoration: ${typography.textDecoration};`);
+
+  return parts.join(" ");
+}
+
+/**
+ * Merge typography styles into existing styleLess.
+ * Typography properties (font-family, font-size, etc.) from element selectors
+ * should fill in missing values but not override explicit class values.
+ */
+function mergeTypographyIntoStyles(existingStyles: string, typographyStyles: string): string {
+  if (!existingStyles) return typographyStyles;
+  if (!typographyStyles) return existingStyles;
+
+  // Parse existing properties
+  const existingProps = new Map<string, string>();
+  existingStyles.split(";").forEach((prop) => {
+    const parts = prop.split(":");
+    if (parts.length >= 2) {
+      const name = parts[0]?.trim();
+      const value = parts.slice(1).join(":").trim();
+      if (name && value) existingProps.set(name, value);
+    }
+  });
+
+  // Parse typography properties - only add if NOT already defined
+  typographyStyles.split(";").forEach((prop) => {
+    const parts = prop.split(":");
+    if (parts.length >= 2) {
+      const name = parts[0]?.trim();
+      const value = parts.slice(1).join(":").trim();
+      // Only add typography if not already defined in the class
+      if (name && value && !existingProps.has(name)) {
+        existingProps.set(name, value);
+      }
+    }
+  });
+
+  return Array.from(existingProps.entries())
+    .map(([prop, val]) => `${prop}: ${val};`)
+    .join(" ");
+}
+
+/**
+ * Enforce explicit layout properties on flex/grid containers.
+ *
+ * Webflow doesn't infer browser defaults. If CSS says `display: flex` without
+ * `flex-direction`, the browser uses `row` - but Webflow needs it explicit.
+ *
+ * This ensures all layout containers have complete, explicit property sets.
+ */
+function enforceExplicitLayoutProperties(
+  classes: Record<string, ClassIndexEntry>,
+  warnings: CssWarning[]
+): void {
+  for (const entry of Object.values(classes)) {
+    if (!entry.isLayoutContainer || !entry.baseStyles) continue;
+
+    // Parse existing properties
+    const props = new Map<string, string>();
+    entry.baseStyles.split(";").forEach((prop) => {
+      const parts = prop.split(":");
+      if (parts.length >= 2) {
+        const name = parts[0]?.trim();
+        const value = parts.slice(1).join(":").trim();
+        if (name && value) props.set(name, value);
+      }
+    });
+
+    const display = props.get("display")?.toLowerCase();
+    const added: string[] = [];
+
+    // Flex container defaults
+    if (display === "flex" || display === "inline-flex") {
+      if (!props.has("flex-direction")) {
+        props.set("flex-direction", "row");
+        added.push("flex-direction: row");
+      }
+      if (!props.has("flex-wrap")) {
+        props.set("flex-wrap", "nowrap");
+        added.push("flex-wrap: nowrap");
+      }
+      if (!props.has("justify-content")) {
+        props.set("justify-content", "flex-start");
+        added.push("justify-content: flex-start");
+      }
+      if (!props.has("align-items")) {
+        props.set("align-items", "stretch");
+        added.push("align-items: stretch");
+      }
+    }
+
+    // Grid container defaults
+    if (display === "grid" || display === "inline-grid") {
+      const hasTemplate =
+        props.has("grid-template-columns") ||
+        props.has("grid-template-rows") ||
+        props.has("grid-auto-columns") ||
+        props.has("grid-auto-rows");
+      if (!hasTemplate) {
+        props.set("grid-template-columns", "1fr");
+        added.push("grid-template-columns: 1fr");
+      }
+      if (!props.has("justify-items")) {
+        props.set("justify-items", "stretch");
+        added.push("justify-items: stretch");
+      }
+      if (!props.has("align-items")) {
+        props.set("align-items", "stretch");
+        added.push("align-items: stretch");
+      }
+    }
+
+    // Update entry if we added properties
+    if (added.length > 0) {
+      entry.baseStyles = Array.from(props.entries())
+        .map(([name, value]) => `${name}: ${value};`)
+        .join(" ");
+
+      warnings.push({
+        type: "complex_selector",
+        message: `Layout container .${entry.className} missing explicit properties: ${added.join(", ")}. Injected browser defaults.`,
+        selector: `.${entry.className}`,
+      });
+    }
+  }
+}
+
+// ============================================
+// WEBFLOW STYLE CONVERSION
+// ============================================
+
+export function classEntryToWebflowStyle(entry: ClassIndexEntry): WebflowStyle {
+  const variants: Record<string, { styleLess: string }> = {};
+
+  if (entry.hoverStyles) variants["hover"] = { styleLess: entry.hoverStyles };
+  if (entry.focusStyles) variants["focus"] = { styleLess: entry.focusStyles };
+  if (entry.activeStyles) variants["pressed"] = { styleLess: entry.activeStyles };
+  if (entry.visitedStyles) variants["visited"] = { styleLess: entry.visitedStyles };
+  if (entry.mediaQueries.desktop) {
+    variants["desktop"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.desktop, entry.isLayoutContainer) };
+  }
+  if (entry.mediaQueries.medium) {
+    variants["medium"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.medium, entry.isLayoutContainer) };
+  }
+  if (entry.mediaQueries.small) {
+    variants["small"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.small, entry.isLayoutContainer) };
+  }
+  if (entry.mediaQueries.tiny) {
+    variants["tiny"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.tiny, entry.isLayoutContainer) };
+  }
+
+  const baseStyles = normalizeGridStyleLess(entry.baseStyles, entry.isLayoutContainer);
+  logGridStyle(entry.className, baseStyles, entry.isLayoutContainer);
+  return {
+    _id: entry.className,
+    fake: false,
+    type: "class",
+    name: entry.className,
+    namespace: "",
+    comb: entry.isComboClass ? "&" : "",
+    styleLess: baseStyles,
+    variants,
+    children: entry.children,
+  };
+}
+
+// Grid placement is now handled purely through CSS parsing, not class name matching
+
+function logGridStyle(className: string, styleLess: string, isLayoutContainer: boolean): void {
+  if (!isLayoutContainer || !styleLess) return;
+  const props = styleLessToMap(styleLess);
+  const display = props.get("display")?.toLowerCase();
+  if (display !== "grid" && display !== "inline-grid") return;
+  console.info("[grid-style]", {
+    className,
+    gridTemplateColumns: props.get("grid-template-columns") || "",
+    gridTemplateRows: props.get("grid-template-rows") || "",
+    gridRowGap: props.get("grid-row-gap") || "",
+    gridColumnGap: props.get("grid-column-gap") || "",
+  });
+}
+
+function normalizeGridStyleLess(styleLess: string, isLayoutContainer: boolean): string {
+  if (!styleLess) return styleLess;
+  const props = styleLessToMap(styleLess);
+  const display = props.get("display")?.toLowerCase();
+
+  const opacity = (props.get("opacity") || "").trim();
+  if (opacity === "0" || opacity === "0%" || opacity === "0.0") {
+    props.set("opacity", "1");
+  }
+  const visibility = (props.get("visibility") || "").trim().toLowerCase();
+  if (visibility === "hidden") {
+    props.set("visibility", "visible");
+  }
+
+  if (!isLayoutContainer || (display !== "grid" && display !== "inline-grid")) {
+    return mapToStyleLess(props);
+  }
+
+  const rowGap = props.get("row-gap") || props.get("gap");
+  const columnGap = props.get("column-gap") || props.get("gap");
+  if (rowGap && !props.has("grid-row-gap")) {
+    props.set("grid-row-gap", rowGap);
+  }
+  if (columnGap && !props.has("grid-column-gap")) {
+    props.set("grid-column-gap", columnGap);
+  }
+  props.delete("gap");
+  props.delete("row-gap");
+  props.delete("column-gap");
+
+  normalizeGridTemplateProperty(props, "grid-template-columns");
+  normalizeGridTemplateProperty(props, "grid-template-rows");
+
+  return mapToStyleLess(props);
+}
+
+function normalizeGridTemplateProperty(props: Map<string, string>, key: string): void {
+  const template = props.get(key);
+  if (!template) return;
+  if (/(auto-fit|auto-fill|minmax\()/i.test(template)) {
+    const explicit = buildExplicitGridTemplate(template);
+    if (explicit) {
+      console.warn(`[grid-normalize] Simplified complex ${key}: ${template} -> ${explicit}`);
+      props.set(key, explicit);
+    }
+    return;
+  }
+  const expanded = expandRepeatTemplate(template);
+  if (expanded) {
+    props.set(key, expanded);
+  }
+}
+
+function buildExplicitGridTemplate(template: string): string | null {
+  const trimmed = template.trim();
+
+  // Handle repeat(N, X) - expand to explicit columns
+  const repeatMatch = trimmed.match(/repeat\(\s*(\d+)\s*,\s*([^)]+)\)/);
+  if (repeatMatch) {
+    const count = parseInt(repeatMatch[1], 10);
+    const value = repeatMatch[2].trim();
+    if (count > 0 && count <= 12) {
+      return Array(count).fill(value).join(" ");
+    }
+  }
+
+  // Handle auto-fit/auto-fill with minmax - estimate columns based on container width
+  if (trimmed.includes("auto-fit") || trimmed.includes("auto-fill")) {
+    const minPx = extractMinmaxPixels(trimmed);
+    if (minPx !== null) {
+      const targetContainerPx = 1024;
+      const rawEstimate = Math.floor(targetContainerPx / minPx);
+      const estimatedColumns = Math.max(1, Math.min(6, rawEstimate));
+      return Array(estimatedColumns).fill("1fr").join(" ");
+    }
+  }
+
+  // Pass through explicit values (1fr 1fr 1fr, 200px 1fr, etc.)
+  return trimmed;
+}
+
+function extractMinmaxPixels(template: string): number | null {
+  const match = template.match(/minmax\(\s*([\d.]+)\s*(px|rem)\s*,/i);
+  if (!match) return null;
+  const value = Number.parseFloat(match[1]);
+  if (Number.isNaN(value)) return null;
+  const unit = match[2].toLowerCase();
+  if (unit === "rem") return value * 16;
+  return value;
+}
+
+function expandRepeatTemplate(template: string): string | null {
+  const match = template.match(/repeat\(\s*(\d+)\s*,\s*([^)]+)\)/i);
+  if (!match) return null;
+  const count = Number.parseInt(match[1], 10);
+  if (!Number.isFinite(count) || count <= 0) return null;
+  const track = match[2].trim();
+  if (!track) return null;
+  return Array(count).fill(track).join(" ");
+}
+
+function styleLessToMap(styleLess: string): Map<string, string> {
+  const props = new Map<string, string>();
+  styleLess.split(";").forEach((prop) => {
+    const parts = prop.split(":");
+    if (parts.length >= 2) {
+      const name = parts[0]?.trim();
+      const value = parts.slice(1).join(":").trim();
+      if (name && value) props.set(name, value);
+    }
+  });
+  return props;
+}
+
+function mapToStyleLess(props: Map<string, string>): string {
+  return Array.from(props.entries()).map(([prop, val]) => `${prop}: ${val};`).join(" ");
+}
+
+export function classIndexToWebflowStyles(classIndex: ClassIndex, filterClasses?: Set<string>): WebflowStyle[] {
+  const styles: WebflowStyle[] = [];
+
+  for (const [className, entry] of Object.entries(classIndex.classes)) {
+    if (filterClasses && !filterClasses.has(className)) continue;
+    if (!entry.baseStyles && !entry.hoverStyles && !entry.focusStyles && !entry.activeStyles &&
+      !entry.visitedStyles && !entry.mediaQueries.medium && !entry.mediaQueries.small && !entry.mediaQueries.tiny) {
+      continue;
+    }
+    styles.push(classEntryToWebflowStyle(entry));
+  }
+
+  return styles;
+}
+
+export function getClassNames(classIndex: ClassIndex): string[] {
+  return Object.keys(classIndex.classes);
+}
+
+export function hasStyles(entry: ClassIndexEntry): boolean {
+  return !!(entry.baseStyles || entry.hoverStyles || entry.focusStyles || entry.activeStyles ||
+    entry.visitedStyles || entry.mediaQueries.desktop || entry.mediaQueries.medium ||
+    entry.mediaQueries.small || entry.mediaQueries.tiny);
+}
+
+export function getStyledClasses(classIndex: ClassIndex): string[] {
+  return Object.entries(classIndex.classes).filter(([, entry]) => hasStyles(entry)).map(([className]) => className);
+}

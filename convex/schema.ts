@@ -28,7 +28,8 @@ export default defineSchema({
   })
     .index("by_slug", ["slug"])
     .index("by_category", ["category"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_template", ["templateId"]),
 
   templates: defineTable({
     name: v.string(),
@@ -53,5 +54,43 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_user_and_asset", ["userId", "assetId"]),
+    .index("by_user_and_asset", ["userId", "assetId"])
+    .index("by_asset", ["assetId"]),
+
+  // Import projects - stores imported HTML files for reuse
+  importProjects: defineTable({
+    name: v.string(),
+    slug: v.string(),
+    status: v.union(v.literal("draft"), v.literal("complete")),
+    // Original HTML (may be large, consider compression)
+    sourceHtml: v.optional(v.string()),
+    // Metadata
+    componentCount: v.optional(v.number()),
+    classCount: v.optional(v.number()),
+    hasTokens: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_status", ["status"]),
+
+  // Import artifacts - stores extracted artifacts per project
+  importArtifacts: defineTable({
+    projectId: v.id("importProjects"),
+    type: v.union(
+      v.literal("tokens_json"),
+      v.literal("tokens_css"),
+      v.literal("styles_css"),
+      v.literal("class_index"),
+      v.literal("clean_html"),
+      v.literal("scripts_js"),
+      v.literal("js_hooks"),
+      v.literal("token_webflow_json"),
+      v.literal("component_manifest")
+    ),
+    content: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_project_type", ["projectId", "type"]),
 })

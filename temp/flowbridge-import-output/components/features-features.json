@@ -1,0 +1,730 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "features-features-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "features-section"
+        ],
+        "children": [
+          "features-features-header-001",
+          "features-feature-row-001",
+          "features-feature-row-002",
+          "features-feature-row-003",
+          "features-feature-row-004"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "features"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "features-feature-row-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-row",
+          "w-layout-grid"
+        ],
+        "children": [
+          "features-feature-name-004",
+          "features-feature-tags-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-feature-tags-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-tags"
+        ],
+        "children": [
+          "features-feature-tags-span-010",
+          "features-feature-tags-span-011",
+          "features-feature-tags-span-012"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-feature-tags-span-012",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "feature-tags-span"
+        ],
+        "children": [
+          "features-text-018"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-018",
+        "text": true,
+        "v": "Best practices"
+      },
+      {
+        "_id": "features-feature-tags-span-011",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "feature-tags-span"
+        ],
+        "children": [
+          "features-text-017"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-017",
+        "text": true,
+        "v": "Customization tips"
+      },
+      {
+        "_id": "features-feature-tags-span-010",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "feature-tags-span"
+        ],
+        "children": [
+          "features-text-016"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-016",
+        "text": true,
+        "v": "Setup walkthroughs"
+      },
+      {
+        "_id": "features-feature-name-004",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "feature-name",
+          "heading-h3"
+        ],
+        "children": [
+          "features-text-015"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-015",
+        "text": true,
+        "v": "Launch Guides"
+      },
+      {
+        "_id": "features-feature-row-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-row",
+          "w-layout-grid"
+        ],
+        "children": [
+          "features-feature-name-003",
+          "features-feature-tags-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-feature-tags-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-tags"
+        ],
+        "children": [
+          "features-feature-tags-span-007",
+          "features-feature-tags-span-008",
+          "features-feature-tags-span-009"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-feature-tags-span-009",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "feature-tags-span"
+        ],
+        "children": [
+          "features-text-014"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-014",
+        "text": true,
+        "v": "Component variants"
+      },
+      {
+        "_id": "features-feature-tags-span-008",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "feature-tags-span"
+        ],
+        "children": [
+          "features-text-013"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-013",
+        "text": true,
+        "v": "Design tokens"
+      },
+      {
+        "_id": "features-feature-tags-span-007",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "feature-tags-span"
+        ],
+        "children": [
+          "features-text-012"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-012",
+        "text": true,
+        "v": "Auto-layout"
+      },
+      {
+        "_id": "features-feature-name-003",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "feature-name",
+          "heading-h3"
+        ],
+        "children": [
+          "features-text-011"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-011",
+        "text": true,
+        "v": "Figma Included"
+      },
+      {
+        "_id": "features-feature-row-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-row",
+          "w-layout-grid"
+        ],
+        "children": [
+          "features-feature-name-002",
+          "features-feature-tags-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-feature-tags-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-tags"
+        ],
+        "children": [
+          "features-feature-tags-span-004",
+          "features-feature-tags-span-005",
+          "features-feature-tags-span-006"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-feature-tags-span-006",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "feature-tags-span"
+        ],
+        "children": [
+          "features-text-010"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-010",
+        "text": true,
+        "v": "Flip animations"
+      },
+      {
+        "_id": "features-feature-tags-span-005",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "feature-tags-span"
+        ],
+        "children": [
+          "features-text-009"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-009",
+        "text": true,
+        "v": "SplitText"
+      },
+      {
+        "_id": "features-feature-tags-span-004",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "feature-tags-span"
+        ],
+        "children": [
+          "features-text-008"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-008",
+        "text": true,
+        "v": "ScrollTrigger"
+      },
+      {
+        "_id": "features-feature-name-002",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "feature-name",
+          "heading-h3"
+        ],
+        "children": [
+          "features-text-007"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-007",
+        "text": true,
+        "v": "GSAP Interactions"
+      },
+      {
+        "_id": "features-feature-row-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-row",
+          "w-layout-grid"
+        ],
+        "children": [
+          "features-feature-name-001",
+          "features-feature-tags-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-feature-tags-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "feature-tags"
+        ],
+        "children": [
+          "features-feature-tags-span-001",
+          "features-feature-tags-span-002",
+          "features-feature-tags-span-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-feature-tags-span-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "feature-tags-span"
+        ],
+        "children": [
+          "features-text-006"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-006",
+        "text": true,
+        "v": "Clean class naming"
+      },
+      {
+        "_id": "features-feature-tags-span-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "feature-tags-span"
+        ],
+        "children": [
+          "features-text-005"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-005",
+        "text": true,
+        "v": "No plugins required"
+      },
+      {
+        "_id": "features-feature-tags-span-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "feature-tags-span"
+        ],
+        "children": [
+          "features-text-004"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-004",
+        "text": true,
+        "v": "Webflow native"
+      },
+      {
+        "_id": "features-feature-name-001",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "feature-name",
+          "heading-h3"
+        ],
+        "children": [
+          "features-text-003"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-003",
+        "text": true,
+        "v": "Copy & Paste Ready"
+      },
+      {
+        "_id": "features-features-header-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "features-header",
+          "w-layout-grid"
+        ],
+        "children": [
+          "features-features-label-001",
+          "features-features-intro-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-features-intro-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "features-intro"
+        ],
+        "children": [
+          "features-features-intro-p-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-features-intro-p-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "features-intro-p",
+          "text-body"
+        ],
+        "children": [
+          "features-text-002"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-002",
+        "text": true,
+        "v": "Built different. Every resource in The Stash is crafted with production quality in mind—not just pretty demos."
+      },
+      {
+        "_id": "features-features-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "features-label"
+        ],
+        "children": [
+          "features-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "features-text-001",
+        "text": true,
+        "v": "(02)"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "features-section",
+        "fake": false,
+        "type": "class",
+        "name": "features-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #2d2f2e; padding-top: 6rem; padding-right: 5vw; padding-bottom: 6rem; padding-left: 5vw;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "features-header",
+        "fake": false,
+        "type": "class",
+        "name": "features-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: auto 1fr; margin-bottom: 4rem; padding-bottom: 3rem; border-bottom: 1px solid rgba(255,255,255,0.1); justify-items: stretch; align-items: stretch; grid-row-gap: 4rem; grid-column-gap: 4rem;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr; display: grid; grid-row-gap: 2rem; grid-column-gap: 2rem;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "features-label",
+        "fake": false,
+        "type": "class",
+        "name": "features-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.875rem; color: #767f7a;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "features-intro-p",
+        "fake": false,
+        "type": "class",
+        "name": "features-intro-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1.25rem; font-weight: 500; color: #ffffff; line-height: 1.4; margin-bottom: 1.5rem; max-width: 500px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "feature-row",
+        "fake": false,
+        "type": "class",
+        "name": "feature-row",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr 1fr; align-items: center; padding-top: 2.5rem; padding-right: 0; padding-bottom: 2.5rem; padding-left: 0; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: default; justify-items: stretch; grid-row-gap: 4rem; grid-column-gap: 4rem;",
+        "variants": {
+          "hover": {
+            "styleLess": "padding-left: 1rem;"
+          },
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr; display: grid; grid-row-gap: 1rem; grid-column-gap: 1rem;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "feature-name",
+        "fake": false,
+        "type": "class",
+        "name": "feature-name",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: clamp(1.5rem, 3.5vw, 2.5rem); font-weight: 600; color: #ff825c;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h3",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h3",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "feature-tags",
+        "fake": false,
+        "type": "class",
+        "name": "feature-tags",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; flex-wrap: wrap; row-gap: 0.5rem; column-gap: 1.5rem; flex-direction: row; justify-content: flex-start; align-items: stretch;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "feature-tags-span",
+        "fake": false,
+        "type": "class",
+        "name": "feature-tags-span",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.875rem; color: #767f7a; white-space: nowrap;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

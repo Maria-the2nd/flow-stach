@@ -67,6 +67,16 @@ NEXT_PUBLIC_ADMIN_EMAILS=admin@example.com
 # Optional: LLM-powered Webflow conversion
 # OPENROUTER_API_KEY=sk-or-...
 # OPENROUTER_MODEL=openai/gpt-4.1
+
+# Optional: Flow Bridge semantic repair pass (LLM patching)
+# USE_LLM=1
+# OPENROUTER_API_KEY=sk-or-...
+# OPENROUTER_MODEL=anthropic/claude-sonnet-4.0
+# FLOWBRIDGE_LLM_DEBUG=1  # Writes request/response payloads to /tmp/flowbridge-llm-debug
+# FLOWBRIDGE_STRICT_LLM=1 # Fail fast on missing key or invalid LLM response
+# NEXT_PUBLIC_FLOWBRIDGE_STRICT_LLM=1 # Fail fast on unresolved CSS variables during import
+# FLOWBRIDGE_LLM_MOCK=1  # Use deterministic mock patch response
+# NEXT_PUBLIC_FLOWBRIDGE_FORCE_LLM=1 # Force the semantic pass even if heuristics find no issues
 ```
 
 ### Development

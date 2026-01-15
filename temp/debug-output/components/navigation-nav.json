@@ -1,0 +1,358 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "wf-nav-001",
+        "type": "Block",
+        "tag": "nav",
+        "classes": [
+          "nav"
+        ],
+        "children": [
+          "wf-nav-logo-001",
+          "wf-nav-links-001"
+        ],
+        "data": {
+          "tag": "nav",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-nav-links-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "nav-links"
+        ],
+        "children": [
+          "wf-nav-link-001",
+          "wf-nav-link-002",
+          "wf-nav-link-003",
+          "wf-nav-link-004",
+          "wf-btn-001",
+          "wf-btn-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-btn-002",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn",
+          "btn-primary",
+          "btn-sm",
+          "nav-link"
+        ],
+        "children": [
+          "wf-text-008"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-008",
+        "text": true,
+        "v": "Try the Import"
+      },
+      {
+        "_id": "wf-btn-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn",
+          "btn-secondary",
+          "btn-sm",
+          "nav-link"
+        ],
+        "children": [
+          "wf-text-007"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-007",
+        "text": true,
+        "v": "Login"
+      },
+      {
+        "_id": "wf-nav-link-004",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-link"
+        ],
+        "children": [
+          "wf-text-006"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#academy"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-006",
+        "text": true,
+        "v": "Academy"
+      },
+      {
+        "_id": "wf-nav-link-003",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-link"
+        ],
+        "children": [
+          "wf-text-005"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#pricing"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-005",
+        "text": true,
+        "v": "Pricing"
+      },
+      {
+        "_id": "wf-nav-link-002",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-link"
+        ],
+        "children": [
+          "wf-text-004"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#features"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-004",
+        "text": true,
+        "v": "Features"
+      },
+      {
+        "_id": "wf-nav-link-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-link"
+        ],
+        "children": [
+          "wf-text-003"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#how"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-003",
+        "text": true,
+        "v": "How it works"
+      },
+      {
+        "_id": "wf-nav-logo-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-logo"
+        ],
+        "children": [
+          "wf-nav-logo-icon-001",
+          "wf-text-002"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-002",
+        "text": true,
+        "v": "Flow Bridge"
+      },
+      {
+        "_id": "wf-nav-logo-icon-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "nav-logo-icon"
+        ],
+        "children": [
+          "wf-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-001",
+        "text": true,
+        "v": "⚡"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "nav",
+        "fake": false,
+        "type": "class",
+        "name": "nav",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding-top: 16px; padding-right: 24px; padding-bottom: 16px; padding-left: 24px; background: #f9f8f4; border-bottom: 1px solid #03594d; flex-direction: row; row-gap: 0px; column-gap: 0px; flex-wrap: nowrap;",
+        "variants": {
+          "medium": {
+            "styleLess": "flex-direction: column; row-gap: 16px; column-gap: 16px; padding-top: 16px; padding-right: 16px; padding-bottom: 16px; padding-left: 16px; display: flex; justify-content: flex-start; align-items: stretch;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "nav-logo",
+        "fake": false,
+        "type": "class",
+        "name": "nav-logo",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 20px; text-transform: uppercase; letter-spacing: 0.02em; color: #03594d; text-decoration: none; display: flex; align-items: center; row-gap: 10px; column-gap: 10px; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "nav-logo-icon",
+        "fake": false,
+        "type": "class",
+        "name": "nav-logo-icon",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "width: 36px; height: 36px; background: #82eda6; border: 1px solid #03594d; border-top-left-radius: 10px; border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-bottom-left-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: -2px 2px 0px 0px #03594d; flex-direction: row; row-gap: 0px; column-gap: 0px; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "nav-links",
+        "fake": false,
+        "type": "class",
+        "name": "nav-links",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; align-items: center; row-gap: 32px; column-gap: 32px; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {
+          "medium": {
+            "styleLess": "flex-wrap: wrap; justify-content: center; row-gap: 16px; column-gap: 16px; display: flex; flex-direction: row; align-items: stretch;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "nav-link",
+        "fake": false,
+        "type": "class",
+        "name": "nav-link",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Fredoka', sans-serif; font-size: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; color: #03594d; text-decoration: none;",
+        "variants": {
+          "hover": {
+            "styleLess": "opacity: 0.7;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "btn",
+        "fake": false,
+        "type": "class",
+        "name": "btn",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-flex; align-items: center; justify-content: center; row-gap: 8px; column-gap: 8px; font-family: 'Fredoka', sans-serif; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding-top: 14px; padding-right: 28px; padding-bottom: 14px; padding-left: 28px; border-top-left-radius: 100px; border-top-right-radius: 100px; border-bottom-right-radius: 100px; border-bottom-left-radius: 100px; border: 1px solid #03594d; cursor: pointer; text-decoration: none; box-shadow: -3px 3px 0px 0px #03594d; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translate(2px, -2px); box-shadow: -5px 5px 0px 0px #03594d;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "btn-secondary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-secondary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #f9f8f4; color: #03594d;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-sm",
+        "fake": false,
+        "type": "class",
+        "name": "btn-sm",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 10px; padding-right: 20px; padding-bottom: 10px; padding-left: 20px; font-size: 12px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-primary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-primary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #ffff94; color: #03594d;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

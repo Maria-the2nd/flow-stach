@@ -23,11 +23,11 @@ export default function Nav() {
                         <a href="#features" className="fb-nav-link">Features</a>
                         <a href="#pricing" className="fb-nav-link">Pricing</a>
                         <a href="#academy" className="fb-nav-link">Academy</a>
-                        <a href="/assets" className="fb-nav-link">Login</a>
+                        <Link href="/assets" className="fb-nav-link">Login</Link>
                     </div>
-                    <a href="/assets" className="fb-btn fb-btn-primary" style={{ padding: '10px 24px', fontSize: '0.9rem' }}>
+                    <Link href="/assets" className="fb-btn fb-btn-primary hidden-mobile" style={{ padding: '10px 24px', fontSize: '0.9rem' }}>
                         Try the Import
-                    </a>
+                    </Link>
 
                     <button
                         className={`fb-mobile-menu-toggle ${isOpen ? 'open' : ''}`}
@@ -47,7 +47,7 @@ export default function Nav() {
                     <a href="#features" className="fb-mobile-menu-link" onClick={toggleMenu}>Features</a>
                     <a href="#pricing" className="fb-mobile-menu-link" onClick={toggleMenu}>Pricing</a>
                     <a href="#academy" className="fb-mobile-menu-link" onClick={toggleMenu}>Academy</a>
-                    <a href="/assets" className="fb-mobile-menu-link" onClick={toggleMenu}>Login</a>
+                    <Link href="/assets" className="fb-mobile-menu-link" onClick={toggleMenu}>Login</Link>
                 </div>
             </div>
         </nav>

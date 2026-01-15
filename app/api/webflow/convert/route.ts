@@ -231,13 +231,6 @@ function resolveCssVariables(css: string, variables: Map<string, string>): strin
   return result;
 }
 
-function stripTokenBlocks(css: string): string {
-  return css
-    .replace(/:root\s*\{[^}]*\}/g, "")
-    .replace(/\.fp-root\s*\{[^}]*\}/g, "")
-    .trim();
-}
-
 function extractJson(text: string): string | null {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");

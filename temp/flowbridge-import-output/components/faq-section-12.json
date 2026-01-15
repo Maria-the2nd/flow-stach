@@ -1,0 +1,537 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "wf-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "section",
+          "faq-section"
+        ],
+        "children": [
+          "wf-container-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "faq"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "wf-container-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "container"
+        ],
+        "children": [
+          "wf-section-header-001",
+          "wf-faq-list-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-faq-list-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-list",
+          "fade-up",
+          "visible"
+        ],
+        "children": [
+          "wf-faq-item-001",
+          "wf-faq-item-002",
+          "wf-faq-item-003",
+          "wf-faq-item-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-faq-item-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-item"
+        ],
+        "children": [
+          "wf-faq-question-004",
+          "wf-faq-answer-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-faq-answer-004",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "faq-answer",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-010"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-010",
+        "text": true,
+        "v": "No. It'll be editable every time. That's the point. AI outputs are messy. We make them workable. You make them great."
+      },
+      {
+        "_id": "wf-faq-question-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-question"
+        ],
+        "children": [
+          "wf-text-009"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-009",
+        "text": true,
+        "v": "Will It Be Perfect Every Time?"
+      },
+      {
+        "_id": "wf-faq-item-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-item"
+        ],
+        "children": [
+          "wf-faq-question-003",
+          "wf-faq-answer-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-faq-answer-003",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "faq-answer",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-008"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-008",
+        "text": true,
+        "v": "Anything that outputs HTML/CSS/JS. Cursor, v0, Bolt, Claude Artifacts, ChatGPT, that random tool you found on Product Hunt at 2am."
+      },
+      {
+        "_id": "wf-faq-question-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-question"
+        ],
+        "children": [
+          "wf-text-007"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-007",
+        "text": true,
+        "v": "What AI Tools Work?"
+      },
+      {
+        "_id": "wf-faq-item-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-item"
+        ],
+        "children": [
+          "wf-faq-question-002",
+          "wf-faq-answer-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-faq-answer-002",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "faq-answer",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-006"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-006",
+        "text": true,
+        "v": "God no. This feeds Webflow. Webflow is the superpower—we just get your AI stuff into it without the pain."
+      },
+      {
+        "_id": "wf-faq-question-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-question"
+        ],
+        "children": [
+          "wf-text-005"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-005",
+        "text": true,
+        "v": "Does This Replace Webflow?"
+      },
+      {
+        "_id": "wf-faq-item-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-item"
+        ],
+        "children": [
+          "wf-faq-question-001",
+          "wf-faq-answer-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-faq-answer-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "faq-answer",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-004"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-004",
+        "text": true,
+        "v": "Nope. If you can copy and paste, you're overqualified."
+      },
+      {
+        "_id": "wf-faq-question-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-question"
+        ],
+        "children": [
+          "wf-text-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-003",
+        "text": true,
+        "v": "Do I Need To Code?"
+      },
+      {
+        "_id": "wf-section-header-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "section-header"
+        ],
+        "children": [
+          "wf-section-label-001",
+          "wf-section-header-h2-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-section-header-h2-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "section-header-h2",
+          "heading-h2"
+        ],
+        "children": [
+          "wf-text-002"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-002",
+        "text": true,
+        "v": "Questions?"
+      },
+      {
+        "_id": "wf-section-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "section-label"
+        ],
+        "children": [
+          "wf-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-001",
+        "text": true,
+        "v": "FAQ"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "section",
+        "fake": false,
+        "type": "class",
+        "name": "section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 60px; padding-right: 0; padding-bottom: 60px; padding-left: 0;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "faq-section",
+        "fake": false,
+        "type": "class",
+        "name": "faq-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #c88cfd; border-top: 1px solid #03594d; border-bottom: 1px solid #03594d;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "container",
+        "fake": false,
+        "type": "class",
+        "name": "container",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 1400px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto; padding-top: 0; padding-right: 16px; padding-bottom: 0; padding-left: 16px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header",
+        "fake": false,
+        "type": "class",
+        "name": "section-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "text-align: center; margin-bottom: 48px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-label",
+        "fake": false,
+        "type": "class",
+        "name": "section-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Fredoka', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #03594d; opacity: 0.6; margin-bottom: 8px; display: block;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header-h2",
+        "fake": false,
+        "type": "class",
+        "name": "section-header-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 16px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Inter', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; font-size: clamp(36px, 7vw, 72px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "faq-list",
+        "fake": false,
+        "type": "class",
+        "name": "faq-list",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 800px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "fade-up",
+        "fake": false,
+        "type": "class",
+        "name": "fade-up",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "opacity: 0; transform: translateY(30px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "visible",
+        "fake": false,
+        "type": "class",
+        "name": "visible",
+        "namespace": "",
+        "comb": "&",
+        "styleLess": "opacity: 1; transform: translateY(0);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "faq-item",
+        "fake": false,
+        "type": "class",
+        "name": "faq-item",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #f9f8f4; border: 1px solid #03594d; border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px; padding-top: 24px; padding-right: 28px; padding-bottom: 24px; padding-left: 28px; margin-bottom: 16px; box-shadow: -3px 3px 0px 0px #03594d;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "faq-question",
+        "fake": false,
+        "type": "class",
+        "name": "faq-question",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Fredoka', sans-serif; font-size: 18px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 12px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "faq-answer",
+        "fake": false,
+        "type": "class",
+        "name": "faq-answer",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 15px; line-height: 1.7;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 65ch; font-family: 'Inter', sans-serif;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

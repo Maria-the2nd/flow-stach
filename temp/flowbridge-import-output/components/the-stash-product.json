@@ -1,0 +1,825 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "product-product-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "product-section"
+        ],
+        "children": [
+          "product-product-header-001",
+          "product-product-grid-001",
+          "product-product-cta-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "stash"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "product-product-cta-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-cta"
+        ],
+        "children": [
+          "product-btn-primary-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-btn-primary-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn-primary"
+        ],
+        "children": [
+          "product-text-014",
+          "product-btn-arrow-001"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "product-btn-arrow-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "btn-arrow"
+        ],
+        "children": [
+          "product-text-015"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-015",
+        "text": true,
+        "v": "→"
+      },
+      {
+        "_id": "product-text-014",
+        "text": true,
+        "v": "View All 140+ Resources"
+      },
+      {
+        "_id": "product-product-grid-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-grid",
+          "w-layout-grid"
+        ],
+        "children": [
+          "product-product-card-001",
+          "product-product-card-002",
+          "product-product-card-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-product-card-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-card"
+        ],
+        "children": [
+          "product-product-card-image-003",
+          "product-product-card-content-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-product-card-content-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-card-content"
+        ],
+        "children": [
+          "product-product-card-tag-003",
+          "product-product-card-title-003",
+          "product-product-card-desc-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-product-card-desc-003",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "product-card-desc",
+          "text-body"
+        ],
+        "children": [
+          "product-text-013"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-013",
+        "text": true,
+        "v": "GSAP-powered scroll animations with stagger effects."
+      },
+      {
+        "_id": "product-product-card-title-003",
+        "type": "Heading",
+        "tag": "h4",
+        "classes": [
+          "product-card-title",
+          "heading-h4"
+        ],
+        "children": [
+          "product-text-012"
+        ],
+        "data": {
+          "tag": "h4",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-012",
+        "text": true,
+        "v": "Scroll Reveal"
+      },
+      {
+        "_id": "product-product-card-tag-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "product-card-tag"
+        ],
+        "children": [
+          "product-text-011"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-011",
+        "text": true,
+        "v": "Interaction"
+      },
+      {
+        "_id": "product-product-card-image-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-card-image"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-product-card-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-card"
+        ],
+        "children": [
+          "product-product-card-image-002",
+          "product-product-card-content-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-product-card-content-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-card-content"
+        ],
+        "children": [
+          "product-product-card-tag-002",
+          "product-product-card-title-002",
+          "product-product-card-desc-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-product-card-desc-002",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "product-card-desc",
+          "text-body"
+        ],
+        "children": [
+          "product-text-010"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-010",
+        "text": true,
+        "v": "High-converting hero with animated text reveal and parallax."
+      },
+      {
+        "_id": "product-product-card-title-002",
+        "type": "Heading",
+        "tag": "h4",
+        "classes": [
+          "product-card-title",
+          "heading-h4"
+        ],
+        "children": [
+          "product-text-009"
+        ],
+        "data": {
+          "tag": "h4",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-009",
+        "text": true,
+        "v": "Split Hero"
+      },
+      {
+        "_id": "product-product-card-tag-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "product-card-tag"
+        ],
+        "children": [
+          "product-text-008"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-008",
+        "text": true,
+        "v": "Section"
+      },
+      {
+        "_id": "product-product-card-image-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-card-image"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-product-card-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-card"
+        ],
+        "children": [
+          "product-product-card-image-001",
+          "product-product-card-content-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-product-card-content-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-card-content"
+        ],
+        "children": [
+          "product-product-card-tag-001",
+          "product-product-card-title-001",
+          "product-product-card-desc-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-product-card-desc-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "product-card-desc",
+          "text-body"
+        ],
+        "children": [
+          "product-text-007"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-007",
+        "text": true,
+        "v": "Full-featured navigation with dropdown, mobile menu, and animations."
+      },
+      {
+        "_id": "product-product-card-title-001",
+        "type": "Heading",
+        "tag": "h4",
+        "classes": [
+          "product-card-title",
+          "heading-h4"
+        ],
+        "children": [
+          "product-text-006"
+        ],
+        "data": {
+          "tag": "h4",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-006",
+        "text": true,
+        "v": "Mega Navbar"
+      },
+      {
+        "_id": "product-product-card-tag-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "product-card-tag"
+        ],
+        "children": [
+          "product-text-005"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-005",
+        "text": true,
+        "v": "Component"
+      },
+      {
+        "_id": "product-product-card-image-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-card-image"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-product-header-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-header",
+          "w-layout-grid"
+        ],
+        "children": [
+          "product-product-label-001",
+          "product-product-intro-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-product-intro-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "product-intro"
+        ],
+        "children": [
+          "product-product-intro-h2-001",
+          "product-product-intro-p-001",
+          "product-link-arrow-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-link-arrow-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "link-arrow"
+        ],
+        "children": [
+          "product-text-004"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "product-text-004",
+        "text": true,
+        "v": "Browse all resources →"
+      },
+      {
+        "_id": "product-product-intro-p-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "product-intro-p",
+          "text-body"
+        ],
+        "children": [
+          "product-text-003"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-003",
+        "text": true,
+        "v": "Premium Webflow resources curated for creative developers. Every component battle-tested, every interaction polished."
+      },
+      {
+        "_id": "product-product-intro-h2-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "product-intro-h2",
+          "heading-h2"
+        ],
+        "children": [
+          "product-text-002"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-002",
+        "text": true,
+        "v": "The Stash"
+      },
+      {
+        "_id": "product-product-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "product-label"
+        ],
+        "children": [
+          "product-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "product-text-001",
+        "text": true,
+        "v": "(01)"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "product-section",
+        "fake": false,
+        "type": "class",
+        "name": "product-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #2d2f2e; padding-top: 6rem; padding-right: 5vw; padding-bottom: 6rem; padding-left: 5vw;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-header",
+        "fake": false,
+        "type": "class",
+        "name": "product-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: auto 1fr; margin-bottom: 4rem; padding-bottom: 3rem; border-bottom: 1px solid rgba(255,255,255,0.1); justify-items: stretch; align-items: stretch; grid-row-gap: 4rem; grid-column-gap: 4rem;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr; display: grid; grid-row-gap: 2rem; grid-column-gap: 2rem;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "product-label",
+        "fake": false,
+        "type": "class",
+        "name": "product-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.875rem; color: #767f7a;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-intro-h2",
+        "fake": false,
+        "type": "class",
+        "name": "product-intro-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700; color: #ffffff; line-height: 1.1; margin-bottom: 1.5rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-intro-p",
+        "fake": false,
+        "type": "class",
+        "name": "product-intro-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1.1rem; color: #767f7a; max-width: 500px; margin-bottom: 1.5rem; line-height: 1.5;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "link-arrow",
+        "fake": false,
+        "type": "class",
+        "name": "link-arrow",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #ff531f; font-size: 0.875rem; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; row-gap: 0.5rem; column-gap: 0.5rem; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "row-gap: 0.75rem; column-gap: 0.75rem; display: flex; flex-direction: row; justify-content: flex-start; align-items: stretch;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "product-grid",
+        "fake": false,
+        "type": "class",
+        "name": "product-grid",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr 1fr 1fr; justify-items: stretch; align-items: stretch; grid-row-gap: 1.5rem; grid-column-gap: 1.5rem;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr 1fr; display: grid;"
+          },
+          "medium": {
+            "styleLess": "grid-template-columns: 1fr; display: grid;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "product-card",
+        "fake": false,
+        "type": "class",
+        "name": "product-card",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #434645; border-top-left-radius: 24px; border-top-right-radius: 24px; border-bottom-right-radius: 24px; border-bottom-left-radius: 24px; overflow: hidden;",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translateY(-8px); box-shadow: 0 24px 48px rgba(0,0,0,0.3);"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "product-card-image",
+        "fake": false,
+        "type": "class",
+        "name": "product-card-image",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "aspect-ratio: 16/10; overflow: hidden; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-card-content",
+        "fake": false,
+        "type": "class",
+        "name": "product-card-content",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 1.5rem; padding-right: 1.5rem; padding-bottom: 1.5rem; padding-left: 1.5rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-card-tag",
+        "fake": false,
+        "type": "class",
+        "name": "product-card-tag",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-block; font-size: 0.7rem; font-weight: 600; color: #ff531f; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-card-title",
+        "fake": false,
+        "type": "class",
+        "name": "product-card-title",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1.1rem; font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h4",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h4",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-card-desc",
+        "fake": false,
+        "type": "class",
+        "name": "product-card-desc",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.85rem; color: #767f7a; line-height: 1.4;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "product-cta",
+        "fake": false,
+        "type": "class",
+        "name": "product-cta",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "text-align: center; margin-top: 4rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-primary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-primary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-flex; align-items: center; row-gap: 0.5rem; column-gap: 0.5rem; background: #ff531f; color: #ffffff; padding-top: 0.75rem; padding-right: 1.5rem; padding-bottom: 0.75rem; padding-left: 1.5rem; border-top-left-radius: 9999px; border-top-right-radius: 9999px; border-bottom-right-radius: 9999px; border-bottom-left-radius: 9999px; text-decoration: none; font-weight: 600; font-size: 0.875rem; border: none; cursor: pointer; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "background: #e64a1a; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255, 83, 31, 0.3);"
+          },
+          "pressed": {
+            "styleLess": "transform: translateY(0);"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "btn-arrow",
+        "fake": false,
+        "type": "class",
+        "name": "btn-arrow",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "transform: translateX(3px);",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

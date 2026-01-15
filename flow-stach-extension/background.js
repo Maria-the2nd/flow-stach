@@ -23,7 +23,7 @@ async function handleCopyRequest(jsonString) {
     await setupOffscreenDocument();
 
     // Send message to offscreen document and wait for completion
-    const result = await chrome.runtime.sendMessage({
+    await chrome.runtime.sendMessage({
       type: "WRITE_CLIPBOARD",
       target: "offscreen",
       data: jsonString

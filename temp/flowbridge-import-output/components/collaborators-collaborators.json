@@ -1,0 +1,1138 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "collaborators-collaborators-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "collaborators-section"
+        ],
+        "children": [
+          "collaborators-collaborators-header-001",
+          "collaborators-collaborators-grid-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "collaborators"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "collaborators-collaborators-grid-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborators-grid",
+          "w-layout-grid"
+        ],
+        "children": [
+          "collaborators-collaborator-card-001",
+          "collaborators-collaborator-card-002",
+          "collaborators-collaborator-card-003",
+          "collaborators-collaborator-card-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collaborator-card-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborator-card"
+        ],
+        "children": [
+          "collaborators-collaborator-avatar-004",
+          "collaborators-collaborator-name-004",
+          "collaborators-collaborator-role-004",
+          "collaborators-collaborator-stats-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collaborator-stats-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborator-stats"
+        ],
+        "children": [
+          "collaborators-div-007",
+          "collaborators-div-008"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-div-008",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "collaborators-collab-stat-value-008",
+          "collaborators-collab-stat-label-008"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collab-stat-label-008",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "collaborators-text-026"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-026",
+        "text": true,
+        "v": "Downloads"
+      },
+      {
+        "_id": "collaborators-collab-stat-value-008",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "collaborators-text-025"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-025",
+        "text": true,
+        "v": "2.2k"
+      },
+      {
+        "_id": "collaborators-div-007",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "collaborators-collab-stat-value-007",
+          "collaborators-collab-stat-label-007"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collab-stat-label-007",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "collaborators-text-024"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-024",
+        "text": true,
+        "v": "Resources"
+      },
+      {
+        "_id": "collaborators-collab-stat-value-007",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "collaborators-text-023"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-023",
+        "text": true,
+        "v": "10"
+      },
+      {
+        "_id": "collaborators-collaborator-role-004",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "collaborator-role",
+          "text-body"
+        ],
+        "children": [
+          "collaborators-text-022"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-022",
+        "text": true,
+        "v": "Webflow Expert"
+      },
+      {
+        "_id": "collaborators-collaborator-name-004",
+        "type": "Heading",
+        "tag": "h4",
+        "classes": [
+          "collaborator-name",
+          "heading-h4"
+        ],
+        "children": [
+          "collaborators-text-021"
+        ],
+        "data": {
+          "tag": "h4",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-021",
+        "text": true,
+        "v": "Emma Wilson"
+      },
+      {
+        "_id": "collaborators-collaborator-avatar-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborator-avatar"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collaborator-card-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborator-card"
+        ],
+        "children": [
+          "collaborators-collaborator-avatar-003",
+          "collaborators-collaborator-name-003",
+          "collaborators-collaborator-role-003",
+          "collaborators-collaborator-stats-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collaborator-stats-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborator-stats"
+        ],
+        "children": [
+          "collaborators-div-005",
+          "collaborators-div-006"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-div-006",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "collaborators-collab-stat-value-006",
+          "collaborators-collab-stat-label-006"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collab-stat-label-006",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "collaborators-text-020"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-020",
+        "text": true,
+        "v": "Downloads"
+      },
+      {
+        "_id": "collaborators-collab-stat-value-006",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "collaborators-text-019"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-019",
+        "text": true,
+        "v": "3.1k"
+      },
+      {
+        "_id": "collaborators-div-005",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "collaborators-collab-stat-value-005",
+          "collaborators-collab-stat-label-005"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collab-stat-label-005",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "collaborators-text-018"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-018",
+        "text": true,
+        "v": "Resources"
+      },
+      {
+        "_id": "collaborators-collab-stat-value-005",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "collaborators-text-017"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-017",
+        "text": true,
+        "v": "15"
+      },
+      {
+        "_id": "collaborators-collaborator-role-003",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "collaborator-role",
+          "text-body"
+        ],
+        "children": [
+          "collaborators-text-016"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-016",
+        "text": true,
+        "v": "Motion Designer"
+      },
+      {
+        "_id": "collaborators-collaborator-name-003",
+        "type": "Heading",
+        "tag": "h4",
+        "classes": [
+          "collaborator-name",
+          "heading-h4"
+        ],
+        "children": [
+          "collaborators-text-015"
+        ],
+        "data": {
+          "tag": "h4",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-015",
+        "text": true,
+        "v": "James Park"
+      },
+      {
+        "_id": "collaborators-collaborator-avatar-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborator-avatar"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collaborator-card-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborator-card"
+        ],
+        "children": [
+          "collaborators-collaborator-avatar-002",
+          "collaborators-collaborator-name-002",
+          "collaborators-collaborator-role-002",
+          "collaborators-collaborator-stats-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collaborator-stats-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborator-stats"
+        ],
+        "children": [
+          "collaborators-div-003",
+          "collaborators-div-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-div-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "collaborators-collab-stat-value-004",
+          "collaborators-collab-stat-label-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collab-stat-label-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "collaborators-text-014"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-014",
+        "text": true,
+        "v": "Downloads"
+      },
+      {
+        "_id": "collaborators-collab-stat-value-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "collaborators-text-013"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-013",
+        "text": true,
+        "v": "1.8k"
+      },
+      {
+        "_id": "collaborators-div-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "collaborators-collab-stat-value-003",
+          "collaborators-collab-stat-label-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collab-stat-label-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "collaborators-text-012"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-012",
+        "text": true,
+        "v": "Resources"
+      },
+      {
+        "_id": "collaborators-collab-stat-value-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "collaborators-text-011"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-011",
+        "text": true,
+        "v": "8"
+      },
+      {
+        "_id": "collaborators-collaborator-role-002",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "collaborator-role",
+          "text-body"
+        ],
+        "children": [
+          "collaborators-text-010"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-010",
+        "text": true,
+        "v": "UI/UX Designer"
+      },
+      {
+        "_id": "collaborators-collaborator-name-002",
+        "type": "Heading",
+        "tag": "h4",
+        "classes": [
+          "collaborator-name",
+          "heading-h4"
+        ],
+        "children": [
+          "collaborators-text-009"
+        ],
+        "data": {
+          "tag": "h4",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-009",
+        "text": true,
+        "v": "Maya Johnson"
+      },
+      {
+        "_id": "collaborators-collaborator-avatar-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborator-avatar"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collaborator-card-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborator-card"
+        ],
+        "children": [
+          "collaborators-collaborator-avatar-001",
+          "collaborators-collaborator-name-001",
+          "collaborators-collaborator-role-001",
+          "collaborators-collaborator-stats-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collaborator-stats-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborator-stats"
+        ],
+        "children": [
+          "collaborators-div-001",
+          "collaborators-div-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-div-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "collaborators-collab-stat-value-002",
+          "collaborators-collab-stat-label-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collab-stat-label-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "collaborators-text-008"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-008",
+        "text": true,
+        "v": "Downloads"
+      },
+      {
+        "_id": "collaborators-collab-stat-value-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "collaborators-text-007"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-007",
+        "text": true,
+        "v": "2.4k"
+      },
+      {
+        "_id": "collaborators-div-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "collaborators-collab-stat-value-001",
+          "collaborators-collab-stat-label-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collab-stat-label-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-label"
+        ],
+        "children": [
+          "collaborators-text-006"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-006",
+        "text": true,
+        "v": "Resources"
+      },
+      {
+        "_id": "collaborators-collab-stat-value-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collab-stat-value"
+        ],
+        "children": [
+          "collaborators-text-005"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-005",
+        "text": true,
+        "v": "12"
+      },
+      {
+        "_id": "collaborators-collaborator-role-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "collaborator-role",
+          "text-body"
+        ],
+        "children": [
+          "collaborators-text-004"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-004",
+        "text": true,
+        "v": "Creative Developer"
+      },
+      {
+        "_id": "collaborators-collaborator-name-001",
+        "type": "Heading",
+        "tag": "h4",
+        "classes": [
+          "collaborator-name",
+          "heading-h4"
+        ],
+        "children": [
+          "collaborators-text-003"
+        ],
+        "data": {
+          "tag": "h4",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-003",
+        "text": true,
+        "v": "Alex Rivera"
+      },
+      {
+        "_id": "collaborators-collaborator-avatar-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborator-avatar"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collaborators-header-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "collaborators-header"
+        ],
+        "children": [
+          "collaborators-collaborators-header-h2-001",
+          "collaborators-collaborators-header-p-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-collaborators-header-p-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "collaborators-header-p",
+          "text-body"
+        ],
+        "children": [
+          "collaborators-text-002"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-002",
+        "text": true,
+        "v": "Learn from the best. Our collaborators are award-winning designers and developers who teach what they ship."
+      },
+      {
+        "_id": "collaborators-collaborators-header-h2-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "collaborators-header-h2",
+          "heading-h2"
+        ],
+        "children": [
+          "collaborators-text-001"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "collaborators-text-001",
+        "text": true,
+        "v": "Collaborators"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "collaborators-section",
+        "fake": false,
+        "type": "class",
+        "name": "collaborators-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #f5f5f5; padding-top: 6rem; padding-right: 5vw; padding-bottom: 6rem; padding-left: 5vw;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collaborators-header",
+        "fake": false,
+        "type": "class",
+        "name": "collaborators-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4rem; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {
+          "desktop": {
+            "styleLess": "flex-direction: column; row-gap: 1rem; column-gap: 1rem; align-items: flex-start; display: flex; justify-content: flex-start;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "collaborators-header-h2",
+        "fake": false,
+        "type": "class",
+        "name": "collaborators-header-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collaborators-header-p",
+        "fake": false,
+        "type": "class",
+        "name": "collaborators-header-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1rem; color: #afb6b4; max-width: 400px; text-align: right;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collaborators-grid",
+        "fake": false,
+        "type": "class",
+        "name": "collaborators-grid",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; justify-items: stretch; align-items: stretch; grid-row-gap: 1.5rem; grid-column-gap: 1.5rem;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr 1fr; display: grid;"
+          },
+          "medium": {
+            "styleLess": "grid-template-columns: 1fr; display: grid;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "collaborator-card",
+        "fake": false,
+        "type": "class",
+        "name": "collaborator-card",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #ffffff; border-top-left-radius: 24px; border-top-right-radius: 24px; border-bottom-right-radius: 24px; border-bottom-left-radius: 24px; padding-top: 2rem; padding-right: 2rem; padding-bottom: 2rem; padding-left: 2rem; text-align: center;",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0,0,0,0.08);"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "collaborator-avatar",
+        "fake": false,
+        "type": "class",
+        "name": "collaborator-avatar",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "width: 80px; height: 80px; border-top-left-radius: 50%; border-top-right-radius: 50%; border-bottom-right-radius: 50%; border-bottom-left-radius: 50%; margin-top: 0; margin-right: auto; margin-bottom: 1.5rem; margin-left: auto; background: linear-gradient(135deg, #ffc8b8, #ff531f); overflow: hidden;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collaborator-name",
+        "fake": false,
+        "type": "class",
+        "name": "collaborator-name",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h4",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h4",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collaborator-role",
+        "fake": false,
+        "type": "class",
+        "name": "collaborator-role",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.8rem; color: #afb6b4; margin-bottom: 1rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collaborator-stats",
+        "fake": false,
+        "type": "class",
+        "name": "collaborator-stats",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; justify-content: center; row-gap: 1.5rem; column-gap: 1.5rem; padding-top: 1rem; border-top: 1px solid #dddfde; flex-direction: row; align-items: stretch; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collab-stat-value",
+        "fake": false,
+        "type": "class",
+        "name": "collab-stat-value",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1rem; font-weight: 700;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "collab-stat-label",
+        "fake": false,
+        "type": "class",
+        "name": "collab-stat-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.7rem; color: #afb6b4;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

@@ -95,6 +95,18 @@ export function Sidebar({ className }: SidebarProps) {
 
   const activeTemplateEntity = templates?.find((template) => template.slug === activeTemplate)
 
+  // If the active template was deleted, redirect to "All Templates"
+  useEffect(() => {
+    if (activeTemplate && templates && !templates.some((t) => t.slug === activeTemplate)) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete("template")
+      params.delete("cat")
+      const query = params.toString()
+      const targetPath = "/assets"
+      router.push(query ? `${targetPath}?${query}` : targetPath)
+    }
+  }, [activeTemplate, templates]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Fetch dynamic category counts
   const counts = useQuery(
     api.assets.categoryCounts,
@@ -104,12 +116,15 @@ export function Sidebar({ className }: SidebarProps) {
   )
 
   // Build categories with counts
-  const categories = ASSET_CATEGORIES.map((cat) => ({
+  const categoriesUnordered = ASSET_CATEGORIES.map((cat) => ({
     ...cat,
     count: cat.slug === ""
       ? counts?.total ?? 0
-      : counts?.byCategory[cat.slug] ?? 0,
-  })).filter((cat) => cat.slug === "" || cat.count > 0)
+      : cat.slug === "tokens"
+        ? 1
+        : counts?.byCategory[cat.slug] ?? 0,
+  })).filter((cat) => cat.slug === "" || cat.slug === "tokens" || cat.count > 0)
+  const categories = categoriesUnordered.sort((a, b) => (a.slug === "tokens" ? -1 : b.slug === "tokens" ? 1 : 0))
 
   function handleTemplateClick(slug: string) {
     const params = new URLSearchParams(searchParams.toString())

@@ -1,0 +1,339 @@
+[
+  {
+    "id": "nav",
+    "name": "Navigation",
+    "type": "nav",
+    "classesUsed": [
+      "nav",
+      "nav-logo",
+      "nav-logo-icon",
+      "nav-links",
+      "nav-link",
+      "btn",
+      "btn-secondary",
+      "btn-sm",
+      "btn-primary"
+    ],
+    "jsHooks": []
+  },
+  {
+    "id": "hero",
+    "name": "Hero",
+    "type": "hero",
+    "classesUsed": [
+      "hero",
+      "hero-inner",
+      "hero-h1",
+      "heading-h1",
+      "hero-subtitle",
+      "text-body",
+      "hero-actions",
+      "btn",
+      "btn-primary",
+      "btn-lg",
+      "btn-secondary",
+      "hero-trust"
+    ],
+    "jsHooks": []
+  },
+  {
+    "id": "section-3",
+    "name": "Features Bento",
+    "type": "section",
+    "classesUsed": [
+      "section",
+      "container",
+      "bento-grid",
+      "fade-up",
+      "visible",
+      "bento-card",
+      "bento-anchor",
+      "bento-anchor-h3",
+      "heading-h3",
+      "bento-anchor-p",
+      "text-body",
+      "bento-environment",
+      "bento-environment-visual",
+      "bento-environment-caption",
+      "bento-environment-caption-span",
+      "bento-tag",
+      "bento-stat",
+      "yellow",
+      "stat-value",
+      "stat-label",
+      "pink",
+      "cyan",
+      "bento-object",
+      "object-inner",
+      "object-visual",
+      "object-info",
+      "object-info-h3",
+      "object-info-p",
+      "object-stats",
+      "object-stat-row",
+      "object-stat-bar",
+      "object-stat-fill",
+      "bento-tagline",
+      "bento-tagline-h3"
+    ],
+    "jsHooks": [
+      "#features"
+    ]
+  },
+  {
+    "id": "section-4",
+    "name": "Problem",
+    "type": "section",
+    "classesUsed": [
+      "section",
+      "problem-section",
+      "container",
+      "section-header",
+      "section-label",
+      "section-header-h2",
+      "heading-h2",
+      "section-header-p",
+      "text-body",
+      "problem-grid",
+      "fade-up",
+      "visible",
+      "problem-card",
+      "problem-card-h3",
+      "heading-h3",
+      "problem-card-ul",
+      "problem-card-li",
+      "problem-closer"
+    ],
+    "jsHooks": [
+      "#problem"
+    ]
+  },
+  {
+    "id": "section-5",
+    "name": "How It Works",
+    "type": "section",
+    "classesUsed": [
+      "section",
+      "container",
+      "section-header",
+      "section-label",
+      "section-header-h2",
+      "heading-h2",
+      "steps-grid",
+      "fade-up",
+      "visible",
+      "step-card",
+      "step-number",
+      "step-card-h3",
+      "heading-h3",
+      "step-card-p",
+      "text-body",
+      "btn",
+      "btn-pink"
+    ],
+    "jsHooks": [
+      "#how"
+    ]
+  },
+  {
+    "id": "section-6",
+    "name": "Features",
+    "type": "section",
+    "classesUsed": [
+      "section",
+      "container",
+      "section-header",
+      "section-label",
+      "section-header-h2",
+      "heading-h2",
+      "feature-grid",
+      "fade-up",
+      "visible",
+      "feature-card",
+      "feature-icon",
+      "feature-card-h3",
+      "heading-h3",
+      "feature-card-p",
+      "text-body",
+      "feature-highlight",
+      "feature-highlight-p"
+    ],
+    "jsHooks": []
+  },
+  {
+    "id": "section-7",
+    "name": "Audience",
+    "type": "section",
+    "classesUsed": [
+      "section",
+      "audience-section",
+      "container",
+      "section-header",
+      "section-label",
+      "section-header-h2",
+      "heading-h2",
+      "audience-grid",
+      "fade-up",
+      "visible",
+      "audience-card",
+      "audience-label",
+      "audience-card-h3",
+      "heading-h3",
+      "audience-card-p",
+      "text-body"
+    ],
+    "jsHooks": [
+      "#audience"
+    ]
+  },
+  {
+    "id": "promise",
+    "name": "Promise",
+    "type": "section",
+    "classesUsed": [
+      "promise-section",
+      "promise-section-h2",
+      "heading-h2",
+      "promise-section-p",
+      "text-body"
+    ],
+    "jsHooks": []
+  },
+  {
+    "id": "section-9",
+    "name": "Demo",
+    "type": "section",
+    "classesUsed": [
+      "section",
+      "container",
+      "section-header",
+      "section-label",
+      "section-header-h2",
+      "heading-h2",
+      "section-header-p",
+      "text-body",
+      "demo-container",
+      "fade-up",
+      "visible",
+      "demo-placeholder",
+      "demo-placeholder-icon",
+      "btn",
+      "btn-primary",
+      "btn-lg"
+    ],
+    "jsHooks": [
+      "#demo"
+    ]
+  },
+  {
+    "id": "section-10",
+    "name": "Pricing",
+    "type": "section",
+    "classesUsed": [
+      "section",
+      "pricing-section",
+      "container",
+      "section-header",
+      "section-label",
+      "section-header-h2",
+      "heading-h2",
+      "section-header-p",
+      "text-body",
+      "pricing-grid",
+      "fade-up",
+      "visible",
+      "pricing-card",
+      "pricing-name",
+      "pricing-features",
+      "pricing-features-li",
+      "btn",
+      "btn-secondary",
+      "pricing-card-btn",
+      "featured",
+      "pricing-badge",
+      "btn-primary"
+    ],
+    "jsHooks": [
+      "#pricing"
+    ]
+  },
+  {
+    "id": "section-11",
+    "name": "Academy",
+    "type": "section",
+    "classesUsed": [
+      "section",
+      "container",
+      "academy-grid",
+      "fade-up",
+      "visible",
+      "academy-content",
+      "section-label",
+      "academy-content-h2",
+      "heading-h2",
+      "academy-content-p",
+      "text-body",
+      "btn",
+      "btn-primary",
+      "academy-visual",
+      "academy-topics",
+      "academy-topics-li"
+    ],
+    "jsHooks": [
+      "#academy"
+    ]
+  },
+  {
+    "id": "section-12",
+    "name": "FAQ",
+    "type": "section",
+    "classesUsed": [
+      "section",
+      "faq-section",
+      "container",
+      "section-header",
+      "section-label",
+      "section-header-h2",
+      "heading-h2",
+      "faq-list",
+      "fade-up",
+      "visible",
+      "faq-item",
+      "faq-question",
+      "faq-answer",
+      "text-body"
+    ],
+    "jsHooks": [
+      "#faq"
+    ]
+  },
+  {
+    "id": "final-cta",
+    "name": "Final CTA",
+    "type": "section",
+    "classesUsed": [
+      "final-cta",
+      "final-cta-h2",
+      "heading-h2",
+      "final-cta-p",
+      "text-body",
+      "btn",
+      "btn-primary",
+      "btn-lg"
+    ],
+    "jsHooks": []
+  },
+  {
+    "id": "footer-14",
+    "name": "Footer",
+    "type": "footer",
+    "classesUsed": [
+      "footer-content",
+      "footer-links",
+      "footer-link",
+      "footer-brand",
+      "text-body"
+    ],
+    "jsHooks": []
+  }
+]

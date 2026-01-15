@@ -13,7 +13,10 @@ import {
   CheckmarkCircle01Icon,
   CodeIcon,
   PaintBoardIcon,
-  GridIcon,
+  Copy01Icon,
+  Layers01Icon,
+  JavaScriptIcon,
+  FileEditIcon,
 } from "@hugeicons/core-free-icons"
 
 import { api } from "@/convex/_generated/api"
@@ -22,263 +25,75 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { parseFullHtml, buildCodePayload, extractCssForSection, type DetectedSection, type CssExtractionOptions } from "@/lib/html-parser"
-import { extractTokens, generateTokenManifest, tokenManifestToJson, extractFontFamilies, extractGoogleFontsUrl } from "@/lib/token-extractor"
-import { buildTokenWebflowPayload, convertSectionToWebflow } from "@/lib/webflow-converter"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { cn } from "@/lib/utils"
 
-type Step = "input" | "preview" | "complete"
+// Import parsers
+import { extractCleanHtml, getClassesUsed, extractJsHooks, extractCssForSection } from "@/lib/html-parser"
+import { extractTokens, extractFontFamilies, extractGoogleFontsUrl, type TokenExtraction } from "@/lib/token-extractor"
+import { parseCSS, type ClassIndex } from "@/lib/css-parser"
+import { componentizeHtml, type ComponentTree, type Component } from "@/lib/componentizer"
+import { buildCssTokenPayload, buildComponentPayload, validateForWebflowPaste } from "@/lib/webflow-converter"
+import { copyToWebflowClipboard } from "@/lib/clipboard"
+import { normalizeHtmlCssForWebflow } from "@/lib/webflow-normalizer"
+import { literalizeCssForWebflow } from "@/lib/webflow-literalizer"
+import {
+  applySemanticPatchResponse,
+  buildSemanticPatchRequest,
+  type FlowbridgeSemanticPatchResponse,
+  type FlowbridgeSemanticPatchMeta,
+  applyDeterministicComponentNames,
+} from "@/lib/flowbridge-semantic"
+
+// ============================================
+// TYPES
+// ============================================
+
+type Step = "input" | "artifacts" | "components" | "complete"
+
+interface ExtractedArtifacts {
+  tokensJson: string
+  tokensCss: string
+  stylesCss: string
+  classIndex: ClassIndex
+  cleanHtml: string
+  scriptsJs: string
+  jsHooks: string[]
+  cssVariables: Map<string, string>
+}
 
 interface ImportResult {
+  projectId: string
   assetsCreated: number
   assetsUpdated: number
   payloadsCreated: number
   payloadsUpdated: number
+  artifactsStored: number
   errors: string[]
 }
 
-const FLOW_PARTY_SECTION_MAP: Record<
-  string,
-  { slug: string; title: string; category: string; tags: string[] }
-> = {
-  header: {
-    slug: "fp-navigation",
-    title: "Flow Party Header",
-    category: "navigation",
-    tags: ["navigation", "header", "hero", "nav", "fixed", "responsive"],
-  },
-  navigation: {
-    slug: "fp-navigation",
-    title: "Flow Party Header",
-    category: "navigation",
-    tags: ["navigation", "header", "hero", "nav", "fixed", "responsive"],
-  },
-  nav: {
-    slug: "fp-navigation",
-    title: "Flow Party Header",
-    category: "navigation",
-    tags: ["navigation", "header", "hero", "nav", "fixed", "responsive"],
-  },
-  hero: {
-    slug: "fp-hero",
-    title: "Flow Party Hero",
-    category: "hero",
-    tags: ["hero", "landing", "section", "grid", "responsive"],
-  },
-  "client-bar": {
-    slug: "fp-client-bar",
-    title: "Flow Party Client Bar",
-    category: "sections",
-    tags: ["clients", "logos", "trust", "social-proof", "section"],
-  },
-  "intro-section": {
-    slug: "fp-intro",
-    title: "Flow Party Intro",
-    category: "sections",
-    tags: ["intro", "section", "typography", "trust", "avatars"],
-  },
-  "bento-section": {
-    slug: "fp-bento",
-    title: "Flow Party Bento Grid",
-    category: "sections",
-    tags: ["bento", "grid", "stats", "testimonial", "section"],
-  },
-  "product-section": {
-    slug: "fp-product",
-    title: "Flow Party Product (The Stash)",
-    category: "sections",
-    tags: ["products", "stash", "cards", "grid", "showcase", "section"],
-  },
-  "packs-section": {
-    slug: "fp-packs",
-    title: "Flow Party Party Packs",
-    category: "sections",
-    tags: ["packs", "cards", "pricing", "cta", "section"],
-  },
-  "features-section": {
-    slug: "fp-features",
-    title: "Flow Party Features",
-    category: "sections",
-    tags: ["features", "grid", "cards", "icons", "section"],
-  },
-  "collaborators-section": {
-    slug: "fp-collaborators",
-    title: "Flow Party Collaborators",
-    category: "sections",
-    tags: ["team", "collaborators", "grid", "avatars", "section"],
-  },
-  "pricing-section": {
-    slug: "fp-pricing",
-    title: "Flow Party Pricing",
-    category: "sections",
-    tags: ["pricing", "cards", "section", "tiers", "cta"],
-  },
-  "faq-section": {
-    slug: "fp-faq",
-    title: "Flow Party FAQ",
-    category: "sections",
-    tags: ["faq", "accordion", "section", "questions", "support"],
-  },
-  "cta-section": {
-    slug: "fp-cta",
-    title: "Flow Party CTA",
-    category: "sections",
-    tags: ["cta", "call-to-action", "section", "dark", "watermark"],
-  },
-  footer: {
-    slug: "fp-footer",
-    title: "Flow Party Footer",
-    category: "navigation",
-    tags: ["footer", "navigation", "links", "section"],
-  },
+interface LlmSummary {
+  mode: FlowbridgeSemanticPatchMeta["mode"]
+  model?: string
+  latencyMs?: number
+  inputTokens?: number
+  outputTokens?: number
+  renamedComponents: number
+  htmlMutations: number
+  cssMutations: number
+  remainingCssVarCount: number
+  reason?: string
 }
 
-function mergeNavigationSections(
-  sections: DetectedSection[],
-  fullCss: string,
-  cssOptions: CssExtractionOptions
-): DetectedSection[] {
-  const navSections = sections.filter((section) => section.tagName === "nav")
-  const hasMobileMenu = navSections.some((section) => section.className === "mobile-menu")
-  if (!hasMobileMenu || navSections.length <= 1) return sections
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
 
-  const mergedSelectors = Array.from(
-    new Set(navSections.flatMap((section) => section.cssSelectors))
-  )
-  const mergedHtml = navSections.map((section) => section.htmlContent).join("\n\n")
-  const mergedSection: DetectedSection = {
-    id: "navigation",
-    name: "Navigation",
-    tagName: "nav",
-    className: "nav",
-    htmlContent: mergedHtml,
-    cssSelectors: mergedSelectors,
-    cssContent: extractCssForSection(fullCss, mergedSelectors, cssOptions),
-  }
-
-  const mergedSections: DetectedSection[] = []
-  let inserted = false
-  for (const section of sections) {
-    if (section.tagName === "nav") {
-      if (!inserted) {
-        mergedSections.push(mergedSection)
-        inserted = true
-      }
-      continue
-    }
-    mergedSections.push(section)
-  }
-  return mergedSections
-}
-
-function combineHeaderHeroSections(
-  sections: DetectedSection[],
-  fullCss: string,
-  cssOptions: CssExtractionOptions
-): DetectedSection[] {
-  const navSection = sections.find(
-    (section) => section.tagName === "nav" || section.className === "nav"
-  )
-  const heroSection = sections.find(
-    (section) => section.className.includes("hero") || section.id.includes("hero")
-  )
-
-  if (!navSection || !heroSection) return sections
-
-  const existingIds = new Set(sections.map((section) => section.id))
-  let headerId = "header"
-  let counter = 1
-  while (existingIds.has(headerId)) {
-    headerId = `header-${counter}`
-    counter += 1
-  }
-
-  const mergedSelectors = Array.from(
-    new Set([...navSection.cssSelectors, ...heroSection.cssSelectors])
-  )
-  const mergedHtml = [navSection.htmlContent, heroSection.htmlContent].join("\n\n")
-  const headerSection: DetectedSection = {
-    id: headerId,
-    name: "Header",
-    tagName: "header",
-    className: "header",
-    htmlContent: mergedHtml,
-    cssSelectors: mergedSelectors,
-    cssContent: extractCssForSection(fullCss, mergedSelectors, cssOptions),
-  }
-
-  const mergedSections: DetectedSection[] = []
-  let inserted = false
-  for (const section of sections) {
-    if (section === navSection) {
-      if (!inserted) {
-        mergedSections.push(headerSection)
-        inserted = true
-      }
-      continue
-    }
-    mergedSections.push(section)
-  }
-
-  return mergedSections
-}
-
-function resolveSectionMeta(
-  section: DetectedSection,
-  slugPrefix: string,
-  useFlowPartyMap: boolean
-): { slug: string; name: string; category: string; tags: string[] } {
-  if (useFlowPartyMap) {
-    const keyCandidates = [
-      section.id,
-      section.className,
-      section.name.toLowerCase().replace(/\s+/g, "-"),
-    ]
-    for (const key of keyCandidates) {
-      const mapped = FLOW_PARTY_SECTION_MAP[key]
-      if (mapped) {
-        return {
-          slug: mapped.slug,
-          name: mapped.title,
-          category: mapped.category,
-          tags: mapped.tags,
-        }
-      }
-    }
-  }
-
-  const category =
-    section.tagName === "nav" || section.tagName === "footer"
-      ? "navigation"
-      : section.id.includes("hero")
-        ? "hero"
-        : "sections"
-
-  return {
-    slug: `${slugPrefix}-${section.id}`,
-    name: section.name,
-    category,
-    tags: [slugPrefix, section.id, ...section.cssSelectors.slice(0, 3)],
-  }
-}
-
-function createInstanceSlug(baseSlug: string): string {
-  const now = new Date()
-  const timestamp = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0"),
-    String(now.getHours()).padStart(2, "0"),
-    String(now.getMinutes()).padStart(2, "0"),
-  ].join("-")
-  const random = Math.random().toString(36).slice(2, 6)
-  return `${baseSlug}-${timestamp}-${random}`
-}
-
-function stripTokenCss(css: string): string {
-  return css
-    .replace(/:root\s*\{[^}]*\}/g, "")
-    .replace(/\.fp-root\s*\{[^}]*\}/g, "")
-    .trim()
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
 }
 
 function getAdminEmails(): string[] {
@@ -289,285 +104,1148 @@ function getAdminEmails(): string[] {
     .filter(Boolean)
 }
 
+function buildCardGridWarnings(componentTree: ComponentTree, html: string): string[] {
+  const warnings: string[] = []
+  const allClasses = getClassesUsed(html)
+  const cardClasses = allClasses.filter((name) => name.toLowerCase().includes("card"))
+  if (cardClasses.length === 0) return warnings
+
+  componentTree.components.forEach((component) => {
+    const classText = component.classesUsed.join(" ").toLowerCase()
+    const nameText = component.name.toLowerCase()
+    const isCardGrid =
+      classText.includes("card-grid") ||
+      classText.includes("pricing-grid") ||
+      classText.includes("bento-grid") ||
+      classText.includes("features-grid") ||
+      nameText.includes("pricing") ||
+      nameText.includes("bento") ||
+      nameText.includes("features")
+    if (!isCardGrid) return
+    const expectedCards = cardClasses.filter((name) => !name.toLowerCase().includes("grid"))
+    const missingCards = expectedCards.filter((name) => !component.classesUsed.includes(name))
+    if (missingCards.length > 0) {
+      warnings.push(
+        `Card grid "${component.name}" missing card children: ${missingCards.slice(0, 5).join(", ")}`
+      )
+    }
+  })
+
+  return warnings
+}
+
+function applyVisibilityDefaults(html: string, css: string): { html: string; warnings: string[] } {
+  const warnings: string[] = []
+  const hiddenRegex = /\.([a-zA-Z0-9_-]+)\s*\{[^}]*opacity\s*:\s*0[^}]*\}/g
+  const visibleRegex = /\.([a-zA-Z0-9_-]+)\.visible\s*\{[^}]*opacity\s*:\s*1[^}]*\}/g
+
+  const hiddenClasses = new Set<string>()
+  let match: RegExpExecArray | null
+  while ((match = hiddenRegex.exec(css)) !== null) {
+    hiddenClasses.add(match[1])
+  }
+
+  const visibleClasses = new Set<string>()
+  while ((match = visibleRegex.exec(css)) !== null) {
+    visibleClasses.add(match[1])
+  }
+
+  const targets = Array.from(hiddenClasses).filter((name) => visibleClasses.has(name))
+  if (targets.length === 0) return { html, warnings }
+
+  let updatedHtml = html
+  for (const target of targets) {
+    const classRegex = new RegExp(`class="([^"]*\\b${target}\\b[^"]*)"`, "gi")
+    let count = 0
+    updatedHtml = updatedHtml.replace(classRegex, (full, classValue) => {
+      if (/\bvisible\b/i.test(classValue)) return full
+      count += 1
+      return `class="${classValue} visible"`
+    })
+    if (count > 0) {
+      warnings.push(`Visibility override: added "visible" to ${count} ".${target}" elements.`)
+    }
+  }
+
+  return { html: updatedHtml, warnings }
+}
+
+// ============================================
+// TAB COMPONENTS
+// ============================================
+
+interface ArtifactViewerProps {
+  content: string
+  maxHeight?: string
+}
+
+function ArtifactViewer({ content, maxHeight = "400px" }: ArtifactViewerProps) {
+  return (
+    <div className="relative">
+      <pre
+        className={cn(
+          "bg-muted rounded-lg p-4 text-sm overflow-auto font-mono",
+          "border border-border"
+        )}
+        style={{ maxHeight }}
+      >
+        <code>{content}</code>
+      </pre>
+    </div>
+  )
+}
+
+// ============================================
+// TOKENS TAB
+// ============================================
+
+interface TokensTabProps {
+  tokensCss: string
+  tokensJson: string
+  tokenWebflowJson: string | null
+  onCopyTokens: () => Promise<void>
+  warnings: string[]
+  fontInfo?: { googleFonts?: string; families?: string[] }
+}
+
+function TokensTab({ tokensCss, tokensJson, tokenWebflowJson, onCopyTokens, warnings, fontInfo }: TokensTabProps) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyToWebflow = async () => {
+    if (!tokenWebflowJson) {
+      toast.error("No token payload available")
+      return
+    }
+    await onCopyTokens()
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleCopyJson = () => {
+    navigator.clipboard.writeText(tokensJson)
+    toast.success("JSON copied to clipboard")
+  }
+
+  const handleCopyCss = () => {
+    navigator.clipboard.writeText(tokensCss)
+    toast.success("CSS copied to clipboard")
+  }
+
+  const handleCopyFontUrl = () => {
+    if (fontInfo?.googleFonts) {
+      navigator.clipboard.writeText(fontInfo.googleFonts)
+      toast.success("Google Fonts URL copied")
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Google Fonts Info */}
+      {fontInfo && fontInfo.families && fontInfo.families.length > 0 && (
+        <Card className="border-blue-500/50 border-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl flex items-center gap-2 text-blue-600 font-bold">
+              <HugeiconsIcon icon={CodeIcon} size={24} />
+              Step 1: Install Google Fonts
+            </CardTitle>
+            <CardDescription className="text-base font-semibold text-blue-800 dark:text-blue-300">
+              Please install these fonts in your Webflow project and WAIT for them to load.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="flex flex-col gap-4">
+                {fontInfo.families.map((font) => (
+                  <div key={font} className="flex flex-col">
+                    <span className="text-3xl font-extrabold text-foreground mb-1">
+                      Please install {font} and wait
+                    </span>
+                    <span className="text-sm font-mono text-muted-foreground break-all bg-muted/50 p-2 rounded">
+                      {fontInfo.googleFonts || "No Google Fonts URL specified in this payload"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="font-bold text-blue-900 dark:text-blue-100 mb-2 underline">How to add fonts in Webflow Designer:</p>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-blue-900/80 dark:text-blue-200/80">
+                  <li>Go to <strong>Site Settings → Fonts</strong></li>
+                  <li>In the <strong>Google Fonts</strong> section, search for each font listed above</li>
+                  <li>Add them to your project and <strong>save changes</strong></li>
+                  <li><strong>Wait</strong> a few seconds for the fonts to propagate to the Designer</li>
+                  <li>Once installed, proceed to Step 2 below</li>
+                </ol>
+              </div>
+
+              {fontInfo.googleFonts && (
+                <Button variant="outline" className="w-full text-blue-700 border-blue-300 hover:bg-blue-50" onClick={handleCopyFontUrl}>
+                  <HugeiconsIcon icon={Copy01Icon} size={16} className="mr-2" />
+                  Copy Google Fonts URL
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Main action - Step 2 */}
+      <Card className="border-2 border-primary/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl font-bold">
+            <HugeiconsIcon icon={PaintBoardIcon} size={24} />
+            Step 2: Copy Design Tokens
+          </CardTitle>
+          <CardDescription className="text-base">
+            Paste this <strong>FIRST</strong> into Webflow. Delete the div you just created after pasting, then proceed with individual components.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            size="lg"
+            className="w-full text-lg h-14"
+            onClick={handleCopyToWebflow}
+            disabled={!tokenWebflowJson}
+          >
+            <HugeiconsIcon icon={copied ? CheckmarkCircle01Icon : Copy01Icon} size={24} className="mr-2" />
+            {copied ? "Copied! Paste in Webflow" : "Copy Design Tokens"}
+          </Button>
+          {!tokenWebflowJson && (
+            <p className="text-sm text-muted-foreground mt-2 text-center">
+              Token payload will be generated after parsing HTML.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+
+      {/* Warnings */}
+      {warnings.length > 0 && (
+        <Card className="border-amber-500/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-amber-600">
+              <HugeiconsIcon icon={Alert01Icon} size={16} />
+              Warnings ({warnings.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              {warnings.slice(0, 5).map((w, i) => (
+                <li key={i}>• {w}</li>
+              ))}
+              {warnings.length > 5 && (
+                <li className="text-muted-foreground">...and {warnings.length - 5} more</li>
+              )}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* CSS Variables Preview */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">tokens.css</CardTitle>
+            <Button variant="ghost" size="sm" onClick={handleCopyCss}>
+              <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+              Copy
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ArtifactViewer content={tokensCss || "/* No :root tokens found */"} maxHeight="200px" />
+        </CardContent>
+      </Card>
+
+      {/* JSON Preview */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">tokens.json</CardTitle>
+            <Button variant="ghost" size="sm" onClick={handleCopyJson}>
+              <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+              Copy
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ArtifactViewer content={tokensJson} maxHeight="200px" />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ============================================
+// CSS TAB
+// ============================================
+
+interface CssTabProps {
+  stylesCss: string
+  classIndex: ClassIndex
+}
+
+function CssTab({ stylesCss, classIndex }: CssTabProps) {
+  const classNames = Object.keys(classIndex.classes)
+  const styledClasses = classNames.filter(
+    (name) => classIndex.classes[name].baseStyles || classIndex.classes[name].hoverStyles
+  )
+
+  const handleCopyCss = () => {
+    navigator.clipboard.writeText(stylesCss)
+    toast.success("CSS copied to clipboard")
+  }
+
+  const handleCopyClassIndex = () => {
+    navigator.clipboard.writeText(JSON.stringify(classIndex, null, 2))
+    toast.success("Class index copied to clipboard")
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Stats */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Class Coverage</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold">{classNames.length}</div>
+              <div className="text-xs text-muted-foreground">Total Classes</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-600">{styledClasses.length}</div>
+              <div className="text-xs text-muted-foreground">With Styles</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-amber-600">{classIndex.warnings.length}</div>
+              <div className="text-xs text-muted-foreground">Warnings</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Warnings */}
+      {classIndex.warnings.length > 0 && (
+        <Card className="border-amber-500/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-amber-600">
+              <HugeiconsIcon icon={Alert01Icon} size={16} />
+              CSS Warnings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="text-sm text-muted-foreground space-y-1 max-h-32 overflow-y-auto">
+              {classIndex.warnings.map((w, i) => (
+                <li key={i}>• {w.message}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* CSS Preview */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">styles.css</CardTitle>
+            <Button variant="ghost" size="sm" onClick={handleCopyCss}>
+              <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+              Copy
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ArtifactViewer content={stylesCss} maxHeight="300px" />
+        </CardContent>
+      </Card>
+
+      {/* Class List */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">classIndex.json ({classNames.length} classes)</CardTitle>
+            <Button variant="ghost" size="sm" onClick={handleCopyClassIndex}>
+              <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+              Copy
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+            {classNames.map((name) => (
+              <span
+                key={name}
+                className={cn(
+                  "px-2 py-0.5 rounded text-xs font-mono",
+                  styledClasses.includes(name)
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                .{name}
+              </span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ============================================
+// HTML TAB
+// ============================================
+
+interface HtmlTabProps {
+  cleanHtml: string
+  componentTree: ComponentTree | null
+  establishedClasses: Set<string>
+  tokensPasted: boolean
+  skipEstablishedStyles: boolean
+  onSkipEstablishedStylesChange: (skip: boolean) => void
+  onCopyComponent: (component: Component) => Promise<void>
+}
+
+function HtmlTab({
+  cleanHtml,
+  componentTree,
+  establishedClasses,
+  tokensPasted,
+  skipEstablishedStyles,
+  onSkipEstablishedStylesChange,
+  onCopyComponent
+}: HtmlTabProps) {
+  const orderedComponents = componentTree
+    ? [...componentTree.components].sort((a, b) => a.order - b.order)
+    : []
+  const navComponent = orderedComponents.find((c) => c.type === "nav")
+  const heroComponent = orderedComponents.find((c) => c.type === "hero")
+  const headerComboComponent: Component | null =
+    navComponent && heroComponent
+      ? {
+        id: "header-combo",
+        name: "Header (Nav + Hero)",
+        type: "header",
+        tagName: "div",
+        primaryClass: "",
+        htmlContent: `<div>\n${navComponent.htmlContent}\n${heroComponent.htmlContent}\n</div>`,
+        classesUsed: [],
+        assetsUsed: [],
+        jsHooks: Array.from(new Set([...navComponent.jsHooks, ...heroComponent.jsHooks])),
+        children: [],
+        order: -1,
+      }
+      : null
+
+  const handleCopyCleanHtml = () => {
+    navigator.clipboard.writeText(cleanHtml)
+    toast.success("Clean HTML copied to clipboard")
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Component List */}
+      {componentTree && componentTree.components.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <HugeiconsIcon icon={Layers01Icon} size={16} />
+              Components ({componentTree.components.length})
+            </CardTitle>
+            <CardDescription>
+              Copy components to paste in Webflow Designer.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Style handling option */}
+            {establishedClasses.size > 0 && (
+              <div className="mb-4 p-3 rounded-lg bg-muted/50 border">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={skipEstablishedStyles}
+                    onChange={(e) => onSkipEstablishedStylesChange(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-gray-300"
+                  />
+                  <div>
+                    <div className="font-medium text-sm">Skip established styles</div>
+                    <div className="text-xs text-muted-foreground">
+                      {tokensPasted ? (
+                        <span className="text-green-600">
+                          Tokens were pasted. Enable this to avoid &quot;-2&quot; class duplicates.
+                        </span>
+                      ) : (
+                        <span>
+                          Enable only if you already pasted the token payload. Otherwise keep unchecked.
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {establishedClasses.size} classes can be skipped
+                    </div>
+                  </div>
+                </label>
+              </div>
+            )}
+            <div className="space-y-2">
+              {headerComboComponent && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted">
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{headerComboComponent.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {navComponent?.name} + {heroComponent?.name}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(headerComboComponent.htmlContent)
+                        toast.success(`${headerComboComponent.name} HTML copied`)
+                      }}
+                    >
+                      <HugeiconsIcon icon={CodeIcon} size={14} className="mr-1" />
+                      HTML
+                    </Button>
+                    <Button size="sm" onClick={() => onCopyComponent(headerComboComponent)}>
+                      <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+                      Webflow
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {componentTree.components.map((component) => (
+                <div
+                  key={component.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{component.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {component.type} • {component.classesUsed.length} classes • {component.jsHooks.length} JS hooks
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(component.htmlContent)
+                        toast.success(`${component.name} HTML copied`)
+                      }}
+                    >
+                      <HugeiconsIcon icon={CodeIcon} size={14} className="mr-1" />
+                      HTML
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => onCopyComponent(component)}
+                    >
+                      <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+                      Webflow
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Warnings */}
+      {componentTree && componentTree.warnings.length > 0 && (
+        <Card className="border-amber-500/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-amber-600">
+              <HugeiconsIcon icon={Alert01Icon} size={16} />
+              Componentization Warnings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              {componentTree.warnings.map((w, i) => (
+                <li key={i}>• {w}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Clean HTML Preview */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">clean.html</CardTitle>
+            <Button variant="ghost" size="sm" onClick={handleCopyCleanHtml}>
+              <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+              Copy
+            </Button>
+          </div>
+          <CardDescription>
+            HTML with inline styles, style tags, and script tags removed.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ArtifactViewer content={cleanHtml} maxHeight="300px" />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ============================================
+// JS TAB
+// ============================================
+
+interface JsTabProps {
+  scriptsJs: string
+  jsHooks: string[]
+  componentTree: ComponentTree | null
+}
+
+function JsTab({ scriptsJs, jsHooks, componentTree }: JsTabProps) {
+  const handleCopyJs = () => {
+    navigator.clipboard.writeText(scriptsJs)
+    toast.success("JavaScript copied to clipboard")
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Instructions */}
+      <Card className="border-blue-500/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2 text-blue-600">
+            <HugeiconsIcon icon={JavaScriptIcon} size={16} />
+            JavaScript Handoff
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          <p>JavaScript must be added manually to Webflow:</p>
+          <ol className="list-decimal list-inside mt-2 space-y-1">
+            <li>Copy the JS code below</li>
+            <li>In Webflow, go to Project Settings → Custom Code</li>
+            <li>Paste into &quot;Before &lt;/body&gt; tag&quot; section</li>
+            <li>Alternatively, use an HTML Embed element</li>
+          </ol>
+        </CardContent>
+      </Card>
+
+      {/* JS Hooks */}
+      {jsHooks.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">JS Hooks ({jsHooks.length})</CardTitle>
+            <CardDescription>
+              Elements referenced by JavaScript (IDs, data attributes)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-1">
+              {jsHooks.map((hook) => (
+                <span
+                  key={hook}
+                  className="px-2 py-0.5 rounded text-xs font-mono bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                >
+                  {hook}
+                </span>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Per-component JS hooks */}
+      {componentTree && componentTree.components.some((c) => c.jsHooks.length > 0) && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">JS Hooks by Component</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {componentTree.components
+                .filter((c) => c.jsHooks.length > 0)
+                .map((component) => (
+                  <div key={component.id} className="p-2 rounded bg-muted/50">
+                    <div className="font-medium text-sm">{component.name}</div>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {component.jsHooks.map((hook) => (
+                        <span
+                          key={hook}
+                          className="px-1.5 py-0.5 rounded text-xs font-mono bg-blue-100/50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                        >
+                          {hook}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Scripts Preview */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">scripts.js</CardTitle>
+            <Button variant="ghost" size="sm" onClick={handleCopyJs} disabled={!scriptsJs}>
+              <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+              Copy
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ArtifactViewer
+            content={scriptsJs || "// No JavaScript found"}
+            maxHeight="300px"
+          />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
+
 function ImportWizard() {
   const { isLoaded: isUserLoaded, user } = useUser()
-  const importSections = useMutation(api.import.importSections)
+  const importProject = useMutation(api.import.importProject)
 
+  // Step state
   const [step, setStep] = useState<Step>("input")
+
+  // Input state
   const [htmlInput, setHtmlInput] = useState("")
-  const [designSystemName, setDesignSystemName] = useState("")
-  const [designSystemImageUrl, setDesignSystemImageUrl] = useState("")
-  const [parseResult, setParseResult] = useState<ReturnType<typeof parseFullHtml> | null>(null)
-  const [tokenExtraction, setTokenExtraction] = useState<ReturnType<typeof extractTokens> | null>(null)
-  const [selectedSections, setSelectedSections] = useState<Set<string>>(new Set())
+  const [projectName, setProjectName] = useState("")
+  const [projectSlug, setProjectSlug] = useState("")
+
+  // Extracted artifacts
+  const [artifacts, setArtifacts] = useState<ExtractedArtifacts | null>(null)
+  const [componentTree, setComponentTree] = useState<ComponentTree | null>(null)
+  const [tokenWebflowJson, setTokenWebflowJson] = useState<string | null>(null)
+  const [establishedClasses, setEstablishedClasses] = useState<Set<string>>(new Set())
+  const [tokenExtraction, setTokenExtraction] = useState<TokenExtraction | null>(null)
+
+  // Import state
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
-  const [stripBaseStyles, setStripBaseStyles] = useState(true)
-  const [mergeNavigation, setMergeNavigation] = useState(true)
-  const [useFlowPartyMap, setUseFlowPartyMap] = useState(false)
-  const [alwaysCreateNew, setAlwaysCreateNew] = useState(true)
-  const [combineHeaderHero, setCombineHeaderHero] = useState(true)
-  const [useLlmConversion, setUseLlmConversion] = useState(false)
-  const [conversionSummary, setConversionSummary] = useState<{
-    llmSuccess: number
-    llmFailed: number
-    fallbackUsed: number
-    errors: string[]
-  } | null>(null)
 
-  const convertSectionWithLlm = useCallback(
-    async (section: DetectedSection, namespace: string): Promise<string | undefined> => {
-      console.log("[convertSectionWithLlm] starting fetch", {
-        sectionName: section.name,
-        htmlLength: section.htmlContent.length,
-        cssLength: section.cssContent.length,
-        namespace,
-      })
+  // Style handling options
+  const [tokensPasted, setTokensPasted] = useState(false)
+  const [skipEstablishedStyles, setSkipEstablishedStyles] = useState(false)
 
-      const startTime = Date.now()
-      try {
-        const response = await fetch("/api/webflow/convert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            html: section.htmlContent,
-            css: stripTokenCss(section.cssContent),
-            idPrefix: namespace,
-            sectionName: section.name,
-          }),
-        })
+  // Validation warnings
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([])
+  const [llmSummary, setLlmSummary] = useState<LlmSummary | null>(null)
 
-        console.log("[convertSectionWithLlm] fetch response", {
-          sectionName: section.name,
-          ok: response.ok,
-          status: response.status,
-          duration: Date.now() - startTime,
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          console.warn("[convertSectionWithLlm] LLM failed:", section.name, {
-            status: response.status,
-            error: errorData.error,
-            schemaErrors: errorData.schemaErrors,
-            requestId: errorData.requestId,
-          })
-          return undefined
-        }
-
-        const data = await response.json()
-        if (data?.requestId) {
-          console.info("[convertSectionWithLlm] LLM success:", section.name, {
-            requestId: data.requestId,
-            duration: Date.now() - startTime,
-          })
-        }
-        return data?.webflowJson as string | undefined
-      } catch (error) {
-        console.error("[convertSectionWithLlm] fetch EXCEPTION:", section.name, error)
-        return undefined
-      }
-    },
-    []
-  )
-
-  const resolveWebflowJson = useCallback(
-    async (section: DetectedSection, namespace: string): Promise<string | undefined> => {
-      console.log("[resolveWebflowJson] called", {
-        sectionName: section.name,
-        useLlmConversion,
-        namespace,
-      })
-
-      if (useLlmConversion) {
-        console.log("[resolveWebflowJson] calling LLM for:", section.name)
-        const llmJson = await convertSectionWithLlm(section, namespace)
-        console.log("[resolveWebflowJson] LLM result:", section.name, !!llmJson ? "success" : "failed/empty")
-        if (llmJson) return llmJson
-      } else {
-        console.log("[resolveWebflowJson] LLM disabled, using fallback for:", section.name)
-      }
-
-      const fallbackPayload = convertSectionToWebflow(section, { idPrefix: namespace })
-      const hasFallback =
-        fallbackPayload.payload.nodes.length > 0 || fallbackPayload.payload.styles.length > 0
-      console.log("[resolveWebflowJson] fallback result:", section.name, {
-        hasPayload: hasFallback,
-        nodes: fallbackPayload.payload.nodes.length,
-        styles: fallbackPayload.payload.styles.length,
-      })
-      return hasFallback ? JSON.stringify(fallbackPayload) : undefined
-    },
-    [convertSectionWithLlm, useLlmConversion]
-  )
-
-  const parseHtml = useCallback(() => {
+  // Parse HTML and extract artifacts
+  const handleParse = useCallback(async () => {
     if (!htmlInput.trim()) {
       toast.error("Please paste HTML content")
-      return null
+      return
     }
 
     try {
-      const cssOptions: CssExtractionOptions = stripBaseStyles
-        ? {
-            includeRoot: false,
-            includeReset: false,
-            includeBody: false,
-            includeHtml: false,
-            includeImg: false,
-            dedupe: true,
-          }
-        : { dedupe: true }
+      setLlmSummary(null)
+      // 1. Extract clean HTML and artifacts
+      const cleanResult = extractCleanHtml(htmlInput)
 
-      const sectionOptions = {
-        includeDivs: true,
-        divClassPattern: /^(?:[\w-]+-section|client-bar)$/i,
-      }
-      const result = parseFullHtml(htmlInput, { cssOptions, sectionOptions })
-      let sections = result.sections.filter(
-        (section) =>
-          section.className &&
-          !section.className.toLowerCase().includes("wrapper") &&
-          !section.name.toLowerCase().includes("wrapper")
-      )
+      // 1.5 Normalize HTML + CSS for Webflow conversion
+      const normalization = normalizeHtmlCssForWebflow(cleanResult.cleanHtml, cleanResult.extractedStyles)
+      const visibilityDefaults = applyVisibilityDefaults(normalization.html, normalization.css)
+      let normalizedHtml = visibilityDefaults.html
 
-      if (mergeNavigation) {
-        sections = mergeNavigationSections(sections, result.fullCss, cssOptions)
-      }
+      // 2. Parse CSS for semantic request + diagnostics
+      const cssResult = parseCSS(normalization.css)
 
-      if (combineHeaderHero) {
-        sections = combineHeaderHeroSections(sections, result.fullCss, cssOptions)
-      }
-
-      if (sections.length === 0) {
-        toast.error("No sections detected. Make sure HTML contains <section>, <nav>, or <footer> tags.")
-        return null
-      }
-
-      // Extract tokens
-      const trimmedName = designSystemName.trim()
-      const normalizedName = trimmedName && /flow party/i.test(trimmedName) ? "Flow Party" : trimmedName
-      const name = normalizedName || result.title || "Imported Design"
-      const tokens = extractTokens(result.fullCss, name)
+      // 3. Extract tokens
+      const name = projectName || "Imported Design"
+      const tokens = extractTokens(normalization.css, name)
       const fontUrl = extractGoogleFontsUrl(htmlInput)
-      const fontFamilies = extractFontFamilies(result.fullCss)
+      const fontFamilies = extractFontFamilies(normalization.css)
       if (fontUrl && fontFamilies.length > 0) {
-        tokens.fonts = {
-          googleFonts: fontUrl,
-          families: fontFamilies,
+        tokens.fonts = { googleFonts: fontUrl, families: fontFamilies }
+      }
+
+      // 4. Componentize clean HTML
+      let components = componentizeHtml(normalizedHtml)
+      const namingResult = applyDeterministicComponentNames(components)
+      components = namingResult.componentTree
+      const initialFooterPresent =
+        /<footer\b/i.test(normalizedHtml) ||
+        /\bclass="[^"]*footer[^"]*"/i.test(normalizedHtml) ||
+        /\bid="footer"/i.test(normalizedHtml)
+      const initialUnexpectedFooters = initialFooterPresent
+        ? []
+        : components.components.filter((component) => component.name.toLowerCase().startsWith("footer"))
+      const cardWarningsPre = buildCardGridWarnings(components, normalizedHtml)
+      const hasUnresolvedVars = cssResult.classIndex.warnings.some(
+        (warning) => warning.type === "variable_unresolved"
+      )
+      const forceLlm = process.env.NEXT_PUBLIC_FLOWBRIDGE_FORCE_LLM === "1"
+      const shouldInvokeLlm =
+        forceLlm || hasUnresolvedVars || initialUnexpectedFooters.length > 0 || cardWarningsPre.length > 0
+
+      // 4.5 Optional semantic repair pass (LLM)
+      let semanticWarnings: string[] = []
+      let finalCss = normalization.css
+      let llmMeta: FlowbridgeSemanticPatchMeta | null = null
+      const patchCounts = { renamedComponents: 0, htmlMutations: 0, cssMutations: 0 }
+      if (shouldInvokeLlm) {
+        try {
+          const semanticContext = buildSemanticPatchRequest(
+            normalizedHtml,
+            components,
+            cssResult.classIndex,
+            cssResult.cssVariables
+          )
+
+          const response = await fetch("/api/flowbridge/semantic", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              request: semanticContext.request,
+              model: process.env.NEXT_PUBLIC_OPENROUTER_MODEL,
+            }),
+          })
+
+          if (!response.ok) {
+            console.warn("LLM_UNAVAILABLE", { status: response.status })
+            llmMeta = { mode: "fallback", reason: `http_${response.status}` }
+          } else {
+            const data = (await response.json()) as {
+              ok: boolean
+              response?: FlowbridgeSemanticPatchResponse
+              meta?: FlowbridgeSemanticPatchMeta
+              reason?: string
+            }
+
+            llmMeta = data.meta ?? null
+
+            if (data.ok && data.response) {
+              const applyResult = applySemanticPatchResponse({
+                componentTree: components,
+                patch: data.response,
+              })
+              components = applyResult.componentTree
+              normalizedHtml = applyResult.patchedHtml
+              semanticWarnings = applyResult.warnings
+              patchCounts.renamedComponents = applyResult.applied.renames
+              patchCounts.htmlMutations = applyResult.applied.htmlPatches
+              patchCounts.cssMutations = data.response.cssPatches.length
+              const cssPatch = data.response.cssPatches[data.response.cssPatches.length - 1]
+              if (cssPatch?.op === "replaceFinalCss") {
+                finalCss = cssPatch.css
+              }
+              if (data.response.notes.length > 0) {
+                semanticWarnings.push(...data.response.notes.map((note) => `LLM: ${note}`))
+              }
+              console.info("LLM_PATCH_APPLIED", patchCounts)
+            } else {
+              console.warn("LLM_UNAVAILABLE", { reason: data.reason })
+            }
+          }
+        } catch (error) {
+          console.warn("LLM_UNAVAILABLE", { error: String(error) })
+          llmMeta = { mode: "fallback", reason: "llm_error" }
+        }
+      } else {
+        llmMeta = { mode: "fallback", reason: "no_semantic_issues" }
+      }
+
+      const footerPresent =
+        /<footer\b/i.test(normalizedHtml) ||
+        /\bclass="[^"]*footer[^"]*"/i.test(normalizedHtml) ||
+        /\bid="footer"/i.test(normalizedHtml)
+      if (!footerPresent) {
+        const unexpectedFooters = components.components.filter((component) =>
+          component.name.toLowerCase().startsWith("footer")
+        )
+        if (unexpectedFooters.length > 0) {
+          semanticWarnings.push("Unexpected extracted section (Footer) removed: no footer in input HTML.")
+          const removedIds = new Set(unexpectedFooters.map((component) => component.id))
+          components.components = components.components.filter((component) => !removedIds.has(component.id))
+          components.rootOrder = components.rootOrder.filter((id) => !removedIds.has(id))
         }
       }
 
-      return {
-        result: { ...result, sections },
-        tokens,
-        designSystemName: name,
+      const cardWarnings = buildCardGridWarnings(components, normalizedHtml)
+      if (cardWarnings.length > 0) {
+        semanticWarnings.push(...cardWarnings)
       }
+
+      // 5. Literalize CSS for Webflow paste
+      const literalization = literalizeCssForWebflow(finalCss, {
+        strict: process.env.NEXT_PUBLIC_FLOWBRIDGE_STRICT_LLM === "1",
+      })
+
+      // 6. Re-parse CSS using literalized values
+      const finalCssResult = parseCSS(literalization.css)
+
+      // 7. Build token Webflow payload from literal CSS
+      const tokenPayloadResult = buildCssTokenPayload(literalization.css, {
+        namespace: tokens.namespace,
+        includePreview: true,
+      })
+
+      // 8. Validate for Webflow paste
+      const warnings = validateForWebflowPaste(finalCssResult.classIndex, components.components)
+
+      // Store results
+      setArtifacts({
+        tokensJson: JSON.stringify(
+          {
+            name: tokens.name,
+            namespace: tokens.namespace,
+            variables: tokens.variables,
+            fonts: tokens.fonts,
+          },
+          null,
+          2
+        ),
+        tokensCss: cssResult.tokensCss,
+        stylesCss: literalization.css,
+        classIndex: finalCssResult.classIndex,
+        cleanHtml: normalizedHtml,
+        scriptsJs: cleanResult.extractedScripts,
+        jsHooks: extractJsHooks(normalizedHtml),
+        cssVariables: finalCssResult.cssVariables,
+      })
+      setComponentTree(components)
+      setTokenWebflowJson(JSON.stringify(tokenPayloadResult.webflowPayload))
+      setEstablishedClasses(tokenPayloadResult.establishedClasses)
+      setTokenExtraction(tokens)
+      setValidationWarnings([
+        ...warnings,
+        ...tokenPayloadResult.warnings,
+        ...normalization.warnings,
+        ...visibilityDefaults.warnings,
+        ...namingResult.warnings,
+        ...semanticWarnings,
+        ...literalization.warnings,
+      ])
+      setLlmSummary({
+        mode: llmMeta?.mode ?? "fallback",
+        model: llmMeta?.model,
+        latencyMs: llmMeta?.latencyMs,
+        inputTokens: llmMeta?.inputTokens,
+        outputTokens: llmMeta?.outputTokens,
+        renamedComponents: patchCounts.renamedComponents,
+        htmlMutations: patchCounts.htmlMutations,
+        cssMutations: patchCounts.cssMutations,
+        remainingCssVarCount: literalization.remainingVarCount,
+        reason: llmMeta?.reason ?? (llmMeta ? undefined : "llm_unavailable"),
+      })
+
+      // Update project name/slug if not set
+      if (!projectName) {
+        setProjectName(tokens.name)
+      }
+      if (!projectSlug) {
+        setProjectSlug(tokens.slug)
+      }
+
+      setStep("artifacts")
+      toast.success(
+        `Extracted ${components.components.length} components, ${Object.keys(finalCssResult.classIndex.classes).length} classes`
+      )
     } catch (error) {
       console.error("Parse error:", error)
       toast.error("Failed to parse HTML. Check console for details.")
-      return null
     }
-  }, [htmlInput, designSystemName, mergeNavigation, combineHeaderHero, stripBaseStyles])
+  }, [htmlInput, projectName, projectSlug])
 
-  // Parse HTML
-  const handleParse = useCallback(() => {
-    const parsed = parseHtml()
-    if (!parsed) return
+  // Copy token payload to Webflow clipboard
+  const handleCopyTokens = useCallback(async () => {
+    if (!tokenWebflowJson) {
+      toast.error("No token payload available")
+      return
+    }
 
-    setParseResult(parsed.result)
-    setTokenExtraction(parsed.tokens)
-    setDesignSystemName(parsed.designSystemName)
+    try {
+      const payload = JSON.parse(tokenWebflowJson)
+      const result = await copyToWebflowClipboard(payload)
+      if (result.success) {
+        setTokensPasted(true)
+        toast.success("Token styles copied! Paste in Webflow Designer, then you can skip styles on component paste.")
+      } else {
+        toast.error("Failed to copy to clipboard")
+      }
+    } catch (error) {
+      console.error("Copy error:", error)
+      toast.error("Failed to copy token payload")
+    }
+  }, [tokenWebflowJson])
 
-    // Select all sections by default
-    setSelectedSections(new Set(parsed.result.sections.map((s) => s.id)))
+  // Copy component to Webflow clipboard
+  const handleCopyComponent = useCallback(
+    async (component: Component) => {
+      if (!artifacts) {
+        toast.error("No artifacts available")
+        return
+      }
 
-    setStep("preview")
-    const colorCount = parsed.tokens.variables.filter((v) => v.type === "color").length
-    const fontCount = parsed.tokens.variables.filter((v) => v.type === "fontFamily").length
-    toast.success(`Detected ${parsed.result.sections.length} sections, ${colorCount} colors, ${fontCount} fonts`)
-  }, [parseHtml])
+      try {
+        const result = buildComponentPayload(
+          component,
+          artifacts.classIndex,
+          establishedClasses,
+          { skipEstablishedStyles }
+        )
 
-  const handleAutoImport = useCallback(async () => {
-    const parsed = parseHtml()
-    if (!parsed) return
+        if (result.warnings.length > 0) {
+          toast.warning(`${component.name}: ${result.warnings[0]}`)
+        }
+
+        const copyResult = await copyToWebflowClipboard(JSON.stringify(result.webflowPayload))
+        if (copyResult.success) {
+          toast.success(`${component.name} copied! Paste in Webflow Designer.`)
+        } else {
+          toast.error("Failed to copy to clipboard")
+        }
+      } catch (error) {
+        console.error("Copy error:", error)
+        toast.error(`Failed to copy ${component.name}`)
+      }
+    },
+    [artifacts, establishedClasses, skipEstablishedStyles]
+  )
+
+  // Import to database
+  const handleImport = useCallback(async () => {
+    if (!artifacts || !componentTree || !tokenExtraction) {
+      toast.error("Please parse HTML first")
+      return
+    }
 
     setIsImporting(true)
 
     try {
-      const baseSlug = parsed.tokens.slug
-      const instanceSlug = alwaysCreateNew ? createInstanceSlug(baseSlug) : baseSlug
-      const tokensForImport = { ...parsed.tokens, slug: instanceSlug }
-      const manifest = generateTokenManifest(tokensForImport)
-      const tokenSlug = `${instanceSlug}-tokens`
-      const useMap = !alwaysCreateNew && useFlowPartyMap && baseSlug === "flow-party"
-      const tokenWebflowPayload = buildTokenWebflowPayload(tokensForImport)
-      const tokenWebflowJson =
-        tokenWebflowPayload.payload.styles.length > 0 ? JSON.stringify(tokenWebflowPayload) : undefined
+      const slug = projectSlug || generateSlug(projectName || "imported")
 
-      const sectionsToImport = []
-      let webflowJsonCount = 0
-      let emptyCount = 0
-      for (const section of parsed.result.sections) {
-        const webflowJson = await resolveWebflowJson(section, tokensForImport.namespace)
-        if (webflowJson && webflowJson !== "{}" && !webflowJson.includes('"placeholder"')) {
-          webflowJsonCount++
-        } else {
-          emptyCount++
-        }
-        sectionsToImport.push({
-          id: section.id,
-          ...resolveSectionMeta(section, instanceSlug, useMap),
-          codePayload: buildCodePayload(section),
-          webflowJson,
-          dependencies: [tokenSlug],
+      const componentsToImport = componentTree.components.map((component) => {
+        const payloadResult = buildComponentPayload(
+          component,
+          artifacts.classIndex,
+          establishedClasses
+        )
+
+        const cssSnippet = extractCssForSection(artifacts.stylesCss, component.classesUsed, {
+          includeRoot: false,
+          includeReset: false,
+          includeBody: false,
+          includeHtml: false,
+          includeImg: false,
+          includeKeyframes: true,
+          dedupe: true,
         })
+
+        const jsSnippet = artifacts.scriptsJs || ""
+        const cssBlock = cssSnippet || "/* Uses design system token classes. See tokens asset. */"
+        const jsBlock = jsSnippet ? `\n\n/* JS */\n${jsSnippet}` : ""
+
+        return {
+          id: component.id,
+          name: component.name,
+          slug: `${slug}-${component.id}`,
+          category: component.type === "nav" || component.type === "footer" ? "navigation" : component.type === "hero" ? "hero" : "sections",
+          tags: [slug, component.type, ...component.classesUsed.slice(0, 5)],
+          htmlContent: component.htmlContent,
+          classesUsed: component.classesUsed,
+          jsHooks: component.jsHooks,
+          webflowJson: JSON.stringify(payloadResult.webflowPayload),
+          codePayload: `/* HTML */\n${component.htmlContent}\n\n/* CSS */\n${cssBlock}${jsBlock}`,
+        }
+      })
+
+      const fullPageWrapperHtml = `<div>\n${artifacts.cleanHtml}\n</div>`
+      const fullPageClasses = getClassesUsed(fullPageWrapperHtml)
+      const fullPageComponent: Component = {
+        id: "full-page",
+        name: "Full Page",
+        type: "section",
+        tagName: "div",
+        primaryClass: "",
+        htmlContent: fullPageWrapperHtml,
+        classesUsed: fullPageClasses,
+        assetsUsed: [],
+        jsHooks: extractJsHooks(fullPageWrapperHtml),
+        children: [],
+        order: -999,
       }
 
-      // Log conversion summary
-      console.log("[handleAutoImport] conversion summary", {
-        total: sectionsToImport.length,
-        withWebflowJson: webflowJsonCount,
-        withoutWebflowJson: emptyCount,
-        useLlmConversion,
+      const fullPagePayload = buildComponentPayload(
+        fullPageComponent,
+        artifacts.classIndex,
+        establishedClasses
+      )
+
+      const fullPageCssSnippet = extractCssForSection(artifacts.stylesCss, fullPageClasses, {
+        includeRoot: true,
+        includeReset: true,
+        includeBody: true,
+        includeHtml: true,
+        includeImg: true,
+        includeKeyframes: true,
+        dedupe: true,
+      })
+      const fullPageJsSnippet = artifacts.scriptsJs || ""
+      const fullPageCssBlock = fullPageCssSnippet || "/* Uses design system token classes. See tokens asset. */"
+      const fullPageJsBlock = fullPageJsSnippet ? `\n\n/* JS */\n${fullPageJsSnippet}` : ""
+
+      componentsToImport.push({
+        id: fullPageComponent.id,
+        name: fullPageComponent.name,
+        slug: `${slug}-full-page`,
+        category: "full-page",
+        tags: [slug, "full-page"],
+        htmlContent: fullPageComponent.htmlContent,
+        classesUsed: fullPageComponent.classesUsed,
+        jsHooks: fullPageComponent.jsHooks,
+        webflowJson: JSON.stringify(fullPagePayload.webflowPayload),
+        codePayload: `/* HTML */\n${fullPageComponent.htmlContent}\n\n/* CSS */\n${fullPageCssBlock}${fullPageJsBlock}`,
       })
 
-      // Update summary state for UI
-      setConversionSummary({
-        llmSuccess: useLlmConversion ? webflowJsonCount : 0,
-        llmFailed: useLlmConversion ? emptyCount : 0,
-        fallbackUsed: useLlmConversion ? 0 : webflowJsonCount,
-        errors: [],
+      const result = await importProject({
+        projectName: projectName || "Imported Design",
+        projectSlug: slug,
+        artifacts: {
+          tokensJson: artifacts.tokensJson,
+          tokensCss: artifacts.tokensCss,
+          stylesCss: artifacts.stylesCss,
+          classIndex: JSON.stringify(artifacts.classIndex),
+          cleanHtml: artifacts.cleanHtml,
+          scriptsJs: artifacts.scriptsJs || undefined,
+          jsHooks: artifacts.jsHooks,
+        },
+        components: componentsToImport,
+        tokenWebflowJson: tokenWebflowJson || undefined,
+        sourceHtml: htmlInput.length < 500000 ? htmlInput : undefined, // Don't store huge files
       })
 
-      const result = await importSections({
-        designSystemName: parsed.tokens.name,
-        designSystemSlug: instanceSlug,
-        designSystemImageUrl: designSystemImageUrl.trim() || undefined,
-        sections: sectionsToImport,
-        tokenManifest: tokenManifestToJson(manifest),
-        tokenWebflowJson,
-      })
-
-      setParseResult(parsed.result)
-      setTokenExtraction(parsed.tokens)
       setImportResult(result)
       setStep("complete")
 
       if (result.errors.length > 0) {
         toast.warning(`Imported with ${result.errors.length} errors`)
       } else {
-        toast.success(`Imported ${result.assetsCreated + result.assetsUpdated} sections!`)
+        toast.success(`Imported ${result.assetsCreated + result.assetsUpdated} assets!`)
       }
     } catch (error) {
-      console.error("Auto import error:", error)
-      toast.error("Auto import failed. Check console for details.")
+      console.error("Import error:", error)
+      toast.error("Import failed. Check console for details.")
     } finally {
       setIsImporting(false)
     }
-  }, [parseHtml, importSections, useFlowPartyMap, alwaysCreateNew, resolveWebflowJson, designSystemImageUrl])
+  }, [artifacts, componentTree, tokenExtraction, projectName, projectSlug, tokenWebflowJson, htmlInput, establishedClasses, importProject])
 
-  // Handle file upload
+  // File upload handler
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -582,9 +1260,8 @@ function ImportWizard() {
       const content = event.target?.result as string
       setHtmlInput(content)
 
-      // Extract name from filename
       const name = file.name.replace(/\.html?$/i, "").replace(/-/g, " ")
-      setDesignSystemName(name.charAt(0).toUpperCase() + name.slice(1))
+      setProjectName(name.charAt(0).toUpperCase() + name.slice(1))
 
       toast.success("File loaded")
     }
@@ -594,154 +1271,53 @@ function ImportWizard() {
     reader.readAsText(file)
   }, [])
 
-  // Toggle section selection
-  const toggleSection = useCallback((sectionId: string) => {
-    setSelectedSections((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(sectionId)) {
-        newSet.delete(sectionId)
-      } else {
-        newSet.add(sectionId)
-      }
-      return newSet
-    })
-  }, [])
-
-  // Select/deselect all
-  const toggleAll = useCallback(() => {
-    if (!parseResult) return
-    if (selectedSections.size === parseResult.sections.length) {
-      setSelectedSections(new Set())
-    } else {
-      setSelectedSections(new Set(parseResult.sections.map((s) => s.id)))
-    }
-  }, [parseResult, selectedSections])
-
-  // Import sections
-  const handleImport = useCallback(async () => {
-    if (!parseResult || !tokenExtraction || selectedSections.size === 0) {
-      toast.error("No sections selected")
-      return
-    }
-
-    setIsImporting(true)
-
-    try {
-      const baseSlug = tokenExtraction.slug
-      const instanceSlug = alwaysCreateNew ? createInstanceSlug(baseSlug) : baseSlug
-      const tokensForImport = { ...tokenExtraction, slug: instanceSlug }
-      const manifest = generateTokenManifest(tokensForImport)
-      const tokenSlug = `${instanceSlug}-tokens`
-      const useMap = !alwaysCreateNew && useFlowPartyMap && baseSlug === "flow-party"
-      const tokenWebflowPayload = buildTokenWebflowPayload(tokensForImport)
-      const tokenWebflowJson =
-        tokenWebflowPayload.payload.styles.length > 0 ? JSON.stringify(tokenWebflowPayload) : undefined
-
-      const sectionsToImport = []
-      let webflowJsonCount = 0
-      let emptyCount = 0
-      for (const section of parseResult.sections) {
-        if (!selectedSections.has(section.id)) continue
-        const webflowJson = await resolveWebflowJson(section, tokensForImport.namespace)
-        if (webflowJson && webflowJson !== "{}" && !webflowJson.includes('"placeholder"')) {
-          webflowJsonCount++
-        } else {
-          emptyCount++
-        }
-        sectionsToImport.push({
-          id: section.id,
-          ...resolveSectionMeta(section, instanceSlug, useMap),
-          codePayload: buildCodePayload(section),
-          webflowJson,
-          dependencies: [tokenSlug],
-        })
-      }
-
-      // Log conversion summary
-      console.log("[handleImport] conversion summary", {
-        total: sectionsToImport.length,
-        withWebflowJson: webflowJsonCount,
-        withoutWebflowJson: emptyCount,
-        useLlmConversion,
-      })
-
-      // Update summary state for UI
-      setConversionSummary({
-        llmSuccess: useLlmConversion ? webflowJsonCount : 0,
-        llmFailed: useLlmConversion ? emptyCount : 0,
-        fallbackUsed: useLlmConversion ? 0 : webflowJsonCount,
-        errors: [],
-      })
-
-      const result = await importSections({
-        designSystemName: tokenExtraction.name,
-        designSystemSlug: instanceSlug,
-        designSystemImageUrl: designSystemImageUrl.trim() || undefined,
-        sections: sectionsToImport,
-        tokenManifest: tokenManifestToJson(manifest),
-        tokenWebflowJson,
-      })
-
-      setImportResult(result)
-      setStep("complete")
-
-      if (result.errors.length > 0) {
-        toast.warning(`Imported with ${result.errors.length} errors`)
-      } else {
-        toast.success(`Imported ${result.assetsCreated + result.assetsUpdated} sections!`)
-      }
-    } catch (error) {
-      console.error("Import error:", error)
-      toast.error("Failed to import. Check console for details.")
-    } finally {
-      setIsImporting(false)
-    }
-  }, [parseResult, tokenExtraction, selectedSections, importSections, useFlowPartyMap, alwaysCreateNew, resolveWebflowJson, designSystemImageUrl])
-
   // Reset wizard
   const handleReset = useCallback(() => {
     setStep("input")
     setHtmlInput("")
-    setDesignSystemName("")
-    setDesignSystemImageUrl("")
-    setParseResult(null)
+    setProjectName("")
+    setProjectSlug("")
+    setArtifacts(null)
+    setComponentTree(null)
+    setTokenWebflowJson(null)
+    setEstablishedClasses(new Set())
     setTokenExtraction(null)
-    setSelectedSections(new Set())
     setImportResult(null)
-    setConversionSummary(null)
+    setValidationWarnings([])
+    setTokensPasted(false)
+    setSkipEstablishedStyles(false)
+    setLlmSummary(null)
   }, [])
 
+  // Admin check
   if (!isUserLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
       </div>
     )
   }
 
-  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() || ""
   const adminEmails = getAdminEmails()
-  const isAdmin = adminEmails.includes(userEmail)
+  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase()
+  const isAdmin = userEmail && adminEmails.includes(userEmail)
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="max-w-md">
           <CardHeader>
-            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-              <HugeiconsIcon icon={Alert01Icon} className="h-6 w-6 text-destructive" />
-            </div>
-            <CardTitle>Not Authorized</CardTitle>
-            <CardDescription>
-              You don&apos;t have permission to access this page.
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <HugeiconsIcon icon={Alert01Icon} size={20} className="text-amber-500" />
+              Admin Access Required
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" asChild className="w-full">
-              <Link href="/assets">
-                Return to Assets
-                <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 h-4 w-4" />
-              </Link>
+            <p className="text-muted-foreground">
+              This page is restricted to administrators only.
+            </p>
+            <Button asChild className="mt-4 w-full">
+              <Link href="/assets">Back to Assets</Link>
             </Button>
           </CardContent>
         </Card>
@@ -750,285 +1326,311 @@ function ImportWizard() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <HugeiconsIcon icon={Upload04Icon} className="h-6 w-6 text-primary" />
-          </div>
-          <CardTitle>Import HTML Sections</CardTitle>
-          <CardDescription>
-            {step === "input" && "Paste AI-generated HTML to split into sections and extract design tokens."}
-            {step === "preview" && "Review detected sections and select which ones to import."}
-            {step === "complete" && "Import complete!"}
-          </CardDescription>
-        </CardHeader>
+    <div className="container mx-auto max-w-5xl py-8 px-4">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold">Import HTML</h1>
+        <p className="text-muted-foreground mt-1">
+          Extract components from AI-generated HTML and convert to Webflow-ready assets.
+        </p>
+      </div>
 
-        <CardContent className="space-y-4">
-          {/* Step 1: Input */}
-          {step === "input" && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="design-name">Design System Name</Label>
-                <Input
-                  id="design-name"
-                  placeholder="e.g., Flow Party"
-                  value={designSystemName}
-                  onChange={(e) => setDesignSystemName(e.target.value)}
-                />
+      {/* Step indicator */}
+      <div className="flex items-center gap-2 mb-6 text-sm">
+        <span
+          className={cn(
+            "px-3 py-1 rounded-full",
+            step === "input" ? "bg-primary text-primary-foreground" : "bg-muted"
+          )}
+        >
+          1. Input
+        </span>
+        <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="text-muted-foreground" />
+        <span
+          className={cn(
+            "px-3 py-1 rounded-full",
+            step === "artifacts" ? "bg-primary text-primary-foreground" : "bg-muted"
+          )}
+        >
+          2. Artifacts
+        </span>
+        <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="text-muted-foreground" />
+        <span
+          className={cn(
+            "px-3 py-1 rounded-full",
+            step === "complete" ? "bg-primary text-primary-foreground" : "bg-muted"
+          )}
+        >
+          3. Complete
+        </span>
+      </div>
+
+      {/* INPUT STEP */}
+      {step === "input" && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Paste HTML</CardTitle>
+              <CardDescription>
+                Paste the full HTML file from Claude, ChatGPT, or any AI tool.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="projectName">Project Name</Label>
+                  <Input
+                    id="projectName"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    placeholder="e.g., Flow Party Landing"
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label htmlFor="projectSlug">Slug (optional)</Label>
+                  <Input
+                    id="projectSlug"
+                    value={projectSlug}
+                    onChange={(e) => setProjectSlug(e.target.value)}
+                    placeholder="auto-generated"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="design-image">Template Thumbnail URL</Label>
-                <Input
-                  id="design-image"
-                  placeholder="https://..."
-                  value={designSystemImageUrl}
-                  onChange={(e) => setDesignSystemImageUrl(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="html-input">HTML Content</Label>
+              <div>
+                <Label htmlFor="htmlInput">HTML Content</Label>
                 <Textarea
-                  id="html-input"
-                  placeholder="Paste your full HTML here..."
+                  id="htmlInput"
                   value={htmlInput}
                   onChange={(e) => setHtmlInput(e.target.value)}
-                  className="min-h-[200px] font-mono text-xs"
+                  placeholder="<html>...</html>"
+                  className="font-mono text-sm min-h-[300px]"
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">or</span>
+              <div className="flex items-center gap-4">
                 <Label
-                  htmlFor="file-upload"
-                  className="cursor-pointer rounded-md border border-dashed px-4 py-2 text-sm hover:bg-muted/50"
+                  htmlFor="fileUpload"
+                  className="flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer hover:bg-muted"
                 >
+                  <HugeiconsIcon icon={Upload04Icon} size={16} />
                   Upload .html file
                 </Label>
-                <Input
-                  id="file-upload"
+                <input
+                  id="fileUpload"
                   type="file"
                   accept=".html,.htm"
-                  onChange={handleFileUpload}
                   className="hidden"
+                  onChange={handleFileUpload}
                 />
+                {htmlInput && (
+                  <span className="text-sm text-muted-foreground">
+                    {htmlInput.length.toLocaleString()} characters
+                  </span>
+                )}
               </div>
 
-              <div className="space-y-2 rounded-lg border border-dashed p-3">
-                <Label className="text-xs uppercase tracking-wide text-muted-foreground">Options</Label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={stripBaseStyles}
-                    onChange={(event) => setStripBaseStyles(event.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  Strip base styles (:root, reset, body, html, img) from sections
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={mergeNavigation}
-                    onChange={(event) => setMergeNavigation(event.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  Merge mobile menu + main nav into a single Navigation section
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={combineHeaderHero}
-                    onChange={(event) => setCombineHeaderHero(event.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  Create Header (nav + hero) as its own asset
-                </label>
-                <label className={`flex items-center gap-2 text-sm ${alwaysCreateNew ? "opacity-60" : ""}`}>
-                  <input
-                    type="checkbox"
-                    checked={useFlowPartyMap}
-                    onChange={(event) => setUseFlowPartyMap(event.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300"
-                    disabled={alwaysCreateNew}
-                  />
-                  Use Flow Party slug map (fp-*)
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={alwaysCreateNew}
-                    onChange={(event) => setAlwaysCreateNew(event.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  Always create new assets (no overwrite)
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={useLlmConversion}
-                    onChange={(event) => setUseLlmConversion(event.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  Use LLM to generate Webflow JSON (requires OPENROUTER_API_KEY)
-                </label>
-              </div>
+              <Button
+                size="lg"
+                className="w-full"
+                onClick={handleParse}
+                disabled={!htmlInput.trim()}
+              >
+                <HugeiconsIcon icon={ArrowRight01Icon} size={20} className="mr-2" />
+                Parse HTML & Extract Artifacts
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-              <div className="flex flex-col gap-2">
-                <Button onClick={handleParse} className="w-full" disabled={!htmlInput.trim()}>
-                  Parse HTML
-                  <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={handleAutoImport}
-                  variant="outline"
-                  className="w-full"
-                  disabled={!htmlInput.trim() || isImporting}
-                >
-                  {isImporting ? "Importing..." : "Auto Import (Parse + Import)"}
-                </Button>
-              </div>
-            </>
-          )}
-
-          {/* Step 2: Preview */}
-          {step === "preview" && parseResult && tokenExtraction && (
-            <>
-              {/* Token Summary */}
-              <div className="rounded-lg border bg-muted/30 p-4">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <HugeiconsIcon icon={PaintBoardIcon} className="h-4 w-4 text-primary" />
-                  Design System: {tokenExtraction.name}
-                </div>
-                <div className="mt-2 flex gap-4 text-sm text-muted-foreground">
-                  <span>{tokenExtraction.variables.filter((v) => v.type === "color").length} colors</span>
-                  <span>{tokenExtraction.variables.filter((v) => v.type === "fontFamily").length} fonts</span>
-                  {tokenExtraction.modes.length > 0 && (
-                    <span>{tokenExtraction.modes.length} modes</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Section List */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2">
-                    <HugeiconsIcon icon={GridIcon} className="h-4 w-4" />
-                    Sections ({selectedSections.size}/{parseResult.sections.length})
-                  </Label>
-                  <Button variant="ghost" size="sm" onClick={toggleAll}>
-                    {selectedSections.size === parseResult.sections.length ? "Deselect All" : "Select All"}
-                  </Button>
-                </div>
-
-                <div className="max-h-[300px] space-y-2 overflow-y-auto rounded-lg border p-2">
-                  {parseResult.sections.map((section) => (
-                    <div
-                      key={section.id}
-                      className="flex items-center gap-3 rounded-md border p-3 hover:bg-muted/50"
-                    >
-                      <input
-                        type="checkbox"
-                        id={section.id}
-                        checked={selectedSections.has(section.id)}
-                        onChange={() => toggleSection(section.id)}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
-                      <Label htmlFor={section.id} className="flex-1 cursor-pointer">
-                        <div className="font-medium">{section.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          &lt;{section.tagName}&gt; · {section.cssSelectors.length} classes
-                        </div>
-                      </Label>
-                      <HugeiconsIcon icon={CodeIcon} className="h-4 w-4 text-muted-foreground" />
+      {/* ARTIFACTS STEP */}
+      {step === "artifacts" && artifacts && (
+        <div className="space-y-6">
+          {llmSummary && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <HugeiconsIcon icon={Layers01Icon} size={16} />
+                  LLM Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Mode</div>
+                    <div className="font-medium">{llmSummary.mode.toUpperCase()}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Model</div>
+                    <div className="font-medium">{llmSummary.model || "n/a"}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Latency</div>
+                    <div className="font-medium">
+                      {typeof llmSummary.latencyMs === "number" ? `${llmSummary.latencyMs}ms` : "n/a"}
                     </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Tokens In/Out</div>
+                    <div className="font-medium">
+                      {llmSummary.inputTokens ?? "n/a"} / {llmSummary.outputTokens ?? "n/a"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Patch Counts</div>
+                    <div className="font-medium">
+                      {llmSummary.renamedComponents} / {llmSummary.htmlMutations} / {llmSummary.cssMutations}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">rename / html / css</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Remaining var()</div>
+                    <div className="font-medium">{llmSummary.remainingCssVarCount}</div>
+                  </div>
+                </div>
+                {llmSummary.reason && (
+                  <p className="text-xs text-muted-foreground mt-3">Reason: {llmSummary.reason}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          <Tabs defaultValue="tokens" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="tokens" className="flex items-center gap-2">
+                <HugeiconsIcon icon={PaintBoardIcon} size={14} />
+                Tokens
+              </TabsTrigger>
+              <TabsTrigger value="css" className="flex items-center gap-2">
+                <HugeiconsIcon icon={CodeIcon} size={14} />
+                CSS
+              </TabsTrigger>
+              <TabsTrigger value="html" className="flex items-center gap-2">
+                <HugeiconsIcon icon={FileEditIcon} size={14} />
+                HTML
+              </TabsTrigger>
+              <TabsTrigger value="js" className="flex items-center gap-2">
+                <HugeiconsIcon icon={JavaScriptIcon} size={14} />
+                JS
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="tokens" className="mt-6">
+              <TokensTab
+                tokensCss={artifacts.tokensCss}
+                tokensJson={artifacts.tokensJson}
+                tokenWebflowJson={tokenWebflowJson}
+                onCopyTokens={handleCopyTokens}
+                warnings={validationWarnings}
+                fontInfo={tokenExtraction?.fonts}
+              />
+            </TabsContent>
+
+            <TabsContent value="css" className="mt-6">
+              <CssTab stylesCss={artifacts.stylesCss} classIndex={artifacts.classIndex} />
+            </TabsContent>
+
+            <TabsContent value="html" className="mt-6">
+              <HtmlTab
+                cleanHtml={artifacts.cleanHtml}
+                componentTree={componentTree}
+                establishedClasses={establishedClasses}
+                tokensPasted={tokensPasted}
+                skipEstablishedStyles={skipEstablishedStyles}
+                onSkipEstablishedStylesChange={setSkipEstablishedStyles}
+                onCopyComponent={handleCopyComponent}
+              />
+            </TabsContent>
+
+            <TabsContent value="js" className="mt-6">
+              <JsTab
+                scriptsJs={artifacts.scriptsJs}
+                jsHooks={artifacts.jsHooks}
+                componentTree={componentTree}
+              />
+            </TabsContent>
+          </Tabs>
+
+          {/* Actions */}
+          <div className="flex gap-4">
+            <Button variant="outline" onClick={handleReset}>
+              Start Over
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleImport}
+              disabled={isImporting}
+            >
+              {isImporting ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="mr-2" />
+                  Save to Database ({componentTree?.components.length || 0} components)
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* COMPLETE STEP */}
+      {step === "complete" && importResult && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-600">
+              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={24} />
+              Import Complete
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-lg bg-muted">
+                <div className="text-2xl font-bold">{importResult.assetsCreated}</div>
+                <div className="text-sm text-muted-foreground">Assets Created</div>
+              </div>
+              <div className="p-4 rounded-lg bg-muted">
+                <div className="text-2xl font-bold">{importResult.assetsUpdated}</div>
+                <div className="text-sm text-muted-foreground">Assets Updated</div>
+              </div>
+              <div className="p-4 rounded-lg bg-muted">
+                <div className="text-2xl font-bold">{importResult.artifactsStored}</div>
+                <div className="text-sm text-muted-foreground">Artifacts Stored</div>
+              </div>
+              <div className="p-4 rounded-lg bg-muted">
+                <div className="text-2xl font-bold text-amber-600">
+                  {importResult.errors.length}
+                </div>
+                <div className="text-sm text-muted-foreground">Errors</div>
+              </div>
+            </div>
+
+            {importResult.errors.length > 0 && (
+              <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/50">
+                <div className="font-medium text-amber-600 mb-2">Errors:</div>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  {importResult.errors.map((error, i) => (
+                    <li key={i}>• {error}</li>
                   ))}
-                </div>
+                </ul>
               </div>
+            )}
 
-              {/* Actions */}
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep("input")} className="flex-1">
-                  Back
-                </Button>
-                <Button
-                  onClick={handleImport}
-                  disabled={selectedSections.size === 0 || isImporting}
-                  className="flex-1"
-                >
-                  {isImporting ? "Importing..." : `Import ${selectedSections.size} Sections`}
-                </Button>
-              </div>
-            </>
-          )}
-
-          {/* Step 3: Complete */}
-          {step === "complete" && importResult && (
-            <>
-              <div className="rounded-lg border bg-emerald-500/10 p-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
-                  <HugeiconsIcon icon={CheckmarkCircle01Icon} className="h-5 w-5" />
-                  Import Successful
-                </div>
-                <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                  <div>Assets created: {importResult.assetsCreated}</div>
-                  <div>Assets updated: {importResult.assetsUpdated}</div>
-                  <div>Payloads created: {importResult.payloadsCreated}</div>
-                  <div>Payloads updated: {importResult.payloadsUpdated}</div>
-                </div>
-              </div>
-
-              {importResult.errors.length > 0 && (
-                <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-                  <div className="text-sm font-medium text-destructive">
-                    {importResult.errors.length} errors:
-                  </div>
-                  <ul className="mt-1 list-inside list-disc text-xs text-muted-foreground">
-                    {importResult.errors.map((error, i) => (
-                      <li key={i}>{error}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {conversionSummary && (
-                <div className="rounded-lg border bg-muted/30 p-4">
-                  <div className="text-sm font-medium">Webflow Conversion Summary</div>
-                  <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                    {conversionSummary.llmSuccess > 0 && (
-                      <div className="text-emerald-600">LLM conversions: {conversionSummary.llmSuccess}</div>
-                    )}
-                    {conversionSummary.llmFailed > 0 && (
-                      <div className="text-amber-600">LLM failures (used fallback): {conversionSummary.llmFailed}</div>
-                    )}
-                    {conversionSummary.fallbackUsed > 0 && (
-                      <div>Fallback conversions: {conversionSummary.fallbackUsed}</div>
-                    )}
-                    {conversionSummary.llmSuccess === 0 && conversionSummary.llmFailed === 0 && conversionSummary.fallbackUsed === 0 && (
-                      <div className="text-destructive">No valid Webflow payloads generated</div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleReset} className="flex-1">
-                  Import Another
-                </Button>
-                <Button asChild className="flex-1">
-                  <Link href="/assets">
-                    View Assets
-                    <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-            </>
-          )}
-
-          <p className="text-center text-xs text-muted-foreground">Signed in as {userEmail}</p>
-        </CardContent>
-      </Card>
+            <div className="flex gap-4">
+              <Button variant="outline" onClick={handleReset}>
+                Import Another
+              </Button>
+              <Button asChild className="flex-1">
+                <Link href="/assets">View Assets</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

@@ -307,3 +307,415 @@ export const getImportStats = mutation({
     }
   },
 })
+
+// ============================================
+// NEW: Project-based import with artifact storage
+// ============================================
+
+/**
+ * Create or update an import project with extracted artifacts
+ * This stores all 4 artifacts (tokens, CSS, clean HTML, JS) for reuse
+ */
+export const importProject = mutation({
+  args: {
+    projectName: v.string(),
+    projectSlug: v.string(),
+    artifacts: v.object({
+      tokensJson: v.optional(v.string()),
+      tokensCss: v.optional(v.string()),
+      stylesCss: v.string(),
+      classIndex: v.string(),
+      cleanHtml: v.string(),
+      scriptsJs: v.optional(v.string()),
+      jsHooks: v.optional(v.array(v.string())),
+    }),
+    components: v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+        slug: v.string(),
+        category: v.string(),
+        tags: v.array(v.string()),
+        htmlContent: v.string(),
+        classesUsed: v.array(v.string()),
+        jsHooks: v.array(v.string()),
+        webflowJson: v.optional(v.string()),
+        codePayload: v.string(),
+      })
+    ),
+    tokenWebflowJson: v.optional(v.string()),
+    sourceHtml: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    const now = Date.now()
+    const results = {
+      projectId: "" as string,
+      assetsCreated: 0,
+      assetsUpdated: 0,
+      payloadsCreated: 0,
+      payloadsUpdated: 0,
+      artifactsStored: 0,
+      errors: [] as string[],
+    }
+
+    // 1. Create or update import project
+    const existingProject = await ctx.db
+      .query("importProjects")
+      .withIndex("by_slug", (q) => q.eq("slug", args.projectSlug))
+      .unique()
+
+    let projectId: Id<"importProjects">
+
+    if (existingProject) {
+      await ctx.db.patch(existingProject._id, {
+        name: args.projectName,
+        status: "complete",
+        sourceHtml: args.sourceHtml,
+        componentCount: args.components.length,
+        classCount: Object.keys(JSON.parse(args.artifacts.classIndex).classes || {}).length,
+        hasTokens: !!args.artifacts.tokensJson,
+        updatedAt: now,
+      })
+      projectId = existingProject._id
+    } else {
+      projectId = await ctx.db.insert("importProjects", {
+        name: args.projectName,
+        slug: args.projectSlug,
+        status: "complete",
+        sourceHtml: args.sourceHtml,
+        componentCount: args.components.length,
+        classCount: Object.keys(JSON.parse(args.artifacts.classIndex).classes || {}).length,
+        hasTokens: !!args.artifacts.tokensJson,
+        createdAt: now,
+        updatedAt: now,
+      })
+    }
+
+    results.projectId = projectId
+
+    // 2. Store artifacts (delete existing first if updating)
+    if (existingProject) {
+      const existingArtifacts = await ctx.db
+        .query("importArtifacts")
+        .withIndex("by_project", (q) => q.eq("projectId", projectId))
+        .collect()
+
+      for (const artifact of existingArtifacts) {
+        await ctx.db.delete(artifact._id)
+      }
+    }
+
+    // Store each artifact type
+    const artifactTypes: Array<{
+      type:
+        | "tokens_json"
+        | "tokens_css"
+        | "styles_css"
+        | "class_index"
+        | "clean_html"
+        | "scripts_js"
+        | "js_hooks"
+        | "token_webflow_json"
+        | "component_manifest"
+      content: string | undefined
+    }> = [
+      { type: "tokens_json", content: args.artifacts.tokensJson },
+      { type: "tokens_css", content: args.artifacts.tokensCss },
+      { type: "styles_css", content: args.artifacts.stylesCss },
+      { type: "class_index", content: args.artifacts.classIndex },
+      { type: "clean_html", content: args.artifacts.cleanHtml },
+      { type: "scripts_js", content: args.artifacts.scriptsJs },
+      {
+        type: "js_hooks",
+        content: args.artifacts.jsHooks ? JSON.stringify(args.artifacts.jsHooks) : undefined,
+      },
+      { type: "token_webflow_json", content: args.tokenWebflowJson },
+      {
+        type: "component_manifest",
+        content: JSON.stringify(
+          args.components.map((c) => ({
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+            category: c.category,
+            classesUsed: c.classesUsed,
+            jsHooks: c.jsHooks,
+          }))
+        ),
+      },
+    ]
+
+    for (const { type, content } of artifactTypes) {
+      if (content) {
+        await ctx.db.insert("importArtifacts", {
+          projectId,
+          type,
+          content,
+          createdAt: now,
+        })
+        results.artifactsStored++
+      }
+    }
+
+    // 3. Create or update template
+    const templateSlug = args.projectSlug
+    const existingTemplate = await ctx.db
+      .query("templates")
+      .withIndex("by_slug", (q) => q.eq("slug", templateSlug))
+      .unique()
+
+    const templateId = existingTemplate
+      ? existingTemplate._id
+      : await ctx.db.insert("templates", {
+          name: args.projectName,
+          slug: templateSlug,
+          createdAt: now,
+          updatedAt: now,
+        })
+
+    if (args.tokenWebflowJson) {
+      const tokenSlug = `${args.projectSlug}-tokens`
+      const existingTokenAsset = await ctx.db
+        .query("assets")
+        .withIndex("by_slug", (q) => q.eq("slug", tokenSlug))
+        .unique()
+
+        if (existingTokenAsset) {
+        await ctx.db.patch(existingTokenAsset._id, {
+          title: `${args.projectName} - Tokens`,
+          status: "published",
+          pasteReliability: "full",
+          capabilityNotes: "CSS styles as Webflow classes. Paste FIRST before components.",
+          updatedAt: now,
+        })
+
+        const existingPayload = await ctx.db
+          .query("payloads")
+          .withIndex("by_asset_id", (q) => q.eq("assetId", existingTokenAsset._id))
+          .unique()
+
+        if (existingPayload) {
+          await ctx.db.patch(existingPayload._id, {
+            webflowJson: args.tokenWebflowJson,
+            codePayload: args.artifacts.tokensJson
+              ? `/* TOKEN MANIFEST */\n${args.artifacts.tokensJson}`
+              : `/* CSS */\n${args.artifacts.stylesCss}`,
+            updatedAt: now,
+          })
+          results.payloadsUpdated++
+        }
+        results.assetsUpdated++
+      } else {
+        const tokenAssetId = await ctx.db.insert("assets", {
+          slug: tokenSlug,
+          title: `${args.projectName} - Tokens`,
+          category: "tokens",
+          description: `CSS classes for ${args.projectName}. Paste FIRST before components.`,
+          tags: ["tokens", "css", args.projectSlug],
+          templateId,
+          isNew: true,
+          status: "published",
+          pasteReliability: "full",
+          capabilityNotes: "CSS styles as Webflow classes. Paste FIRST before components.",
+          supportsCodeCopy: true,
+          createdAt: now,
+          updatedAt: now,
+        })
+
+        await ctx.db.insert("payloads", {
+          assetId: tokenAssetId,
+          webflowJson: args.tokenWebflowJson,
+          codePayload: args.artifacts.tokensJson
+            ? `/* TOKEN MANIFEST */\n${args.artifacts.tokensJson}`
+            : `/* CSS */\n${args.artifacts.stylesCss}`,
+          dependencies: [],
+          createdAt: now,
+          updatedAt: now,
+        })
+
+        results.assetsCreated++
+        results.payloadsCreated++
+      }
+    }
+
+    // 5. Create component assets
+    for (const component of args.components) {
+      try {
+        const existingAsset = await ctx.db
+          .query("assets")
+          .withIndex("by_slug", (q) => q.eq("slug", component.slug))
+          .unique()
+
+        const hasWebflowJson = !!component.webflowJson
+        const pasteReliability = hasWebflowJson ? "full" : "partial"
+        const capabilityNotes = hasWebflowJson
+          ? "Webflow JSON ready. Paste AFTER tokens."
+          : "Component ready. Some styles may need manual adjustment."
+
+        let assetId: Id<"assets">
+
+        if (existingAsset) {
+          await ctx.db.patch(existingAsset._id, {
+            title: component.name,
+            category: component.category,
+            tags: component.tags,
+            templateId,
+            status: "published",
+            pasteReliability,
+            capabilityNotes,
+            updatedAt: now,
+          })
+          assetId = existingAsset._id
+          results.assetsUpdated++
+        } else {
+          assetId = await ctx.db.insert("assets", {
+            slug: component.slug,
+            title: component.name,
+            category: component.category,
+            description: `${component.name} component`,
+            tags: component.tags,
+            templateId,
+            isNew: true,
+            status: "published",
+            pasteReliability,
+            capabilityNotes,
+            supportsCodeCopy: true,
+            createdAt: now,
+            updatedAt: now,
+          })
+          results.assetsCreated++
+        }
+
+        // Create/update payload
+        const existingPayload = await ctx.db
+          .query("payloads")
+          .withIndex("by_asset_id", (q) => q.eq("assetId", assetId))
+          .unique()
+
+        const tokenDep = args.tokenWebflowJson ? [`${args.projectSlug}-tokens`] : []
+
+        if (existingPayload) {
+          await ctx.db.patch(existingPayload._id, {
+            webflowJson: component.webflowJson || JSON.stringify({ placeholder: true }),
+            codePayload: component.codePayload,
+            dependencies: tokenDep,
+            updatedAt: now,
+          })
+          results.payloadsUpdated++
+        } else {
+          await ctx.db.insert("payloads", {
+            assetId,
+            webflowJson: component.webflowJson || JSON.stringify({ placeholder: true }),
+            codePayload: component.codePayload,
+            dependencies: tokenDep,
+            createdAt: now,
+            updatedAt: now,
+          })
+          results.payloadsCreated++
+        }
+      } catch (error) {
+        results.errors.push(`Failed to create ${component.name}: ${error}`)
+      }
+    }
+
+    return results
+  },
+})
+
+/**
+ * Get an import project with its artifacts
+ */
+export const getImportProject = mutation({
+  args: {
+    slug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    const project = await ctx.db
+      .query("importProjects")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .unique()
+
+    if (!project) {
+      return null
+    }
+
+    const artifacts = await ctx.db
+      .query("importArtifacts")
+      .withIndex("by_project", (q) => q.eq("projectId", project._id))
+      .collect()
+
+    const artifactMap: Record<string, string> = {}
+    for (const artifact of artifacts) {
+      artifactMap[artifact.type] = artifact.content
+    }
+
+    return {
+      project,
+      artifacts: artifactMap,
+    }
+  },
+})
+
+/**
+ * List all import projects
+ */
+export const listImportProjects = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx)
+
+    const projects = await ctx.db.query("importProjects").order("desc").collect()
+
+    return projects.map((p) => ({
+      id: p._id,
+      name: p.name,
+      slug: p.slug,
+      status: p.status,
+      componentCount: p.componentCount,
+      classCount: p.classCount,
+      hasTokens: p.hasTokens,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    }))
+  },
+})
+
+/**
+ * Delete an import project and its artifacts
+ */
+export const deleteImportProject = mutation({
+  args: {
+    slug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    const project = await ctx.db
+      .query("importProjects")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .unique()
+
+    if (!project) {
+      return { deleted: false }
+    }
+
+    // Delete artifacts
+    const artifacts = await ctx.db
+      .query("importArtifacts")
+      .withIndex("by_project", (q) => q.eq("projectId", project._id))
+      .collect()
+
+    for (const artifact of artifacts) {
+      await ctx.db.delete(artifact._id)
+    }
+
+    // Delete project
+    await ctx.db.delete(project._id)
+
+    return { deleted: true, artifactsDeleted: artifacts.length }
+  },
+})

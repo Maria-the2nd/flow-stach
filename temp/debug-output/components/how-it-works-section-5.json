@@ -1,0 +1,636 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "wf-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "section"
+        ],
+        "children": [
+          "wf-container-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "how"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "wf-container-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "container"
+        ],
+        "children": [
+          "wf-section-header-001",
+          "wf-steps-grid-001",
+          "wf-div-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-div-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "wf-btn-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-btn-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn",
+          "btn-pink"
+        ],
+        "children": [
+          "wf-text-012"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#demo"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-012",
+        "text": true,
+        "v": "See Example Import →"
+      },
+      {
+        "_id": "wf-steps-grid-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "steps-grid",
+          "fade-up",
+          "visible",
+          "w-layout-grid"
+        ],
+        "children": [
+          "wf-step-card-001",
+          "wf-step-card-002",
+          "wf-step-card-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-step-card-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "step-card"
+        ],
+        "children": [
+          "wf-step-number-003",
+          "wf-step-card-h3-003",
+          "wf-step-card-p-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-step-card-p-003",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "step-card-p",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-011"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-011",
+        "text": true,
+        "v": "One click exports Webflow-native JSON. Paste it straight into the Designer. Now you're editing, not praying."
+      },
+      {
+        "_id": "wf-step-card-h3-003",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "step-card-h3",
+          "heading-h3"
+        ],
+        "children": [
+          "wf-text-010"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-010",
+        "text": true,
+        "v": "Copy. Paste. Done."
+      },
+      {
+        "_id": "wf-step-number-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "step-number"
+        ],
+        "children": [
+          "wf-text-009"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-009",
+        "text": true,
+        "v": "03 — Export"
+      },
+      {
+        "_id": "wf-step-card-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "step-card"
+        ],
+        "children": [
+          "wf-step-number-002",
+          "wf-step-card-h3-002",
+          "wf-step-card-p-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-step-card-p-002",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "step-card-p",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-008"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-008",
+        "text": true,
+        "v": "Our parser identifies layout patterns—navs, heroes, sections, footers—and breaks them into clean, reusable blocks."
+      },
+      {
+        "_id": "wf-step-card-h3-002",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "step-card-h3",
+          "heading-h3"
+        ],
+        "children": [
+          "wf-text-007"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-007",
+        "text": true,
+        "v": "We Do The Surgery"
+      },
+      {
+        "_id": "wf-step-number-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "step-number"
+        ],
+        "children": [
+          "wf-text-006"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-006",
+        "text": true,
+        "v": "02 — Parse"
+      },
+      {
+        "_id": "wf-step-card-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "step-card"
+        ],
+        "children": [
+          "wf-step-number-001",
+          "wf-step-card-h3-001",
+          "wf-step-card-p-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-step-card-p-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "step-card-p",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-005"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-005",
+        "text": true,
+        "v": "Grab the HTML/CSS/JS from Cursor, v0, Bolt, or literally any AI that outputs web code. Dump it into Flow Bridge."
+      },
+      {
+        "_id": "wf-step-card-h3-001",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "step-card-h3",
+          "heading-h3"
+        ],
+        "children": [
+          "wf-text-004"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-004",
+        "text": true,
+        "v": "Drop Your AI Code"
+      },
+      {
+        "_id": "wf-step-number-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "step-number"
+        ],
+        "children": [
+          "wf-text-003"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-003",
+        "text": true,
+        "v": "01 — Paste"
+      },
+      {
+        "_id": "wf-section-header-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "section-header"
+        ],
+        "children": [
+          "wf-section-label-001",
+          "wf-section-header-h2-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-section-header-h2-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "section-header-h2",
+          "heading-h2"
+        ],
+        "children": [
+          "wf-text-002"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-002",
+        "text": true,
+        "v": "3 Steps. No PhD."
+      },
+      {
+        "_id": "wf-section-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "section-label"
+        ],
+        "children": [
+          "wf-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-001",
+        "text": true,
+        "v": "How It Works"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "section",
+        "fake": false,
+        "type": "class",
+        "name": "section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 80px; padding-right: 0; padding-bottom: 80px; padding-left: 0;",
+        "variants": {
+          "medium": {
+            "styleLess": "padding-top: 60px; padding-right: 0; padding-bottom: 60px; padding-left: 0;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "container",
+        "fake": false,
+        "type": "class",
+        "name": "container",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 1400px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto; padding-top: 0; padding-right: 24px; padding-bottom: 0; padding-left: 24px;",
+        "variants": {
+          "medium": {
+            "styleLess": "padding-top: 0; padding-right: 16px; padding-bottom: 0; padding-left: 16px;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "section-header",
+        "fake": false,
+        "type": "class",
+        "name": "section-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "text-align: center; margin-bottom: 48px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-label",
+        "fake": false,
+        "type": "class",
+        "name": "section-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Fredoka', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #03594d; opacity: 0.6; margin-bottom: 8px; display: block;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header-h2",
+        "fake": false,
+        "type": "class",
+        "name": "section-header-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 16px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Inter', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; font-size: clamp(36px, 7vw, 72px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "steps-grid",
+        "fake": false,
+        "type": "class",
+        "name": "steps-grid",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr 1fr 1fr; justify-items: stretch; align-items: stretch; grid-row-gap: 20px; grid-column-gap: 20px;",
+        "variants": {
+          "medium": {
+            "styleLess": "grid-template-columns: 1fr; display: grid; grid-row-gap: 0px; grid-column-gap: 0px;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "fade-up",
+        "fake": false,
+        "type": "class",
+        "name": "fade-up",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "opacity: 0; transform: translateY(30px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "visible",
+        "fake": false,
+        "type": "class",
+        "name": "visible",
+        "namespace": "",
+        "comb": "&",
+        "styleLess": "opacity: 1; transform: translateY(0);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "step-card",
+        "fake": false,
+        "type": "class",
+        "name": "step-card",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #f9f8f4; border: 1px solid #03594d; border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px; padding-top: 32px; padding-right: 32px; padding-bottom: 32px; padding-left: 32px; box-shadow: -4px 4px 0px 0px #03594d;",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translate(2px, -2px); box-shadow: -6px 6px 0px 0px #03594d;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "step-number",
+        "fake": false,
+        "type": "class",
+        "name": "step-number",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Fredoka', sans-serif; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px; display: block; opacity: 0.7;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "step-card-h3",
+        "fake": false,
+        "type": "class",
+        "name": "step-card-h3",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 28px; margin-bottom: 12px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h3",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h3",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Inter', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; font-size: 28px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "step-card-p",
+        "fake": false,
+        "type": "class",
+        "name": "step-card-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 15px; line-height: 1.6;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 65ch; font-family: 'Inter', sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn",
+        "fake": false,
+        "type": "class",
+        "name": "btn",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-flex; align-items: center; justify-content: center; row-gap: 8px; column-gap: 8px; font-family: 'Fredoka', sans-serif; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding-top: 14px; padding-right: 28px; padding-bottom: 14px; padding-left: 28px; border-top-left-radius: 100px; border-top-right-radius: 100px; border-bottom-right-radius: 100px; border-bottom-left-radius: 100px; border: 1px solid #03594d; cursor: pointer; text-decoration: none; box-shadow: -3px 3px 0px 0px #03594d; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translate(2px, -2px); box-shadow: -5px 5px 0px 0px #03594d;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "btn-pink",
+        "fake": false,
+        "type": "class",
+        "name": "btn-pink",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #f6bbfd; color: #03594d;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

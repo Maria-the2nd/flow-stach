@@ -1,0 +1,10 @@
+name: bento-grid
+styleLess: display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; justify-items: stretch; align-items: stretch; grid-row-gap: 16px; grid-column-gap: 16px;
+variants: {
+  "desktop": {
+    "styleLess": "grid-template-columns: 1fr 1fr; display: grid; grid-row-gap: 0px; grid-column-gap: 0px;"
+  },
+  "medium": {
+    "styleLess": "grid-template-columns: 1fr; display: grid; grid-row-gap: 0px; grid-column-gap: 0px;"
+  }
+}

@@ -275,3 +275,7 @@ export async function copyWebflowJson(jsonString: string | undefined): Promise<C
   // Last resort: document-based copy
   return copyFallback(normalized);
 }
+
+// Aliases for consistency with import page
+export const copyToWebflowClipboard = copyWebflowJson;
+export const copyCodeToClipboard = copyText;

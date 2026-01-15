@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { useQuery, useMutation } from "convex/react"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -13,14 +14,13 @@ import {
   FilterIcon,
   Copy01Icon,
   Delete01Icon,
-  Upload04Icon,
   Database01Icon,
 } from "@hugeicons/core-free-icons"
 
 import { api } from "@/convex/_generated/api"
 import { Doc } from "@/convex/_generated/dataModel"
 import { useFavorites } from "@/components/favorites/FavoritesProvider"
-import { ImportPanel } from "@/components/admin/ImportPanel"
+import { ImportWizard } from "@/components/admin/ImportWizard"
 import { DatabasePanel } from "@/components/admin/DatabasePanel"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -30,6 +30,7 @@ import { ASSET_CATEGORIES } from "@/lib/assets/categories"
 import { copyWebflowJson } from "@/lib/clipboard"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
+import { parseTokenManifest } from "@/lib/token-extractor"
 
 function getAdminEmails(): string[] {
   const envValue = process.env.NEXT_PUBLIC_ADMIN_EMAILS || ""
@@ -43,7 +44,6 @@ const MAX_VISIBLE_TAGS = 3
 function AssetCard({ asset }: { asset: Asset }) {
   const { isFavorited, toggle } = useFavorites()
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth()
-  const router = useRouter()
   const favorited = isFavorited(asset.slug)
   const isDesignToken = asset.category === "tokens"
   const [copying, setCopying] = useState(false)
@@ -247,10 +247,14 @@ function TemplateCard({
       <Card className="group flex h-full flex-col overflow-hidden transition-all duration-200 hover:shadow-lg hover:ring-2 hover:ring-primary/20">
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]">
           {imageUrl ? (
-            <img
+            <Image
               src={imageUrl}
               alt={`${label} thumbnail`}
-              className="absolute inset-0 h-full w-full object-cover"
+              fill
+              sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+              loader={({ src }) => src}
+              unoptimized
+              className="object-cover"
             />
           ) : null}
           <div className="relative flex h-full w-full flex-col justify-between p-4">
@@ -294,28 +298,33 @@ interface GroupCardProps {
 }
 
 function GroupCard({ label, slug, count, index, templateSlug }: GroupCardProps) {
+  const isTokens = slug === "tokens"
+  const cardGradient = isTokens
+    ? "bg-[linear-gradient(45deg,hsla(217,100%,50%,1),hsla(230,100%,60%,1),hsla(200,100%,50%,1))]"
+    : "bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]"
+  const displayCount = isTokens ? 1 : count
   return (
     <Link href={`/assets?template=${templateSlug}&cat=${slug}`}>
       <Card className="group flex h-full flex-col overflow-hidden transition-all duration-200 hover:shadow-lg hover:ring-2 hover:ring-primary/20">
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]">
+        <div className={`relative aspect-[4/3] w-full overflow-hidden ${cardGradient}`}>
           <div className="relative flex h-full w-full flex-col justify-between p-4">
             <span className="text-xs font-medium uppercase tracking-[0.28em] text-black/70">
               ({String(index + 1).padStart(2, "0")})
             </span>
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.24em] text-black/80">
-                Group
+                {isTokens ? "Design Tokens" : "Group"}
               </span>
             </div>
           </div>
         </div>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center justify-between text-sm">
-            <span>{label}</span>
-            <span className="text-xs text-muted-foreground">{count} items</span>
+            <span>{isTokens ? "Design Tokens" : label}</span>
+            <span className="text-xs text-muted-foreground">{displayCount} items</span>
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground">
-            Open the group to view its full component list.
+            {isTokens ? "Paste tokens first to establish global styles." : "Open the group to view its full component list."}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -380,7 +389,7 @@ export function AssetsContent() {
   // Apply client-side favorites filter and sort design tokens first
   const filteredAssets = useMemo(() => {
     if (!assets) return []
-    let result = showFavoritesOnly
+    const result = showFavoritesOnly
       ? assets.filter((asset) => favorites.has(asset.slug))
       : [...assets]
 
@@ -420,35 +429,60 @@ export function AssetsContent() {
     const base = ASSET_CATEGORIES.filter((category) => category.slug !== "")
     return base.map((category) => ({
       ...category,
-      count: categoryCounts?.byCategory[category.slug] ?? 0,
+      count: category.slug === "tokens" ? 1 : (categoryCounts?.byCategory[category.slug] ?? 0),
     }))
   }, [categoryCounts])
 
   const visibleGroups = useMemo(
-    () => componentGroups.filter((group) => group.count > 0),
+    () => componentGroups
+      .filter((group) => group.slug === "tokens" || group.count > 0)
+      .sort((a, b) => (a.slug === "tokens" ? -1 : b.slug === "tokens" ? 1 : 0)),
     [componentGroups]
   )
 
   const previewGroup = visibleGroups[0]?.label ?? componentGroups[0]?.label
 
+  const tokensAssets = useQuery(
+    api.assets.list,
+    isAuthLoaded &&
+    isSignedIn &&
+    showGroupLibrary &&
+    activeTemplate
+      ? {
+          category: "tokens",
+          templateId: activeTemplate._id,
+        }
+      : "skip"
+  )
+
+  const tokenAsset = tokensAssets && tokensAssets.length > 0 ? tokensAssets[0] : undefined
+
+  const tokenPayload = useQuery(
+    api.payloads.byAssetId,
+    isAuthLoaded &&
+    isSignedIn &&
+    tokenAsset
+      ? {
+          assetId: tokenAsset._id,
+        }
+      : "skip"
+  )
+
+  let groupFontUrl: string | null = null
+  if (tokenPayload?.codePayload && tokenPayload.codePayload.startsWith("/* TOKEN MANIFEST */")) {
+    const withoutPrefix = tokenPayload.codePayload.replace("/* TOKEN MANIFEST */", "").trim()
+    const manifestJson = withoutPrefix.split("/* CSS */")[0].trim()
+    const manifest = parseTokenManifest(manifestJson)
+    if (manifest?.fonts?.googleFonts) {
+      groupFontUrl = manifest.fonts.googleFonts
+    }
+  }
+
   return (
     <div className="flex flex-1 flex-col p-6">
       {/* Admin Panels */}
       {isAdmin && adminPanel === "import" && (
-        <>
-          <div className="mb-6">
-            <div className="flex items-center gap-2">
-              <HugeiconsIcon icon={Upload04Icon} className="h-5 w-5 text-primary" />
-              <h2 className="font-display text-xl uppercase tracking-tight text-foreground">
-                Import HTML
-              </h2>
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Paste AI-generated HTML to split into sections and extract design tokens.
-            </p>
-          </div>
-          <ImportPanel onImportComplete={handleAdminActionComplete} />
-        </>
+        <ImportWizard />
       )}
 
       {isAdmin && adminPanel === "database" && (
@@ -572,6 +606,11 @@ export function AssetsContent() {
               <p className="mt-1 text-sm text-muted-foreground">
                 Choose a group to browse the components inside.
               </p>
+              {groupFontUrl && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Google Fonts: <span className="break-all">{groupFontUrl}</span>
+                </p>
+              )}
             </div>
           </div>
           {isTemplatesLoading ? (

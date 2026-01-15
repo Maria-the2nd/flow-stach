@@ -1,0 +1,534 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "wf-nav-001",
+        "type": "Block",
+        "tag": "nav",
+        "classes": [
+          "nav"
+        ],
+        "children": [
+          "wf-logo-001",
+          "wf-nav-links-001",
+          "wf-nav-right-001"
+        ],
+        "data": {
+          "tag": "nav",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "nav"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "wf-nav-right-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "nav-right"
+        ],
+        "children": [
+          "wf-nav-link-secondary-001",
+          "wf-btn-primary-001",
+          "wf-menu-toggle-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-menu-toggle-001",
+        "type": "Block",
+        "tag": "label",
+        "classes": [
+          "menu-toggle"
+        ],
+        "children": [
+          "wf-menu-toggle-span-001",
+          "wf-menu-toggle-span-002",
+          "wf-menu-toggle-span-003"
+        ],
+        "data": {
+          "tag": "label",
+          "text": false,
+          "xattr": [
+            {
+              "name": "for",
+              "value": "menu-state"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "wf-menu-toggle-span-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "menu-toggle-span"
+        ],
+        "children": [],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-menu-toggle-span-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "menu-toggle-span"
+        ],
+        "children": [],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-menu-toggle-span-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "menu-toggle-span"
+        ],
+        "children": [],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-btn-primary-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn-primary"
+        ],
+        "children": [
+          "wf-text-009",
+          "wf-btn-arrow-001"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#signup"
+          }
+        }
+      },
+      {
+        "_id": "wf-btn-arrow-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "btn-arrow"
+        ],
+        "children": [
+          "wf-text-010"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-010",
+        "text": true,
+        "v": "→"
+      },
+      {
+        "_id": "wf-text-009",
+        "text": true,
+        "v": "Get Started"
+      },
+      {
+        "_id": "wf-nav-link-secondary-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-link-secondary"
+        ],
+        "children": [
+          "wf-text-008"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#login"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-008",
+        "text": true,
+        "v": "Log in"
+      },
+      {
+        "_id": "wf-nav-links-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "nav-links"
+        ],
+        "children": [
+          "wf-nav-link-001",
+          "wf-nav-link-002",
+          "wf-nav-link-003",
+          "wf-nav-link-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-nav-link-004",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-link"
+        ],
+        "children": [
+          "wf-text-007"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#pricing"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-007",
+        "text": true,
+        "v": "Pricing"
+      },
+      {
+        "_id": "wf-nav-link-003",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-link"
+        ],
+        "children": [
+          "wf-text-006"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#collaborators"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-006",
+        "text": true,
+        "v": "Collaborators"
+      },
+      {
+        "_id": "wf-nav-link-002",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-link"
+        ],
+        "children": [
+          "wf-text-005"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#packs"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-005",
+        "text": true,
+        "v": "Party Packs"
+      },
+      {
+        "_id": "wf-nav-link-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "nav-link"
+        ],
+        "children": [
+          "wf-text-004"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#stash"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-004",
+        "text": true,
+        "v": "The Stash"
+      },
+      {
+        "_id": "wf-logo-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "logo"
+        ],
+        "children": [
+          "wf-text-001",
+          "wf-logo-accent-001",
+          "wf-logo-tm-001"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "wf-logo-tm-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "logo-tm"
+        ],
+        "children": [
+          "wf-text-003"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-003",
+        "text": true,
+        "v": "™"
+      },
+      {
+        "_id": "wf-logo-accent-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "logo-accent"
+        ],
+        "children": [
+          "wf-text-002"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-002",
+        "text": true,
+        "v": "PARTY"
+      },
+      {
+        "_id": "wf-text-001",
+        "text": true,
+        "v": "FLOW"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "nav",
+        "fake": false,
+        "type": "class",
+        "name": "nav",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding-top: 1.25rem; padding-right: 5vw; padding-bottom: 1.25rem; padding-left: 5vw; display: flex; justify-content: space-between; align-items: center; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {
+          "small": {
+            "styleLess": "padding-top: 1rem; padding-right: 4vw; padding-bottom: 1rem; padding-left: 4vw;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "logo",
+        "fake": false,
+        "type": "class",
+        "name": "logo",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Antonio', sans-serif; font-size: 1.35rem; font-weight: 700; color: #ffffff; text-decoration: none; text-transform: uppercase; letter-spacing: 0.02em;",
+        "variants": {
+          "small": {
+            "styleLess": "font-size: 1.15rem;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "logo-accent",
+        "fake": false,
+        "type": "class",
+        "name": "logo-accent",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #ff531f;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "logo-tm",
+        "fake": false,
+        "type": "class",
+        "name": "logo-tm",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.55rem; opacity: 0.6;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "nav-links",
+        "fake": false,
+        "type": "class",
+        "name": "nav-links",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; row-gap: 2rem; column-gap: 2rem; align-items: center; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {
+          "medium": {
+            "styleLess": "display: none;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "nav-link",
+        "fake": false,
+        "type": "class",
+        "name": "nav-link",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #ffffff; text-decoration: none; font-weight: 500; font-size: 0.9rem; opacity: 0.85; position: relative;",
+        "variants": {
+          "hover": {
+            "styleLess": "opacity: 1;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "nav-right",
+        "fake": false,
+        "type": "class",
+        "name": "nav-right",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; align-items: center; row-gap: 1.5rem; column-gap: 1.5rem; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "nav-link-secondary",
+        "fake": false,
+        "type": "class",
+        "name": "nav-link-secondary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #ffffff; text-decoration: none; font-weight: 500; font-size: 0.9rem; opacity: 0.85;",
+        "variants": {
+          "hover": {
+            "styleLess": "opacity: 1;"
+          },
+          "medium": {
+            "styleLess": "display: none;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "btn-primary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-primary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-flex; align-items: center; row-gap: 0.5rem; column-gap: 0.5rem; background: #ff531f; color: #ffffff; padding-top: 0.75rem; padding-right: 1.5rem; padding-bottom: 0.75rem; padding-left: 1.5rem; border-top-left-radius: 9999px; border-top-right-radius: 9999px; border-bottom-right-radius: 9999px; border-bottom-left-radius: 9999px; text-decoration: none; font-weight: 600; font-size: 0.875rem; border: none; cursor: pointer; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "background: #e64a1a; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255, 83, 31, 0.3);"
+          },
+          "pressed": {
+            "styleLess": "transform: translateY(0);"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "btn-arrow",
+        "fake": false,
+        "type": "class",
+        "name": "btn-arrow",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "transform: translateX(3px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "menu-toggle",
+        "fake": false,
+        "type": "class",
+        "name": "menu-toggle",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: none; background: none; border: none; color: #ffffff; cursor: pointer; padding-top: 0.5rem; padding-right: 0.5rem; padding-bottom: 0.5rem; padding-left: 0.5rem;",
+        "variants": {
+          "medium": {
+            "styleLess": "display: block;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "menu-toggle-span",
+        "fake": false,
+        "type": "class",
+        "name": "menu-toggle-span",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: block; width: 24px; height: 2px; background: currentColor; margin-top: 6px; margin-right: 0; margin-bottom: 6px; margin-left: 0;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

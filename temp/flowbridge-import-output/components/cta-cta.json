@@ -1,0 +1,338 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "cta-cta-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "cta-section"
+        ],
+        "children": [
+          "cta-cta-watermark-001",
+          "cta-cta-content-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "cta-cta-content-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "cta-content"
+        ],
+        "children": [
+          "cta-cta-content-h2-001",
+          "cta-cta-content-p-001",
+          "cta-cta-buttons-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "cta-cta-buttons-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "cta-buttons"
+        ],
+        "children": [
+          "cta-btn-primary-001",
+          "cta-btn-secondary-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "cta-btn-secondary-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn-secondary"
+        ],
+        "children": [
+          "cta-text-006"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "cta-text-006",
+        "text": true,
+        "v": "View Pricing"
+      },
+      {
+        "_id": "cta-btn-primary-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn-primary"
+        ],
+        "children": [
+          "cta-text-004",
+          "cta-btn-arrow-001"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "cta-btn-arrow-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "btn-arrow"
+        ],
+        "children": [
+          "cta-text-005"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "cta-text-005",
+        "text": true,
+        "v": "→"
+      },
+      {
+        "_id": "cta-text-004",
+        "text": true,
+        "v": "Start Free"
+      },
+      {
+        "_id": "cta-cta-content-p-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "cta-content-p",
+          "text-body"
+        ],
+        "children": [
+          "cta-text-003"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "cta-text-003",
+        "text": true,
+        "v": "Join 500+ creative developers already building with Flow Party. Start with our free resources or go Pro for full access."
+      },
+      {
+        "_id": "cta-cta-content-h2-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "cta-content-h2",
+          "heading-h2"
+        ],
+        "children": [
+          "cta-text-002"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "cta-text-002",
+        "text": true,
+        "v": "Ready to ship faster?"
+      },
+      {
+        "_id": "cta-cta-watermark-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "cta-watermark"
+        ],
+        "children": [
+          "cta-text-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "cta-text-001",
+        "text": true,
+        "v": "PARTY"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "cta-section",
+        "fake": false,
+        "type": "class",
+        "name": "cta-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #2d2f2e; padding-top: 8rem; padding-right: 5vw; padding-bottom: 8rem; padding-left: 5vw; text-align: center; position: relative; overflow: hidden;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "cta-watermark",
+        "fake": false,
+        "type": "class",
+        "name": "cta-watermark",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Antonio', sans-serif; font-size: clamp(6rem, 15vw, 12rem); font-weight: 700; color: #434645; opacity: 0.3; pointer-events: none; white-space: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "cta-content",
+        "fake": false,
+        "type": "class",
+        "name": "cta-content",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: relative; z-index: 1; max-width: 700px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "cta-content-h2",
+        "fake": false,
+        "type": "class",
+        "name": "cta-content-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700; color: #ffffff; margin-bottom: 1.5rem; line-height: 1.1;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "cta-content-p",
+        "fake": false,
+        "type": "class",
+        "name": "cta-content-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1.1rem; color: #767f7a; margin-bottom: 2.5rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "cta-buttons",
+        "fake": false,
+        "type": "class",
+        "name": "cta-buttons",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; row-gap: 1rem; column-gap: 1rem; justify-content: center; flex-wrap: wrap; flex-direction: row; align-items: stretch;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-primary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-primary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-flex; align-items: center; row-gap: 0.5rem; column-gap: 0.5rem; background: #ff531f; color: #ffffff; padding-top: 0.75rem; padding-right: 1.5rem; padding-bottom: 0.75rem; padding-left: 1.5rem; border-top-left-radius: 9999px; border-top-right-radius: 9999px; border-bottom-right-radius: 9999px; border-bottom-left-radius: 9999px; text-decoration: none; font-weight: 600; font-size: 0.875rem; border: none; cursor: pointer; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "background: #e64a1a; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255, 83, 31, 0.3);"
+          },
+          "pressed": {
+            "styleLess": "transform: translateY(0);"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "btn-arrow",
+        "fake": false,
+        "type": "class",
+        "name": "btn-arrow",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "transform: translateX(3px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-secondary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-secondary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-flex; align-items: center; row-gap: 0.5rem; column-gap: 0.5rem; background: transparent; color: #ffffff; padding-top: 0.75rem; padding-right: 1.5rem; padding-bottom: 0.75rem; padding-left: 1.5rem; border-top-left-radius: 9999px; border-top-right-radius: 9999px; border-bottom-right-radius: 9999px; border-bottom-left-radius: 9999px; text-decoration: none; font-weight: 600; font-size: 0.875rem; border: 1px solid rgba(255, 255, 255, 0.25); cursor: pointer; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "border-color: rgba(255, 255, 255, 0.5); background: rgba(255, 255, 255, 0.05);"
+          }
+        },
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

@@ -1,0 +1,13 @@
+import fs from "fs";
+const data = JSON.parse(fs.readFileSync('temp/debug-output/classIndex.json', 'utf-8'));
+const bg = data.classes['bento-grid'];
+console.log('=== bento-grid full entry ===');
+console.log('baseStyles:', bg.baseStyles);
+console.log('');
+console.log('mediaQueries:');
+console.log('  desktop:', bg.mediaQueries?.desktop || '(empty)');
+console.log('  medium:', bg.mediaQueries?.medium || '(empty)');
+console.log('  small:', bg.mediaQueries?.small || '(empty)');
+console.log('  tiny:', bg.mediaQueries?.tiny || '(empty)');
+console.log('');
+console.log('selectors:', bg.selectors);

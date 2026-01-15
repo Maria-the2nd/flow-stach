@@ -166,8 +166,6 @@ export function AssetDetailContent({ slug }: AssetDetailContentProps) {
     return <NotFoundState slug={slug} />;
   }
 
-  const hasPayload = payload !== undefined && payload !== null;
-
   return (
     <AppShell
       banner={
@@ -183,7 +181,7 @@ export function AssetDetailContent({ slug }: AssetDetailContentProps) {
           <Sidebar />
         </Suspense>
       }
-      main={<AssetDetailMain asset={asset} payload={payload} hasPayload={hasPayload} />}
+      main={<AssetDetailMain asset={asset} payload={payload} />}
       context={<AssetDetailContext asset={asset} payload={payload ?? null} />}
     />
   );

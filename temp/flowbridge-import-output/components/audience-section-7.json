@@ -1,0 +1,488 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "wf-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "section",
+          "audience-section"
+        ],
+        "children": [
+          "wf-container-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "audience"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "wf-container-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "container"
+        ],
+        "children": [
+          "wf-section-header-001",
+          "wf-audience-grid-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-audience-grid-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "audience-grid",
+          "fade-up",
+          "visible",
+          "w-layout-grid"
+        ],
+        "children": [
+          "wf-audience-card-001",
+          "wf-audience-card-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-audience-card-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "audience-card"
+        ],
+        "children": [
+          "wf-audience-label-002",
+          "wf-audience-card-h3-002",
+          "wf-audience-card-p-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-audience-card-p-002",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "audience-card-p",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-008"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-008",
+        "text": true,
+        "v": "You love Webflow's precision but you're watching AI users ship sites while you're still perfecting padding. Use AI for velocity, Flow Bridge for the handoff, Webflow for the craft. Your secret weapon."
+      },
+      {
+        "_id": "wf-audience-card-h3-002",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "audience-card-h3",
+          "heading-h3"
+        ],
+        "children": [
+          "wf-text-007"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-007",
+        "text": true,
+        "v": "Agencies. Freelancers. Speed Demons."
+      },
+      {
+        "_id": "wf-audience-label-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "audience-label"
+        ],
+        "children": [
+          "wf-text-006"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-006",
+        "text": true,
+        "v": "For Webflow People"
+      },
+      {
+        "_id": "wf-audience-card-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "audience-card"
+        ],
+        "children": [
+          "wf-audience-label-001",
+          "wf-audience-card-h3-001",
+          "wf-audience-card-p-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-audience-card-p-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "audience-card-p",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-005"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-005",
+        "text": true,
+        "v": "You discovered AI can generate a landing page in 30 seconds. Amazing. Then you tried to change the button color and wanted to throw your laptop. Flow Bridge lets you bring that AI output into a real design tool where changing stuff actually... works."
+      },
+      {
+        "_id": "wf-audience-card-h3-001",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "audience-card-h3",
+          "heading-h3"
+        ],
+        "children": [
+          "wf-text-004"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-004",
+        "text": true,
+        "v": "Founders. Marketers. Creators."
+      },
+      {
+        "_id": "wf-audience-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "audience-label"
+        ],
+        "children": [
+          "wf-text-003"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-003",
+        "text": true,
+        "v": "For AI Users"
+      },
+      {
+        "_id": "wf-section-header-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "section-header"
+        ],
+        "children": [
+          "wf-section-label-001",
+          "wf-section-header-h2-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-section-header-h2-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "section-header-h2",
+          "heading-h2"
+        ],
+        "children": [
+          "wf-text-002"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-002",
+        "text": true,
+        "v": "Two Markets. One Tool."
+      },
+      {
+        "_id": "wf-section-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "section-label"
+        ],
+        "children": [
+          "wf-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-001",
+        "text": true,
+        "v": "Who It's For"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "section",
+        "fake": false,
+        "type": "class",
+        "name": "section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 60px; padding-right: 0; padding-bottom: 60px; padding-left: 0;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "audience-section",
+        "fake": false,
+        "type": "class",
+        "name": "audience-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #aefbff; border-top: 1px solid #03594d; border-bottom: 1px solid #03594d;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "container",
+        "fake": false,
+        "type": "class",
+        "name": "container",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 1400px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto; padding-top: 0; padding-right: 16px; padding-bottom: 0; padding-left: 16px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header",
+        "fake": false,
+        "type": "class",
+        "name": "section-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "text-align: center; margin-bottom: 48px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-label",
+        "fake": false,
+        "type": "class",
+        "name": "section-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Fredoka', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #03594d; opacity: 0.6; margin-bottom: 8px; display: block;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header-h2",
+        "fake": false,
+        "type": "class",
+        "name": "section-header-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 16px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Inter', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; font-size: clamp(36px, 7vw, 72px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "audience-grid",
+        "fake": false,
+        "type": "class",
+        "name": "audience-grid",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr; row-gap: 0px; column-gap: 0px; justify-items: stretch; align-items: stretch; grid-row-gap: 0px; grid-column-gap: 0px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "fade-up",
+        "fake": false,
+        "type": "class",
+        "name": "fade-up",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "opacity: 0; transform: translateY(30px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "visible",
+        "fake": false,
+        "type": "class",
+        "name": "visible",
+        "namespace": "",
+        "comb": "&",
+        "styleLess": "opacity: 1; transform: translateY(0);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "audience-card",
+        "fake": false,
+        "type": "class",
+        "name": "audience-card",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #f9f8f4; border: 1px solid #03594d; border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px; padding-top: 36px; padding-right: 36px; padding-bottom: 36px; padding-left: 36px; box-shadow: -4px 4px 0px 0px #03594d;",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translate(2px, -2px); box-shadow: -6px 6px 0px 0px #03594d;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "audience-label",
+        "fake": false,
+        "type": "class",
+        "name": "audience-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Fredoka', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #fc5681; margin-bottom: 12px; display: block;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "audience-card-h3",
+        "fake": false,
+        "type": "class",
+        "name": "audience-card-h3",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 32px; margin-bottom: 16px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h3",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h3",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Inter', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; font-size: 28px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "audience-card-p",
+        "fake": false,
+        "type": "class",
+        "name": "audience-card-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 16px; line-height: 1.7;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 65ch; font-family: 'Inter', sans-serif;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

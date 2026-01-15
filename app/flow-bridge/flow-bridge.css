@@ -308,6 +308,42 @@
     grid-template-columns: 1fr;
   }
 
+  .fb-grid-2 {
+    gap: 40px;
+  }
+
+  .fb-grid-3 {
+    gap: 32px;
+  }
+
+  .fb-grid-4 {
+    gap: 24px;
+  }
+
+  .fb-section {
+    scroll-margin-top: 96px;
+  }
+
+  .fb-hero {
+    padding-top: 120px;
+    min-height: auto;
+    padding-bottom: 48px;
+  }
+
+  .fb-hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fb-hero-actions .fb-btn {
+    width: 100%;
+  }
+
+  .fb-gap-section {
+    margin-top: -40px;
+    padding-top: 80px;
+  }
+
   .fb-h1 {
     font-size: 2.5rem;
   }

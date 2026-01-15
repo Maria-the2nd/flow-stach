@@ -1,0 +1,57 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "menu-menu-state-001",
+        "type": "Block",
+        "tag": "input",
+        "classes": [
+          "menu-state"
+        ],
+        "children": [],
+        "data": {
+          "tag": "input",
+          "text": false,
+          "xattr": [
+            {
+              "name": "type",
+              "value": "checkbox"
+            },
+            {
+              "name": "id",
+              "value": "menu-state"
+            }
+          ]
+        }
+      }
+    ],
+    "styles": [
+      {
+        "_id": "menu-state",
+        "fake": false,
+        "type": "class",
+        "name": "menu-state",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: none;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

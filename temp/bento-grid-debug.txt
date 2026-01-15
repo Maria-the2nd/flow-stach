@@ -1,0 +1,5 @@
+baseStyles: display: grid; grid-template-columns: 1fr; row-gap: 0px; column-gap: 0px; justify-items: stretch; align-items: stretch;
+
+mediaQueries: {
+  "desktop": "grid-template-columns: repeat(2, 1fr); display: grid; row-gap: 0px; column-gap: 0px;"
+}

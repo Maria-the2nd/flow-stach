@@ -1,0 +1,265 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "footer-footer-001",
+        "type": "Block",
+        "tag": "footer",
+        "classes": [],
+        "children": [
+          "footer-footer-content-001"
+        ],
+        "data": {
+          "tag": "footer",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "footer-footer-content-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "footer-content"
+        ],
+        "children": [
+          "footer-footer-links-001",
+          "footer-footer-brand-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "footer-footer-brand-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "footer-brand",
+          "text-body"
+        ],
+        "children": [
+          "footer-text-006"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "footer-text-006",
+        "text": true,
+        "v": "Flow Party Presents"
+      },
+      {
+        "_id": "footer-footer-links-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "footer-links"
+        ],
+        "children": [
+          "footer-footer-link-001",
+          "footer-footer-link-002",
+          "footer-footer-link-003",
+          "footer-footer-link-004",
+          "footer-footer-link-005"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "footer-footer-link-005",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "footer-link"
+        ],
+        "children": [
+          "footer-text-005"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "footer-text-005",
+        "text": true,
+        "v": "Privacy"
+      },
+      {
+        "_id": "footer-footer-link-004",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "footer-link"
+        ],
+        "children": [
+          "footer-text-004"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "footer-text-004",
+        "text": true,
+        "v": "Terms"
+      },
+      {
+        "_id": "footer-footer-link-003",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "footer-link"
+        ],
+        "children": [
+          "footer-text-003"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "footer-text-003",
+        "text": true,
+        "v": "Support"
+      },
+      {
+        "_id": "footer-footer-link-002",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "footer-link"
+        ],
+        "children": [
+          "footer-text-002"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "footer-text-002",
+        "text": true,
+        "v": "Changelog"
+      },
+      {
+        "_id": "footer-footer-link-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "footer-link"
+        ],
+        "children": [
+          "footer-text-001"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "footer-text-001",
+        "text": true,
+        "v": "Docs"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "footer-content",
+        "fake": false,
+        "type": "class",
+        "name": "footer-content",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 1400px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; row-gap: 20px; column-gap: 20px; flex-direction: row;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "footer-links",
+        "fake": false,
+        "type": "class",
+        "name": "footer-links",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; row-gap: 32px; column-gap: 32px; flex-direction: row; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "footer-link",
+        "fake": false,
+        "type": "class",
+        "name": "footer-link",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Fredoka', sans-serif; font-size: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; color: #f9f8f4; text-decoration: none; opacity: 0.7;",
+        "variants": {
+          "hover": {
+            "styleLess": "opacity: 1;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "footer-brand",
+        "fake": false,
+        "type": "class",
+        "name": "footer-brand",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Fredoka', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.5;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 65ch; font-family: 'Inter', sans-serif;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

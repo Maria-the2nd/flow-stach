@@ -1,0 +1,426 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "wf-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "section"
+        ],
+        "children": [
+          "wf-container-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "demo"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "wf-container-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "container"
+        ],
+        "children": [
+          "wf-section-header-001",
+          "wf-demo-container-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-demo-container-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "demo-container",
+          "fade-up",
+          "visible"
+        ],
+        "children": [
+          "wf-demo-placeholder-001",
+          "wf-btn-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-btn-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn",
+          "btn-primary",
+          "btn-lg"
+        ],
+        "children": [
+          "wf-text-006"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-006",
+        "text": true,
+        "v": "Watch Full Demo"
+      },
+      {
+        "_id": "wf-demo-placeholder-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "demo-placeholder"
+        ],
+        "children": [
+          "wf-demo-placeholder-icon-001",
+          "wf-text-body-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-body-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "text-body"
+        ],
+        "children": [
+          "wf-text-005"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-005",
+        "text": true,
+        "v": "[ Video / GIF / Before-After goes here ]"
+      },
+      {
+        "_id": "wf-demo-placeholder-icon-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "demo-placeholder-icon"
+        ],
+        "children": [
+          "wf-text-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-004",
+        "text": true,
+        "v": "▶"
+      },
+      {
+        "_id": "wf-section-header-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "section-header"
+        ],
+        "children": [
+          "wf-section-label-001",
+          "wf-section-header-h2-001",
+          "wf-section-header-p-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-section-header-p-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "section-header-p",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-003"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-003",
+        "text": true,
+        "v": "See how Flow Bridge turns a messy AI page into a tidy Webflow component set. It's oddly satisfying."
+      },
+      {
+        "_id": "wf-section-header-h2-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "section-header-h2",
+          "heading-h2"
+        ],
+        "children": [
+          "wf-text-002"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-002",
+        "text": true,
+        "v": "Watch The Magic"
+      },
+      {
+        "_id": "wf-section-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "section-label"
+        ],
+        "children": [
+          "wf-text-001"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-001",
+        "text": true,
+        "v": "See It"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "section",
+        "fake": false,
+        "type": "class",
+        "name": "section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 60px; padding-right: 0; padding-bottom: 60px; padding-left: 0;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "container",
+        "fake": false,
+        "type": "class",
+        "name": "container",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 1400px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto; padding-top: 0; padding-right: 16px; padding-bottom: 0; padding-left: 16px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header",
+        "fake": false,
+        "type": "class",
+        "name": "section-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "text-align: center; margin-bottom: 48px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-label",
+        "fake": false,
+        "type": "class",
+        "name": "section-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Fredoka', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #03594d; opacity: 0.6; margin-bottom: 8px; display: block;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header-h2",
+        "fake": false,
+        "type": "class",
+        "name": "section-header-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 16px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Inter', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; font-size: clamp(36px, 7vw, 72px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "section-header-p",
+        "fake": false,
+        "type": "class",
+        "name": "section-header-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 18px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto; max-width: 600px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 65ch; font-family: 'Inter', sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "demo-container",
+        "fake": false,
+        "type": "class",
+        "name": "demo-container",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #f6bbfd; border: 1px solid #03594d; border-top-left-radius: 60px; border-top-right-radius: 60px; border-bottom-right-radius: 60px; border-bottom-left-radius: 60px; padding-top: 48px; padding-right: 48px; padding-bottom: 48px; padding-left: 48px; text-align: center; box-shadow: -4px 4px 0px 0px #03594d;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "fade-up",
+        "fake": false,
+        "type": "class",
+        "name": "fade-up",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "opacity: 0; transform: translateY(30px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "visible",
+        "fake": false,
+        "type": "class",
+        "name": "visible",
+        "namespace": "",
+        "comb": "&",
+        "styleLess": "opacity: 1; transform: translateY(0);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "demo-placeholder",
+        "fake": false,
+        "type": "class",
+        "name": "demo-placeholder",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #f9f8f4; border: 1px solid #03594d; border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px; padding-top: 80px; padding-right: 80px; padding-bottom: 80px; padding-left: 80px; margin-bottom: 32px; font-size: 16px; box-shadow: -3px 3px 0px 0px #03594d;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "demo-placeholder-icon",
+        "fake": false,
+        "type": "class",
+        "name": "demo-placeholder-icon",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 64px; margin-bottom: 16px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn",
+        "fake": false,
+        "type": "class",
+        "name": "btn",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-flex; align-items: center; justify-content: center; row-gap: 8px; column-gap: 8px; font-family: 'Fredoka', sans-serif; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding-top: 14px; padding-right: 28px; padding-bottom: 14px; padding-left: 28px; border-top-left-radius: 100px; border-top-right-radius: 100px; border-bottom-right-radius: 100px; border-bottom-left-radius: 100px; border: 1px solid #03594d; cursor: pointer; text-decoration: none; box-shadow: -3px 3px 0px 0px #03594d; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translate(2px, -2px); box-shadow: -5px 5px 0px 0px #03594d;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "btn-primary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-primary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #ffff94; color: #03594d;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-lg",
+        "fake": false,
+        "type": "class",
+        "name": "btn-lg",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 18px; padding-right: 36px; padding-bottom: 18px; padding-left: 36px; font-size: 16px;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

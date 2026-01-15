@@ -1,0 +1,139 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "promise-promise-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "promise-section"
+        ],
+        "children": [
+          "promise-promise-section-h2-001",
+          "promise-promise-section-p-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "promise-promise-section-p-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "promise-section-p",
+          "text-body"
+        ],
+        "children": [
+          "promise-text-002"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "promise-text-002",
+        "text": true,
+        "v": "No more settling. Import, refine, ship."
+      },
+      {
+        "_id": "promise-promise-section-h2-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "promise-section-h2",
+          "heading-h2"
+        ],
+        "children": [
+          "promise-text-001"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "promise-text-001",
+        "text": true,
+        "v": "Every AI Design Is Now Yours To Perfect"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "promise-section",
+        "fake": false,
+        "type": "class",
+        "name": "promise-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #03594d; color: #f9f8f4; text-align: center; padding-top: 100px; padding-right: 24px; padding-bottom: 100px; padding-left: 24px; border-bottom: 1px solid #03594d;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "promise-section-h2",
+        "fake": false,
+        "type": "class",
+        "name": "promise-section-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 900px; margin-top: 0; margin-right: auto; margin-bottom: 24px; margin-left: auto;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Inter', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; font-size: clamp(36px, 7vw, 72px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "promise-section-p",
+        "fake": false,
+        "type": "class",
+        "name": "promise-section-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 20px; opacity: 0.8; max-width: 500px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 65ch; font-family: 'Inter', sans-serif;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

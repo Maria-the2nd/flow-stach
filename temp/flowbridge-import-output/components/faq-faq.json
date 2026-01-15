@@ -1,0 +1,887 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "faq-faq-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "faq-section"
+        ],
+        "children": [
+          "faq-faq-container-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": [
+            {
+              "name": "id",
+              "value": "faq"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "faq-faq-container-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-container",
+          "w-layout-grid"
+        ],
+        "children": [
+          "faq-faq-left-001",
+          "faq-faq-right-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-right-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-right"
+        ],
+        "children": [
+          "faq-faq-item-001",
+          "faq-faq-item-002",
+          "faq-faq-item-003",
+          "faq-faq-item-004",
+          "faq-faq-item-005"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-item-005",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-item"
+        ],
+        "children": [
+          "faq-faq-question-row-005",
+          "faq-faq-answer-005"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-answer-005",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-answer"
+        ],
+        "children": [
+          "faq-faq-answer-p-005"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-answer-p-005",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "faq-answer-p",
+          "text-body"
+        ],
+        "children": [
+          "faq-text-018"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-018",
+        "text": true,
+        "v": "You keep access to everything you've already copied or downloaded. You just won't be able to access new resources or updates until you resubscribe."
+      },
+      {
+        "_id": "faq-faq-question-row-005",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-question-row"
+        ],
+        "children": [
+          "faq-faq-question-005",
+          "faq-faq-number-005"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-number-005",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "faq-number"
+        ],
+        "children": [
+          "faq-text-017"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-017",
+        "text": true,
+        "v": "05"
+      },
+      {
+        "_id": "faq-faq-question-005",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "faq-question"
+        ],
+        "children": [
+          "faq-text-016"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-016",
+        "text": true,
+        "v": "What if I cancel my subscription?"
+      },
+      {
+        "_id": "faq-faq-item-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-item"
+        ],
+        "children": [
+          "faq-faq-question-row-004",
+          "faq-faq-answer-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-answer-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-answer"
+        ],
+        "children": [
+          "faq-faq-answer-p-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-answer-p-004",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "faq-answer-p",
+          "text-body"
+        ],
+        "children": [
+          "faq-text-015"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-015",
+        "text": true,
+        "v": "Nope. Interactions work out of the box. But if you want to customize, we include documentation explaining how each animation works so you can learn as you build."
+      },
+      {
+        "_id": "faq-faq-question-row-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-question-row"
+        ],
+        "children": [
+          "faq-faq-question-004",
+          "faq-faq-number-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-number-004",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "faq-number"
+        ],
+        "children": [
+          "faq-text-014"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-014",
+        "text": true,
+        "v": "04"
+      },
+      {
+        "_id": "faq-faq-question-004",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "faq-question"
+        ],
+        "children": [
+          "faq-text-013"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-013",
+        "text": true,
+        "v": "Do I need GSAP knowledge?"
+      },
+      {
+        "_id": "faq-faq-item-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-item"
+        ],
+        "children": [
+          "faq-faq-question-row-003",
+          "faq-faq-answer-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-answer-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-answer"
+        ],
+        "children": [
+          "faq-faq-answer-p-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-answer-p-003",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "faq-answer-p",
+          "text-body"
+        ],
+        "children": [
+          "faq-text-012"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-012",
+        "text": true,
+        "v": "Yes! All resources come with a commercial license. Use them for unlimited personal and client projects. The only restriction is redistributing or reselling the raw assets."
+      },
+      {
+        "_id": "faq-faq-question-row-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-question-row"
+        ],
+        "children": [
+          "faq-faq-question-003",
+          "faq-faq-number-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-number-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "faq-number"
+        ],
+        "children": [
+          "faq-text-011"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-011",
+        "text": true,
+        "v": "03"
+      },
+      {
+        "_id": "faq-faq-question-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "faq-question"
+        ],
+        "children": [
+          "faq-text-010"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-010",
+        "text": true,
+        "v": "Can I use resources for client projects?"
+      },
+      {
+        "_id": "faq-faq-item-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-item"
+        ],
+        "children": [
+          "faq-faq-question-row-002",
+          "faq-faq-answer-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-answer-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-answer"
+        ],
+        "children": [
+          "faq-faq-answer-p-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-answer-p-002",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "faq-answer-p",
+          "text-body"
+        ],
+        "children": [
+          "faq-text-009"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-009",
+        "text": true,
+        "v": "Each Party Pack includes a complete Webflow template, matching component library, Figma source files, and a detailed launch guide. Everything you need to ship a polished site."
+      },
+      {
+        "_id": "faq-faq-question-row-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-question-row"
+        ],
+        "children": [
+          "faq-faq-question-002",
+          "faq-faq-number-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-number-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "faq-number"
+        ],
+        "children": [
+          "faq-text-008"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-008",
+        "text": true,
+        "v": "02"
+      },
+      {
+        "_id": "faq-faq-question-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "faq-question"
+        ],
+        "children": [
+          "faq-text-007"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-007",
+        "text": true,
+        "v": "What's included in a Party Pack?"
+      },
+      {
+        "_id": "faq-faq-item-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-item"
+        ],
+        "children": [
+          "faq-faq-question-row-001",
+          "faq-faq-answer-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-answer-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-answer"
+        ],
+        "children": [
+          "faq-faq-answer-p-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-answer-p-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "faq-answer-p",
+          "text-body"
+        ],
+        "children": [
+          "faq-text-006"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-006",
+        "text": true,
+        "v": "Click copy on any component in The Stash, then paste directly into your Webflow Designer. The component arrives with all classes, interactions, and settings intact. No plugins required."
+      },
+      {
+        "_id": "faq-faq-question-row-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-question-row"
+        ],
+        "children": [
+          "faq-faq-question-001",
+          "faq-faq-number-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-faq-number-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "faq-number"
+        ],
+        "children": [
+          "faq-text-005"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-005",
+        "text": true,
+        "v": "01"
+      },
+      {
+        "_id": "faq-faq-question-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "faq-question"
+        ],
+        "children": [
+          "faq-text-004"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-004",
+        "text": true,
+        "v": "How does copy & paste work?"
+      },
+      {
+        "_id": "faq-faq-left-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "faq-left"
+        ],
+        "children": [
+          "faq-faq-left-h2-001",
+          "faq-faq-left-p-001",
+          "faq-link-arrow-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-link-arrow-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "link-arrow"
+        ],
+        "children": [
+          "faq-text-003"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "faq-text-003",
+        "text": true,
+        "v": "Contact support →"
+      },
+      {
+        "_id": "faq-faq-left-p-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "faq-left-p",
+          "text-body"
+        ],
+        "children": [
+          "faq-text-002"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-002",
+        "text": true,
+        "v": "Common questions about Flow Party and how it works."
+      },
+      {
+        "_id": "faq-faq-left-h2-001",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "faq-left-h2",
+          "heading-h2"
+        ],
+        "children": [
+          "faq-text-001"
+        ],
+        "data": {
+          "tag": "h2",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "faq-text-001",
+        "text": true,
+        "v": "FAQ"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "faq-section",
+        "fake": false,
+        "type": "class",
+        "name": "faq-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #f5f5f5; padding-top: 6rem; padding-right: 5vw; padding-bottom: 6rem; padding-left: 5vw;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "faq-container",
+        "fake": false,
+        "type": "class",
+        "name": "faq-container",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr 2fr; justify-items: stretch; align-items: stretch; grid-row-gap: 4rem; grid-column-gap: 4rem;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr; display: grid; grid-row-gap: 2rem; grid-column-gap: 2rem;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "faq-left-h2",
+        "fake": false,
+        "type": "class",
+        "name": "faq-left-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 700; margin-bottom: 1.5rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h2",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h2",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "faq-left-p",
+        "fake": false,
+        "type": "class",
+        "name": "faq-left-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1rem; color: #afb6b4; margin-bottom: 2rem; max-width: 280px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "link-arrow",
+        "fake": false,
+        "type": "class",
+        "name": "link-arrow",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #ff531f; font-size: 0.875rem; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; row-gap: 0.5rem; column-gap: 0.5rem; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "row-gap: 0.75rem; column-gap: 0.75rem; display: flex; flex-direction: row; justify-content: flex-start; align-items: stretch;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "faq-item",
+        "fake": false,
+        "type": "class",
+        "name": "faq-item",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 1.5rem; padding-right: 0; padding-bottom: 1.5rem; padding-left: 0; border-bottom: 1px solid #dddfde; cursor: pointer;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "faq-question-row",
+        "fake": false,
+        "type": "class",
+        "name": "faq-question-row",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; justify-content: space-between; align-items: center; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "faq-question",
+        "fake": false,
+        "type": "class",
+        "name": "faq-question",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1rem; font-weight: 500; color: #ff531f;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "faq-number",
+        "fake": false,
+        "type": "class",
+        "name": "faq-number",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1.5rem; font-weight: 700; opacity: 1; color: #ff531f;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "faq-answer",
+        "fake": false,
+        "type": "class",
+        "name": "faq-answer",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-height: 0; overflow: hidden;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "faq-answer-p",
+        "fake": false,
+        "type": "class",
+        "name": "faq-answer-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.9rem; color: #afb6b4; line-height: 1.6;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

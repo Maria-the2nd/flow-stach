@@ -5,6 +5,14 @@
 
 import type { DetectedSection } from "./html-parser";
 import type { TokenManifest, TokenExtraction } from "./token-extractor";
+import type { ClassIndex, ClassIndexEntry } from "./css-parser";
+import {
+  parseCSS,
+  classIndexToWebflowStyles,
+  classEntryToWebflowStyle,
+} from "./css-parser";
+import type { Component } from "./componentizer";
+import { normalizeHtmlCssForWebflow } from "./webflow-normalizer";
 
 // ============================================
 // TYPES
@@ -25,6 +33,28 @@ export interface WebflowNode {
     link?: { mode: string; url: string; target?: string };
     attr?: { src?: string; alt?: string; loading?: string };
   };
+}
+
+function sanitizeStyleLessVisibility(styleLess: string): string {
+  if (!styleLess) return styleLess;
+  const parts = styleLess.split(";").map((s) => s.trim()).filter(Boolean);
+  const map = new Map<string, string>();
+  for (const part of parts) {
+    const idx = part.indexOf(":");
+    if (idx === -1) continue;
+    const key = part.slice(0, idx).trim();
+    const val = part.slice(idx + 1).trim();
+    map.set(key, val);
+  }
+  const opacity = (map.get("opacity") || "").trim();
+  if (opacity === "0" || opacity === "0%" || opacity === "0.0") {
+    map.set("opacity", "1");
+  }
+  const visibility = (map.get("visibility") || "").trim().toLowerCase();
+  if (visibility === "hidden") {
+    map.set("visibility", "visible");
+  }
+  return Array.from(map.entries()).map(([k, v]) => `${k}: ${v};`).join(" ");
 }
 
 export interface WebflowStyleVariant {
@@ -86,6 +116,89 @@ class IdGenerator {
 
   reset(): void {
     this.counters.clear();
+  }
+}
+
+function splitValues(str: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let depth = 0;
+  for (const ch of str) {
+    if (ch === "(") depth++;
+    else if (ch === ")") depth--;
+    if (ch === " " && depth === 0) {
+      if (cur.trim()) out.push(cur.trim());
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+
+function toRem(value: string): string {
+  const parts = splitValues(value);
+  const conv = parts.map((p) => {
+    const m = p.match(/^(-?\d*\.?\d+)(px|rem|em|vw|vh|%)$/i);
+    if (!m) return p;
+    const num = parseFloat(m[1]);
+    const unit = m[2].toLowerCase();
+    if (unit === "px") return `${(num / 16).toFixed(4).replace(/\.?0+$/,"")}rem`;
+    if (unit === "rem") return `${num.toFixed(4).replace(/\.?0+$/,"")}rem`;
+    return p;
+  });
+  return conv.join(" ");
+}
+
+function scaleRem(value: string, factor: number): string {
+  const parts = splitValues(value);
+  const scaled = parts.map((p) => {
+    const m = p.match(/^(-?\d*\.?\d+)(rem)$/i);
+    if (!m) return p;
+    const num = parseFloat(m[1]) * factor;
+    return `${num.toFixed(4).replace(/\.?0+$/,"")}rem`;
+  });
+  return scaled.join(" ");
+}
+
+function appendVariant(style: WebflowStyle, variant: string, extra: string): void {
+  const existing = style.variants[variant]?.styleLess || "";
+  const next = existing ? `${existing} ${extra}` : extra;
+  style.variants[variant] = { styleLess: next };
+}
+
+function parseStyleLessMap(styleLess: string): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!styleLess) return map;
+  const props = styleLess.split(";").map((s) => s.trim()).filter(Boolean);
+  for (const prop of props) {
+    const i = prop.indexOf(":");
+    if (i === -1) continue;
+    const k = prop.slice(0, i).trim().toLowerCase();
+    const v = prop.slice(i + 1).trim();
+    map.set(k, v);
+  }
+  return map;
+}
+
+function countGridColumns(template: string | undefined): number {
+  if (!template) return 0;
+  const m = template.match(/repeat\(\s*(\d+)\s*,/i);
+  if (m) return parseInt(m[1], 10);
+  const tokens = template.trim().split(/\s+/);
+  return tokens.filter((t) => /1fr|minmax\(/i.test(t)).length;
+}
+
+function applyResponsiveGridFixes(styles: Map<string, WebflowStyle>): void {
+  for (const style of styles.values()) {
+    const base = parseStyleLessMap(style.styleLess);
+    const display = (base.get("display") || "").toLowerCase();
+    if (!display.includes("grid")) continue;
+    const cols = countGridColumns(base.get("grid-template-columns"));
+    if (cols < 3) continue;
+    appendVariant(style, "small", "grid-template-columns: repeat(3, minmax(0, 1fr));");
+    appendVariant(style, "tiny", "grid-template-columns: 1fr;");
   }
 }
 
@@ -319,9 +432,29 @@ function parseChildren(content: string): (ParsedElement | string)[] {
 function convertToWebflowNodes(
   element: ParsedElement,
   idGen: IdGenerator,
-  collectedClasses: Set<string>
+  collectedClasses: Set<string>,
+  classIndex: ClassIndex
 ): { nodes: WebflowNode[]; rootId: string } {
   const nodes: WebflowNode[] = [];
+  const dropTags = new Set([
+    "head",
+    "meta",
+    "link",
+    "title",
+    "script",
+    "style",
+    "noscript",
+    "base",
+    "iframe",
+    "canvas",
+    "input",
+  ]);
+
+  const normalizeTagForWebflow = (tag: string): string => {
+    if (tag === "html" || tag === "body" || tag === "main") return "div";
+    if (tag === "form" || tag === "label" || tag === "button") return "div";
+    return tag;
+  };
 
   const mapTagToType = (tag: string): WebflowNode["type"] => {
     switch (tag) {
@@ -353,23 +486,38 @@ function convertToWebflowNodes(
   };
 
   function processElement(el: ParsedElement): string {
-    // Collect classes for style extraction
-    el.classes.forEach((c) => collectedClasses.add(c));
+    if (dropTags.has(el.tag)) return "";
+
+    const normalizedTag = normalizeTagForWebflow(el.tag);
+    const baseClasses = [...el.classes];
+    const hasGrid = baseClasses.some((cls) => isGridClass(cls, classIndex));
+    const nodeClasses = hasGrid && !baseClasses.includes("w-layout-grid")
+      ? [...baseClasses, "w-layout-grid"]
+      : baseClasses;
+
+    // Collect classes for style extraction (skip w-layout-grid)
+    baseClasses.forEach((c) => collectedClasses.add(c));
 
     // Determine node type
-    const nodeType = mapTagToType(el.tag);
+    const nodeType = mapTagToType(normalizedTag);
 
     // Generate ID based on first class or tag
-    const baseName = el.classes[0] || el.id || el.tag;
+    const baseName = el.classes[0] || el.id || normalizedTag;
     const nodeId = idGen.generate(baseName);
 
     // Build xattr from non-standard attributes
     const xattr: Array<{ name: string; value: string }> = [];
     const skipAttrs = ["class", "id", "href", "src", "alt", "target"];
     for (const [name, value] of Object.entries(el.attributes)) {
-      if (!skipAttrs.includes(name) && value) {
-        xattr.push({ name, value });
-      }
+      const lowerName = name.toLowerCase();
+      if (skipAttrs.includes(lowerName)) continue;
+      if (!value) continue;
+      if (lowerName.startsWith("on")) continue;
+      if (lowerName.startsWith("aria-")) continue;
+      if (lowerName === "role") continue;
+      if (lowerName === "tabindex") continue;
+      if (!lowerName.startsWith("data-")) continue;
+      xattr.push({ name, value });
     }
     // Add id as xattr if present
     if (el.id) {
@@ -391,7 +539,7 @@ function convertToWebflowNodes(
       } else {
         // Element node
         const childId = processElement(child);
-        childIds.push(childId);
+        if (childId) childIds.push(childId);
       }
     }
 
@@ -415,7 +563,7 @@ function convertToWebflowNodes(
       };
     } else {
       data = {
-        tag: el.tag,
+        tag: normalizedTag,
         text: false,
         xattr,
       };
@@ -425,8 +573,8 @@ function convertToWebflowNodes(
     const node: WebflowNode = {
       _id: nodeId,
       type: nodeType,
-      tag: el.tag,
-      classes: el.classes,
+      tag: normalizedTag,
+      classes: nodeClasses,
       children: childIds,
       data,
     };
@@ -458,6 +606,48 @@ interface ParsedMediaQuery {
   rules: ParsedCssRule[];
 }
 
+function isGridClass(className: string, classIndex: ClassIndex): boolean {
+  const entry = classIndex.classes[className];
+  if (!entry || !entry.baseStyles) return false;
+  const props = styleLessToMap(entry.baseStyles);
+  const display = props.get("display")?.toLowerCase();
+  if (display === "grid" || display === "inline-grid") return true;
+  return props.has("grid-template-columns") || props.has("grid-template-rows");
+}
+
+function styleLessToMap(styleLess: string): Map<string, string> {
+  const props = new Map<string, string>();
+  styleLess.split(";").forEach((prop) => {
+    const parts = prop.split(":");
+    if (parts.length >= 2) {
+      const name = parts[0]?.trim();
+      const value = parts.slice(1).join(":").trim();
+      if (name && value) props.set(name, value);
+    }
+  });
+  return props;
+}
+
+function detectWebflowBreakpoint(query: string): string | null {
+  const maxWidthMatch = query.match(/max-width:\s*(\d+)px/i);
+  if (maxWidthMatch) {
+    const width = parseInt(maxWidthMatch[1], 10);
+    if (width <= 479) return "tiny";
+    if (width <= 767) return "small";
+    if (width <= 991) return "medium";
+    if (width <= 1200) return "desktop";
+  }
+
+  const minWidthMatch = query.match(/min-width:\s*(\d+)px/i);
+  if (minWidthMatch) {
+    const width = parseInt(minWidthMatch[1], 10);
+    if (width >= 1920) return "xxl";
+    if (width >= 1440) return "xl";
+  }
+
+  return null;
+}
+
 /**
  * Parse CSS into rules and media queries
  */
@@ -477,12 +667,10 @@ function parseCss(css: string): { rules: ParsedCssRule[]; mediaQueries: ParsedMe
     const content = mediaMatch[2];
 
     // Determine breakpoint name
-    let breakpoint: string | null = null;
-    if (query.includes("max-width: 991px")) breakpoint = "medium";
-    else if (query.includes("max-width: 767px")) breakpoint = "small";
-    else if (query.includes("max-width: 479px")) breakpoint = "tiny";
-    else if (query.includes("min-width: 1920px")) breakpoint = "xxl";
-    else if (query.includes("min-width: 1440px")) breakpoint = "xl";
+    const breakpoint = detectWebflowBreakpoint(query);
+    if (!breakpoint && /max-width|min-width/i.test(query)) {
+      console.warn(`[webflow-converter] Unmapped media query: ${query}`);
+    }
 
     const mediaRules = parseRulesFromContent(content);
     if (mediaRules.length > 0) {
@@ -501,25 +689,61 @@ function parseCss(css: string): { rules: ParsedCssRule[]; mediaQueries: ParsedMe
 
 /**
  * Parse CSS rules from content string
+ * Handles both direct class selectors and descendant/child selectors
  */
 function parseRulesFromContent(content: string): ParsedCssRule[] {
   const rules: ParsedCssRule[] = [];
+  const supportedPseudoClasses = new Set([
+    "hover",
+    "focus",
+    "active",
+    "visited",
+    "focus-visible",
+    "first-child",
+    "last-child",
+  ]);
 
-  // Match class selectors: .class-name { properties } or .class-name:hover { properties }
-  const ruleRegex = /\.([a-zA-Z_-][\w-]*)(?::(\w+(?:-\w+)*))?(?:\s*,\s*\.[a-zA-Z_-][\w-]*(?::\w+(?:-\w+)*)?)*\s*\{([^}]+)\}/g;
+  // More permissive regex that matches any rule containing a class
+  // Captures: selector { properties }
+  const ruleRegex = /([^{}]+)\{([^{}]+)\}/g;
   let match;
 
   while ((match = ruleRegex.exec(content)) !== null) {
-    const className = match[1];
-    const pseudoClass = match[2];
-    const properties = match[3].trim();
+    const selector = match[1].trim();
+    const properties = match[2].trim();
 
-    rules.push({
-      selector: match[0].split("{")[0].trim(),
-      className,
-      pseudoClass,
-      properties,
-    });
+    // Skip @-rules, element-only selectors
+    if (selector.startsWith("@") || !selector.includes(".")) continue;
+
+    // Handle comma-separated selectors
+    const selectors = selector.split(",").map(s => s.trim());
+
+    for (const sel of selectors) {
+      if (/::|:(?:before|after|first-letter|first-line|marker|placeholder|backdrop)\b/i.test(sel)) {
+        continue;
+      }
+
+      // Find all classes in this selector
+      const classMatches = sel.match(/\.([a-zA-Z_-][\w-]*)/g);
+      if (!classMatches || classMatches.length === 0) continue;
+
+      // Use the LAST class in the selector (most specific target)
+      const lastClass = classMatches[classMatches.length - 1].substring(1); // Remove the dot
+
+      // Check for pseudo-class on this selector
+      const pseudoMatch = sel.match(/:(\w+(?:-\w+)*)(?:\([^)]*\))?\s*$/);
+      const pseudoClass = pseudoMatch ? pseudoMatch[1] : undefined;
+      if (pseudoClass && !supportedPseudoClasses.has(pseudoClass)) {
+        continue;
+      }
+
+      rules.push({
+        selector: sel,
+        className: lastClass,
+        pseudoClass,
+        properties,
+      });
+    }
   }
 
   return rules;
@@ -640,6 +864,7 @@ function convertToWebflowStyles(
     }
   }
 
+  applyResponsiveGridFixes(styleMap);
   return Array.from(styleMap.values());
 }
 
@@ -765,24 +990,40 @@ export function buildTokenWebflowPayload(manifest: TokenManifest | TokenExtracti
   // 3. SPACING UTILITY CLASSES
   // =========================================
   for (const token of spacingTokens) {
-    const value = token.value ?? "";
+    const raw = token.value ?? "";
+    const value = toRem(raw);
     if (!value) continue;
 
     const tokenName = token.cssVar.replace(/^--/, "");
 
     // Padding class
     const paddingClassName = `${namespace}-p-${tokenName}`;
-    styles.push(createStyle(paddingClassName, `padding: ${value};`));
+    const padStyle = createStyle(paddingClassName, `padding: ${value};`);
+    appendVariant(padStyle, "tiny", `padding: ${scaleRem(value, 0.85)};`);
+    appendVariant(padStyle, "small", `padding: ${scaleRem(value, 0.9)};`);
+    appendVariant(padStyle, "medium", `padding: ${scaleRem(value, 1)};`);
+    appendVariant(padStyle, "desktop", `padding: ${scaleRem(value, 1.1)};`);
+    styles.push(padStyle);
     classNames.push(paddingClassName);
 
     // Margin class
     const marginClassName = `${namespace}-m-${tokenName}`;
-    styles.push(createStyle(marginClassName, `margin: ${value};`));
+    const marStyle = createStyle(marginClassName, `margin: ${value};`);
+    appendVariant(marStyle, "tiny", `margin: ${scaleRem(value, 0.85)};`);
+    appendVariant(marStyle, "small", `margin: ${scaleRem(value, 0.9)};`);
+    appendVariant(marStyle, "medium", `margin: ${scaleRem(value, 1)};`);
+    appendVariant(marStyle, "desktop", `margin: ${scaleRem(value, 1.1)};`);
+    styles.push(marStyle);
     classNames.push(marginClassName);
 
     // Gap class (for flex/grid)
     const gapClassName = `${namespace}-gap-${tokenName}`;
-    styles.push(createStyle(gapClassName, `gap: ${value};`));
+    const gapStyle = createStyle(gapClassName, `gap: ${value};`);
+    appendVariant(gapStyle, "tiny", `gap: ${scaleRem(value, 0.85)};`);
+    appendVariant(gapStyle, "small", `gap: ${scaleRem(value, 0.9)};`);
+    appendVariant(gapStyle, "medium", `gap: ${scaleRem(value, 1)};`);
+    appendVariant(gapStyle, "desktop", `gap: ${scaleRem(value, 1.1)};`);
+    styles.push(gapStyle);
     classNames.push(gapClassName);
   }
 
@@ -932,18 +1173,25 @@ export function convertSectionToWebflow(
   const idGen = new IdGenerator(prefix);
   const collectedClasses = new Set<string>();
 
+  const normalized = normalizeHtmlCssForWebflow(section.htmlContent, section.cssContent);
+  if (normalized.warnings.length > 0) {
+    console.warn("[webflow-normalizer]", normalized.warnings.join(" | "));
+  }
+
   // Parse HTML
-  const parsed = parseHtmlString(section.htmlContent);
+  const parsed = parseHtmlString(normalized.html) ?? parseHtmlString(`<div>${normalized.html}</div>`);
   if (!parsed) {
     // Return empty payload if parsing fails
     return createEmptyPayload();
   }
 
+  const { classIndex } = parseCSS(normalized.css);
+
   // Convert HTML to nodes
-  const { nodes } = convertToWebflowNodes(parsed, idGen, collectedClasses);
+  const { nodes } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex);
 
   // Convert CSS to styles
-  const styles = convertToWebflowStyles(section.cssContent, collectedClasses);
+  const styles = convertToWebflowStyles(normalized.css, collectedClasses);
 
   return {
     type: "@webflow/XscpData",
@@ -1039,4 +1287,379 @@ export function isValidWebflowPayload(json: unknown): boolean {
   if (!Array.isArray(inner.styles)) return false;
 
   return true;
+}
+
+// ============================================
+// NEW: CSS-BASED TOKEN/COMPONENT PAYLOADS
+// ============================================
+
+export interface TokenPayloadResult {
+  /** Webflow payload to paste for establishing global styles */
+  webflowPayload: WebflowPayload;
+  /** Set of class names established by this payload */
+  establishedClasses: Set<string>;
+  /** Warnings generated during conversion */
+  warnings: string[];
+}
+
+export interface ComponentPayloadResult {
+  /** Webflow payload to paste for this component */
+  webflowPayload: WebflowPayload;
+  /** Warnings generated during conversion */
+  warnings: string[];
+  /** Classes that were referenced but not in established set */
+  missingClasses: string[];
+}
+
+/**
+ * Build a Webflow payload that establishes all CSS classes as global styles.
+ * This should be pasted ONCE before pasting any components.
+ *
+ * The key insight: Webflow doesn't understand CSS files. We must convert
+ * CSS rules into Webflow class definitions with styleLess format.
+ */
+export function buildCssTokenPayload(
+  css: string,
+  options: {
+    /** Optional namespace prefix for generated classes */
+    namespace?: string;
+    /** Include a preview wrapper div */
+    includePreview?: boolean;
+  } = {}
+): TokenPayloadResult {
+  const { namespace = "fp", includePreview = true } = options;
+  const warnings: string[] = [];
+
+  // Parse CSS using the new deterministic parser
+  const { classIndex } = parseCSS(css);
+
+  // Convert all classes to Webflow styles
+  const styles = classIndexToWebflowStyles(classIndex);
+
+  // Collect all established class names
+  const establishedClasses = new Set<string>(
+    styles.map((s) => s.name)
+  );
+
+  // Add CSS parser warnings
+  warnings.push(...classIndex.warnings.map((w) => w.message));
+
+  // Build nodes that USE each class - Webflow only creates classes that are used by nodes
+  const nodes: WebflowNode[] = [];
+  const classNodeIds: string[] = [];
+
+  const buildComboChain = (className: string): string[] => {
+    const chain: string[] = [];
+    const seen = new Set<string>();
+    let current: string | undefined = className;
+
+    while (current && !seen.has(current)) {
+      seen.add(current);
+      chain.unshift(current);
+      const entry: ClassIndexEntry | undefined = classIndex.classes[current];
+      current = entry?.parentClass;
+    }
+
+    return chain.length > 0 ? chain : [className];
+  };
+
+  // Create a node for each class so Webflow actually creates the class
+  let classIdx = 0;
+  for (const className of establishedClasses) {
+    const nodeId = `${namespace}-class-${classIdx}`;
+    classNodeIds.push(nodeId);
+
+    const classes = buildComboChain(className);
+    nodes.push({
+      _id: nodeId,
+      type: "Block",
+      tag: "div",
+      classes,
+      children: [],
+      data: { tag: "div", text: false },
+    });
+    classIdx++;
+  }
+
+  if (includePreview) {
+    // Create instruction text
+    const instructionTextId = `${namespace}-style-instruction-text`;
+    const instructionId = `${namespace}-style-instruction`;
+    const wrapperId = `${namespace}-style-wrapper`;
+
+    nodes.push({
+      _id: instructionTextId,
+      text: true,
+      v: `CSS Styles Established - ${establishedClasses.size} classes. Delete this wrapper after pasting.`,
+    });
+
+    nodes.push({
+      _id: instructionId,
+      type: "Block",
+      tag: "div",
+      classes: [],
+      children: [instructionTextId],
+      data: { tag: "div", text: false },
+    });
+
+    // Wrapper contains instruction + all class nodes
+    nodes.push({
+      _id: wrapperId,
+      type: "Block",
+      tag: "div",
+      classes: [],
+      children: [instructionId, ...classNodeIds],
+      data: { tag: "div", text: false },
+    });
+  }
+
+  return {
+    webflowPayload: {
+      type: "@webflow/XscpData",
+      payload: {
+        nodes,
+        styles,
+        assets: [],
+        ix1: [],
+        ix2: { interactions: [], events: [], actionLists: [] },
+      },
+      meta: {
+        unlinkedSymbolCount: 0,
+        droppedLinks: 0,
+        dynBindRemovedCount: 0,
+        dynListBindRemovedCount: 0,
+        paginationRemovedCount: 0,
+      },
+    },
+    establishedClasses,
+    warnings,
+  };
+}
+
+export interface ComponentPayloadOptions extends ConvertOptions {
+  /**
+   * If true, skip styles for classes that are in establishedClasses.
+   * Use this if you've already pasted the token payload and want to avoid "-2" duplicates.
+   * Default: false (include all styles for safety)
+   */
+  skipEstablishedStyles?: boolean;
+}
+
+/**
+ * Build a Webflow payload for a single component.
+ *
+ * By default, includes ALL styles the component uses (safest option).
+ * Set skipEstablishedStyles=true if you've already pasted the token payload
+ * and want to avoid "-2" class duplicates.
+ */
+export function buildComponentPayload(
+  component: Component,
+  classIndex: ClassIndex,
+  establishedClasses: Set<string>,
+  options: ComponentPayloadOptions = {}
+): ComponentPayloadResult {
+  const { skipEstablishedStyles = false } = options;
+  const warnings: string[] = [];
+  const missingClasses: string[] = [];
+  const skippedClasses: string[] = [];
+
+  // Determine ID prefix
+  const prefix = options.idPrefix || extractPrefix(component.primaryClass) || "wf";
+  const idGen = new IdGenerator(prefix);
+  const collectedClasses = new Set<string>();
+
+  // Parse component HTML
+  const parsed = parseHtmlString(component.htmlContent) ?? parseHtmlString(`<div>${component.htmlContent}</div>`);
+  if (!parsed) {
+    warnings.push(`Failed to parse HTML for component: ${component.name}`);
+    return {
+      webflowPayload: createEmptyPayload(),
+      warnings,
+      missingClasses,
+    };
+  }
+
+  // Convert HTML to nodes (this collects all class names used)
+  const { nodes } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex);
+
+  // Build styles array based on options
+  const componentStyles: WebflowStyle[] = [];
+
+  for (const className of collectedClasses) {
+    // Optionally skip classes that were already established (user's choice)
+    if (skipEstablishedStyles && establishedClasses.has(className)) {
+      skippedClasses.push(className);
+      continue;
+    }
+
+    // Check if class exists in our classIndex
+    const entry = classIndex.classes[className];
+    if (entry) {
+      componentStyles.push(classEntryToWebflowStyle(entry));
+    } else {
+      // Class used in HTML but not defined in CSS
+      missingClasses.push(className);
+    }
+  }
+
+  if (skippedClasses.length > 0) {
+    warnings.push(`Skipped ${skippedClasses.length} established classes (assumed already in Webflow)`);
+  }
+
+  if (missingClasses.length > 0) {
+    warnings.push(
+      `${missingClasses.length} classes used but not defined: ${missingClasses.slice(0, 5).join(", ")}${missingClasses.length > 5 ? "..." : ""}`
+    );
+  }
+
+  for (const style of componentStyles) {
+    style.styleLess = sanitizeStyleLessVisibility(style.styleLess);
+    for (const [variant, entry] of Object.entries(style.variants)) {
+      style.variants[variant] = { styleLess: sanitizeStyleLessVisibility(entry.styleLess) };
+    }
+  }
+
+  return {
+    webflowPayload: {
+      type: "@webflow/XscpData",
+      payload: {
+        nodes,
+        styles: componentStyles,
+        assets: [],
+        ix1: [],
+        ix2: { interactions: [], events: [], actionLists: [] },
+      },
+      meta: {
+        unlinkedSymbolCount: 0,
+        droppedLinks: 0,
+        dynBindRemovedCount: 0,
+        dynListBindRemovedCount: 0,
+        paginationRemovedCount: 0,
+      },
+    },
+    warnings,
+    missingClasses,
+  };
+}
+
+/**
+ * Partition styles between token (global) and component (local) payloads.
+ *
+ * Returns which classes should be in each payload to avoid duplication.
+ */
+export function partitionStyles(
+  componentClasses: string[],
+  establishedClasses: Set<string>,
+  classIndex: ClassIndex
+): {
+  /** Classes that are already established (just reference them) */
+  tokenClasses: string[];
+  /** Classes that need to be included in component payload */
+  componentClasses: string[];
+  /** Classes used but not defined anywhere */
+  undefinedClasses: string[];
+} {
+  const tokenClasses: string[] = [];
+  const componentOnlyClasses: string[] = [];
+  const undefinedClasses: string[] = [];
+
+  for (const className of componentClasses) {
+    if (establishedClasses.has(className)) {
+      tokenClasses.push(className);
+    } else if (classIndex.classes[className]) {
+      componentOnlyClasses.push(className);
+    } else {
+      undefinedClasses.push(className);
+    }
+  }
+
+  return {
+    tokenClasses,
+    componentClasses: componentOnlyClasses,
+    undefinedClasses,
+  };
+}
+
+/**
+ * Build complete import result with token and component payloads.
+ * This is the main entry point for the new import workflow.
+ */
+export function buildImportPayloads(
+  cleanHtml: string,
+  fullCss: string,
+  components: Component[],
+  options: {
+    namespace?: string;
+    includeTokenPreview?: boolean;
+  } = {}
+): {
+  tokenPayload: TokenPayloadResult;
+  componentPayloads: Map<string, ComponentPayloadResult>;
+  classIndex: ClassIndex;
+} {
+  const { namespace = "fp", includeTokenPreview = true } = options;
+
+  // Build token payload first
+  const tokenPayload = buildCssTokenPayload(fullCss, {
+    namespace,
+    includePreview: includeTokenPreview,
+  });
+
+  // Parse CSS for class index
+  const { classIndex } = parseCSS(fullCss);
+
+  // Build component payloads
+  const componentPayloads = new Map<string, ComponentPayloadResult>();
+
+  for (const component of components) {
+    const result = buildComponentPayload(
+      component,
+      classIndex,
+      tokenPayload.establishedClasses
+    );
+    componentPayloads.set(component.id, result);
+  }
+
+  return {
+    tokenPayload,
+    componentPayloads,
+    classIndex,
+  };
+}
+
+/**
+ * Validate that styles will paste correctly into Webflow.
+ * Returns warnings about potential issues.
+ */
+export function validateForWebflowPaste(
+  classIndex: ClassIndex,
+  components: Component[]
+): string[] {
+  const warnings: string[] = [];
+
+  // Check for complex selectors that Webflow may not handle
+  for (const entry of Object.values(classIndex.classes)) {
+    if (entry.isComboClass && entry.children.length > 1) {
+      warnings.push(
+        `Combo class "${entry.className}" has multiple children. Webflow may create duplicate classes.`
+      );
+    }
+  }
+
+  // Check for missing class definitions
+  const definedClasses = new Set(Object.keys(classIndex.classes));
+  for (const component of components) {
+    for (const className of component.classesUsed) {
+      if (!definedClasses.has(className)) {
+        warnings.push(
+          `Class "${className}" used in ${component.name} but not defined in CSS.`
+        );
+      }
+    }
+  }
+
+  // Check for CSS parser warnings
+  warnings.push(...classIndex.warnings.map((w) => `CSS: ${w.message}`));
+
+  return [...new Set(warnings)]; // Dedupe
 }

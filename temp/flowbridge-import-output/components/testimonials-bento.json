@@ -1,0 +1,1422 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "bento-bento-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "bento-section"
+        ],
+        "children": [
+          "bento-bento-grid-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-bento-grid-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "bento-grid",
+          "w-layout-grid"
+        ],
+        "children": [
+          "bento-bento-card-001",
+          "bento-bento-card-002",
+          "bento-bento-card-003",
+          "bento-bento-card-004",
+          "bento-bento-card-005",
+          "bento-bento-card-006"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-bento-card-006",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "bento-card",
+          "stat-card-2"
+        ],
+        "children": [
+          "bento-stat-header-002",
+          "bento-stat-value-002",
+          "bento-stat-desc-002",
+          "bento-watermark-number-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-watermark-number-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "watermark-number"
+        ],
+        "children": [
+          "bento-text-029"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-029",
+        "text": true,
+        "v": "140"
+      },
+      {
+        "_id": "bento-stat-desc-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "stat-desc"
+        ],
+        "children": [
+          "bento-text-028"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-028",
+        "text": true,
+        "v": "Premium assets in The Stash"
+      },
+      {
+        "_id": "bento-stat-value-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "stat-value"
+        ],
+        "children": [
+          "bento-text-026",
+          "bento-stat-value-span-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-stat-value-span-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "stat-value-span"
+        ],
+        "children": [
+          "bento-text-027"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-027",
+        "text": true,
+        "v": "+"
+      },
+      {
+        "_id": "bento-text-026",
+        "text": true,
+        "v": "140"
+      },
+      {
+        "_id": "bento-stat-header-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "stat-header"
+        ],
+        "children": [
+          "bento-stat-label-002",
+          "bento-stat-icon-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-stat-icon-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "stat-icon"
+        ],
+        "children": [
+          "bento-text-025"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-025",
+        "text": true,
+        "v": "📦"
+      },
+      {
+        "_id": "bento-stat-label-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "stat-label"
+        ],
+        "children": [
+          "bento-text-024"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-024",
+        "text": true,
+        "v": "Resources"
+      },
+      {
+        "_id": "bento-bento-card-005",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "bento-card",
+          "timeline-card"
+        ],
+        "children": [
+          "bento-timeline-header-001",
+          "bento-timeline-bars-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-timeline-bars-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "timeline-bars"
+        ],
+        "children": [
+          "bento-timeline-bar-001",
+          "bento-timeline-bar-002",
+          "bento-timeline-bar-003",
+          "bento-timeline-bar-004",
+          "bento-timeline-bar-005"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-timeline-bar-005",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "timeline-bar"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-timeline-bar-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "timeline-bar"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-timeline-bar-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "timeline-bar",
+          "active"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-timeline-bar-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "timeline-bar",
+          "active"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-timeline-bar-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "timeline-bar",
+          "active"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-timeline-header-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "timeline-header"
+        ],
+        "children": [
+          "bento-timeline-title-001",
+          "bento-timeline-subtitle-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-timeline-subtitle-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "timeline-subtitle"
+        ],
+        "children": [
+          "bento-text-023"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-023",
+        "text": true,
+        "v": "Average project timeline"
+      },
+      {
+        "_id": "bento-timeline-title-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "timeline-title"
+        ],
+        "children": [
+          "bento-text-022"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-022",
+        "text": true,
+        "v": "From idea to launch"
+      },
+      {
+        "_id": "bento-bento-card-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "bento-card",
+          "process-card"
+        ],
+        "children": [
+          "bento-bento-card-h3-002",
+          "bento-process-list-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-process-list-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "process-list"
+        ],
+        "children": [
+          "bento-process-item-001",
+          "bento-process-item-002",
+          "bento-process-item-003",
+          "bento-process-item-004"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-process-item-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "process-item"
+        ],
+        "children": [
+          "bento-process-check-004",
+          "bento-text-021"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-021",
+        "text": true,
+        "v": "Launch Guide"
+      },
+      {
+        "_id": "bento-process-check-004",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "process-check"
+        ],
+        "children": [
+          "bento-text-020"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-020",
+        "text": true,
+        "v": "✓"
+      },
+      {
+        "_id": "bento-process-item-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "process-item"
+        ],
+        "children": [
+          "bento-process-check-003",
+          "bento-text-019"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-019",
+        "text": true,
+        "v": "Figma Source Files"
+      },
+      {
+        "_id": "bento-process-check-003",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "process-check"
+        ],
+        "children": [
+          "bento-text-018"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-018",
+        "text": true,
+        "v": "✓"
+      },
+      {
+        "_id": "bento-process-item-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "process-item"
+        ],
+        "children": [
+          "bento-process-check-002",
+          "bento-text-017"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-017",
+        "text": true,
+        "v": "Component Library"
+      },
+      {
+        "_id": "bento-process-check-002",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "process-check"
+        ],
+        "children": [
+          "bento-text-016"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-016",
+        "text": true,
+        "v": "✓"
+      },
+      {
+        "_id": "bento-process-item-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "process-item"
+        ],
+        "children": [
+          "bento-process-check-001",
+          "bento-text-015"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-015",
+        "text": true,
+        "v": "Webflow Template"
+      },
+      {
+        "_id": "bento-process-check-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "process-check"
+        ],
+        "children": [
+          "bento-text-014"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-014",
+        "text": true,
+        "v": "✓"
+      },
+      {
+        "_id": "bento-bento-card-h3-002",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "bento-card-h3",
+          "heading-h3"
+        ],
+        "children": [
+          "bento-text-013"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-013",
+        "text": true,
+        "v": "What's Included"
+      },
+      {
+        "_id": "bento-bento-card-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "bento-card",
+          "showcase-card"
+        ],
+        "children": [
+          "bento-showcase-overlay-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-showcase-overlay-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "showcase-overlay"
+        ],
+        "children": [
+          "bento-bento-card-h3-001",
+          "bento-showcase-overlay-p-001",
+          "bento-link-arrow-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-link-arrow-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "link-arrow"
+        ],
+        "children": [
+          "bento-text-012"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "bento-text-012",
+        "text": true,
+        "v": "View Pack →"
+      },
+      {
+        "_id": "bento-showcase-overlay-p-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "showcase-overlay-p",
+          "text-body"
+        ],
+        "children": [
+          "bento-text-011"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-011",
+        "text": true,
+        "v": "Complete launch kit for your next product"
+      },
+      {
+        "_id": "bento-bento-card-h3-001",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "bento-card-h3",
+          "showcase-overlay-h3",
+          "heading-h3"
+        ],
+        "children": [
+          "bento-text-010"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-010",
+        "text": true,
+        "v": "SaaS Starter Pack"
+      },
+      {
+        "_id": "bento-bento-card-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "bento-card",
+          "stat-card-1"
+        ],
+        "children": [
+          "bento-stat-header-001",
+          "bento-stat-value-001",
+          "bento-stat-desc-001",
+          "bento-watermark-number-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-watermark-number-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "watermark-number"
+        ],
+        "children": [
+          "bento-text-009"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-009",
+        "text": true,
+        "v": "40"
+      },
+      {
+        "_id": "bento-stat-desc-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "stat-desc"
+        ],
+        "children": [
+          "bento-text-008"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-008",
+        "text": true,
+        "v": "Average per project launch"
+      },
+      {
+        "_id": "bento-stat-value-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "stat-value"
+        ],
+        "children": [
+          "bento-text-006",
+          "bento-stat-value-span-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-stat-value-span-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "stat-value-span"
+        ],
+        "children": [
+          "bento-text-007"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-007",
+        "text": true,
+        "v": "hrs"
+      },
+      {
+        "_id": "bento-text-006",
+        "text": true,
+        "v": "40"
+      },
+      {
+        "_id": "bento-stat-header-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "stat-header"
+        ],
+        "children": [
+          "bento-stat-label-001",
+          "bento-stat-icon-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-stat-icon-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "stat-icon"
+        ],
+        "children": [
+          "bento-text-005"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-005",
+        "text": true,
+        "v": "⏱"
+      },
+      {
+        "_id": "bento-stat-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "stat-label"
+        ],
+        "children": [
+          "bento-text-004"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-004",
+        "text": true,
+        "v": "Time Saved"
+      },
+      {
+        "_id": "bento-bento-card-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "bento-card",
+          "testimonial-card"
+        ],
+        "children": [
+          "bento-testimonial-text-001",
+          "bento-testimonial-author-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-testimonial-author-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "testimonial-author"
+        ],
+        "children": [
+          "bento-avatar-001",
+          "bento-div-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-div-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [],
+        "children": [
+          "bento-author-name-001",
+          "bento-author-role-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-author-role-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "author-role"
+        ],
+        "children": [
+          "bento-text-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-003",
+        "text": true,
+        "v": "Freelance Developer"
+      },
+      {
+        "_id": "bento-author-name-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "author-name"
+        ],
+        "children": [
+          "bento-text-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-002",
+        "text": true,
+        "v": "Sarah Chen"
+      },
+      {
+        "_id": "bento-avatar-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "avatar",
+          "testimonial-author-avatar"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-testimonial-text-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "testimonial-text",
+          "bento-card-p",
+          "text-body"
+        ],
+        "children": [
+          "bento-text-001"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "bento-text-001",
+        "text": true,
+        "v": "\"Flow Party saved me 40+ hours on my last client project. The Party Pack approach is genius—everything just works together.\""
+      }
+    ],
+    "styles": [
+      {
+        "_id": "bento-section",
+        "fake": false,
+        "type": "class",
+        "name": "bento-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 2rem; padding-right: 5vw; padding-bottom: 4rem; padding-left: 5vw;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "bento-grid",
+        "fake": false,
+        "type": "class",
+        "name": "bento-grid",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: grid; grid-template-columns: 1fr 1fr 1fr; justify-items: stretch; align-items: stretch; grid-row-gap: 1.5rem; grid-column-gap: 1.5rem;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr 1fr; display: grid;"
+          },
+          "medium": {
+            "styleLess": "grid-template-columns: 1fr; display: grid;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "bento-card",
+        "fake": false,
+        "type": "class",
+        "name": "bento-card",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #ffffff; border-top-left-radius: 24px; border-top-right-radius: 24px; border-bottom-right-radius: 24px; border-bottom-left-radius: 24px; padding-top: 2rem; padding-right: 2rem; padding-bottom: 2rem; padding-left: 2rem; position: relative; overflow: hidden; min-height: 200px;",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.1);"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "testimonial-card",
+        "fake": false,
+        "type": "class",
+        "name": "testimonial-card",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; flex-direction: column; justify-content: space-between; align-items: stretch; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "testimonial-text",
+        "fake": false,
+        "type": "class",
+        "name": "testimonial-text",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1rem; line-height: 1.5; color: #171717;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "bento-card-p",
+        "fake": false,
+        "type": "class",
+        "name": "bento-card-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #afb6b4; font-size: 0.9rem; line-height: 1.5;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "testimonial-author",
+        "fake": false,
+        "type": "class",
+        "name": "testimonial-author",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; align-items: center; row-gap: 1rem; column-gap: 1rem; margin-top: auto; padding-top: 1.5rem; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "avatar",
+        "fake": false,
+        "type": "class",
+        "name": "avatar",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "width: 36px; height: 36px; border-top-left-radius: 50%; border-top-right-radius: 50%; border-bottom-right-radius: 50%; border-bottom-left-radius: 50%; border: 2px solid #f5f5f5; margin-left: -10px; background: linear-gradient(135deg, #ffc8b8, #ff531f); overflow: hidden;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "testimonial-author-avatar",
+        "fake": false,
+        "type": "class",
+        "name": "testimonial-author-avatar",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-left: 0;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "author-name",
+        "fake": false,
+        "type": "class",
+        "name": "author-name",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-weight: 600; font-size: 0.875rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "author-role",
+        "fake": false,
+        "type": "class",
+        "name": "author-role",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.75rem; color: #afb6b4;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "stat-header",
+        "fake": false,
+        "type": "class",
+        "name": "stat-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "stat-label",
+        "fake": false,
+        "type": "class",
+        "name": "stat-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.75rem; color: #afb6b4; font-weight: 500;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "stat-icon",
+        "fake": false,
+        "type": "class",
+        "name": "stat-icon",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "width: 32px; height: 32px; border: 1px solid #dddfde; border-top-left-radius: 50%; border-top-right-radius: 50%; border-bottom-right-radius: 50%; border-bottom-left-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "stat-value",
+        "fake": false,
+        "type": "class",
+        "name": "stat-value",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: clamp(2.5rem, 5vw, 3.5rem); font-weight: 700; line-height: 1; margin-bottom: 0.5rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "stat-value-span",
+        "fake": false,
+        "type": "class",
+        "name": "stat-value-span",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.5em;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "stat-desc",
+        "fake": false,
+        "type": "class",
+        "name": "stat-desc",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.875rem; color: #afb6b4;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "watermark-number",
+        "fake": false,
+        "type": "class",
+        "name": "watermark-number",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: absolute; bottom: 0.5rem; right: 1rem; font-size: 7rem; font-weight: 700; opacity: 0.03; line-height: 1; pointer-events: none;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "showcase-card",
+        "fake": false,
+        "type": "class",
+        "name": "showcase-card",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; min-height: 400px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "showcase-overlay",
+        "fake": false,
+        "type": "class",
+        "name": "showcase-overlay",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: absolute; bottom: 0; left: 0; right: 0; padding-top: 2rem; padding-right: 2rem; padding-bottom: 2rem; padding-left: 2rem; background: linear-gradient(to top, rgba(0,0,0,0.85), transparent); color: #ffffff;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "bento-card-h3",
+        "fake": false,
+        "type": "class",
+        "name": "bento-card-h3",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "showcase-overlay-h3",
+        "fake": false,
+        "type": "class",
+        "name": "showcase-overlay-h3",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 1.25rem; margin-bottom: 0.5rem; color: #ffffff;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h3",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h3",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "showcase-overlay-p",
+        "fake": false,
+        "type": "class",
+        "name": "showcase-overlay-p",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.875rem; color: #767f7a; margin-bottom: 1rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "link-arrow",
+        "fake": false,
+        "type": "class",
+        "name": "link-arrow",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #ff531f; font-size: 0.875rem; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; row-gap: 0.5rem; column-gap: 0.5rem; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "row-gap: 0.75rem; column-gap: 0.75rem; display: flex; flex-direction: row; justify-content: flex-start; align-items: stretch;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "process-list",
+        "fake": false,
+        "type": "class",
+        "name": "process-list",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; flex-direction: column; row-gap: 0.75rem; column-gap: 0.75rem; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "process-item",
+        "fake": false,
+        "type": "class",
+        "name": "process-item",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; align-items: center; row-gap: 0.75rem; column-gap: 0.75rem; font-size: 0.875rem; color: #afb6b4; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "process-check",
+        "fake": false,
+        "type": "class",
+        "name": "process-check",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "width: 20px; height: 20px; border-top-left-radius: 50%; border-top-right-radius: 50%; border-bottom-right-radius: 50%; border-bottom-left-radius: 50%; background: #fff0eb; color: #ff531f; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; flex-shrink: 0; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "timeline-header",
+        "fake": false,
+        "type": "class",
+        "name": "timeline-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 1.5rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "timeline-title",
+        "fake": false,
+        "type": "class",
+        "name": "timeline-title",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-weight: 600; font-size: 0.9rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "timeline-subtitle",
+        "fake": false,
+        "type": "class",
+        "name": "timeline-subtitle",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.75rem; color: #afb6b4;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "timeline-bars",
+        "fake": false,
+        "type": "class",
+        "name": "timeline-bars",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; row-gap: 0.5rem; column-gap: 0.5rem; height: 8px; flex-direction: row; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "timeline-bar",
+        "fake": false,
+        "type": "class",
+        "name": "timeline-bar",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "flex: 1; border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background: #dddfde;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "active",
+        "fake": false,
+        "type": "class",
+        "name": "active",
+        "namespace": "",
+        "comb": "&",
+        "styleLess": "background: #ff531f;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

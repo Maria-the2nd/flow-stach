@@ -124,7 +124,7 @@ function parseRootVariables(rootContent: string): TokenVariable[] {
   let match;
   let totalFound = 0;
   let skippedRadius = 0;
-  let skippedUncategorized: string[] = [];
+  const skippedUncategorized: string[] = [];
 
   while ((match = varRegex.exec(rootContent)) !== null) {
     totalFound++;

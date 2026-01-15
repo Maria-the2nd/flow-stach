@@ -638,3 +638,143 @@ export function buildCodePayload(
 
   return payload;
 }
+
+// ============================================
+// CLEAN HTML EXTRACTION
+// ============================================
+
+export interface CleanHtmlResult {
+  cleanHtml: string;
+  extractedStyles: string;
+  extractedScripts: string;
+  inlineStyles: Map<string, string>;
+  externalScripts: string[];
+  externalStylesheets: string[];
+}
+
+/**
+ * Strip inline style="" attributes from HTML
+ */
+export function stripInlineStyles(html: string): { html: string; removedStyles: Map<string, string> } {
+  const removedStyles = new Map<string, string>();
+  let styleIndex = 0;
+
+  const cleanedHtml = html.replace(
+    /(<[^>]+)\s+style="([^"]*)"([^>]*>)/gi,
+    (match, before, styleValue, after) => {
+      if (styleValue.trim()) {
+        const classMatch = before.match(/class="([^"]+)"/);
+        const idMatch = before.match(/id="([^"]+)"/);
+        const tagMatch = before.match(/<(\w+)/);
+        const identifier = idMatch?.[1] || classMatch?.[1]?.split(" ")[0] || `${tagMatch?.[1] || "element"}-${styleIndex++}`;
+        removedStyles.set(identifier, styleValue);
+      }
+      return before + after;
+    }
+  );
+
+  return { html: cleanedHtml, removedStyles };
+}
+
+/**
+ * Strip <style> tags from HTML
+ */
+export function stripStyleTags(html: string): { html: string; styles: string[] } {
+  const styles: string[] = [];
+  const cleanedHtml = html.replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, (_, content) => {
+    if (content.trim()) styles.push(content.trim());
+    return "";
+  });
+  return { html: cleanedHtml, styles };
+}
+
+/**
+ * Strip <script> tags from HTML
+ */
+export function stripScriptTags(html: string): { html: string; inlineScripts: string[]; externalScripts: string[] } {
+  const inlineScripts: string[] = [];
+  const externalScripts: string[] = [];
+
+  const cleanedHtml = html.replace(/<script([^>]*)>([\s\S]*?)<\/script>/gi, (_, attributes, content) => {
+    const srcMatch = attributes.match(/src="([^"]+)"/);
+    if (srcMatch) {
+      externalScripts.push(srcMatch[1]);
+    } else if (content.trim()) {
+      inlineScripts.push(content.trim());
+    }
+    return "";
+  });
+
+  return { html: cleanedHtml, inlineScripts, externalScripts };
+}
+
+/**
+ * Main clean HTML extraction function
+ */
+export function extractCleanHtml(html: string): CleanHtmlResult {
+  const { html: noStylesHtml, styles } = stripStyleTags(html);
+  const { html: noScriptsHtml, inlineScripts, externalScripts } = stripScriptTags(noStylesHtml);
+  const { html: cleanHtml, removedStyles } = stripInlineStyles(noScriptsHtml);
+
+  const cleanHtmlNoLinks = cleanHtml.replace(/<link[^>]+rel="stylesheet"[^>]*>/gi, "");
+
+  const withoutDoctype = cleanHtmlNoLinks.replace(/<!doctype[^>]*>/gi, "");
+  const bodyMatch = withoutDoctype.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  const bodyInner = bodyMatch ? bodyMatch[1] : withoutDoctype;
+
+  const withoutDocShell = bodyInner
+    .replace(/<html[^>]*>/gi, "")
+    .replace(/<\/html>/gi, "")
+    .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, "")
+    .replace(/<\/?body[^>]*>/gi, "");
+
+  const withoutInlineEvents = withoutDocShell.replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+  const withoutIframes = withoutInlineEvents.replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, "");
+
+  const finalCleanHtml = withoutIframes.replace(/\n\s*\n\s*\n/g, "\n\n").trim();
+
+  const externalStylesheets: string[] = [];
+  const linkRegex = /<link[^>]+href="([^"]+)"[^>]+rel="stylesheet"[^>]*>/gi;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    externalStylesheets.push(match[1]);
+  }
+
+  return {
+    cleanHtml: finalCleanHtml,
+    extractedStyles: styles.join("\n\n"),
+    extractedScripts: inlineScripts.join("\n\n"),
+    inlineStyles: removedStyles,
+    externalScripts,
+    externalStylesheets,
+  };
+}
+
+/**
+ * Get all class names used in HTML (alias for extractClassNames)
+ */
+export function getClassesUsed(html: string): string[] {
+  return extractClassNames(html);
+}
+
+/**
+ * Extract data-* attributes and IDs used in HTML (potential JS hooks)
+ */
+export function extractJsHooks(html: string): string[] {
+  const hooks: string[] = [];
+
+  const dataAttrRegex = /\bdata-([a-zA-Z0-9-]+)(?:="[^"]*")?/g;
+  let match;
+  while ((match = dataAttrRegex.exec(html)) !== null) {
+    const hookName = `data-${match[1]}`;
+    if (!hooks.includes(hookName)) hooks.push(hookName);
+  }
+
+  const idRegex = /\bid="([^"]+)"/g;
+  while ((match = idRegex.exec(html)) !== null) {
+    const hookName = `#${match[1]}`;
+    if (!hooks.includes(hookName)) hooks.push(hookName);
+  }
+
+  return hooks;
+}

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Copy01Icon, FavouriteIcon } from "@hugeicons/core-free-icons";
-import { copyText, copyWebflowJson } from "@/lib/clipboard";
+import { copyWebflowJson } from "@/lib/clipboard";
 import {
   Tooltip,
   TooltipContent,
@@ -46,6 +46,12 @@ interface AssetDetailContextProps {
   payload: Payload | null;
 }
 
+interface AssetActionsProps {
+  asset: Asset;
+  payload: Payload | null;
+  layout?: "vertical" | "inline";
+}
+
 function formatDate(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString("en-US", {
     month: "short",
@@ -54,40 +60,23 @@ function formatDate(timestamp: number): string {
   });
 }
 
-export function AssetDetailContext({ asset, payload }: AssetDetailContextProps) {
+export function AssetActions({ asset, payload, layout = "vertical" }: AssetActionsProps) {
   const { isFavorited, toggle } = useFavorites();
   const favorited = isFavorited(asset.slug);
   const [copyingWebflow, setCopyingWebflow] = useState(false);
-  const [copyingCode, setCopyingCode] = useState(false);
 
   const hasWebflowPayload = useMemo(
     () => !!payload?.webflowJson && !isPlaceholderPayload(payload.webflowJson),
     [payload?.webflowJson]
   );
 
-  const hasCodePayload = useMemo(
-    () => !!payload?.codePayload && !payload.codePayload.includes("// TODO: Add implementation"),
-    [payload?.codePayload]
-  );
-
-  // Capability checks
   const canPasteToWebflow = asset.pasteReliability === "full" || asset.pasteReliability === "partial";
-  const canCopyCode = asset.supportsCodeCopy !== false; // Default true if undefined
-
-  // Determine button states and messages
   const webflowDisabled = !hasWebflowPayload || !canPasteToWebflow;
-  const codeDisabled = !hasCodePayload || !canCopyCode;
 
   const getWebflowTooltip = () => {
     if (!hasWebflowPayload) return "No Webflow payload available";
     if (asset.pasteReliability === "none") return asset.capabilityNotes || "Webflow paste not supported - use Install Snippet";
     if (asset.pasteReliability === "partial") return asset.capabilityNotes || "Paste works, but some features need manual setup";
-    return null;
-  };
-
-  const getCodeTooltip = () => {
-    if (!hasCodePayload) return "No code payload available";
-    if (!canCopyCode) return "Code copy not available for this asset";
     return null;
   };
 
@@ -101,15 +90,85 @@ export function AssetDetailContext({ asset, payload }: AssetDetailContextProps) 
     }
   };
 
-  const handleCopyCode = async () => {
-    if (!hasCodePayload) return;
-    setCopyingCode(true);
-    try {
-      await copyText(payload?.codePayload ?? "");
-    } finally {
-      setCopyingCode(false);
-    }
-  };
+  if (layout === "inline") {
+    return (
+      <div className="flex items-center gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleCopyWebflow}
+          disabled={copyingWebflow || webflowDisabled}
+          className="gap-1.5"
+        >
+          <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
+          {copyingWebflow ? "Copying…" : "Copy to Webflow"}
+        </Button>
+        <Button
+          variant={favorited ? "default" : "secondary"}
+          size="sm"
+          onClick={() => toggle(asset.slug)}
+          className="gap-1.5"
+        >
+          <HugeiconsIcon
+            icon={FavouriteIcon}
+            data-icon="inline-start"
+            className={favorited ? "fill-current text-red-500" : ""}
+          />
+          {favorited ? "Favorited" : "Add to Favorites"}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <TooltipProvider>
+      <div className="space-y-2">
+        <div className="space-y-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={handleCopyWebflow}
+                  disabled={copyingWebflow || webflowDisabled}
+                >
+                  <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
+                  {copyingWebflow ? "Copying..." : "Copy to Webflow"}
+                </Button>
+              </div>
+            </TooltipTrigger>
+            {getWebflowTooltip() && (
+              <TooltipContent side="left">
+                <p className="max-w-[200px]">{getWebflowTooltip()}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+          {webflowDisabled && (
+            <p className="pl-1 text-xs text-muted-foreground">
+              {!hasWebflowPayload ? "No payload yet" : "Use Install Snippet instead"}
+            </p>
+          )}
+        </div>
+
+        <Button
+          variant="outline"
+          className="w-full justify-start"
+          onClick={() => toggle(asset.slug)}
+        >
+          <HugeiconsIcon
+            icon={FavouriteIcon}
+            data-icon="inline-start"
+            className={favorited ? "fill-current text-red-500" : ""}
+          />
+          {favorited ? "Remove from Favorites" : "Add to Favorites"}
+        </Button>
+      </div>
+    </TooltipProvider>
+  );
+}
+
+export function AssetDetailContext({ asset, payload }: AssetDetailContextProps) {
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -145,79 +204,8 @@ export function AssetDetailContext({ asset, payload }: AssetDetailContextProps) 
         <CardHeader>
           <CardTitle>Actions</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <TooltipProvider>
-            {/* Copy to Webflow Button */}
-            <div className="space-y-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start"
-                      onClick={handleCopyWebflow}
-                      disabled={copyingWebflow || webflowDisabled}
-                    >
-                      <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
-                      {copyingWebflow ? "Copying..." : "Copy to Webflow"}
-                    </Button>
-                  </div>
-                </TooltipTrigger>
-                {getWebflowTooltip() && (
-                  <TooltipContent side="left">
-                    <p className="max-w-[200px]">{getWebflowTooltip()}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-              {webflowDisabled && (
-                <p className="text-xs text-muted-foreground pl-1">
-                  {!hasWebflowPayload ? "No payload yet" : "Use Install Snippet instead"}
-                </p>
-              )}
-            </div>
-
-            {/* Copy Code Button */}
-            <div className="space-y-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start"
-                      onClick={handleCopyCode}
-                      disabled={copyingCode || codeDisabled}
-                    >
-                      <HugeiconsIcon icon={Copy01Icon} data-icon="inline-start" />
-                      {copyingCode ? "Copying..." : "Copy Code"}
-                    </Button>
-                  </div>
-                </TooltipTrigger>
-                {getCodeTooltip() && (
-                  <TooltipContent side="left">
-                    <p className="max-w-[200px]">{getCodeTooltip()}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-              {codeDisabled && (
-                <p className="text-xs text-muted-foreground pl-1">
-                  {!hasCodePayload ? "No payload yet" : "Not available"}
-                </p>
-              )}
-            </div>
-          </TooltipProvider>
-
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={() => toggle(asset.slug)}
-          >
-            <HugeiconsIcon
-              icon={FavouriteIcon}
-              data-icon="inline-start"
-              className={favorited ? "fill-current text-red-500" : ""}
-            />
-            {favorited ? "Remove from Favorites" : "Add to Favorites"}
-          </Button>
+        <CardContent>
+          <AssetActions asset={asset} payload={payload} layout="vertical" />
         </CardContent>
       </Card>
     </div>

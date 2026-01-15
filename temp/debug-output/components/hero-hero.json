@@ -1,0 +1,329 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "wf-hero-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "hero"
+        ],
+        "children": [
+          "wf-hero-inner-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-hero-inner-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "hero-inner"
+        ],
+        "children": [
+          "wf-hero-h1-001",
+          "wf-hero-subtitle-001",
+          "wf-hero-actions-001",
+          "wf-hero-trust-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-hero-trust-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "hero-trust",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-005"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-005",
+        "text": true,
+        "v": "Works with Cursor, v0, Bolt, and whatever AI tool you're obsessed with this week."
+      },
+      {
+        "_id": "wf-hero-actions-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "hero-actions"
+        ],
+        "children": [
+          "wf-btn-001",
+          "wf-btn-002"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-btn-002",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn",
+          "btn-secondary",
+          "btn-lg"
+        ],
+        "children": [
+          "wf-text-004"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#demo"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-004",
+        "text": true,
+        "v": "Watch Demo (60s)"
+      },
+      {
+        "_id": "wf-btn-001",
+        "type": "Link",
+        "tag": "a",
+        "classes": [
+          "btn",
+          "btn-primary",
+          "btn-lg"
+        ],
+        "children": [
+          "wf-text-003"
+        ],
+        "data": {
+          "link": {
+            "mode": "external",
+            "url": "#"
+          }
+        }
+      },
+      {
+        "_id": "wf-text-003",
+        "text": true,
+        "v": "Try the Import"
+      },
+      {
+        "_id": "wf-hero-subtitle-001",
+        "type": "Paragraph",
+        "tag": "p",
+        "classes": [
+          "hero-subtitle",
+          "text-body"
+        ],
+        "children": [
+          "wf-text-002"
+        ],
+        "data": {
+          "tag": "p",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-002",
+        "text": true,
+        "v": "AI spits out HTML/CSS/JS in seconds. Editing it? Absolute nightmare. Flow Bridge converts that chaos into clean components you paste straight into Webflow. Finally."
+      },
+      {
+        "_id": "wf-hero-h1-001",
+        "type": "Heading",
+        "tag": "h1",
+        "classes": [
+          "hero-h1",
+          "heading-h1"
+        ],
+        "children": [
+          "wf-text-001"
+        ],
+        "data": {
+          "tag": "h1",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "wf-text-001",
+        "text": true,
+        "v": "Turn AI Sites Into Webflow Gold"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "hero",
+        "fake": false,
+        "type": "class",
+        "name": "hero",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 140px; padding-right: 24px; padding-bottom: 80px; padding-left: 24px; text-align: center; background: #82eda6; border-bottom: 1px solid #03594d;",
+        "variants": {
+          "medium": {
+            "styleLess": "padding-top: 160px; padding-right: 16px; padding-bottom: 60px; padding-left: 16px;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "hero-inner",
+        "fake": false,
+        "type": "class",
+        "name": "hero-inner",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 1200px; margin-top: 0; margin-right: auto; margin-bottom: 0; margin-left: auto;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "hero-h1",
+        "fake": false,
+        "type": "class",
+        "name": "hero-h1",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "margin-bottom: 24px; max-width: 1000px; margin-left: auto; margin-right: auto;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h1",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h1",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Inter', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: -0.02em; line-height: 1.1; font-size: clamp(48px, 10vw, 110px);",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "hero-subtitle",
+        "fake": false,
+        "type": "class",
+        "name": "hero-subtitle",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 20px; max-width: 700px; margin-top: 0; margin-right: auto; margin-bottom: 32px; margin-left: auto; line-height: 1.6;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "text-body",
+        "fake": false,
+        "type": "class",
+        "name": "text-body",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "max-width: 65ch; font-family: 'Inter', sans-serif;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "hero-actions",
+        "fake": false,
+        "type": "class",
+        "name": "hero-actions",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; row-gap: 16px; column-gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px; flex-direction: row; align-items: stretch;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn",
+        "fake": false,
+        "type": "class",
+        "name": "btn",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-flex; align-items: center; justify-content: center; row-gap: 8px; column-gap: 8px; font-family: 'Fredoka', sans-serif; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding-top: 14px; padding-right: 28px; padding-bottom: 14px; padding-left: 28px; border-top-left-radius: 100px; border-top-right-radius: 100px; border-bottom-right-radius: 100px; border-bottom-left-radius: 100px; border: 1px solid #03594d; cursor: pointer; text-decoration: none; box-shadow: -3px 3px 0px 0px #03594d; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {
+          "hover": {
+            "styleLess": "transform: translate(2px, -2px); box-shadow: -5px 5px 0px 0px #03594d;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "btn-primary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-primary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #ffff94; color: #03594d;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-lg",
+        "fake": false,
+        "type": "class",
+        "name": "btn-lg",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 18px; padding-right: 36px; padding-bottom: 18px; padding-left: 36px; font-size: 16px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "btn-secondary",
+        "fake": false,
+        "type": "class",
+        "name": "btn-secondary",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "background: #f9f8f4; color: #03594d;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "hero-trust",
+        "fake": false,
+        "type": "class",
+        "name": "hero-trust",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: inline-block; font-size: 14px; background: #f9f8f4; border: 1px solid #03594d; border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px; padding-top: 12px; padding-right: 20px; padding-bottom: 12px; padding-left: 20px; box-shadow: -3px 3px 0px 0px #03594d;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

@@ -1,0 +1,1 @@
+styleLess: grid-column-start: auto; grid-column-end: span 2; grid-row-start: auto; grid-row-end: span 2; background: #03594d; color: #f9f8f4; padding-top: 32px; padding-right: 32px; padding-bottom: 32px; padding-left: 32px; min-height: 340px;

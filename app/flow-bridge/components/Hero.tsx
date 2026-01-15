@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Hero() {
     return (
         <section className="fb-hero">
@@ -13,7 +15,7 @@ export default function Hero() {
                             AI can generate HTML/CSS/JS fast. Editing it is misery. Flow Bridge turns that output into clean, reusable components you can paste into Webflow and polish like a pro.
                         </p>
                         <div className="fb-hero-actions">
-                            <a href="/assets" className="fb-btn fb-btn-primary">Try the Import</a>
+                            <Link href="/assets" className="fb-btn fb-btn-primary">Try the Import</Link>
                             <button className="fb-btn fb-btn-secondary inverted">Watch a 60s demo</button>
                         </div>
                         <p className="fb-hero-trust">

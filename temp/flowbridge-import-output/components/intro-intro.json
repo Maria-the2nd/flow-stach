@@ -1,0 +1,432 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "intro-intro-section-001",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "intro-section",
+          "w-layout-grid"
+        ],
+        "children": [
+          "intro-big-number-001",
+          "intro-intro-right-001"
+        ],
+        "data": {
+          "tag": "section",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-intro-right-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "intro-right"
+        ],
+        "children": [
+          "intro-intro-header-001",
+          "intro-intro-headline-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-intro-headline-001",
+        "type": "Heading",
+        "tag": "h3",
+        "classes": [
+          "intro-headline",
+          "heading-h3"
+        ],
+        "children": [
+          "intro-text-006"
+        ],
+        "data": {
+          "tag": "h3",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-text-006",
+        "text": true,
+        "v": "Stop piecing together components from five different libraries. \n                    Get complete launch solutions—template, components, Figma file, and guides—in one Party Pack."
+      },
+      {
+        "_id": "intro-intro-header-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "intro-header"
+        ],
+        "children": [
+          "intro-brand-badge-001",
+          "intro-trust-signals-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-trust-signals-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "trust-signals"
+        ],
+        "children": [
+          "intro-avatar-stack-001",
+          "intro-trust-label-001",
+          "intro-stars-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-stars-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "stars"
+        ],
+        "children": [
+          "intro-text-005"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-text-005",
+        "text": true,
+        "v": "★★★★★"
+      },
+      {
+        "_id": "intro-trust-label-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "trust-label"
+        ],
+        "children": [
+          "intro-text-004"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-text-004",
+        "text": true,
+        "v": "Creative developers shipping"
+      },
+      {
+        "_id": "intro-avatar-stack-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "avatar-stack"
+        ],
+        "children": [
+          "intro-avatar-001",
+          "intro-avatar-002",
+          "intro-avatar-003",
+          "intro-avatar-004",
+          "intro-avatar-count-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-avatar-count-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "avatar-count"
+        ],
+        "children": [
+          "intro-text-003"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-text-003",
+        "text": true,
+        "v": "50+"
+      },
+      {
+        "_id": "intro-avatar-004",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "avatar"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-avatar-003",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "avatar"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-avatar-002",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "avatar"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-avatar-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "avatar"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-brand-badge-001",
+        "type": "Block",
+        "tag": "span",
+        "classes": [
+          "brand-badge"
+        ],
+        "children": [
+          "intro-text-002"
+        ],
+        "data": {
+          "tag": "span",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-text-002",
+        "text": true,
+        "v": "FLOWPARTY ™"
+      },
+      {
+        "_id": "intro-big-number-001",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "big-number"
+        ],
+        "children": [
+          "intro-text-001"
+        ],
+        "data": {
+          "tag": "div",
+          "text": false,
+          "xattr": []
+        }
+      },
+      {
+        "_id": "intro-text-001",
+        "text": true,
+        "v": "0→1"
+      }
+    ],
+    "styles": [
+      {
+        "_id": "intro-section",
+        "fake": false,
+        "type": "class",
+        "name": "intro-section",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "padding-top: 5rem; padding-right: 5vw; padding-bottom: 5rem; padding-left: 5vw; display: grid; grid-template-columns: 1fr 2fr; justify-items: stretch; align-items: stretch; grid-row-gap: 4rem; grid-column-gap: 4rem;",
+        "variants": {
+          "desktop": {
+            "styleLess": "grid-template-columns: 1fr; display: grid; grid-row-gap: 2rem; grid-column-gap: 2rem;"
+          }
+        },
+        "children": []
+      },
+      {
+        "_id": "big-number",
+        "fake": false,
+        "type": "class",
+        "name": "big-number",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: clamp(4rem, 9vw, 7rem); font-weight: 700; color: #171717; line-height: 0.9;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "intro-header",
+        "fake": false,
+        "type": "class",
+        "name": "intro-header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "brand-badge",
+        "fake": false,
+        "type": "class",
+        "name": "brand-badge",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Antonio', sans-serif; font-size: 0.875rem; font-weight: 700;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "trust-signals",
+        "fake": false,
+        "type": "class",
+        "name": "trust-signals",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; flex-direction: column; row-gap: 0.5rem; column-gap: 0.5rem; align-items: flex-end; justify-content: flex-start; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "avatar-stack",
+        "fake": false,
+        "type": "class",
+        "name": "avatar-stack",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "display: flex; flex-direction: row; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "avatar",
+        "fake": false,
+        "type": "class",
+        "name": "avatar",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "width: 36px; height: 36px; border-top-left-radius: 50%; border-top-right-radius: 50%; border-bottom-right-radius: 50%; border-bottom-left-radius: 50%; border: 2px solid #f5f5f5; margin-left: -10px; background: linear-gradient(135deg, #ffc8b8, #ff531f); overflow: hidden;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "avatar-count",
+        "fake": false,
+        "type": "class",
+        "name": "avatar-count",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "width: 36px; height: 36px; border-top-left-radius: 50%; border-top-right-radius: 50%; border-bottom-right-radius: 50%; border-bottom-left-radius: 50%; background: #171717; color: #ffffff; font-size: 0.65rem; font-weight: 600; display: flex; align-items: center; justify-content: center; margin-left: -10px; flex-direction: row; flex-wrap: nowrap;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "trust-label",
+        "fake": false,
+        "type": "class",
+        "name": "trust-label",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: 0.75rem; color: #afb6b4;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "stars",
+        "fake": false,
+        "type": "class",
+        "name": "stars",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "color: #ff531f; font-size: 0.875rem;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "intro-headline",
+        "fake": false,
+        "type": "class",
+        "name": "intro-headline",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 600; line-height: 1.3; max-width: 520px;",
+        "variants": {},
+        "children": []
+      },
+      {
+        "_id": "heading-h3",
+        "fake": false,
+        "type": "class",
+        "name": "heading-h3",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "variants": {},
+        "children": []
+      }
+    ],
+    "assets": [],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "unlinkedSymbolCount": 0,
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0
+  }
+}

@@ -1,0 +1,12 @@
+
+=== bento-grid full entry ===
+baseStyles: display: grid; grid-template-columns: repeat(4, 1fr); row-gap: 16px; column-gap: 16px; justify-items: stretch; align-items: stretch;
+
+mediaQueries:
+  desktop: grid-template-columns: repeat(2, 1fr); display: grid; row-gap: 0px; column-gap: 0px;
+  medium: grid-template-columns: 1fr; display: grid; row-gap: 0px; column-gap: 0px;
+  small: (empty)
+  tiny: (empty)
+
+selectors: [".bento-grid",".bento-grid",".bento-grid"]
+isLayoutContainer: true
