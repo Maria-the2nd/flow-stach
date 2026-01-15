@@ -15,11 +15,19 @@ export default function Hero() {
                             AI can generate HTML/CSS/JS fast. Editing it is misery. Flow Bridge turns that output into clean, reusable components you can paste into Webflow and polish like a pro.
                         </p>
                         <div className="fb-hero-actions">
-                            <Link href="/assets" className="fb-btn fb-btn-primary">Try the Import</Link>
-                            <button className="fb-btn fb-btn-secondary inverted">Watch a 60s demo</button>
+                            <Link href="/assets?admin=import" className="fb-btn fb-btn-primary">Try the Import</Link>
+                            <button className="fb-btn fb-btn-secondary inverted" disabled>Demo Coming Soon</button>
                         </div>
                         <p className="fb-hero-trust">
-                            Works with Cursor, v0, Bolt, and “whatever your AI tool vomited out today”.
+                            Works with Cursor, v0, Bolt, and &ldquo;whatever your AI tool vomited out today&rdquo;.
+                        </p>
+                        <p className="fb-hero-disclaimer" style={{ 
+                            fontSize: '0.75rem', 
+                            color: 'rgba(255,255,255,0.5)', 
+                            marginTop: '0.75rem',
+                            fontStyle: 'italic'
+                        }}>
+                            Currently supports single-page HTML/CSS/JS exports only. No React, TypeScript, or Tailwind.
                         </p>
                     </div>
                     <div className="fb-hero-visual">

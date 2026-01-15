@@ -4,11 +4,9 @@ import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { AssetDetailMain } from "./AssetDetailMain";
-import { AssetDetailContext } from "./AssetDetailContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FileNotFoundIcon } from "@hugeicons/core-free-icons";
@@ -44,7 +42,7 @@ function NotFoundState({ slug }: { slug: string }) {
           </p>
         </div>
       }
-      context={<div className="p-4" />}
+      context={null}
     />
   );
 }
@@ -73,52 +71,7 @@ function LoadingMainSkeleton() {
   );
 }
 
-function LoadingContextSkeleton() {
-  return (
-    <div className="flex flex-col gap-4 p-4">
-      {/* Details Card skeleton */}
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>
-            <Skeleton className="h-4 w-16" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <Skeleton className="h-3 w-16 mb-1" />
-            <Skeleton className="h-4 w-20" />
-          </div>
-          <div>
-            <Skeleton className="h-3 w-16 mb-1" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-          <div>
-            <Skeleton className="h-3 w-10 mb-2" />
-            <div className="flex flex-wrap gap-1">
-              <Skeleton className="h-5 w-14 rounded-full" />
-              <Skeleton className="h-5 w-12 rounded-full" />
-              <Skeleton className="h-5 w-16 rounded-full" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Actions Card skeleton */}
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle>
-            <Skeleton className="h-4 w-16" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Skeleton className="h-9 w-full rounded-md" />
-          <Skeleton className="h-9 w-full rounded-md" />
-          <Skeleton className="h-9 w-full rounded-md" />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+// Context panel skeleton removed - details now inline in main area
 
 function LoadingState() {
   return (
@@ -136,7 +89,7 @@ function LoadingState() {
         </Suspense>
       }
       main={<LoadingMainSkeleton />}
-      context={<LoadingContextSkeleton />}
+      context={null}
     />
   );
 }
@@ -182,7 +135,7 @@ export function AssetDetailContent({ slug }: AssetDetailContentProps) {
         </Suspense>
       }
       main={<AssetDetailMain asset={asset} payload={payload} />}
-      context={<AssetDetailContext asset={asset} payload={payload ?? null} />}
+      context={null}
     />
   );
 }

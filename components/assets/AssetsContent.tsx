@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -18,7 +18,7 @@ import {
 } from "@hugeicons/core-free-icons"
 
 import { api } from "@/convex/_generated/api"
-import { Doc } from "@/convex/_generated/dataModel"
+import { Doc, Id } from "@/convex/_generated/dataModel"
 import { useFavorites } from "@/components/favorites/FavoritesProvider"
 import { ImportWizard } from "@/components/admin/ImportWizard"
 import { DatabasePanel } from "@/components/admin/DatabasePanel"
@@ -32,10 +32,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { toast } from "sonner"
 import { parseTokenManifest } from "@/lib/token-extractor"
 
-function getAdminEmails(): string[] {
-  const envValue = process.env.NEXT_PUBLIC_ADMIN_EMAILS || ""
-  return envValue.split(",").map((email) => email.trim().toLowerCase()).filter(Boolean)
-}
 
 type Asset = Doc<"assets">
 
@@ -62,10 +58,13 @@ function AssetCard({ asset }: { asset: Asset }) {
     toggle(asset.slug)
   }
 
-  // Blue gradient for design tokens, orange for regular components
+  // Blue gradient for design tokens, green/yellow for full-page, orange for others
+  const isFullPage = asset.category === "full-page"
   const cardGradient = isDesignToken
     ? "bg-[linear-gradient(45deg,hsla(217,100%,50%,1),hsla(230,100%,60%,1),hsla(200,100%,50%,1))]"
-    : "bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]"
+    : isFullPage
+      ? "bg-[linear-gradient(to_right,#24FE41,#FDFC47)]"
+      : "bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]"
 
   const visibleTags = asset.tags.slice(0, MAX_VISIBLE_TAGS)
   const isPayloadLoading = payload === undefined
@@ -217,7 +216,7 @@ function EmptyState({ title, message, icon: Icon = Search01Icon }: EmptyStatePro
 
 function LoadingState() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {Array.from({ length: 6 }).map((_, i) => (
         <AssetCardSkeleton key={i} />
       ))}
@@ -230,7 +229,7 @@ interface TemplateCardProps {
   slug: string
   count: number
   index: number
-  previewGroup?: string
+  templateId: string
   imageUrl?: string
 }
 
@@ -239,9 +238,31 @@ function TemplateCard({
   slug,
   count,
   index,
-  previewGroup,
+  templateId,
   imageUrl,
 }: TemplateCardProps) {
+  const [deleting, setDeleting] = useState(false)
+  const deleteTemplate = useMutation(api.templates.deleteTemplate)
+  const router = useRouter()
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (deleting) return
+    if (!confirm(`Delete template "${label}" and all its components? This cannot be undone.`)) return
+    setDeleting(true)
+    try {
+      await deleteTemplate({ templateId: templateId as Id<"templates"> })
+      toast.success("Template deleted")
+      router.refresh()
+    } catch (error) {
+      console.error("Failed to delete template:", error)
+      toast.error("Failed to delete template")
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <Link href={slug ? `/assets?template=${slug}` : "/assets"}>
       <Card className="group flex h-full flex-col overflow-hidden transition-all duration-200 hover:shadow-lg hover:ring-2 hover:ring-primary/20">
@@ -276,14 +297,19 @@ function TemplateCard({
           <CardDescription className="text-xs text-muted-foreground">
             Open the template to view every section and component.
           </CardDescription>
-          {previewGroup ? (
-            <div className="mt-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-              <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                {previewGroup}
-              </span>
-            </div>
-          ) : null}
         </CardHeader>
+        <CardContent className="pt-0">
+          <Button
+            variant="destructive"
+            size="sm"
+            className="w-full"
+            onClick={handleDelete}
+            disabled={deleting}
+          >
+            <HugeiconsIcon icon={Delete01Icon} size={14} className="mr-1" />
+            {deleting ? "Deleting..." : "Delete Template"}
+          </Button>
+        </CardContent>
       </Card>
     </Link>
   )
@@ -343,11 +369,6 @@ export function AssetsContent() {
   const { favorites } = useFavorites()
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth()
   const { user } = useUser()
-
-  // Check if user is admin
-  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() || ""
-  const adminEmails = getAdminEmails()
-  const isAdmin = isAuthLoaded && isSignedIn && adminEmails.includes(userEmail)
 
   const templateFilter = searchParams.get("template")
   const categoryFilter = searchParams.get("cat")
@@ -418,6 +439,19 @@ export function AssetsContent() {
     isSignedIn && (templates === undefined || categoryCounts === undefined)
   )
 
+  // Auto-redirect to single asset when category has only 1 item
+  useEffect(() => {
+    if (
+      categoryFilter &&
+      templateFilter &&
+      filteredAssets.length === 1 &&
+      !isLoading
+    ) {
+      const singleAsset = filteredAssets[0]
+      router.replace(`/assets/${singleAsset.slug}`)
+    }
+  }, [categoryFilter, templateFilter, filteredAssets, isLoading, router])
+
   // Handle favorites toggle via URL
   const handleFavoritesToggle = () => {
     const params = new URLSearchParams(searchParams.toString())
@@ -443,8 +477,6 @@ export function AssetsContent() {
       .sort((a, b) => (a.slug === "tokens" ? -1 : b.slug === "tokens" ? 1 : 0)),
     [componentGroups]
   )
-
-  const previewGroup = visibleGroups[0]?.label ?? componentGroups[0]?.label
 
   const tokensAssets = useQuery(
     api.assets.list,
@@ -473,6 +505,7 @@ export function AssetsContent() {
   )
 
   let groupFontUrl: string | null = null
+  let groupFontFamilies: string[] = []
   if (tokenPayload?.codePayload && tokenPayload.codePayload.startsWith("/* TOKEN MANIFEST */")) {
     const withoutPrefix = tokenPayload.codePayload.replace("/* TOKEN MANIFEST */", "").trim()
     const manifestJson = withoutPrefix.split("/* CSS */")[0].trim()
@@ -480,16 +513,31 @@ export function AssetsContent() {
     if (manifest?.fonts?.googleFonts) {
       groupFontUrl = manifest.fonts.googleFonts
     }
+    // Try to get families from manifest first
+    if (manifest?.fonts?.families && manifest.fonts.families.length > 0) {
+      groupFontFamilies = manifest.fonts.families
+    } else if (manifest?.variables) {
+      // Fallback: extract font families from font-type variables
+      const fontVars = manifest.variables.filter(v => v.type === "fontFamily")
+      const extractedFonts = fontVars
+        .map(v => v.value || v.values?.light || v.values?.dark)
+        .filter((v): v is string => !!v)
+        .map(v => v.replace(/['"]/g, '').split(',')[0].trim())
+        .filter((v, i, arr) => arr.indexOf(v) === i) // unique
+      if (extractedFonts.length > 0) {
+        groupFontFamilies = extractedFonts
+      }
+    }
   }
 
   return (
     <div className="flex flex-1 flex-col p-6">
       {/* Admin Panels */}
-      {isAdmin && adminPanel === "import" && (
+      {adminPanel === "import" && (
         <ImportWizard />
       )}
 
-      {isAdmin && adminPanel === "database" && (
+      {adminPanel === "database" && (
         <>
           <div className="mb-6">
             <div className="flex items-center gap-2">
@@ -545,7 +593,7 @@ export function AssetsContent() {
               message="Click the heart icon on any component to add it to your favorites."
             />
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {filteredAssets.map((asset) => (
                 <AssetCard key={asset._id} asset={asset} />
               ))}
@@ -568,13 +616,13 @@ export function AssetsContent() {
             </div>
           </div>
           {isTemplatesLoading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <AssetCardSkeleton key={i} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {!templates || templates.length === 0 ? (
                 <div className="col-span-full">
                   <EmptyState
@@ -591,7 +639,7 @@ export function AssetsContent() {
                     slug={template.slug}
                     count={template.assetCount ?? 0}
                     index={index}
-                    previewGroup={previewGroup}
+                    templateId={template._id}
                     imageUrl={template.imageUrl}
                   />
                 ))
@@ -619,22 +667,31 @@ export function AssetsContent() {
             <Card className="border-2 border-blue-500/50">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg font-bold text-blue-600">
-                  Step 1: Install Google Fonts
+                  Step 1: Install Fonts
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {groupFontUrl ? (
+                {groupFontFamilies.length > 0 ? (
                   <div className="space-y-3">
-                    <p className="text-2xl font-extrabold">Please install the fonts and wait</p>
-                    <p className="text-xs text-muted-foreground break-all bg-muted/50 p-2 rounded">{groupFontUrl}</p>
+                    <p className="text-2xl font-extrabold">Please install these fonts and wait:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {groupFontFamilies.map((font) => (
+                        <span key={font} className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-lg font-semibold">
+                          {font}
+                        </span>
+                      ))}
+                    </div>
+                    {groupFontUrl && (
+                      <p className="text-xs text-muted-foreground break-all bg-muted/50 p-2 rounded">{groupFontUrl}</p>
+                    )}
                     <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
                       <li>Go to <strong>Site Settings → Fonts</strong> in Webflow</li>
-                      <li>Add the fonts via <strong>Google Fonts</strong></li>
+                      <li>Search and add each font above</li>
                       <li><strong>Wait</strong> for them to load in Designer</li>
                     </ol>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No Google Fonts URL specified for this template.</p>
+                  <p className="text-sm text-muted-foreground">No custom fonts detected in this template. Check the source HTML for font-family declarations.</p>
                 )}
               </CardContent>
             </Card>
@@ -649,6 +706,9 @@ export function AssetsContent() {
               <CardContent>
                 <div className="space-y-3">
                   <p className="text-2xl font-extrabold">Paste tokens FIRST</p>
+                  <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                    ⚠️ Design tokens do NOT install fonts. Install fonts in Step 1 first!
+                  </p>
                   <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
                     <li>Click &quot;Design Tokens&quot; group below</li>
                     <li>Copy and paste into Webflow</li>
@@ -660,13 +720,13 @@ export function AssetsContent() {
             </Card>
           </div>
           {isTemplatesLoading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <AssetCardSkeleton key={i} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {visibleGroups.length === 0 ? (
                 <div className="col-span-full">
                   <EmptyState
@@ -750,7 +810,7 @@ export function AssetsContent() {
               />
             )
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {filteredAssets.map((asset) => (
                 <AssetCard key={asset._id} asset={asset} />
               ))}

@@ -19,9 +19,13 @@ The extension is completely standalone and does not require any changes to the F
 3. **Creating Variables**: Creates variable collections, modes, and variables if manifest is present
 4. **Injecting Components**: Uses Webflow APIs to create styles and elements
 
-## Installation (Manual)
+## Installation (Designer Apps Panel)
 
-Until the extension is approved by Webflow, you'll need to install it manually:
+Extensions live in the **Apps** panel in Webflow Designer. Webflow merged “Extensions”, “Apps”, and “Designer integrations” into a single Apps panel—look for the **plug icon** in the left sidebar, or press **E** to open it.
+
+Access is gated: installing custom Designer apps requires **Designer Extensions** availability in your workspace (private beta) and appropriate developer permissions. If your workspace does not have Designer Extensions access, there is no official way to load/test a custom Designer app locally.
+
+If your workspace has Designer Extensions access:
 
 1. Build the extension:
    ```bash
@@ -30,7 +34,55 @@ Until the extension is approved by Webflow, you'll need to install it manually:
    npm run build
    ```
 
-2. Load the extension in Webflow Designer (method depends on Webflow's extension system)
+2. Upload the extension via the Apps panel:
+   - Open Webflow Designer
+   - In the left sidebar, click **Apps** (plug icon) or press **E**
+   - In the Apps panel, use the developer option to **Load/Upload a custom app** (naming may vary)
+   - Select the files from the `dist/` folder; the manifest references `dist/index.js` and `dist/panel.html`
+   - Enable the app for your workspace/site
+
+3. Verify installation:
+   - In Designer, open the **Apps** panel
+   - You should see “Flow Stach Installer”
+   - The page will have a hidden attribute `data-flowstach-extension="true"` indicating the extension is active
+
+If you do not have access, use the **Hybrid Approach** described below: build a Data Client for server-side workflows and use an external installer (web app/local app/Chrome extension) until Designer Extensions access is granted.
+
+Note: Webflow’s naming may differ slightly across releases. If you don’t see the Apps panel immediately, refresh the Designer or press **E** to open it. See Webflow’s developer docs (“Getting Started with Webflow Apps: Designer Extensions”) for the latest hotkeys and panel location.
+
+## Testing & Requirements
+
+- Use a **test site** in Webflow Designer to validate installation flows
+- Open the **Apps** panel with the **plug icon** or press **E**
+- If you **can’t upload or see your app**, you likely need a **Developer Workspace** or developer permissions in your workspace
+- After upload, if the app doesn’t appear, **refresh the Designer** and reopen the Apps panel
+- The extension runs inside Designer and relies on Designer-provided APIs (`webflow` global); it does **not** require the Webflow **Data API**
+
+### Data API vs Designer App
+- The **Data API** is for server-side integrations (REST), workspaces, and automation
+- This extension is a **Designer app** that operates entirely inside Designer via the Apps panel
+- You do **not** need Data API keys to test or use this extension
+
+## Key Distinction: Data Clients vs Designer Extensions
+
+### Data Clients (testable immediately)
+- Server-side/external apps
+- Use REST API with tokens or OAuth
+- Manage sites/workspaces data (CMS, content, automation)
+- You can generate an API token and start testing right away by calling Webflow’s Data API from your local tool or server. A Developer Workspace can help access premium features and advanced APIs.
+
+### Designer Extensions (Designer apps)
+- UI panels inside Designer (Apps panel)
+- Clipboard listeners
+- DOM/style injection
+- Variable creation and “Install component” flows
+- Access and testing depend on Designer Extensions availability in your workspace. Without Designer Extensions access, there’s no official way to load/test a custom Designer app locally.
+
+### Practical Approach
+- If Designer Extensions access is not available:
+  - Use a Data Client for CMS/data workflows (fully testable)
+  - Use an external installer or browser-based tooling to bootstrap variables and styles when working inside Designer (pending official app access)
+  - Later, migrate the installer UI into a Designer Extension when access is granted
 
 ## Development
 
@@ -84,6 +136,11 @@ flow-stach-designer-extension/
 4. Extension UI shows "Install Component" button
 5. User clicks Install → Extension detects collisions → User confirms → Installs
 
+### Recommended Order
+
+- Paste “Design Tokens” first to establish global styles and variables
+- Then paste components; collisions (duplicate classes) can be skipped in the dialog
+
 ### Integration with Web App
 
 The extension **does not modify** the web app at all. It simply:
@@ -104,6 +161,11 @@ payload.meta = {
 ```
 
 This is completely optional - extension works without it (just skips variable creation).
+
+When present, the extension will:
+- Create variable collections and modes (e.g., light/dark)
+- Create variables based on your manifest
+- Remap CSS `var(--token, fallback)` references to Webflow variable UUIDs so pastes use native Webflow variables
 
 ## Webflow API Requirements
 

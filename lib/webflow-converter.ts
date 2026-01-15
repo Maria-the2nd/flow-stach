@@ -5,6 +5,7 @@
 
 import type { DetectedSection } from "./html-parser";
 import type { TokenManifest, TokenExtraction } from "./token-extractor";
+import { generateTokenManifest } from "./token-extractor";
 import type { ClassIndex, ClassIndexEntry } from "./css-parser";
 import {
   parseCSS,
@@ -92,6 +93,7 @@ export interface WebflowPayload {
     dynBindRemovedCount: number;
     dynListBindRemovedCount: number;
     paginationRemovedCount: number;
+    tokenManifest?: TokenManifest;
   };
 }
 
@@ -886,7 +888,9 @@ export interface ConvertOptions {
  * wrap all page content to ensure consistent spacing from page edges.
  */
 export function buildTokenWebflowPayload(manifest: TokenManifest | TokenExtraction): WebflowPayload {
-  const namespace = manifest.namespace;
+  const fullManifest: TokenManifest =
+    "schemaVersion" in manifest ? manifest : generateTokenManifest(manifest);
+  const namespace = fullManifest.namespace;
   const styles: WebflowStyle[] = [];
   const classNames: string[] = [];
 
@@ -1157,6 +1161,7 @@ export function buildTokenWebflowPayload(manifest: TokenManifest | TokenExtracti
       dynBindRemovedCount: 0,
       dynListBindRemovedCount: 0,
       paginationRemovedCount: 0,
+      tokenManifest: fullManifest,
     },
   };
 }

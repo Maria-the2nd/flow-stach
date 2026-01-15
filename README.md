@@ -11,6 +11,45 @@ A Webflow component library application for browsing, managing, and copying reus
 - **HTML Import** - Convert AI-generated HTML into Webflow-ready components
 - **Favorites** - Bookmark frequently used components
 
+## Extensions
+
+Flow Stach integrates with Webflow via two distinct avenues. Understanding their differences clarifies what you can test today and where to find things in Webflow Designer.
+
+### Apps Panel Location
+- In Webflow Designer, open the **Apps** panel via the **plug icon** in the left sidebar or press **E**
+- Webflow merged “Extensions”, “Apps”, and “Designer integrations” into a single Apps panel; the old “Extensions” label may not appear
+
+### App Types
+- **Data Clients (public, fully testable)**: Server-side/external apps using the Webflow REST API with tokens or OAuth. You can generate an API token and start testing immediately by calling the Data API from a local tool or server.
+- **Designer Extensions (private beta)**: UI panels inside Designer (clipboard listeners, DOM/style injection, variable creation, “Install component” workflows). Without Designer Extensions access in your workspace, there’s no official way to load/test a custom Designer app locally.
+
+### Recommended Hybrid Approach
+- Build a testable **Data Client** for CMS/data workflows
+- Use an **external installer** (web app/local app/Chrome extension) to generate the canonical payload and create variables/styles/CMS/symbols via APIs, avoiding Designer paste warnings
+- Later, replace the external UI with a **Designer Extension** while keeping the same core logic
+
+## Chrome Extension
+
+The Flow Stach Chrome extension bridges browser clipboard limitations by writing `application/json` directly to the system clipboard so Webflow Designer can read it.
+
+### Detection and Fallback
+- The web app detects the extension via a `data-flowstach-extension="true"` attribute set on the document by the content script
+- On copy:
+  - If the extension is present, the app dispatches a `flowstach-copy` custom event containing the JSON payload
+  - The extension writes the JSON to the native clipboard and returns a `flowstach-copy-result` event confirming success
+  - If the extension is not present, the app uses standard web clipboard APIs as a fallback
+
+### Install (Developer Mode)
+1. Open `chrome://extensions`
+2. Enable **Developer mode**
+3. Click **Load unpacked**
+4. Select the `flow-stach-extension` folder
+
+### Troubleshooting
+- Refresh Flow Stach after installing the extension
+- Click on the Webflow Designer canvas (not inside text) before pasting
+- Verify paste by testing in a text editor if needed
+
 ## Tech Stack
 
 - **Framework**: [Next.js 16](https://nextjs.org/) (App Router)

@@ -4,6 +4,8 @@
  */
 
 import { ELEMENT_TO_CLASS_MAP } from "./css-parser";
+import { sanitizeGradientsForWebflow } from "./gradient-sanitizer";
+import { decoupleGradientsFromTransforms } from "./gradient-transform-decoupler";
 
 export interface NormalizationOptions {
   /** Throw when layout-critical properties are missing (default: false). */
@@ -153,8 +155,29 @@ export function normalizeHtmlCssForWebflow(
   let normalizedHtml = normalizeSelfClosingTags(html);
   normalizedHtml = removeProblematicAttributes(normalizedHtml);
 
-  const defaultFontFamily = findDefaultFontFamily(css);
-  const parsed = parseCssBlocks(css);
+  // Sanitize gradients for Webflow compatibility
+  // This resolves CSS vars inside gradients and rounds percentages
+  const gradientResult = sanitizeGradientsForWebflow(css);
+  if (gradientResult.sanitizedCount > 0) {
+    warnings.push(`Sanitized ${gradientResult.sanitizedCount} gradients for Webflow compatibility`);
+  }
+  warnings.push(...gradientResult.warnings);
+  let sanitizedCss = gradientResult.css;
+
+  // Decouple gradients from transforms to prevent Webflow import race condition
+  // This structurally separates gradient-bearing elements from transform-bearing elements
+  const decoupledResult = decoupleGradientsFromTransforms(normalizedHtml, sanitizedCss);
+  if (decoupledResult.rewriteCount > 0) {
+    warnings.push(
+      `Decoupled ${decoupledResult.rewriteCount} gradient+transform elements for Webflow compatibility (${decoupledResult.decoupledClasses.join(", ")})`
+    );
+    normalizedHtml = decoupledResult.html;
+    sanitizedCss = decoupledResult.css;
+  }
+  warnings.push(...decoupledResult.warnings);
+
+  const defaultFontFamily = findDefaultFontFamily(sanitizedCss);
+  const parsed = parseCssBlocks(sanitizedCss);
 
   const baseRules = normalizeRuleSet(parsed.baseRules, context, warnings, options);
   const mediaRules = parsed.mediaBlocks.map((block) => ({

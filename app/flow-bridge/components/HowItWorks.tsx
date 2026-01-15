@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function HowItWorks() {
     const steps = [
         {
@@ -36,7 +38,7 @@ export default function HowItWorks() {
                 </div>
 
                 <div style={{ marginTop: '40px', textAlign: 'center' }}>
-                    <button className="fb-btn fb-btn-secondary">See an example import</button>
+                    <Link href="/assets?admin=import" className="fb-btn fb-btn-secondary">See an example import</Link>
                 </div>
             </div>
         </section>

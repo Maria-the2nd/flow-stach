@@ -283,6 +283,62 @@ function detectBreakpoint(query: string): "desktop" | "medium" | "small" | "tiny
   return null;
 }
 
+function detectMinWidth(query: string): number | null {
+  const minWidth = query.match(/min-width:\s*(\d+)px/i);
+  if (!minWidth) return null;
+  return parseInt(minWidth[1], 10);
+}
+
+function expandFlexShorthand(value: string): Record<string, string> {
+  const trimmed = value.trim().replace(/\s+/g, " ");
+  if (!trimmed) return {};
+
+  // Keyword forms
+  if (trimmed === "none") {
+    return { "flex-grow": "0", "flex-shrink": "0", "flex-basis": "auto" };
+  }
+  if (trimmed === "auto") {
+    return { "flex-grow": "1", "flex-shrink": "1", "flex-basis": "auto" };
+  }
+  if (trimmed === "initial") {
+    return { "flex-grow": "0", "flex-shrink": "1", "flex-basis": "auto" };
+  }
+
+  const parts = trimmed.split(" ");
+
+  // Single number: flex-grow; default shrink=1; basis=0%
+  if (parts.length === 1 && /^-?\d*\.?\d+$/.test(parts[0])) {
+    return { "flex-grow": parts[0], "flex-shrink": "1", "flex-basis": "0%" };
+  }
+
+  // Two-part forms:
+  // - "<grow> <shrink>"
+  // - "<grow> <basis>"
+  if (parts.length === 2) {
+    const [a, b] = parts;
+    const aIsNum = /^-?\d*\.?\d+$/.test(a);
+    const bIsNum = /^-?\d*\.?\d+$/.test(b);
+    if (aIsNum && bIsNum) {
+      return { "flex-grow": a, "flex-shrink": b, "flex-basis": "0%" };
+    }
+    if (aIsNum) {
+      return { "flex-grow": a, "flex-shrink": "1", "flex-basis": b };
+    }
+    return {};
+  }
+
+  // Three-part form: "<grow> <shrink> <basis>"
+  if (parts.length >= 3) {
+    const [grow, shrink, ...basisParts] = parts;
+    const basis = basisParts.join(" ");
+    if (/^-?\d*\.?\d+$/.test(grow) && /^-?\d*\.?\d+$/.test(shrink)) {
+      return { "flex-grow": grow, "flex-shrink": shrink, "flex-basis": basis };
+    }
+  }
+
+  return {};
+}
+
 function parseProperties(propertiesStr: string, variables: Map<string, string>, warnings: CssWarning[]): Record<string, string> {
   const result: Record<string, string> = {};
   const properties: string[] = [];
@@ -315,6 +371,17 @@ function parseProperties(propertiesStr: string, variables: Map<string, string>, 
       warnings.push({ type: "variable_unresolved", message: `Unresolved CSS variable in: ${name}: ${value}`, property: name });
     }
     value = resolved;
+
+    // Expand flex shorthand into explicit props (Webflow is more reliable with longhands)
+    if (name === "flex") {
+      const expanded = expandFlexShorthand(value);
+      if (Object.keys(expanded).length > 0) {
+        Object.assign(result, expanded);
+      } else {
+        warnings.push({ type: "unsupported_property", message: `Unparsed flex shorthand: ${value}`, property: name });
+      }
+      continue;
+    }
 
     if (!WEBFLOW_SUPPORTED_PROPERTIES.has(name) && !SHORTHAND_EXPANSIONS[name]) {
       warnings.push({ type: "unsupported_property", message: `Unsupported CSS property: ${name}`, property: name });
@@ -397,6 +464,85 @@ function mergeStyleLess(existing: string | undefined, newStyles: string): string
   });
 
   return Array.from(existingProps.entries()).map(([prop, val]) => `${prop}: ${val};`).join(" ");
+}
+
+function styleLessToMap(styleLess: string | undefined): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!styleLess) return map;
+  styleLess.split(";").forEach((prop) => {
+    const parts = prop.split(":");
+    if (parts.length >= 2) {
+      const name = parts[0]?.trim();
+      const value = parts.slice(1).join(":").trim();
+      if (name && value) map.set(name, value);
+    }
+  });
+  return map;
+}
+
+function mapToStyleLess(map: Map<string, string>): string {
+  return Array.from(map.entries()).map(([prop, val]) => `${prop}: ${val};`).join(" ");
+}
+
+/**
+ * Merge styleLess but preserve existing properties (existing wins).
+ * Useful when backfilling mobile values into breakpoint variants.
+ */
+function mergeStyleLessPreserveExisting(existing: string | undefined, incoming: string): string {
+  if (!existing) return incoming;
+  if (!incoming) return existing;
+  const existingMap = styleLessToMap(existing);
+  const incomingMap = styleLessToMap(incoming);
+  for (const [k, v] of incomingMap.entries()) {
+    if (!existingMap.has(k)) existingMap.set(k, v);
+  }
+  return mapToStyleLess(existingMap);
+}
+
+function minWidthToOverrideBreakpoints(minWidth: number): Array<"medium" | "small" | "tiny"> {
+  // Webflow is desktop-first (base + max-width breakpoints).
+  // For mobile-first CSS (min-width), we promote those rules into base (desktop),
+  // and we "backfill" the previous base (mobile) values into the breakpoints that are BELOW minWidth.
+  //
+  // Breakpoint ranges (Webflow):
+  // - base: >= 992px
+  // - medium: <= 991px
+  // - small: <= 767px
+  // - tiny: <= 479px
+  if (minWidth >= 992) return ["medium", "small", "tiny"];
+  if (minWidth >= 768) return ["small", "tiny"];
+  if (minWidth >= 480) return ["tiny"];
+  return [];
+}
+
+function applyMinWidthPropertiesToEntry(args: {
+  entry: ClassIndexEntry;
+  properties: Record<string, string>;
+  minWidth: number;
+}): void {
+  const { entry, properties, minWidth } = args;
+  const overrideBreakpoints = minWidthToOverrideBreakpoints(minWidth);
+  if (overrideBreakpoints.length === 0) {
+    // Applies everywhere; just merge into base.
+    entry.baseStyles = mergeStyleLess(entry.baseStyles, propertiesToStyleLess(properties));
+    return;
+  }
+
+  const baseMap = styleLessToMap(entry.baseStyles);
+
+  for (const [propName, nextVal] of Object.entries(properties)) {
+    const prevVal = baseMap.get(propName);
+    if (prevVal) {
+      const backfill = `${propName}: ${prevVal};`;
+      for (const bp of overrideBreakpoints) {
+        entry.mediaQueries[bp] = mergeStyleLessPreserveExisting(entry.mediaQueries[bp], backfill);
+      }
+    }
+    // Promote desktop/tablet value into base (desktop-first).
+    baseMap.set(propName, nextVal);
+  }
+
+  entry.baseStyles = mapToStyleLess(baseMap);
 }
 
 interface ParsedSelectorResult {
@@ -633,36 +779,12 @@ export function parseCSS(css: string): ParsedCssResult {
   let cssWithoutMedia = cleanCss;
   const mediaBlocks = extractMediaBlocks(cleanCss);
 
-  for (const { query, content } of mediaBlocks) {
-    const breakpoint = detectBreakpoint(query);
-    if (!breakpoint) {
-      warnings.push({ type: "breakpoint_unmapped", message: `Unmapped media query: ${query}` });
-      continue;
-    }
-
-    // Parse rules inside media query
-    let ruleMatch;
-    const innerRegex = /([^{}]+)\{([^{}]+)\}/g;
-    while ((ruleMatch = innerRegex.exec(content)) !== null) {
-      const selectors = ruleMatch[1].trim();
-      const propertiesStr = ruleMatch[2].trim();
-
-      // Skip non-class selectors
-      if (!selectors.includes(".")) continue;
-
-      // Handle comma-separated selectors
-      for (const sel of selectors.split(",")) {
-        processRule(sel.trim(), propertiesStr, variables, classes, warnings, breakpoint);
-      }
-    }
-  }
-
-  // Remove all media blocks from CSS for base rule parsing
+  // Remove all media blocks from CSS for base rule parsing (mobile-first base)
   for (const { fullMatch } of mediaBlocks) {
     cssWithoutMedia = cssWithoutMedia.replace(fullMatch, "");
   }
 
-  // Parse base rules (outside media queries)
+  // Parse base rules (outside media queries) FIRST so min-width blocks can promote overrides
   let baseMatch;
   while ((baseMatch = ruleRegex.exec(cssWithoutMedia)) !== null) {
     const selectors = baseMatch[1].trim();
@@ -674,6 +796,62 @@ export function parseCSS(css: string): ParsedCssResult {
     // Handle comma-separated selectors
     for (const sel of selectors.split(",")) {
       processRule(sel.trim(), propertiesStr, variables, classes, warnings);
+    }
+  }
+
+  // Now parse media blocks
+  for (const { query, content } of mediaBlocks) {
+    const maxBreakpoint = detectBreakpoint(query);
+    const minWidth = detectMinWidth(query);
+
+    // Parse rules inside media query
+    let ruleMatch;
+    const innerRegex = /([^{}]+)\{([^{}]+)\}/g;
+    while ((ruleMatch = innerRegex.exec(content)) !== null) {
+      const selectors = ruleMatch[1].trim();
+      const propertiesStr = ruleMatch[2].trim();
+
+      // Skip non-class selectors
+      if (!selectors.includes(".")) continue;
+
+      if (maxBreakpoint) {
+        for (const sel of selectors.split(",")) {
+          processRule(sel.trim(), propertiesStr, variables, classes, warnings, maxBreakpoint);
+        }
+        continue;
+      }
+
+      if (typeof minWidth === "number") {
+        // Mobile-first (min-width) → Webflow desktop-first:
+        // promote these properties into base, and backfill previous base values into smaller breakpoints.
+        const props = parseProperties(propertiesStr, variables, warnings);
+        for (const sel of selectors.split(",")) {
+          const parsed = parseSelector(sel.trim());
+          if (!parsed.className) continue;
+          // Only handle non-pseudo min-width rules for now.
+          if (parsed.pseudoClass) continue;
+
+          if (!classes[parsed.className]) {
+            classes[parsed.className] = {
+              className: parsed.className,
+              selectors: [],
+              baseStyles: "",
+              mediaQueries: {},
+              isComboClass: parsed.isCombo,
+              children: [],
+              parentClasses: [],
+              isLayoutContainer: false,
+            };
+          }
+
+          const entry = classes[parsed.className];
+          entry.selectors.push(sel.trim());
+          applyMinWidthPropertiesToEntry({ entry, properties: props, minWidth });
+        }
+        continue;
+      }
+
+      warnings.push({ type: "breakpoint_unmapped", message: `Unmapped media query: ${query}` });
     }
   }
 
@@ -1178,22 +1356,7 @@ function expandRepeatTemplate(template: string): string | null {
   return Array(count).fill(track).join(" ");
 }
 
-function styleLessToMap(styleLess: string): Map<string, string> {
-  const props = new Map<string, string>();
-  styleLess.split(";").forEach((prop) => {
-    const parts = prop.split(":");
-    if (parts.length >= 2) {
-      const name = parts[0]?.trim();
-      const value = parts.slice(1).join(":").trim();
-      if (name && value) props.set(name, value);
-    }
-  });
-  return props;
-}
-
-function mapToStyleLess(props: Map<string, string>): string {
-  return Array.from(props.entries()).map(([prop, val]) => `${prop}: ${val};`).join(" ");
-}
+// NOTE: styleLessToMap / mapToStyleLess are defined earlier in this module and are reused here.
 
 export function classIndexToWebflowStyles(classIndex: ClassIndex, filterClasses?: Set<string>): WebflowStyle[] {
   const styles: WebflowStyle[] = [];

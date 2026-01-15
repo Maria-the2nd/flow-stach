@@ -9,7 +9,7 @@ export default function Academy() {
                         <p className="fb-lead" style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '32px' }}>
                             Flow Bridge gives you speed. The Academy teaches you how to turn “AI slop” into work you’re proud to put your name on—Webflow polish, responsive finesse, micro-interactions, the good stuff.
                         </p>
-                        <button className="fb-btn fb-btn-primary">Explore the Academy</button>
+                        <button className="fb-btn fb-btn-primary" disabled>Coming Soon</button>
                     </div>
                     <div style={{
                         background: 'rgba(255,255,255,0.1)',

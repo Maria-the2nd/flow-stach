@@ -1,19 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Doc } from "@/convex/_generated/dataModel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Copy01Icon, ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons";
-import { copyText } from "@/lib/clipboard";
+import {
+  Copy01Icon,
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  FavouriteIcon,
+} from "@hugeicons/core-free-icons";
+import { copyText, copyWebflowJson } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
-import { AssetActions } from "./AssetDetailContext";
 import { extractJsHooks } from "@/lib/html-parser";
 import { parseTokenManifest } from "@/lib/token-extractor";
+import { useFavorites } from "@/components/favorites/FavoritesProvider";
 
 type Asset = Doc<"assets">;
 type Payload = Doc<"payloads">;
+
+function formatDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function isPlaceholderPayload(json: string | undefined): boolean {
+  if (!json) return true;
+  try {
+    const parsed = JSON.parse(json) as {
+      placeholder?: boolean;
+      type?: string;
+      payload?: { nodes?: unknown; styles?: unknown };
+    };
+    if (parsed?.placeholder === true) return true;
+    if (parsed?.type !== "@webflow/XscpData") return true;
+    if (!parsed.payload) return true;
+
+    const hasNodes =
+      Array.isArray(parsed.payload.nodes) && parsed.payload.nodes.length > 0;
+    const hasStyles =
+      Array.isArray(parsed.payload.styles) && parsed.payload.styles.length > 0;
+    return !(hasNodes || hasStyles);
+  } catch {
+    return true;
+  }
+}
 
 interface AssetDetailMainProps {
   asset: Asset;
@@ -35,7 +71,7 @@ function parseCodePayload(codePayload: string | undefined): { html: string; css:
 
   // Look for CSS section (between /* CSS */ or <style> markers)
   const cssMatch = codePayload.match(/\/\*\s*CSS\s*\*\/\s*([\s\S]*?)(?=\/\*\s*(?:HTML|JS|JavaScript)\s*\*\/|$)/i) ||
-                   codePayload.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    codePayload.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
   if (cssMatch) sections.css = cssMatch[1].trim();
 
   // Look for HTML section
@@ -50,12 +86,12 @@ function parseCodePayload(codePayload: string | undefined): { html: string; css:
   if (!sections.html && !sections.css && !sections.js) {
     // Check if it looks like CSS
     if (codePayload.includes("{") && codePayload.includes("}") &&
-        (codePayload.includes(":") || codePayload.includes("@"))) {
+      (codePayload.includes(":") || codePayload.includes("@"))) {
       sections.css = codePayload;
     }
     // Check if it looks like JS
     else if (codePayload.includes("function") || codePayload.includes("const ") ||
-             codePayload.includes("document.") || codePayload.includes("=>")) {
+      codePayload.includes("document.") || codePayload.includes("=>")) {
       sections.js = codePayload;
     }
     // Default to HTML
@@ -223,6 +259,10 @@ function CopyAllButton({ snippets }: CopyAllButtonProps) {
 }
 
 export function AssetDetailMain({ asset, payload }: AssetDetailMainProps) {
+  const { isFavorited, toggle } = useFavorites();
+  const favorited = isFavorited(asset.slug);
+  const [copyingWebflow, setCopyingWebflow] = useState(false);
+
   // Check if this asset needs the Install Snippet tab
   const showInstallTab = asset.pasteReliability === "none" && asset.supportsCodeCopy === true;
 
@@ -234,13 +274,37 @@ export function AssetDetailMain({ asset, payload }: AssetDetailMainProps) {
   const dependencies = payload?.dependencies ?? [];
 
   let fontUrl: string | null = null;
+  let fontFamilies: string[] = [];
   if (payload?.codePayload && payload.codePayload.startsWith("/* TOKEN MANIFEST */")) {
     const manifestJson = payload.codePayload.replace("/* TOKEN MANIFEST */", "").trim();
     const manifest = parseTokenManifest(manifestJson);
     if (manifest?.fonts?.googleFonts) {
       fontUrl = manifest.fonts.googleFonts;
     }
+    if (manifest?.fonts?.families && manifest.fonts.families.length > 0) {
+      fontFamilies = manifest.fonts.families;
+    }
   }
+  const isTokensAsset = asset.category === "tokens";
+  const isFullPageAsset = asset.category === "full-page";
+
+  const hasWebflowPayload = useMemo(
+    () => !!payload?.webflowJson && !isPlaceholderPayload(payload.webflowJson),
+    [payload?.webflowJson]
+  );
+
+  const canPasteToWebflow = asset.pasteReliability === "full" || asset.pasteReliability === "partial";
+  const webflowDisabled = !hasWebflowPayload || !canPasteToWebflow;
+
+  const handleCopyWebflow = async () => {
+    if (!hasWebflowPayload) return;
+    setCopyingWebflow(true);
+    try {
+      await copyWebflowJson(payload?.webflowJson);
+    } finally {
+      setCopyingWebflow(false);
+    }
+  };
 
   const initialTab = hasSnippets
     ? snippets.html
@@ -254,18 +318,79 @@ export function AssetDetailMain({ asset, payload }: AssetDetailMainProps) {
 
   return (
     <div className="flex flex-1 flex-col p-6">
-      <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-border bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]">
-        <div className="absolute right-4 top-4">
-          <AssetActions asset={asset} payload={payload ?? null} layout="inline" />
-        </div>
-        <div className="flex h-full w-full items-end justify-start p-6">
-          <span className="rounded-full bg-white/80 px-4 py-2 text-xs font-medium uppercase tracking-[0.24em] text-black/80">
-            Component Preview
+      {/* Compact Header: Gradient Thumbnail + Details + Actions */}
+      <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 lg:flex-row lg:items-stretch">
+        {/* Gradient Thumbnail */}
+        <div
+          className={cn(
+            "relative h-32 w-full shrink-0 overflow-hidden rounded-md lg:h-auto lg:w-48",
+            isTokensAsset
+              ? "bg-[linear-gradient(45deg,hsla(217,100%,50%,1),hsla(230,100%,60%,1),hsla(200,100%,50%,1))]"
+              : isFullPageAsset
+                ? "bg-[linear-gradient(to_right,#24FE41,#FDFC47)]"
+                : "bg-[linear-gradient(45deg,#ED9A00,#FD6F01,#FFB000)]"
+          )}
+        >
+          <span className="absolute bottom-2 left-2 rounded-full bg-white/80 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-black/80">
+            Preview
           </span>
+        </div>
+
+        {/* Details + Actions */}
+        <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between lg:gap-6">
+          {/* Details */}
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:gap-6">
+            <div className="shrink-0">
+              <span className="text-xs text-muted-foreground">Category</span>
+              <p className="text-sm font-medium capitalize">{asset.category}</p>
+            </div>
+            <div className="shrink-0">
+              <span className="text-xs text-muted-foreground">Updated</span>
+              <p className="text-sm font-medium">{formatDate(asset.updatedAt)}</p>
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-xs text-muted-foreground">Tags</span>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {asset.tags.map((tag, index) => (
+                  <Badge key={`${tag}-${index}`} variant="secondary" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col sm:items-end">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleCopyWebflow}
+              disabled={copyingWebflow || webflowDisabled}
+              className="gap-1.5"
+            >
+              <HugeiconsIcon icon={Copy01Icon} size={14} />
+              {copyingWebflow ? "Copying…" : "Copy to Webflow"}
+            </Button>
+            <Button
+              variant={favorited ? "default" : "secondary"}
+              size="sm"
+              onClick={() => toggle(asset.slug)}
+              className="gap-1.5"
+            >
+              <HugeiconsIcon
+                icon={FavouriteIcon}
+                size={14}
+                className={favorited ? "fill-current text-red-500" : ""}
+              />
+              {favorited ? "Favorited" : "Add to Favorites"}
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-3">
+      {/* Info Cards Row */}
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         <div className="rounded-lg border border-border bg-card p-3">
           <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             Dependencies
@@ -284,15 +409,26 @@ export function AssetDetailMain({ asset, payload }: AssetDetailMainProps) {
         </div>
         <div className="rounded-lg border border-border bg-card p-3">
           <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            Google Fonts
+            Fonts
           </h3>
-          {fontUrl ? (
-            <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-              <p className="break-all">{fontUrl}</p>
+          {fontFamilies.length > 0 ? (
+            <div className="mt-2 space-y-2">
+              <div className="flex flex-wrap gap-1">
+                {fontFamilies.map((font) => (
+                  <span key={font} className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded text-xs font-semibold">
+                    {font}
+                  </span>
+                ))}
+              </div>
+              {fontUrl && <p className="text-xs text-muted-foreground break-all">{fontUrl}</p>}
             </div>
+          ) : fontUrl ? (
+            <p className="mt-2 text-xs text-muted-foreground break-all">
+              {fontUrl}
+            </p>
           ) : (
             <p className="mt-2 text-xs text-muted-foreground">
-              No Google Fonts URL specified in this payload.
+              No fonts specified. Install fonts from template settings.
             </p>
           )}
         </div>
@@ -434,17 +570,23 @@ export function AssetDetailMain({ asset, payload }: AssetDetailMainProps) {
                 ) : (
                   <li>No third-party JavaScript libraries are required for this component.</li>
                 )}
-                {fontUrl ? (
+                {fontUrl || fontFamilies.length > 0 ? (
                   <li>
-                    Include the Google Fonts stylesheet in your site head:
-                    <span className="block break-all text-xs text-foreground">
-                      {fontUrl}
-                    </span>
+                    Install fonts in Webflow:
+                    {fontFamilies.length > 0 && (
+                      <span className="block text-xs text-foreground">
+                        {fontFamilies.join(", ")}
+                      </span>
+                    )}
+                    {fontUrl && (
+                      <span className="block break-all text-xs text-foreground">
+                        {fontUrl}
+                      </span>
+                    )}
                   </li>
                 ) : (
                   <li>
-                    This component does not declare a Google Fonts URL in its payload. Use your
-                    existing typography setup.
+                    No fonts specified. Use your existing typography setup.
                   </li>
                 )}
                 {jsHooks.length > 0 ? (

@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils"
 
 // Import parsers
 import { extractCleanHtml, getClassesUsed, extractJsHooks, extractCssForSection } from "@/lib/html-parser"
-import { extractTokens, extractFontFamilies, extractGoogleFontsUrl, type TokenExtraction } from "@/lib/token-extractor"
+import { extractTokens, extractFontFamilies, extractGoogleFontsUrl, generateTokenManifest, type TokenExtraction } from "@/lib/token-extractor"
 import { parseCSS, type ClassIndex } from "@/lib/css-parser"
 import { componentizeHtml, type ComponentTree, type Component } from "@/lib/componentizer"
 import { buildCssTokenPayload, buildComponentPayload, validateForWebflowPaste } from "@/lib/webflow-converter"
@@ -94,14 +94,6 @@ function generateSlug(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
-}
-
-function getAdminEmails(): string[] {
-  const envValue = process.env.NEXT_PUBLIC_ADMIN_EMAILS || ""
-  return envValue
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean)
 }
 
 function buildCardGridWarnings(componentTree: ComponentTree, html: string): string[] {
@@ -1018,7 +1010,15 @@ function ImportWizard() {
         cssVariables: finalCssResult.cssVariables,
       })
       setComponentTree(components)
-      setTokenWebflowJson(JSON.stringify(tokenPayloadResult.webflowPayload))
+      const manifest = generateTokenManifest(tokens)
+      const payloadWithManifest = {
+        ...tokenPayloadResult.webflowPayload,
+        meta: {
+          ...tokenPayloadResult.webflowPayload.meta,
+          tokenManifest: manifest,
+        },
+      }
+      setTokenWebflowJson(JSON.stringify(payloadWithManifest))
       setEstablishedClasses(tokenPayloadResult.establishedClasses)
       setTokenExtraction(tokens)
       setValidationWarnings([
@@ -1289,38 +1289,10 @@ function ImportWizard() {
     setLlmSummary(null)
   }, [])
 
-  // Admin check
   if (!isUserLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    )
-  }
-
-  const adminEmails = getAdminEmails()
-  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase()
-  const isAdmin = userEmail && adminEmails.includes(userEmail)
-
-  if (!isAdmin) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <HugeiconsIcon icon={Alert01Icon} size={20} className="text-amber-500" />
-              Admin Access Required
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              This page is restricted to administrators only.
-            </p>
-            <Button asChild className="mt-4 w-full">
-              <Link href="/assets">Back to Assets</Link>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     )
   }

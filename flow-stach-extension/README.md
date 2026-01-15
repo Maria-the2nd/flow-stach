@@ -26,6 +26,15 @@ This extension has elevated clipboard permissions that allow it to write `applic
 6. Press **Cmd+V** (Mac) or **Ctrl+V** (Windows)
 7. The component should appear!
 
+## Integration with Flow Stach
+
+The extension coordinates with the Flow Stach web app using custom events and an installation flag:
+
+- The content script sets `data-flowstach-extension="true"` on the page to indicate the extension is active
+- When you click **Copy to Webflow**, Flow Stach dispatches a `flowstach-copy` event with the JSON payload
+- The extension writes `application/json` to the native clipboard and emits `flowstach-copy-result` to confirm success
+- If the extension is not installed, Flow Stach falls back to standard web clipboard APIs
+
 ## Icons
 
 The extension needs icon files. Create these PNG files in the `icons/` folder:

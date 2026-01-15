@@ -19,6 +19,10 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "convex/_generated/**",
+    // Local HTML mirror docs (not part of the TS/JS app surface)
+    "docs/osmo_mirror/**",
+    // Built/generated extension files (minified code)
+    "flow-stach-designer-extension/dist/**",
   ]),
 ]);
 

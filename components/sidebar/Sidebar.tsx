@@ -18,11 +18,6 @@ import { toast } from "sonner"
 
 export type Category = AssetCategory
 
-function getAdminEmails(): string[] {
-  const envValue = process.env.NEXT_PUBLIC_ADMIN_EMAILS || ""
-  return envValue.split(",").map((email) => email.trim().toLowerCase()).filter(Boolean)
-}
-
 export interface SidebarProps {
   className?: string
 }
@@ -32,11 +27,6 @@ export function Sidebar({ className }: SidebarProps) {
   const router = useRouter()
   const { isLoaded, isSignedIn } = useAuth()
   const { user } = useUser()
-
-  // Check if user is admin
-  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() || ""
-  const adminEmails = getAdminEmails()
-  const isAdmin = isLoaded && isSignedIn && adminEmails.includes(userEmail)
 
   // Template editing state
   const [editingTemplateId, setEditingTemplateId] = useState<Id<"templates"> | null>(null)
@@ -58,7 +48,6 @@ export function Sidebar({ className }: SidebarProps) {
   }, [editingTemplateId])
 
   const handleTemplateDoubleClick = (templateId: Id<"templates">, currentName: string) => {
-    if (!isAdmin) return
     setEditingTemplateId(templateId)
     setEditingName(currentName)
   }
@@ -201,14 +190,17 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <aside className={cn("w-56", className)}>
       <div className="flex h-full flex-col">
-        <div className="flex flex-col px-6 py-4">
+        <Link
+          href="/assets"
+          className="flex flex-col px-6 py-4 transition-opacity hover:opacity-90"
+        >
           <span className="text-xs uppercase tracking-[0.32em] text-sidebar-foreground/60">
             Template Library
           </span>
           <span className="mt-2 text-base font-semibold uppercase tracking-[0.18em] text-sidebar-foreground">
             Asset Vault
           </span>
-        </div>
+        </Link>
 
         <nav className="mt-10 min-h-0 flex-1 overflow-y-auto px-6 py-2">
           {/* Favorites Button */}
@@ -277,7 +269,7 @@ export function Sidebar({ className }: SidebarProps) {
                             ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                             : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                         )}
-                        title={isAdmin ? "Double-click to rename" : undefined}
+                        title="Double-click to rename"
                       >
                         <span>{template.name}</span>
                       </button>
@@ -353,23 +345,21 @@ export function Sidebar({ className }: SidebarProps) {
                   <span>Import HTML</span>
                 </button>
               </li>
-              {isAdmin && (
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => handleAdminClick("database")}
-                    className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                      activeAdmin === "database"
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                    )}
-                  >
-                    <HugeiconsIcon icon={Database01Icon} className="h-3.5 w-3.5" />
-                    <span>Database</span>
-                  </button>
-                </li>
-              )}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => handleAdminClick("database")}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                    activeAdmin === "database"
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  )}
+                >
+                  <HugeiconsIcon icon={Database01Icon} className="h-3.5 w-3.5" />
+                  <span>Database</span>
+                </button>
+              </li>
             </ul>
           </div>
 

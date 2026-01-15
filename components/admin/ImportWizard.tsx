@@ -30,6 +30,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 
 import { extractCleanHtml, extractJsHooks, extractCssForSection, getClassesUsed } from "@/lib/html-parser"
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { extractTokens, extractFontFamilies, extractGoogleFontsUrl, type TokenExtraction } from "@/lib/token-extractor"
 import { parseCSS, type ClassIndex } from "@/lib/css-parser"
 import { componentizeHtml, type ComponentTree, type Component } from "@/lib/componentizer"
@@ -48,6 +55,98 @@ import {
 
 type Step = "input" | "artifacts" | "complete"
 type ProcessingStatus = "idle" | "parsing" | "extracting" | "componentizing" | "semantic" | "generating" | "complete"
+
+interface UnsupportedContentResult {
+  cleanedHtml: string
+  removedReferences: string[]
+  hasReact: boolean
+  hasTailwind: boolean
+  hasTypescript: boolean
+}
+
+/**
+ * Detects and removes unsupported content from HTML:
+ * - .tsx/.jsx script references (React/TypeScript)
+ * - Tailwind CDN or config references
+ * Returns cleaned HTML and list of removed references
+ */
+function detectAndRemoveUnsupportedContent(html: string): UnsupportedContentResult {
+  const removedReferences: string[] = []
+  let cleanedHtml = html
+  let hasReact = false
+  let hasTailwind = false
+  let hasTypescript = false
+
+  // Detect and remove .tsx and .jsx script tags
+  const tsxJsxRegex = /<script[^>]*src=["'][^"']*\.(tsx|jsx)["'][^>]*>[\s\S]*?<\/script>|<script[^>]*src=["'][^"']*\.(tsx|jsx)["'][^>]*\/?>/gi
+  const tsxJsxMatches = cleanedHtml.match(tsxJsxRegex)
+  if (tsxJsxMatches) {
+    tsxJsxMatches.forEach(match => {
+      const srcMatch = match.match(/src=["']([^"']+)["']/)
+      if (srcMatch) {
+        removedReferences.push(srcMatch[1])
+        if (srcMatch[1].endsWith('.tsx')) hasTypescript = true
+      }
+    })
+    cleanedHtml = cleanedHtml.replace(tsxJsxRegex, '<!-- Removed: React/TypeScript module -->')
+    hasReact = true
+  }
+
+  // Detect and remove type="module" scripts pointing to tsx/jsx
+  const moduleRegex = /<script[^>]*type=["']module["'][^>]*src=["'][^"']*\.(tsx|jsx)["'][^>]*>[\s\S]*?<\/script>|<script[^>]*type=["']module["'][^>]*src=["'][^"']*\.(tsx|jsx)["'][^>]*\/?>/gi
+  const moduleMatches = cleanedHtml.match(moduleRegex)
+  if (moduleMatches) {
+    moduleMatches.forEach(match => {
+      const srcMatch = match.match(/src=["']([^"']+)["']/)
+      if (srcMatch && !removedReferences.includes(srcMatch[1])) {
+        removedReferences.push(srcMatch[1])
+        if (srcMatch[1].endsWith('.tsx')) hasTypescript = true
+      }
+    })
+    cleanedHtml = cleanedHtml.replace(moduleRegex, '<!-- Removed: React/TypeScript module -->')
+    hasReact = true
+  }
+
+  // Detect Tailwind CDN or config
+  const tailwindCdnRegex = /<script[^>]*src=["'][^"']*tailwindcss[^"']*["'][^>]*>[\s\S]*?<\/script>|<script[^>]*src=["'][^"']*tailwindcss[^"']*["'][^>]*\/?>/gi
+  const tailwindConfigRegex = /<script[^>]*>[\s\S]*?tailwind\.config[\s\S]*?<\/script>/gi
+  
+  if (tailwindCdnRegex.test(cleanedHtml)) {
+    cleanedHtml = cleanedHtml.replace(tailwindCdnRegex, '<!-- Removed: Tailwind CDN -->')
+    removedReferences.push('Tailwind CSS CDN')
+    hasTailwind = true
+  }
+  
+  if (tailwindConfigRegex.test(cleanedHtml)) {
+    cleanedHtml = cleanedHtml.replace(tailwindConfigRegex, '<!-- Removed: Tailwind config -->')
+    if (!removedReferences.includes('Tailwind CSS CDN')) {
+      removedReferences.push('Tailwind CSS config')
+    }
+    hasTailwind = true
+  }
+
+  // Detect React CDN
+  const reactCdnRegex = /<script[^>]*src=["'][^"']*(react|react-dom)[^"']*["'][^>]*>[\s\S]*?<\/script>|<script[^>]*src=["'][^"']*(react|react-dom)[^"']*["'][^>]*\/?>/gi
+  if (reactCdnRegex.test(cleanedHtml)) {
+    cleanedHtml = cleanedHtml.replace(reactCdnRegex, '<!-- Removed: React CDN -->')
+    removedReferences.push('React CDN')
+    hasReact = true
+  }
+
+  // Detect inline JSX-like content (basic check for React patterns)
+  const jsxPatterns = /className=\{|useState\(|useEffect\(|<\w+\s+\{\.\.\.props\}/
+  if (jsxPatterns.test(cleanedHtml)) {
+    hasReact = true
+  }
+
+  return {
+    cleanedHtml,
+    removedReferences,
+    hasReact,
+    hasTailwind,
+    hasTypescript,
+  }
+}
 
 interface ExtractedArtifacts {
   tokensJson: string
@@ -85,11 +184,6 @@ interface LlmSummary {
 
 function generateSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
-}
-
-function getAdminEmails(): string[] {
-  const envValue = process.env.NEXT_PUBLIC_ADMIN_EMAILS || ""
-  return envValue.split(",").map((email) => email.trim().toLowerCase()).filter(Boolean)
 }
 
 function CollapsibleSection({
@@ -205,7 +299,7 @@ function TokensTab(props: {
   warnings: string[]
   fontInfo?: { googleFonts?: string; families?: string[] }
 }) {
-  const { tokensCss, tokensJson, tokenWebflowJson, onCopyTokens, warnings, fontInfo } = props
+  const { tokenWebflowJson, onCopyTokens, warnings, fontInfo } = props
   const [copied, setCopied] = useState(false)
 
   const handleCopyToWebflow = async () => {
@@ -218,32 +312,22 @@ function TokensTab(props: {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleCopyJson = () => {
-    navigator.clipboard.writeText(tokensJson)
-    toast.success("JSON copied to clipboard")
-  }
-
-  const handleCopyCss = () => {
-    navigator.clipboard.writeText(tokensCss)
-    toast.success("CSS copied to clipboard")
-  }
-
   const handleCopyFontUrl = () => {
     if (fontInfo?.googleFonts) {
       navigator.clipboard.writeText(fontInfo.googleFonts)
-      toast.success("Google Fonts URL copied")
+      toast.success("Font URL copied")
     }
   }
 
   return (
     <div className="space-y-6">
-      {/* Step 1: Google Fonts */}
-      {fontInfo?.googleFonts && fontInfo.families && fontInfo.families.length > 0 && (
+      {/* Step 1: Fonts */}
+      {fontInfo?.families && fontInfo.families.length > 0 && (
         <Card className="border-blue-500/50 border-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-blue-600 text-xl font-bold">
               <HugeiconsIcon icon={CodeIcon} size={24} />
-              Step 1: Install Google Fonts
+              Step 1: Install Fonts
             </CardTitle>
             <CardDescription className="text-base font-semibold">
               Add these fonts to your Webflow project BEFORE pasting components.
@@ -256,27 +340,32 @@ function TokensTab(props: {
                   <span className="text-3xl font-extrabold mb-1">
                     Please install {font} and wait
                   </span>
-                  <span className="text-sm font-mono text-muted-foreground bg-muted/50 p-2 rounded break-all">
-                    {fontInfo.googleFonts || "No Google Fonts URL specified in this payload"}
-                  </span>
                 </div>
               ))}
             </div>
+
+            {fontInfo.googleFonts && (
+              <div className="text-sm font-mono text-muted-foreground bg-muted/50 p-2 rounded break-all">
+                {fontInfo.googleFonts}
+              </div>
+            )}
 
             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800 text-sm">
               <p className="font-bold text-blue-900 dark:text-blue-100 mb-2">Instructions:</p>
               <ol className="list-decimal list-inside space-y-2 text-blue-800/80 dark:text-blue-200/80">
                 <li>Go to <strong>Site Settings → Fonts</strong> in Webflow</li>
-                <li>Add the fonts listed above via <strong>Google Fonts</strong></li>
+                <li>Search and add each font listed above</li>
                 <li><strong>Wait</strong> for the fonts to be ready in the Designer</li>
                 <li>Proceed to Step 2 below</li>
               </ol>
             </div>
 
-            <Button variant="outline" className="w-full text-blue-700" onClick={handleCopyFontUrl}>
-              <HugeiconsIcon icon={Copy01Icon} size={16} className="mr-2" />
-              Copy Google Fonts URL
-            </Button>
+            {fontInfo.googleFonts && (
+              <Button variant="outline" className="w-full text-blue-700" onClick={handleCopyFontUrl}>
+                <HugeiconsIcon icon={Copy01Icon} size={16} className="mr-2" />
+                Copy Font URL
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
@@ -421,6 +510,9 @@ function HtmlTab(props: {
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Components ({componentTree.components.length})</CardTitle>
+            <CardDescription className="text-amber-600 dark:text-amber-400 font-medium">
+              ⚠️ These are for copying to Webflow. To save in this app, click &quot;Save to Database&quot; above.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-2">
@@ -442,7 +534,7 @@ function HtmlTab(props: {
               <div className="rounded-lg border p-3">
                 <div className="text-sm font-medium">{fullPageComponent.name}</div>
                 <div className="mt-1 text-xs text-muted-foreground">Includes styles. Paste in Webflow canvas.</div>
-                <Button size="sm" className="mt-3 w-full" onClick={() => onCopyComponent(fullPageComponent)}>
+                <Button size="sm" variant="default" className="mt-3 w-full bg-blue-600 hover:bg-blue-700" onClick={() => onCopyComponent(fullPageComponent)}>
                   Copy to Webflow
                 </Button>
               </div>
@@ -452,7 +544,7 @@ function HtmlTab(props: {
                   <div className="mt-1 text-xs text-muted-foreground">
                     {navComponent?.name} + {heroComponent?.name}
                   </div>
-                  <Button size="sm" className="mt-3 w-full" onClick={() => onCopyComponent(headerComboComponent)}>
+                  <Button size="sm" variant="default" className="mt-3 w-full bg-blue-600 hover:bg-blue-700" onClick={() => onCopyComponent(headerComboComponent)}>
                     Copy to Webflow
                   </Button>
                 </div>
@@ -463,7 +555,7 @@ function HtmlTab(props: {
                   <div className="mt-1 text-xs text-muted-foreground">
                     {c.classesUsed.slice(0, 6).join(" ")}
                   </div>
-                  <Button size="sm" className="mt-3 w-full" onClick={() => onCopyComponent(c)}>
+                  <Button size="sm" variant="default" className="mt-3 w-full bg-blue-600 hover:bg-blue-700" onClick={() => onCopyComponent(c)}>
                     Copy to Webflow
                   </Button>
                 </div>
@@ -519,16 +611,42 @@ export function ImportWizard() {
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [tokensPasted, setTokensPasted] = useState(false)
-  const [skipEstablishedStyles, setSkipEstablishedStyles] = useState(false)
+  const [skipEstablishedStyles, setSkipEstablishedStyles] = useState(true)
   const [validationWarnings, setValidationWarnings] = useState<string[]>([])
   const [llmSummary, setLlmSummary] = useState<LlmSummary | null>(null)
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>("idle")
+  const [unsupportedContentDialog, setUnsupportedContentDialog] = useState<{
+    open: boolean
+    removedReferences: string[]
+    hasReact: boolean
+    hasTailwind: boolean
+    hasTypescript: boolean
+  }>({ open: false, removedReferences: [], hasReact: false, hasTailwind: false, hasTypescript: false })
 
   const handleParse = useCallback(async () => {
     if (!htmlInput.trim()) {
       toast.error("Please paste HTML content")
       return
     }
+    
+    // Check for unsupported content (React, Tailwind, TypeScript)
+    const unsupportedCheck = detectAndRemoveUnsupportedContent(htmlInput)
+    let processedHtml = htmlInput
+    
+    if (unsupportedCheck.removedReferences.length > 0) {
+      // Show warning dialog
+      setUnsupportedContentDialog({
+        open: true,
+        removedReferences: unsupportedCheck.removedReferences,
+        hasReact: unsupportedCheck.hasReact,
+        hasTailwind: unsupportedCheck.hasTailwind,
+        hasTypescript: unsupportedCheck.hasTypescript,
+      })
+      // Use cleaned HTML
+      processedHtml = unsupportedCheck.cleanedHtml
+      setHtmlInput(processedHtml)
+    }
+    
     let stage = "start"
     let pendingArtifacts: ExtractedArtifacts | null = null
     let tokens: TokenExtraction | null = null
@@ -536,7 +654,7 @@ export function ImportWizard() {
       stage = "parsing"
       setProcessingStatus("parsing")
       setLlmSummary(null)
-      const cleanResult = extractCleanHtml(htmlInput)
+      const cleanResult = extractCleanHtml(processedHtml)
       const normalization = normalizeHtmlCssForWebflow(cleanResult.cleanHtml, cleanResult.extractedStyles)
       const cssResult = parseCSS(normalization.css)
 
@@ -546,12 +664,22 @@ export function ImportWizard() {
       tokens = extractTokens(normalization.css, name)
       const fontUrl = extractGoogleFontsUrl(htmlInput)
       const fontFamilies = extractFontFamilies(normalization.css)
-      if (fontUrl && fontFamilies.length > 0) {
-        tokens.fonts = { googleFonts: fontUrl, families: fontFamilies }
+      // Always set fonts if families found, even without Google URL
+      if (fontFamilies.length > 0) {
+        tokens.fonts = { googleFonts: fontUrl || "", families: fontFamilies }
       }
       pendingArtifacts = {
         tokensJson: JSON.stringify(
-          { name: tokens.name, namespace: tokens.namespace, variables: tokens.variables, fonts: tokens.fonts },
+          {
+            name: tokens.name,
+            namespace: tokens.namespace,
+            variables: tokens.variables,
+            fonts: tokens.fonts ? {
+              googleFonts: tokens.fonts.googleFonts || "",
+              headSnippet: tokens.fonts.googleFonts ? `<link href="${tokens.fonts.googleFonts}" rel="stylesheet">` : "",
+              families: tokens.fonts.families || [],
+            } : undefined
+          },
           null,
           2
         ),
@@ -925,6 +1053,13 @@ export function ImportWizard() {
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    
+    // Reject .tsx, .jsx, .ts files directly
+    if (file.name.endsWith(".tsx") || file.name.endsWith(".jsx") || file.name.endsWith(".ts")) {
+      toast.error("This importer only supports HTML files. React/TypeScript files (.tsx, .jsx, .ts) are not supported.")
+      return
+    }
+    
     if (!file.name.endsWith(".html") && !file.name.endsWith(".htm")) {
       toast.error("Please upload an HTML file")
       return
@@ -935,7 +1070,14 @@ export function ImportWizard() {
       setHtmlInput(content)
       const name = file.name.replace(/\.html?$/i, "").replace(/-/g, " ")
       setProjectName(name.charAt(0).toUpperCase() + name.slice(1))
-      toast.success("File loaded")
+      
+      // Quick check for potential issues
+      const quickCheck = detectAndRemoveUnsupportedContent(content)
+      if (quickCheck.removedReferences.length > 0) {
+        toast.warning("File contains React/TypeScript/Tailwind references. These will be removed during parsing.")
+      } else {
+        toast.success("File loaded")
+      }
     }
     reader.onerror = () => toast.error("Failed to read file")
     reader.readAsText(file)
@@ -961,32 +1103,61 @@ export function ImportWizard() {
   if (!isUserLoaded) {
     return <div className="flex min-h-[200px] items-center justify-center">Loading...</div>
   }
-  const adminEmails = getAdminEmails()
-  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase()
-  const isAdmin = userEmail && adminEmails.includes(userEmail)
-  if (!isAdmin) {
-    return (
-      <div className="flex min-h-[200px] items-center justify-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <HugeiconsIcon icon={Alert01Icon} size={20} className="text-amber-500" />
-              Admin Access Required
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">This tool is restricted to administrators.</p>
-            <Button asChild className="mt-4 w-full">
-              <Link href="/assets">Back to Assets</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6">
+      {/* Unsupported Content Warning Dialog */}
+      <AlertDialog 
+        open={unsupportedContentDialog.open} 
+        onOpenChange={(open) => setUnsupportedContentDialog(prev => ({ ...prev, open }))}
+      >
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              <HugeiconsIcon icon={Alert01Icon} size={24} />
+              Unsupported Content Removed
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4 pt-4">
+              <div className="text-sm">
+                This importer only works with <strong>pure HTML, CSS, and JavaScript</strong> pages.
+              </div>
+              
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-2">
+                <div className="font-medium text-amber-700 dark:text-amber-400">We removed the following:</div>
+                <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
+                  {unsupportedContentDialog.removedReferences.map((ref, i) => (
+                    <li key={i} className="font-mono text-xs">{ref}</li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div className="text-sm space-y-2 text-muted-foreground">
+                {unsupportedContentDialog.hasReact && (
+                  <div>• <strong>React/JSX</strong> components are not supported. Export your React app to static HTML first.</div>
+                )}
+                {unsupportedContentDialog.hasTypescript && (
+                  <div>• <strong>TypeScript (.tsx)</strong> files need to be compiled to JavaScript first.</div>
+                )}
+                {unsupportedContentDialog.hasTailwind && (
+                  <div>• <strong>Tailwind CSS</strong> utility classes are not supported. Use compiled/purged CSS instead.</div>
+                )}
+              </div>
+              
+              <div className="text-xs text-muted-foreground border-t pt-3">
+                For best results, use single-page HTML exports with inline or linked CSS/JS.
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button 
+              onClick={() => setUnsupportedContentDialog(prev => ({ ...prev, open: false }))}
+            >
+              Continue with Cleaned HTML
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div>
         <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Tools</span>
         <h2 className="mt-2 font-display text-xl uppercase tracking-tight text-foreground">
@@ -994,6 +1165,10 @@ export function ImportWizard() {
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Extract components from AI-generated HTML and convert to Webflow-ready assets.
+        </p>
+        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+          <HugeiconsIcon icon={Alert01Icon} size={14} />
+          Supports single-page HTML with CSS &amp; JavaScript only. No React, TypeScript, or Tailwind.
         </p>
       </div>
 
@@ -1016,7 +1191,12 @@ export function ImportWizard() {
           <Card>
             <CardHeader>
               <CardTitle>Paste HTML</CardTitle>
-              <CardDescription>Paste the full HTML file from any AI tool.</CardDescription>
+              <CardDescription>
+                Paste the full HTML file from any AI tool. 
+                <span className="block mt-1 text-amber-600 dark:text-amber-400">
+                  Supports pure HTML/CSS/JS only — no React, TypeScript (.tsx/.jsx), or Tailwind.
+                </span>
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-4">

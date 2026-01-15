@@ -33,6 +33,7 @@ export interface TokenManifest {
   fonts?: {
     googleFonts: string;
     headSnippet: string;
+    families?: string[];
   };
 }
 

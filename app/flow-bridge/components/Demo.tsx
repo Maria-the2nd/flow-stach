@@ -26,11 +26,11 @@ export default function Demo() {
                 }}>
                     {/* Placeholder for Video/GIF */}
                     <div style={{ fontSize: '2rem', opacity: 0.5 }}>▶</div>
-                    <div style={{ opacity: 0.5 }}>[ Demo Video Embed ]</div>
+                    <div style={{ opacity: 0.5 }}>Demo Coming Soon</div>
                 </div>
 
                 <div style={{ textAlign: 'center', marginTop: '40px' }}>
-                    <button className="fb-btn fb-btn-primary">Watch the demo</button>
+                    <button className="fb-btn fb-btn-primary" disabled>Coming Soon</button>
                 </div>
             </div>
         </section>

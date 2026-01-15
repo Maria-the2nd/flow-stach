@@ -7,6 +7,10 @@ import { initializePanel } from './ui/panel';
 
 // Initialize extension when Webflow Designer is ready
 function init() {
+  // Mark extension presence for web app copy fallback detection
+  try {
+    document.documentElement.setAttribute('data-flowstach-extension', 'true');
+  } catch {}
   // Wait for DOM to be ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
