@@ -40,7 +40,11 @@ export interface TokenManifest {
 /**
  * Extract tokens from CSS content
  */
-export function extractTokens(css: string, designSystemName: string = "Design System"): TokenExtraction {
+export function extractTokens(
+  css: string,
+  html?: string,
+  designSystemName: string = "Design System"
+): TokenExtraction {
   // Find ALL :root or .fp-root blocks - there may be multiple (light/dark themes, multiple style tags)
   const rootContents: string[] = [];
   const selectors = [":root", ".fp-root"];
@@ -61,6 +65,18 @@ export function extractTokens(css: string, designSystemName: string = "Design Sy
     });
   }
 
+  // Extract fonts if HTML is provided
+  let googleFonts = "";
+  let families: string[] = [];
+
+  if (html) {
+    const url = extractGoogleFontsUrl(html);
+    if (url) googleFonts = url;
+  }
+
+  // Extract families from CSS (variables + usage)
+  families = extractFontFamilies(css);
+
   if (rootContents.length === 0) {
     console.warn("[token-extractor] No :root found in CSS");
     return {
@@ -69,6 +85,10 @@ export function extractTokens(css: string, designSystemName: string = "Design Sy
       namespace: deriveNamespace(designSystemName),
       modes: [],
       variables: [],
+      fonts: {
+        googleFonts,
+        families,
+      },
     };
   }
 
@@ -87,6 +107,10 @@ export function extractTokens(css: string, designSystemName: string = "Design Sy
     namespace: deriveNamespace(designSystemName),
     modes,
     variables,
+    fonts: {
+      googleFonts,
+      families,
+    },
   };
 }
 
@@ -429,12 +453,25 @@ export function extractGoogleFontsUrl(html: string): string | null {
  */
 export function extractFontFamilies(css: string): string[] {
   const families: string[] = [];
-  const fontRegex = /--font-[\w-]+\s*:\s*'([^']+)'/g;
+  
+  // 1. Extract from CSS variables (e.g., --font-primary: 'Inter')
+  // Matches: --font-xxx: 'Font' or "Font" or Font
+  const varRegex = /--font-[\w-]+\s*:\s*(?:'([^']+)'|"([^"]+)"|([a-zA-Z\s-]+))/g;
   let match;
 
-  while ((match = fontRegex.exec(css)) !== null) {
-    const family = match[1];
-    if (!families.includes(family)) {
+  while ((match = varRegex.exec(css)) !== null) {
+    // match[1] = single quotes, match[2] = double quotes, match[3] = no quotes
+    const family = (match[1] || match[2] || match[3]).trim().split(',')[0].trim();
+    if (family && !families.includes(family)) {
+      families.push(family);
+    }
+  }
+
+  // 2. Extract from standard font-family properties
+  const propRegex = /font-family\s*:\s*(?:'([^']+)'|"([^"]+)"|([a-zA-Z\s-]+))/g;
+  while ((match = propRegex.exec(css)) !== null) {
+    const family = (match[1] || match[2] || match[3]).trim().split(',')[0].trim();
+    if (family && !families.includes(family) && !family.startsWith("var(")) {
       families.push(family);
     }
   }

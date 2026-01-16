@@ -11,6 +11,7 @@ Flow Stach is a Webflow component library application. Users can browse, search,
 - Copy Webflow JSON payloads directly to clipboard (paste into Webflow Designer)
 - Copy code snippets (HTML/CSS/JS) for manual integration
 - Import AI-generated HTML and auto-convert to Webflow-ready assets
+- Import React components and convert to plain HTML + CSS + JS
 - Design token extraction and management
 - Favorites system for bookmarking assets
 
@@ -55,6 +56,7 @@ Three-column responsive layout:
 | `/assets/[slug]` | Asset detail with copy actions |
 | `/admin/seed` | Seed demo assets (admin only) |
 | `/admin/import` | Import HTML sections (admin only) |
+| `/admin/import-react` | Import React components (admin only) |
 | `/sign-in`, `/sign-up` | Clerk auth pages |
 | `/extension` | Browser extension info |
 | `/flow-bridge` | Flow Bridge feature page |
@@ -105,6 +107,8 @@ Set `NEXT_PUBLIC_DISABLE_AUTH=true` in `.env.local` to bypass Clerk authenticati
 | `html-parser.ts` | Parse HTML into sections, extract CSS per section |
 | `token-extractor.ts` | Extract design tokens from CSS `:root` variables |
 | `webflow-converter.ts` | Convert HTML/CSS to Webflow JSON format |
+| `jsx-parser.ts` | Parse React components, detect imports and dependencies |
+| `jsx-to-html.ts` | Convert JSX to plain HTML + vanilla JavaScript |
 | `fakeAssets.ts` | Demo asset data for seeding |
 | `favorites.ts` | Favorites localStorage utilities |
 
@@ -176,6 +180,11 @@ OPENROUTER_MODEL=openai/gpt-4.1
   - Extract design tokens from `:root` CSS variables
   - Generate Webflow JSON payloads (fallback or LLM-powered)
   - Bulk create/update assets in database
+- `/admin/import-react` - Import React components:
+  - Paste React source code and detect imports
+  - Request missing dependency files from user
+  - Convert JSX to plain HTML + vanilla JS
+  - Download as standalone HTML file
 - Admin access controlled by `NEXT_PUBLIC_ADMIN_EMAILS` env var
 
 ## HTML Import Workflow
@@ -190,3 +199,30 @@ OPENROUTER_MODEL=openai/gpt-4.1
    - Design token dependencies
 
 See `docs/html-breakdown-process.md` for detailed documentation.
+
+## React Import Workflow
+
+Convert React components to plain HTML + CSS + JavaScript at `/admin/import-react`:
+
+1. **Paste Code**: Paste your React component source code (.jsx/.tsx)
+2. **Add Dependencies**: Parser detects imports and asks for missing local files
+   - Provide each missing component or CSS file
+   - Library imports (react, framer-motion, etc.) are automatically ignored
+3. **Convert**: Transforms JSX to plain HTML with:
+   - `className` → `class` attribute conversion
+   - Component references resolved to their HTML output
+   - Event handlers (onClick, onChange) → vanilla JS addEventListener
+   - React patterns detected with conversion warnings
+4. **Result**: Copy HTML, CSS, or JS separately, or download as complete HTML file
+
+**Supported conversions:**
+- JSX syntax → HTML
+- CSS imports → combined stylesheet
+- onClick/onChange → addEventListener
+- useRef → document.querySelector (with warnings)
+- useEffect → DOMContentLoaded (with warnings)
+
+**Not automatically converted (warnings shown):**
+- useState (stateful logic)
+- useContext (context dependencies)
+- Complex expressions in JSX

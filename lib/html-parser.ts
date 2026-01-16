@@ -124,6 +124,24 @@ function extractRootTokens(css: string): string {
 }
 
 /**
+ * Extract external script URLs (src attributes)
+ */
+function extractExternalScripts(html: string): string[] {
+  const scripts: string[] = [];
+  const scriptRegex = /<script[^>]*src=["']([^"']+)["'][^>]*>/gi;
+  let match;
+
+  while ((match = scriptRegex.exec(html)) !== null) {
+    const src = match[1].trim();
+    if (src && !scripts.includes(src)) {
+      scripts.push(src);
+    }
+  }
+
+  return scripts;
+}
+
+/**
  * Extract all JS content from <script> tags (excluding external src)
  */
 function extractScriptContent(html: string): string {
@@ -696,7 +714,7 @@ export function stripScriptTags(html: string): { html: string; inlineScripts: st
   const externalScripts: string[] = [];
 
   const cleanedHtml = html.replace(/<script([^>]*)>([\s\S]*?)<\/script>/gi, (_, attributes, content) => {
-    const srcMatch = attributes.match(/src="([^"]+)"/);
+    const srcMatch = attributes.match(/src=["']([^"']+)["']/);
     if (srcMatch) {
       externalScripts.push(srcMatch[1]);
     } else if (content.trim()) {

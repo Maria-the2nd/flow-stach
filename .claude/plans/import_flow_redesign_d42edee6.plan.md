@@ -14,19 +14,19 @@ todos:
     plan: action-plan-1-css-unit-support.md
   - id: full-html-stripped
     content: Add handleCopyFullHtmlStripped handler in ImportWizard that combines all components and uses buildComponentPayload with skipEstablishedStyles
-    status: pending
+    status: completed
     plan: action-plan-2-html-import-improvements.md
   - id: html-tab-ui
     content: Update HtmlTab to show Full HTML (token-stripped) as primary action, make individual components secondary/collapsible
-    status: pending
+    status: completed
     plan: action-plan-2-html-import-improvements.md
   - id: external-scripts-state
     content: Add externalScripts to artifacts state from extractCleanHtml result
-    status: pending
+    status: completed
     plan: action-plan-2-html-import-improvements.md
   - id: external-scripts-ui
     content: Add external scripts section to JsTab with copy-able script tags and Webflow instructions
-    status: pending
+    status: completed
     plan: action-plan-2-html-import-improvements.md
   - id: extension-test-plan
     content: Document extension testing approach - either request Webflow access or create unit tests for core logic
@@ -34,27 +34,27 @@ todos:
     plan: action-plan-3-extension-testing.md
   - id: react-upload-ui
     content: Create React import page with folder/zip upload, project type detection, and build status display
-    status: pending
+    status: completed
     plan: action-plan-4-react-conversion.md
   - id: react-parser
     content: Create lib/react-parser.ts to analyze React project structure, detect framework (CRA, Vite, Next), and identify entry points
-    status: pending
+    status: completed
     plan: action-plan-4-react-conversion.md
   - id: react-builder
     content: Create lib/react-builder.ts to run static build and extract HTML output from dist/build folder
-    status: pending
+    status: completed
     plan: action-plan-4-react-conversion.md
   - id: react-css-extractor
     content: Create lib/react-css-extractor.ts to extract CSS from various sources (CSS files, CSS modules, Tailwind, styled-components)
-    status: pending
+    status: completed
     plan: action-plan-4-react-conversion.md
   - id: react-to-vanilla
     content: Create lib/react-to-vanilla.ts to convert React interactions (useState, useEffect, onClick) to vanilla JavaScript
-    status: pending
+    status: completed
     plan: action-plan-4-react-conversion.md
   - id: react-output-ui
     content: Add React output view with separate copyable sections for HTML, CSS, Vanilla JS, and library links with Webflow instructions
-    status: pending
+    status: completed
     plan: action-plan-4-react-conversion.md
 ---
 
@@ -67,9 +67,9 @@ This is the master roadmap. The work has been divided into **4 executable action
 | # | Plan | Description | Status | Owner |
 |---|------|-------------|--------|-------|
 | 1 | [CSS Unit Support](action-plan-1-css-unit-support.md) | Handle all CSS units (rem, em, %, vh, vw, calc, clamp) | 🟢 Completed | You |
-| 2 | [HTML Import Improvements](action-plan-2-html-import-improvements.md) | Full HTML copy option, external scripts UI | 🔴 Not Started | You |
+| 2 | [HTML Import Improvements](action-plan-2-html-import-improvements.md) | Full HTML copy option, external scripts UI | 🟢 Completed | You |
 | 3 | [Extension Testing](action-plan-3-extension-testing.md) | Test Designer Extension in Webflow | 📤 Delegated | External Dev |
-| 4 | [React Conversion](action-plan-4-react-conversion.md) | Convert React projects to Webflow-ready output | 🔴 Not Started | You |
+| 4 | [React Conversion](action-plan-4-react-conversion.md) | Convert React projects to Webflow-ready output | 🟢 Completed | You |
 
 ## Recommended Execution Order
 

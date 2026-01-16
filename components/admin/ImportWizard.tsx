@@ -157,6 +157,7 @@ interface ExtractedArtifacts {
   scriptsJs: string
   jsHooks: string[]
   cssVariables: Map<string, string>
+  externalScripts: string[]
 }
 
 interface ImportResult {
@@ -298,8 +299,9 @@ function TokensTab(props: {
   onCopyTokens: () => Promise<void>
   warnings: string[]
   fontInfo?: { googleFonts?: string; families?: string[] }
+  externalScripts?: string[]
 }) {
-  const { tokenWebflowJson, onCopyTokens, warnings, fontInfo } = props
+  const { tokenWebflowJson, onCopyTokens, warnings, fontInfo, externalScripts } = props
   const [copied, setCopied] = useState(false)
 
   const handleCopyToWebflow = async () => {
@@ -370,12 +372,58 @@ function TokensTab(props: {
         </Card>
       )}
 
-      {/* Step 2: Tokens */}
+      {/* Step 2: External Scripts */}
+      {externalScripts && externalScripts.length > 0 && (
+        <Card className="border-amber-500/50 border-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-600 text-xl font-bold">
+              <HugeiconsIcon icon={JavaScriptIcon} size={24} />
+              Step {fontInfo?.families && fontInfo.families.length > 0 ? 2 : 1}: External Scripts
+            </CardTitle>
+            <CardDescription className="text-base font-semibold">
+              Add these scripts to your Webflow project settings (Custom Code).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-2">
+              {externalScripts.map((url) => (
+                <div key={url} className="bg-muted p-2 rounded text-sm font-mono break-all flex justify-between items-center">
+                  <span>{url}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`<script src="${url}"></script>`)
+                      toast.success("Script tag copied")
+                    }}
+                  >
+                    <HugeiconsIcon icon={Copy01Icon} size={14} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800 text-sm mt-4">
+              <p className="font-bold text-amber-900 dark:text-amber-100 mb-2">Instructions:</p>
+              <ol className="list-decimal list-inside space-y-2 text-amber-800/80 dark:text-amber-200/80">
+                <li>Go to <strong>Site Settings → Custom Code</strong> in Webflow</li>
+                <li>Add these script tags to the <strong>Head Code</strong> or <strong>Footer Code</strong></li>
+                <li>Save and Publish changes</li>
+              </ol>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 3: Tokens */}
       <Card className="border-2 border-primary/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl font-bold">
             <HugeiconsIcon icon={PaintBoardIcon} size={24} />
-            Step 2: Copy Design Tokens
+            Step {
+              (fontInfo?.families && fontInfo.families.length > 0 ? 1 : 0) +
+              (externalScripts && externalScripts.length > 0 ? 1 : 0) +
+              1
+            }: Copy Design Tokens
           </CardTitle>
           <CardDescription className="text-base">
             Paste this <strong>FIRST</strong> into Webflow. Delete the div you just created after pasting, then proceed with the components.
@@ -661,13 +709,16 @@ export function ImportWizard() {
       stage = "extracting"
       setProcessingStatus("extracting")
       const name = projectName || "Imported Design"
-      tokens = extractTokens(normalization.css, name)
-      const fontUrl = extractGoogleFontsUrl(htmlInput)
-      const fontFamilies = extractFontFamilies(normalization.css)
-      // Always set fonts if families found, even without Google URL
-      if (fontFamilies.length > 0) {
-        tokens.fonts = { googleFonts: fontUrl || "", families: fontFamilies }
-      }
+      
+      // Use updated extractTokens with HTML support for font detection
+      tokens = extractTokens(normalization.css, htmlInput, name)
+      
+      // Prepare JS content including external scripts
+      const externalScriptComments = cleanResult.externalScripts.length > 0 
+        ? cleanResult.externalScripts.map(url => `// External Library: ${url}`).join('\n') + '\n\n'
+        : '';
+      const fullScriptsJs = externalScriptComments + cleanResult.extractedScripts;
+
       pendingArtifacts = {
         tokensJson: JSON.stringify(
           {
@@ -687,9 +738,10 @@ export function ImportWizard() {
         stylesCss: normalization.css,
         classIndex: cssResult.classIndex,
         cleanHtml: normalization.html,
-        scriptsJs: cleanResult.extractedScripts,
+        scriptsJs: fullScriptsJs,
         jsHooks: extractJsHooks(normalization.html),
         cssVariables: cssResult.cssVariables,
+        externalScripts: cleanResult.externalScripts,
       }
       setArtifacts(pendingArtifacts)
       const initialTokenPayload = buildCssTokenPayload(normalization.css, { namespace: tokens.namespace, includePreview: true })
@@ -826,6 +878,7 @@ export function ImportWizard() {
         scriptsJs: cleanResult.extractedScripts,
         jsHooks: extractJsHooks(normalization.html),
         cssVariables: finalCssResult.cssVariables,
+        externalScripts: cleanResult.externalScripts,
       }
       setArtifacts(pendingArtifacts)
       setComponentTree(components)
@@ -1028,7 +1081,8 @@ export function ImportWizard() {
           stylesCss: artifacts.stylesCss,
           classIndex: JSON.stringify(artifacts.classIndex),
           cleanHtml: artifacts.cleanHtml,
-          scriptsJs: artifacts.scriptsJs || undefined,
+          scriptsJs: artifacts.scriptsJs,
+          externalScripts: artifacts.externalScripts,
           jsHooks: artifacts.jsHooks,
         },
         components: componentsToImport,

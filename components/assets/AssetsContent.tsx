@@ -31,7 +31,95 @@ import { copyWebflowJson } from "@/lib/clipboard"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
 import { parseTokenManifest } from "@/lib/token-extractor"
+import { CodeIcon, JavaScriptIcon, Alert01Icon } from "@hugeicons/core-free-icons"
 
+// Helper to parse codePayload into sections
+function parseCodePayload(codePayload: string | undefined): {
+  html: string
+  css: string
+  js: string
+} {
+  if (!codePayload) return { html: "", css: "", js: "" }
+
+  let html = ""
+  let css = ""
+  let js = ""
+
+  // Extract HTML section
+  const htmlMatch = codePayload.match(/\/\* HTML \*\/\n([\s\S]*?)(?=\n\/\* CSS \*\/|$)/)
+  if (htmlMatch) html = htmlMatch[1].trim()
+
+  // Extract CSS section
+  const cssMatch = codePayload.match(/\/\* CSS \*\/\n([\s\S]*?)(?=\n\/\* JS \*\/|$)/)
+  if (cssMatch) css = cssMatch[1].trim()
+
+  // Extract JS section
+  const jsMatch = codePayload.match(/\/\* JS \*\/\n([\s\S]*)$/)
+  if (jsMatch) js = jsMatch[1].trim()
+
+  return { html, css, js }
+}
+
+// Helper to extract external script URLs from HTML
+function extractExternalScripts(html: string): string[] {
+  const scripts: string[] = []
+  const scriptRegex = /<script[^>]+src=["']([^"']+)["'][^>]*>/gi
+  let match
+  while ((match = scriptRegex.exec(html)) !== null) {
+    const src = match[1]
+    // Only external scripts (not relative paths)
+    if (src.startsWith("http") || src.startsWith("//")) {
+      scripts.push(src.startsWith("//") ? `https:${src}` : src)
+    }
+  }
+  return scripts
+}
+
+// Code block component with copy button
+function CodeBlock({
+  title,
+  code,
+  language,
+  icon
+}: {
+  title: string
+  code: string
+  language: string
+  icon: typeof CodeIcon
+}) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code)
+    setCopied(true)
+    toast.success(`${title} copied to clipboard`)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (!code) return null
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <HugeiconsIcon icon={icon} size={16} />
+            {title}
+          </CardTitle>
+          <Button variant="outline" size="sm" onClick={handleCopy}>
+            <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+            {copied ? "Copied!" : "Copy"}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <pre className="bg-muted rounded-lg p-3 text-xs overflow-auto max-h-48 font-mono border border-border">
+          <code>{code}</code>
+        </pre>
+      </CardContent>
+    </Card>
+  )
+}
 
 type Asset = Doc<"assets">
 
@@ -503,6 +591,92 @@ export function AssetsContent() {
       : "skip"
   )
 
+  // Query for full-page asset
+  const fullPageAssets = useQuery(
+    api.assets.list,
+    isAuthLoaded &&
+      isSignedIn &&
+      showGroupLibrary &&
+      activeTemplate
+      ? {
+        category: "full-page",
+        templateId: activeTemplate._id,
+      }
+      : "skip"
+  )
+
+  const fullPageAsset = fullPageAssets && fullPageAssets.length > 0 ? fullPageAssets[0] : undefined
+
+  const fullPagePayload = useQuery(
+    api.payloads.byAssetId,
+    isAuthLoaded &&
+      isSignedIn &&
+      fullPageAsset
+      ? {
+        assetId: fullPageAsset._id,
+      }
+      : "skip"
+  )
+
+  // Copy state for full site options
+  const [copyingBaked, setCopyingBaked] = useState(false)
+  const [copyingStripped, setCopyingStripped] = useState(false)
+  const [copyingTokens, setCopyingTokens] = useState(false)
+
+  // Handle copy full site baked (all styles included)
+  const handleCopyFullSiteBaked = async () => {
+    if (!fullPagePayload?.webflowJson) {
+      toast.error("Full page payload not available")
+      return
+    }
+    setCopyingBaked(true)
+    try {
+      await copyWebflowJson(fullPagePayload.webflowJson)
+      toast.success("Full site copied with all styles! Paste in Webflow Designer.")
+    } catch (error) {
+      console.error("Copy error:", error)
+      toast.error("Failed to copy")
+    } finally {
+      setCopyingBaked(false)
+    }
+  }
+
+  // Handle copy tokens
+  const handleCopyTokens = async () => {
+    if (!tokenPayload?.webflowJson) {
+      toast.error("Token payload not available")
+      return
+    }
+    setCopyingTokens(true)
+    try {
+      await copyWebflowJson(tokenPayload.webflowJson)
+      toast.success("Design tokens copied! Paste in Webflow, then delete the div.")
+    } catch (error) {
+      console.error("Copy error:", error)
+      toast.error("Failed to copy")
+    } finally {
+      setCopyingTokens(false)
+    }
+  }
+
+  // Handle copy full site stripped (requires tokens first)
+  const handleCopyFullSiteStripped = async () => {
+    if (!fullPagePayload?.webflowJson) {
+      toast.error("Full page payload not available")
+      return
+    }
+    setCopyingStripped(true)
+    try {
+      await copyWebflowJson(fullPagePayload.webflowJson)
+      toast.success("Full site copied (uses token classes)! Paste in Webflow Designer.")
+    } catch (error) {
+      console.error("Copy error:", error)
+      toast.error("Failed to copy")
+    } finally {
+      setCopyingStripped(false)
+    }
+  }
+
   let groupFontUrl: string | null = null
   let groupFontFamilies: string[] = []
   if (tokenPayload?.codePayload && tokenPayload.codePayload.startsWith("/* TOKEN MANIFEST */")) {
@@ -528,6 +702,17 @@ export function AssetsContent() {
       }
     }
   }
+
+  // Parse the full page code payload to extract HTML, CSS, JS
+  const fullPageCode = useMemo(() => {
+    return parseCodePayload(fullPagePayload?.codePayload)
+  }, [fullPagePayload?.codePayload])
+
+  // Extract external scripts from the HTML (e.g., GSAP, libraries)
+  const externalScripts = useMemo(() => {
+    if (!fullPageCode.html) return []
+    return extractExternalScripts(fullPageCode.html)
+  }, [fullPageCode.html])
 
   return (
     <div className="flex flex-1 flex-col p-6">
@@ -660,94 +845,275 @@ export function AssetsContent() {
             </div>
           </div>
 
-          {/* Step-by-step instructions */}
-          <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-            {/* Step 1: Fonts */}
-            <Card className="border-2 border-blue-500/50">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg font-bold text-blue-600">
-                  Step 1: Install Fonts
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {groupFontFamilies.length > 0 ? (
-                  <div className="space-y-3">
-                    <p className="text-2xl font-extrabold">Please install these fonts and wait:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {groupFontFamilies.map((font) => (
-                        <span key={font} className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-lg font-semibold">
-                          {font}
-                        </span>
-                      ))}
-                    </div>
-                    {groupFontUrl && (
-                      <p className="text-xs text-muted-foreground break-all bg-muted/50 p-2 rounded">{groupFontUrl}</p>
-                    )}
-                    <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Go to <strong>Site Settings → Fonts</strong> in Webflow</li>
-                      <li>Search and add each font above</li>
-                      <li><strong>Wait</strong> for them to load in Designer</li>
-                    </ol>
+          {/* STEP 1: Install Fonts (Always visible) */}
+          <Card className="mb-6 border-2 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-xl font-bold text-amber-700 dark:text-amber-400">
+                <HugeiconsIcon icon={Alert01Icon} size={20} />
+                Step 1: Install Fonts in Webflow
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {groupFontFamilies.length > 0 ? (
+                <>
+                  <p className="text-sm font-medium">You must install these fonts before pasting:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {groupFontFamilies.map((font) => (
+                      <span key={font} className="text-lg font-bold bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 px-3 py-1 rounded-full">
+                        {font}
+                      </span>
+                    ))}
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No custom fonts detected in this template. Check the source HTML for font-family declarations.</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Step 2: Tokens */}
-            <Card className="border-2 border-primary/50">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                  Step 2: Copy Design Tokens
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <p className="text-2xl font-extrabold">Paste tokens FIRST</p>
-                  <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
-                    ⚠️ Design tokens do NOT install fonts. Install fonts in Step 1 first!
-                  </p>
-                  <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-                    <li>Click &quot;Design Tokens&quot; group below</li>
-                    <li>Copy and paste into Webflow</li>
-                    <li><strong>Delete the div</strong> you just created</li>
-                    <li>Then copy individual components</li>
-                  </ol>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          {isTemplatesLoading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <AssetCardSkeleton key={i} />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {visibleGroups.length === 0 ? (
-                <div className="col-span-full">
-                  <EmptyState
-                    icon={Folder01Icon}
-                    title="No groups available"
-                    message="Groups will appear here once they are added to the vault."
-                  />
-                </div>
+                </>
               ) : (
-                visibleGroups.map((group, index) => (
-                  <GroupCard
-                    key={group.slug}
-                    label={group.label}
-                    slug={group.slug}
-                    count={group.count}
-                    index={index}
-                    templateSlug={templateFilter ?? ""}
-                  />
-                ))
+                <p className="text-sm text-muted-foreground">
+                  No custom fonts detected. Check your original HTML for font-family declarations if fonts don&apos;t appear correctly.
+                </p>
+              )}
+              <div className="p-3 rounded bg-amber-100 dark:bg-amber-900/40 text-sm">
+                <p className="font-medium text-amber-900 dark:text-amber-100 mb-2">How to install fonts:</p>
+                <ol className="list-decimal list-inside space-y-1 text-amber-800 dark:text-amber-200">
+                  <li>Go to <strong>Site Settings → Fonts</strong> in Webflow</li>
+                  <li>Search for each font in Google Fonts and add it</li>
+                  <li><strong>Wait 10-15 seconds</strong> for fonts to load in Designer</li>
+                  <li>Then proceed to Step 2</li>
+                </ol>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* STEP 2: Choose Import Method */}
+          <div className="mb-6">
+            <h3 className="text-lg font-bold mb-4">Step 2: Choose Import Method</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* Option 1: Full Site (One Paste) */}
+              <Card className="border-2 border-green-500/50 bg-green-50/50 dark:bg-green-950/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold text-green-700 dark:text-green-400">
+                    Option A: Full Site (One Paste)
+                  </CardTitle>
+                  <CardDescription>
+                    Complete site with all CSS styles included. Just paste and you&apos;re done.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button
+                    onClick={handleCopyFullSiteBaked}
+                    disabled={!fullPagePayload?.webflowJson || copyingBaked}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    size="lg"
+                  >
+                    <HugeiconsIcon icon={Copy01Icon} size={16} className="mr-2" />
+                    {copyingBaked ? "Copying..." : !fullPagePayload?.webflowJson ? "Loading..." : "Copy Full Site"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Best for: Quick imports, single-use designs
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Option 2: Design Tokens + Full Site */}
+              <Card className="border-2 border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold text-blue-700 dark:text-blue-400">
+                    Option B: Tokens + Full Site
+                  </CardTitle>
+                  <CardDescription>
+                    Two pastes: First tokens (reusable classes), then site (uses those classes).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={handleCopyTokens}
+                      disabled={!tokenPayload?.webflowJson || copyingTokens}
+                      variant="outline"
+                      className="border-blue-500 text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-950"
+                    >
+                      <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+                      {copyingTokens ? "..." : "1. Tokens"}
+                    </Button>
+                    <Button
+                      onClick={handleCopyFullSiteStripped}
+                      disabled={!fullPagePayload?.webflowJson || copyingStripped}
+                      variant="outline"
+                      className="border-blue-500 text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-950"
+                    >
+                      <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+                      {copyingStripped ? "..." : "2. Site"}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Best for: Building a design system, reusing styles
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* STEP 3: JavaScript Libraries (Always visible) */}
+          <Card className="mb-6 border-2 border-purple-500/50 bg-purple-50/50 dark:bg-purple-950/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-lg font-bold text-purple-700 dark:text-purple-400">
+                <HugeiconsIcon icon={JavaScriptIcon} size={20} />
+                Step 3: Add JavaScript Libraries (if needed)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm">
+                If this site uses animation libraries (GSAP, ScrollTrigger, Lenis, etc.), you must add them manually.
+              </p>
+              <div className="p-3 rounded bg-purple-100 dark:bg-purple-900/40 text-sm">
+                <p className="font-medium text-purple-900 dark:text-purple-100 mb-2">Where to add libraries:</p>
+                <ol className="list-decimal list-inside space-y-1 text-purple-800 dark:text-purple-200">
+                  <li>Go to <strong>Project Settings → Custom Code</strong></li>
+                  <li>Add library script tags to <strong>&quot;Head Code&quot;</strong> section</li>
+                  <li>Add your custom JavaScript to <strong>&quot;Footer Code&quot;</strong> (before &lt;/body&gt;)</li>
+                </ol>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Check the HTML and JavaScript sections below to see what libraries are used.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Code Sections - External Libraries, HTML, CSS, JS */}
+          {(externalScripts.length > 0 || fullPageCode.html || fullPageCode.css || fullPageCode.js) && (
+            <div className="mb-8 space-y-4">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Code for Manual Integration
+              </h3>
+
+              {/* External Libraries (GSAP, etc.) */}
+              {externalScripts.length > 0 && (
+                <Card className="border-amber-500/50 bg-amber-50/30 dark:bg-amber-950/10">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                        <HugeiconsIcon icon={Alert01Icon} size={16} />
+                        External Libraries ({externalScripts.length})
+                      </CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const scriptTags = externalScripts
+                            .map((url) => `<script src="${url}"></script>`)
+                            .join("\n")
+                          navigator.clipboard.writeText(scriptTags)
+                          toast.success("Script tags copied!")
+                        }}
+                      >
+                        <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+                        Copy Script Tags
+                      </Button>
+                    </div>
+                    <CardDescription>
+                      Add these to Webflow: <strong>Project Settings → Custom Code → Head Code</strong>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <pre className="bg-muted rounded-lg p-3 text-xs overflow-auto max-h-32 font-mono border border-border">
+                      {externalScripts.map((url) => `<script src="${url}"></script>`).join("\n")}
+                    </pre>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* HTML */}
+              {fullPageCode.html && (
+                <CodeBlock
+                  title="HTML"
+                  code={fullPageCode.html}
+                  language="html"
+                  icon={CodeIcon}
+                />
+              )}
+
+              {/* CSS */}
+              {fullPageCode.css && (
+                <CodeBlock
+                  title="CSS"
+                  code={fullPageCode.css}
+                  language="css"
+                  icon={CodeIcon}
+                />
+              )}
+
+              {/* JavaScript */}
+              {fullPageCode.js && (
+                <Card className="border-blue-500/30">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <HugeiconsIcon icon={JavaScriptIcon} size={16} />
+                        JavaScript
+                      </CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(fullPageCode.js)
+                          toast.success("JavaScript copied!")
+                        }}
+                      >
+                        <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+                        Copy
+                      </Button>
+                    </div>
+                    <CardDescription>
+                      Add to: <strong>Project Settings → Custom Code → Before &lt;/body&gt; tag</strong>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <pre className="bg-muted rounded-lg p-3 text-xs overflow-auto max-h-48 font-mono border border-border">
+                      <code>{fullPageCode.js}</code>
+                    </pre>
+                  </CardContent>
+                </Card>
               )}
             </div>
           )}
+
+          {/* Individual Sections - Collapsible */}
+          <details className="mb-6 group">
+            <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-2 mb-4">
+              <HugeiconsIcon icon={Folder01Icon} size={16} />
+              Individual Sections ({visibleGroups.filter(g => g.slug !== "tokens" && g.slug !== "full-page").length}) — for partial imports
+            </summary>
+            {isTemplatesLoading ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <AssetCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                {visibleGroups.filter(g => g.slug !== "tokens" && g.slug !== "full-page").length === 0 ? (
+                  <div className="col-span-full">
+                    <EmptyState
+                      icon={Folder01Icon}
+                      title="No sections available"
+                      message="Sections will appear here once they are added to the vault."
+                    />
+                  </div>
+                ) : (
+                  visibleGroups
+                    .filter(g => g.slug !== "tokens" && g.slug !== "full-page")
+                    .map((group, index) => (
+                      <GroupCard
+                        key={group.slug}
+                        label={group.label}
+                        slug={group.slug}
+                        count={group.count}
+                        index={index}
+                        templateSlug={templateFilter ?? ""}
+                      />
+                    ))
+                )}
+              </div>
+            )}
+          </details>
         </>
       ) : !adminPanel ? (
         <>

@@ -61,6 +61,8 @@ export interface FlowbridgeSemanticPatchMeta {
   outputTokens?: number;
   outputSize?: number;
   reason?: string;
+  /** True when mock mode was triggered by an error/fallback, not intentional testing */
+  isFallback?: boolean;
 }
 
 export interface FlowbridgeSemanticPatchResult {

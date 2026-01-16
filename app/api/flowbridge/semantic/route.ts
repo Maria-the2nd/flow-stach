@@ -35,6 +35,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: "missing_request" }, { status: 400 });
   }
 
+  const req = body.request;
+  const errors: string[] = [];
+
+  const arrayFields = ["domOutline", "components", "warnings", "componentHtml", "componentFullHtml"] as const;
+  for (const field of arrayFields) {
+    if (!Array.isArray(req[field])) errors.push(`${field} must be an array`);
+  }
+  if (typeof req.tokens !== "object" || req.tokens === null) errors.push("tokens must be an object");
+  if (typeof req.fullHtml !== "string") errors.push("fullHtml must be a string");
+
+  if (errors.length > 0) {
+    return NextResponse.json(
+      { ok: false, reason: "invalid_request_structure", details: errors },
+      { status: 400 }
+    );
+  }
+
   try {
     const result = await requestFlowbridgeSemanticPatch(body.request, {
       model: body.model,
@@ -55,9 +72,11 @@ export async function POST(request: Request) {
       { ok: true, response: result.patch, meta: result.meta } satisfies SemanticResponsePayload,
       { status: 200 }
     );
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[flowbridge/semantic] LLM error:", message);
     return NextResponse.json(
-      { ok: false, reason: "llm_error" } satisfies SemanticResponsePayload,
+      { ok: false, reason: "llm_error", details: message },
       { status: 500 }
     );
   }

@@ -59,6 +59,8 @@ export async function requestFlowbridgeSemanticPatch(
   const mockFallback = (params: { reason: string; model?: string; latencyMs?: number; inputTokens?: number }) => {
     const patch = runMockSemanticPatch(request);
     const outputSize = JSON.stringify(patch).length;
+    // Log warning so it's visible in server logs
+    console.warn("[flowbridge-llm] Using mock fallback due to:", params.reason);
     return {
       patch,
       meta: {
@@ -69,6 +71,8 @@ export async function requestFlowbridgeSemanticPatch(
         outputTokens: estimateTokens(JSON.stringify(patch)),
         outputSize,
         reason: params.reason,
+        // Mark as fallback so UI can display a warning to users
+        isFallback: true,
       },
     } satisfies FlowbridgeSemanticPatchResult;
   };
@@ -103,6 +107,8 @@ export async function requestFlowbridgeSemanticPatch(
         inputTokens,
         outputTokens: estimateTokens(JSON.stringify(patch)),
         outputSize,
+        // Intentional mock mode (for testing), not a fallback
+        isFallback: false,
       },
     };
   }

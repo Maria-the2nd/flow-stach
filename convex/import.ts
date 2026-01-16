@@ -327,6 +327,7 @@ export const importProject = mutation({
       classIndex: v.string(),
       cleanHtml: v.string(),
       scriptsJs: v.optional(v.string()),
+      externalScripts: v.optional(v.array(v.string())),
       jsHooks: v.optional(v.array(v.string())),
     }),
     components: v.array(
@@ -416,6 +417,7 @@ export const importProject = mutation({
         | "class_index"
         | "clean_html"
         | "scripts_js"
+        | "external_scripts"
         | "js_hooks"
         | "token_webflow_json"
         | "component_manifest"
@@ -427,6 +429,10 @@ export const importProject = mutation({
       { type: "class_index", content: args.artifacts.classIndex },
       { type: "clean_html", content: args.artifacts.cleanHtml },
       { type: "scripts_js", content: args.artifacts.scriptsJs },
+      {
+        type: "external_scripts",
+        content: args.artifacts.externalScripts ? JSON.stringify(args.artifacts.externalScripts) : undefined,
+      },
       {
         type: "js_hooks",
         content: args.artifacts.jsHooks ? JSON.stringify(args.artifacts.jsHooks) : undefined,

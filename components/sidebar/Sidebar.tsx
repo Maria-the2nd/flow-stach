@@ -7,7 +7,8 @@ import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
 import { useAuth } from "@clerk/nextjs"
 import { useQuery, useMutation } from "convex/react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Upload04Icon, Database01Icon, FavouriteIcon } from "@hugeicons/core-free-icons"
+import { Upload04Icon, Database01Icon, FavouriteIcon, CodeIcon } from "@hugeicons/core-free-icons"
+import { useUser } from "@clerk/nextjs"
 import { api } from "@/convex/_generated/api"
 import { Id } from "@/convex/_generated/dataModel"
 import { cn } from "@/lib/utils"
@@ -22,10 +23,19 @@ export interface SidebarProps {
   className?: string
 }
 
+function getAdminEmails(): string[] {
+  const raw = process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? ""
+  return raw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)
+}
+
 export function Sidebar({ className }: SidebarProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { isLoaded, isSignedIn } = useAuth()
+  const { user } = useUser()
+
+  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? ""
+  const isAdmin = isLoaded && isSignedIn && getAdminEmails().includes(userEmail)
 
   // Template editing state
   const [editingTemplateId, setEditingTemplateId] = useState<Id<"templates"> | null>(null)
@@ -261,14 +271,14 @@ export function Sidebar({ className }: SidebarProps) {
                       <button
                         type="button"
                         onClick={() => handleTemplateClick(template.slug)}
-                        onDoubleClick={() => handleTemplateDoubleClick(template._id, template.name)}
+                        onDoubleClick={isAdmin ? () => handleTemplateDoubleClick(template._id, template.name) : undefined}
                         className={cn(
                           "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors",
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                             : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                         )}
-                        title="Double-click to rename"
+                        title={isAdmin ? "Double-click to rename" : undefined}
                       >
                         <span>{template.name}</span>
                       </button>
@@ -345,20 +355,34 @@ export function Sidebar({ className }: SidebarProps) {
                 </button>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => handleAdminClick("database")}
+                <Link
+                  href="/admin/import-react"
                   className={cn(
                     "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                    activeAdmin === "database"
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                   )}
                 >
-                  <HugeiconsIcon icon={Database01Icon} className="h-3.5 w-3.5" />
-                  <span>Database</span>
-                </button>
+                  <HugeiconsIcon icon={CodeIcon} className="h-3.5 w-3.5" />
+                  <span>Import React</span>
+                </Link>
               </li>
+              {isAdmin && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => handleAdminClick("database")}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                      activeAdmin === "database"
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    )}
+                  >
+                    <HugeiconsIcon icon={Database01Icon} className="h-3.5 w-3.5" />
+                    <span>Database</span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
 

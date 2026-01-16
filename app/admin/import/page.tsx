@@ -60,6 +60,7 @@ interface ExtractedArtifacts {
   scriptsJs: string
   jsHooks: string[]
   cssVariables: Map<string, string>
+  externalScripts: string[]
 }
 
 interface ImportResult {
@@ -495,9 +496,9 @@ interface HtmlTabProps {
   componentTree: ComponentTree | null
   establishedClasses: Set<string>
   tokensPasted: boolean
-  skipEstablishedStyles: boolean
-  onSkipEstablishedStylesChange: (skip: boolean) => void
   onCopyComponent: (component: Component) => Promise<void>
+  onCopyFullSiteBaked: () => Promise<void>
+  onCopyFullSiteStripped: () => Promise<void>
 }
 
 function HtmlTab({
@@ -505,9 +506,9 @@ function HtmlTab({
   componentTree,
   establishedClasses,
   tokensPasted,
-  skipEstablishedStyles,
-  onSkipEstablishedStylesChange,
-  onCopyComponent
+  onCopyComponent,
+  onCopyFullSiteBaked,
+  onCopyFullSiteStripped,
 }: HtmlTabProps) {
   const orderedComponents = componentTree
     ? [...componentTree.components].sort((a, b) => a.order - b.order)
@@ -538,113 +539,122 @@ function HtmlTab({
 
   return (
     <div className="space-y-6">
-      {/* Component List */}
+      {/* Option 1: Full Site (All Styles Baked) */}
       {componentTree && componentTree.components.length > 0 && (
-        <Card>
+        <Card className="border-green-500/50 bg-green-50/50 dark:bg-green-950/20">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <HugeiconsIcon icon={Layers01Icon} size={16} />
-              Components ({componentTree.components.length})
+            <CardTitle className="text-sm flex items-center gap-2 text-green-700 dark:text-green-400">
+              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} />
+              Option 1: Full Site (One Paste)
             </CardTitle>
             <CardDescription>
-              Copy components to paste in Webflow Designer.
+              Complete site with all CSS styles included. Just paste and you&apos;re done.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            {/* Style handling option */}
-            {establishedClasses.size > 0 && (
-              <div className="mb-4 p-3 rounded-lg bg-muted/50 border">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={skipEstablishedStyles}
-                    onChange={(e) => onSkipEstablishedStylesChange(e.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-gray-300"
-                  />
-                  <div>
-                    <div className="font-medium text-sm">Skip established styles</div>
-                    <div className="text-xs text-muted-foreground">
-                      {tokensPasted ? (
-                        <span className="text-green-600">
-                          Tokens were pasted. Enable this to avoid &quot;-2&quot; class duplicates.
-                        </span>
-                      ) : (
-                        <span>
-                          Enable only if you already pasted the token payload. Otherwise keep unchecked.
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {establishedClasses.size} classes can be skipped
-                    </div>
-                  </div>
-                </label>
+          <CardContent className="space-y-3">
+            <Button
+              onClick={onCopyFullSiteBaked}
+              className="w-full bg-green-600 hover:bg-green-700"
+              size="lg"
+            >
+              <HugeiconsIcon icon={Copy01Icon} size={16} className="mr-2" />
+              Copy Full Site (Styles Baked In)
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Option 2: Design Tokens + Full Site (Stripped) */}
+      {componentTree && componentTree.components.length > 0 && (
+        <Card className="border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-blue-700 dark:text-blue-400">
+              <HugeiconsIcon icon={PaintBoardIcon} size={16} />
+              Option 2: Design Tokens + Full Site
+            </CardTitle>
+            <CardDescription>
+              Two pastes: First tokens (creates reusable classes), then HTML (references those classes).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              <strong>Workflow:</strong>
+              <ol className="list-decimal list-inside mt-1 space-y-1">
+                <li>Copy &amp; paste Design Tokens (from Tokens tab) — creates {establishedClasses.size} classes</li>
+                <li>Copy &amp; paste Full Site (below) — uses those classes</li>
+              </ol>
+            </div>
+            {tokensPasted && (
+              <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm">
+                ✓ Tokens pasted! Now paste the Full Site below.
               </div>
             )}
-            <div className="space-y-2">
-              {headerComboComponent && (
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted">
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{headerComboComponent.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {navComponent?.name} + {heroComponent?.name}
+            <Button
+              onClick={onCopyFullSiteStripped}
+              variant="outline"
+              className="w-full border-blue-500 text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-950"
+              size="lg"
+            >
+              <HugeiconsIcon icon={Copy01Icon} size={16} className="mr-2" />
+              Copy Full Site (Token-Stripped)
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Individual Components - For partial imports */}
+      {componentTree && componentTree.components.length > 0 && (
+        <details className="group">
+          <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-2">
+            <HugeiconsIcon icon={Layers01Icon} size={16} />
+            Individual Sections ({componentTree.components.length}) — for partial imports
+          </summary>
+          <Card className="mt-3">
+            <CardHeader className="pb-2">
+              <CardDescription>
+                Import specific sections. Use with your existing design tokens or paste tokens first.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {headerComboComponent && (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{headerComboComponent.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {navComponent?.name} + {heroComponent?.name}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(headerComboComponent.htmlContent)
-                        toast.success(`${headerComboComponent.name} HTML copied`)
-                      }}
-                    >
-                      <HugeiconsIcon icon={CodeIcon} size={14} className="mr-1" />
-                      HTML
-                    </Button>
                     <Button size="sm" onClick={() => onCopyComponent(headerComboComponent)}>
                       <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
-                      Webflow
+                      Copy for Webflow
                     </Button>
                   </div>
-                </div>
-              )}
-              {componentTree.components.map((component) => (
-                <div
-                  key={component.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted"
-                >
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{component.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {component.type} • {component.classesUsed.length} classes • {component.jsHooks.length} JS hooks
+                )}
+                {componentTree.components.map((component) => (
+                  <div
+                    key={component.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{component.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {component.type} • {component.classesUsed.length} classes
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(component.htmlContent)
-                        toast.success(`${component.name} HTML copied`)
-                      }}
-                    >
-                      <HugeiconsIcon icon={CodeIcon} size={14} className="mr-1" />
-                      HTML
-                    </Button>
                     <Button
                       size="sm"
                       onClick={() => onCopyComponent(component)}
                     >
                       <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
-                      Webflow
+                      Copy for Webflow
                     </Button>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </details>
       )}
 
       {/* Warnings */}
@@ -696,9 +706,10 @@ interface JsTabProps {
   scriptsJs: string
   jsHooks: string[]
   componentTree: ComponentTree | null
+  externalScripts: string[]
 }
 
-function JsTab({ scriptsJs, jsHooks, componentTree }: JsTabProps) {
+function JsTab({ scriptsJs, jsHooks, componentTree, externalScripts }: JsTabProps) {
   const handleCopyJs = () => {
     navigator.clipboard.writeText(scriptsJs)
     toast.success("JavaScript copied to clipboard")
@@ -724,6 +735,46 @@ function JsTab({ scriptsJs, jsHooks, componentTree }: JsTabProps) {
           </ol>
         </CardContent>
       </Card>
+
+      {/* External Libraries */}
+      {externalScripts.length > 0 && (
+        <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-amber-700 dark:text-amber-400">
+              <HugeiconsIcon icon={Alert01Icon} size={16} />
+              External Libraries Required ({externalScripts.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              This site uses external libraries. Add these to Webflow:
+            </p>
+
+            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+              <li>Go to <strong className="text-foreground">Project Settings → Custom Code</strong></li>
+              <li>Paste in <strong className="text-foreground">&quot;Head Code&quot;</strong> section:</li>
+            </ol>
+
+            <pre className="p-3 bg-muted rounded text-xs overflow-x-auto font-mono">
+              {externalScripts.map((url) => `<script src="${url}"></script>`).join("\n")}
+            </pre>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                const scriptTags = externalScripts
+                  .map((url) => `<script src="${url}"></script>`)
+                  .join("\n")
+                navigator.clipboard.writeText(scriptTags)
+                toast.success("Copied script tags to clipboard")
+              }}
+            >
+              <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+              Copy Script Tags
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* JS Hooks */}
       {jsHooks.length > 0 && (
@@ -1008,6 +1059,7 @@ function ImportWizard() {
         scriptsJs: cleanResult.extractedScripts,
         jsHooks: extractJsHooks(normalizedHtml),
         cssVariables: finalCssResult.cssVariables,
+        externalScripts: cleanResult.externalScripts,
       })
       setComponentTree(components)
       const manifest = generateTokenManifest(tokens)
@@ -1115,6 +1167,118 @@ function ImportWizard() {
       }
     },
     [artifacts, establishedClasses, skipEstablishedStyles]
+  )
+
+  // Copy full site with ALL styles baked in (Option 1: one paste)
+  const handleCopyFullSiteBaked = useCallback(
+    async () => {
+      if (!artifacts || !componentTree) {
+        toast.error("No artifacts available")
+        return
+      }
+
+      try {
+        // Combine all component HTML in order
+        const combinedHtml = [...componentTree.components]
+          .sort((a, b) => a.order - b.order)
+          .map((c) => c.htmlContent)
+          .join("\n")
+
+        // Create a full site component
+        const fullComponent: Component = {
+          id: "full-site-baked",
+          name: "Full Site (Baked)",
+          type: "wrapper",
+          tagName: "div",
+          primaryClass: "",
+          htmlContent: `<div>\n${combinedHtml}\n</div>`,
+          classesUsed: getClassesUsed(combinedHtml),
+          assetsUsed: [],
+          jsHooks: [],
+          children: [],
+          order: 0,
+        }
+
+        // skipEstablishedStyles: false = include ALL styles
+        const result = buildComponentPayload(
+          fullComponent,
+          artifacts.classIndex,
+          establishedClasses,
+          { skipEstablishedStyles: false }
+        )
+
+        if (result.warnings.length > 0) {
+          console.warn("Full site baked copy warnings:", result.warnings)
+        }
+
+        const copyResult = await copyToWebflowClipboard(JSON.stringify(result.webflowPayload))
+        if (copyResult.success) {
+          toast.success(`Full site copied with all styles baked in! (${componentTree.components.length} sections) Paste in Webflow Designer.`)
+        } else {
+          toast.error("Failed to copy to clipboard")
+        }
+      } catch (error) {
+        console.error("Copy error:", error)
+        toast.error("Failed to copy full site")
+      }
+    },
+    [artifacts, componentTree, establishedClasses]
+  )
+
+  // Copy full site with token styles stripped (Option 2: requires tokens paste first)
+  const handleCopyFullSiteStripped = useCallback(
+    async () => {
+      if (!artifacts || !componentTree) {
+        toast.error("No artifacts available")
+        return
+      }
+
+      try {
+        // Combine all component HTML in order
+        const combinedHtml = [...componentTree.components]
+          .sort((a, b) => a.order - b.order)
+          .map((c) => c.htmlContent)
+          .join("\n")
+
+        // Create a full site component
+        const fullComponent: Component = {
+          id: "full-site-stripped",
+          name: "Full Site (Token-Stripped)",
+          type: "wrapper",
+          tagName: "div",
+          primaryClass: "",
+          htmlContent: `<div>\n${combinedHtml}\n</div>`,
+          classesUsed: getClassesUsed(combinedHtml),
+          assetsUsed: [],
+          jsHooks: [],
+          children: [],
+          order: 0,
+        }
+
+        // skipEstablishedStyles: true = skip token classes (they're already pasted)
+        const result = buildComponentPayload(
+          fullComponent,
+          artifacts.classIndex,
+          establishedClasses,
+          { skipEstablishedStyles: true }
+        )
+
+        if (result.warnings.length > 0) {
+          console.warn("Full site stripped copy warnings:", result.warnings)
+        }
+
+        const copyResult = await copyToWebflowClipboard(JSON.stringify(result.webflowPayload))
+        if (copyResult.success) {
+          toast.success(`Full site copied (token-stripped)! (${componentTree.components.length} sections) Paste in Webflow Designer.`)
+        } else {
+          toast.error("Failed to copy to clipboard")
+        }
+      } catch (error) {
+        console.error("Copy error:", error)
+        toast.error("Failed to copy full site")
+      }
+    },
+    [artifacts, componentTree, establishedClasses]
   )
 
   // Import to database
@@ -1509,9 +1673,9 @@ function ImportWizard() {
                 componentTree={componentTree}
                 establishedClasses={establishedClasses}
                 tokensPasted={tokensPasted}
-                skipEstablishedStyles={skipEstablishedStyles}
-                onSkipEstablishedStylesChange={setSkipEstablishedStyles}
                 onCopyComponent={handleCopyComponent}
+                onCopyFullSiteBaked={handleCopyFullSiteBaked}
+                onCopyFullSiteStripped={handleCopyFullSiteStripped}
               />
             </TabsContent>
 
@@ -1520,6 +1684,7 @@ function ImportWizard() {
                 scriptsJs={artifacts.scriptsJs}
                 jsHooks={artifacts.jsHooks}
                 componentTree={componentTree}
+                externalScripts={artifacts.externalScripts}
               />
             </TabsContent>
           </Tabs>

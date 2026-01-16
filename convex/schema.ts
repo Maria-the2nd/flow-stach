@@ -85,6 +85,7 @@ export default defineSchema({
       v.literal("clean_html"),
       v.literal("scripts_js"),
       v.literal("js_hooks"),
+      v.literal("external_scripts"),
       v.literal("token_webflow_json"),
       v.literal("component_manifest")
     ),

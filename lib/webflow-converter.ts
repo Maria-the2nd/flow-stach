@@ -47,26 +47,83 @@ export interface WebflowNode {
   };
 }
 
-function sanitizeStyleLessVisibility(styleLess: string): string {
-  if (!styleLess) return styleLess;
+/**
+ * CSS property shorthand to longhand mapping for Webflow compatibility.
+ * Webflow requires longhand properties for certain CSS properties.
+ */
+const SHORTHAND_TO_LONGHAND: Record<string, string> = {
+  "row-gap": "grid-row-gap",
+  "column-gap": "grid-column-gap",
+  "gap": "grid-gap",  // Note: grid-gap is deprecated but Webflow still uses it
+};
+
+/**
+ * Sanitize styleLess for Webflow compatibility.
+ * Removes unsupported constructs and normalizes property names.
+ */
+function sanitizeStyleLess(styleLess: string): { sanitized: string; warnings: string[] } {
+  if (!styleLess) return { sanitized: styleLess, warnings: [] };
+
+  const warnings: string[] = [];
   const parts = styleLess.split(";").map((s) => s.trim()).filter(Boolean);
   const map = new Map<string, string>();
+
   for (const part of parts) {
     const idx = part.indexOf(":");
     if (idx === -1) continue;
-    const key = part.slice(0, idx).trim();
-    const val = part.slice(idx + 1).trim();
+    let key = part.slice(0, idx).trim();
+    let val = part.slice(idx + 1).trim();
+
+    // 1. Skip CSS custom properties (--var-name)
+    if (key.startsWith("--")) {
+      continue;
+    }
+
+    // 2. Remove !important flags
+    if (val.includes("!important")) {
+      val = val.replace(/!important/gi, "").trim();
+      warnings.push(`Removed !important from ${key}`);
+    }
+
+    // 3. Remove unresolved CSS variables
+    if (val.includes("var(--")) {
+      warnings.push(`Skipped property "${key}" with unresolved CSS variable`);
+      continue;
+    }
+
+    // 4. Convert shorthand to longhand properties
+    if (SHORTHAND_TO_LONGHAND[key]) {
+      key = SHORTHAND_TO_LONGHAND[key];
+    }
+
+    // 5. Remove vendor prefixes that Webflow doesn't support
+    // Keep -webkit-background-clip for text gradients, but remove most others
+    if (key.startsWith("-moz-") || key.startsWith("-ms-") || key.startsWith("-o-")) {
+      continue;
+    }
+
+    // 6. Handle visibility/opacity defaults
+    if (key === "opacity" && (val === "0" || val === "0%" || val === "0.0")) {
+      val = "1";
+    }
+    if (key === "visibility" && val.toLowerCase() === "hidden") {
+      val = "visible";
+    }
+
     map.set(key, val);
   }
-  const opacity = (map.get("opacity") || "").trim();
-  if (opacity === "0" || opacity === "0%" || opacity === "0.0") {
-    map.set("opacity", "1");
-  }
-  const visibility = (map.get("visibility") || "").trim().toLowerCase();
-  if (visibility === "hidden") {
-    map.set("visibility", "visible");
-  }
-  return Array.from(map.entries()).map(([k, v]) => `${k}: ${v};`).join(" ");
+
+  return {
+    sanitized: Array.from(map.entries()).map(([k, v]) => `${k}: ${v};`).join(" "),
+    warnings,
+  };
+}
+
+/**
+ * Simple version for backwards compatibility - just returns sanitized string
+ */
+function sanitizeStyleLessVisibility(styleLess: string): string {
+  return sanitizeStyleLess(styleLess).sanitized;
 }
 
 export interface WebflowStyleVariant {
@@ -476,10 +533,14 @@ function convertToWebflowNodes(
     return tag;
   };
 
+  // Map HTML tags to Webflow node types
+  // IMPORTANT: Based on Webflow's actual expected types (not intuitive mappings)
+  // - Container elements (section, div, nav, etc.) should be "Block", NOT "Section"
+  // - Span elements should use "Block" with tag="span" for inline behavior
+  // - Only use types that exist in Webflow's schema: Block, Link, Image, Video, HtmlEmbed, Heading, Paragraph, Section, List, ListItem
   const mapTagToType = (tag: string): WebflowNode["type"] => {
     switch (tag) {
-      case "section":
-        return "Section";
+      // Headings
       case "h1":
       case "h2":
       case "h3":
@@ -487,19 +548,25 @@ function convertToWebflowNodes(
       case "h5":
       case "h6":
         return "Heading";
+      // Text
       case "p":
         return "Paragraph";
+      // Links & Media
       case "a":
         return "Link";
       case "img":
         return "Image";
       case "video":
         return "Video";
+      // Lists
       case "ul":
       case "ol":
         return "List";
       case "li":
         return "ListItem";
+      // All other elements use "Block" with their original tag preserved
+      // This includes: section, div, nav, header, footer, main, article, aside, span,
+      // blockquote, figure, figcaption, etc.
       default:
         return "Block";
     }
@@ -847,15 +914,118 @@ function convertToWebflowStyles(
 }
 
 /**
+ * Valid tag-to-type mappings for Webflow nodes.
+ * Based on actual Webflow behavior:
+ * - Container elements (section, div, nav, etc.) should be "Block"
+ * - Only use types that exist in Webflow's schema
+ */
+const VALID_TAG_TYPE_MAPPINGS: Record<string, WebflowNode["type"][]> = {
+  // Headings
+  h1: ["Heading", "Block"],
+  h2: ["Heading", "Block"],
+  h3: ["Heading", "Block"],
+  h4: ["Heading", "Block"],
+  h5: ["Heading", "Block"],
+  h6: ["Heading", "Block"],
+  // Text
+  p: ["Paragraph", "Block"],
+  // Links
+  a: ["Link", "Block"],
+  // Media
+  img: ["Image"],
+  video: ["Video"],
+  // Lists
+  ul: ["List", "Block"],
+  ol: ["List", "Block"],
+  li: ["ListItem", "Block"],
+  // Generic containers - must be Block, NOT Section
+  div: ["Block"],
+  section: ["Block"],  // CRITICAL: section tag uses Block type, not Section
+  nav: ["Block"],
+  header: ["Block"],
+  footer: ["Block"],
+  main: ["Block"],
+  article: ["Block"],
+  aside: ["Block"],
+  span: ["Block"],
+  figure: ["Block"],
+  figcaption: ["Block"],
+  blockquote: ["Block"],
+  form: ["Block"],
+  label: ["Block"],
+  button: ["Block"],
+};
+
+/**
  * Validate payload integrity - ensure all classes referenced in nodes exist in styles
+ * and check for critical Webflow errors.
  */
 function validatePayloadIntegrity(
   nodes: WebflowNode[],
   styles: WebflowStyle[]
 ): string[] {
   const warnings: string[] = [];
+  const errors: string[] = [];
+
+  // Build lookup maps
   const styleNames = new Set(styles.map(s => s.name));
-  
+  const styleIds = new Set<string>();
+  const nodeIds = new Set<string>();
+  const childIds = new Set<string>();
+
+  // 1. Check for duplicate style IDs
+  for (const style of styles) {
+    if (styleIds.has(style._id)) {
+      errors.push(`Duplicate style ID: ${style._id}`);
+    }
+    styleIds.add(style._id);
+
+    // 2. Validate styleLess - no CSS variables or !important
+    if (style.styleLess) {
+      if (style.styleLess.includes("var(--")) {
+        errors.push(`Style "${style.name}" contains unresolved CSS variable`);
+      }
+      if (style.styleLess.includes("!important")) {
+        errors.push(`Style "${style.name}" contains !important (not supported)`);
+      }
+      // Check for shorthand properties that should be longhand
+      if (/(?:^|[\s;])row-gap:/.test(style.styleLess) && !style.styleLess.includes("grid-row-gap")) {
+        warnings.push(`Style "${style.name}" uses "row-gap" - should be "grid-row-gap"`);
+      }
+      if (/(?:^|[\s;])column-gap:/.test(style.styleLess) && !style.styleLess.includes("grid-column-gap")) {
+        warnings.push(`Style "${style.name}" uses "column-gap" - should be "grid-column-gap"`);
+      }
+    }
+
+    // Also check variants
+    for (const [variant, entry] of Object.entries(style.variants)) {
+      if (entry.styleLess?.includes("var(--")) {
+        errors.push(`Style "${style.name}" variant "${variant}" contains unresolved CSS variable`);
+      }
+    }
+  }
+
+  // 3. Collect all node IDs and child references
+  for (const node of nodes) {
+    if (nodeIds.has(node._id)) {
+      errors.push(`Duplicate node ID: ${node._id}`);
+    }
+    nodeIds.add(node._id);
+
+    // Track all child references
+    for (const childId of node.children || []) {
+      childIds.add(childId);
+    }
+  }
+
+  // 4. Check for orphan child references (child ID not in nodes)
+  for (const childId of childIds) {
+    if (!nodeIds.has(childId)) {
+      errors.push(`Orphan child reference: ${childId} not found in nodes`);
+    }
+  }
+
+  // 5. Check for undefined class references
   for (const node of nodes) {
     for (const cls of node.classes || []) {
       if (!styleNames.has(cls) && cls !== "w-layout-grid") {
@@ -863,7 +1033,123 @@ function validatePayloadIntegrity(
       }
     }
   }
-  return warnings;
+
+  // 6. Check for circular references using DFS
+  const visited = new Set<string>();
+  const recursionStack = new Set<string>();
+  const nodeMap = new Map<string, WebflowNode>();
+
+  for (const node of nodes) {
+    nodeMap.set(node._id, node);
+  }
+
+  function hasCycle(nodeId: string): boolean {
+    if (recursionStack.has(nodeId)) {
+      return true; // Found a cycle
+    }
+    if (visited.has(nodeId)) {
+      return false; // Already processed, no cycle from this path
+    }
+
+    visited.add(nodeId);
+    recursionStack.add(nodeId);
+
+    const node = nodeMap.get(nodeId);
+    if (node?.children) {
+      for (const childId of node.children) {
+        if (hasCycle(childId)) {
+          return true;
+        }
+      }
+    }
+
+    recursionStack.delete(nodeId);
+    return false;
+  }
+
+  for (const node of nodes) {
+    if (!visited.has(node._id)) {
+      if (hasCycle(node._id)) {
+        errors.push(`Circular reference detected involving node: ${node._id}`);
+      }
+    }
+  }
+
+  // 7. Validate text node structure
+  // Text nodes MUST have: { _id, text: true, v: "content" }
+  // Text nodes MUST NOT have: children, type, tag, classes
+  for (const node of nodes) {
+    if (node.text === true) {
+      // This is a text node - validate structure
+      if (typeof node.v !== "string") {
+        errors.push(`Text node ${node._id} missing "v" property`);
+      }
+      if (node.children && node.children.length > 0) {
+        errors.push(`Text node ${node._id} has children (text nodes must be leaf nodes)`);
+      }
+      if (node.type) {
+        warnings.push(`Text node ${node._id} has type="${node.type}" (should be omitted)`);
+      }
+      if (node.classes && node.classes.length > 0) {
+        warnings.push(`Text node ${node._id} has classes (text nodes typically don't have classes)`);
+      }
+    }
+  }
+
+  // 8. Validate node type/tag consistency
+  for (const node of nodes) {
+    // Skip text nodes (already validated)
+    if (node.text === true) continue;
+
+    // Block nodes should have a valid tag
+    if (node.type === "Block" && !node.tag) {
+      warnings.push(`Block node ${node._id} missing tag attribute`);
+    }
+
+    // Validate tag/type mapping
+    if (node.tag && node.type) {
+      const validTypes = VALID_TAG_TYPE_MAPPINGS[node.tag.toLowerCase()];
+      if (validTypes && !validTypes.includes(node.type)) {
+        // CRITICAL: section tag with Section type is a common error
+        if (node.tag.toLowerCase() === "section" && node.type === "Section") {
+          errors.push(`Node ${node._id}: tag="section" should use type="Block", not type="Section"`);
+        } else {
+          warnings.push(`Node ${node._id}: tag="${node.tag}" with type="${node.type}" - expected one of: ${validTypes.join(", ")}`);
+        }
+      }
+    }
+
+    // HtmlEmbed nodes should have proper embed data
+    if (node.type === "HtmlEmbed") {
+      if (!node.data?.embed?.meta?.html && !node.v) {
+        warnings.push(`HtmlEmbed node ${node._id} missing embed content`);
+      }
+      // Check for size limit (10KB is safe, 100KB is problematic)
+      const embedContent = node.data?.embed?.meta?.html || node.v || "";
+      if (embedContent.length > 100000) {
+        errors.push(`HtmlEmbed node ${node._id} exceeds 100KB limit (${Math.round(embedContent.length / 1024)}KB)`);
+      } else if (embedContent.length > 10000) {
+        warnings.push(`HtmlEmbed node ${node._id} is large (${Math.round(embedContent.length / 1024)}KB) - may cause issues`);
+      }
+    }
+
+    // Image nodes should have src
+    if (node.type === "Image") {
+      if (!node.data?.attr?.src) {
+        warnings.push(`Image node ${node._id} missing src attribute`);
+      }
+    }
+
+    // Link nodes should have link data
+    if (node.type === "Link") {
+      if (!node.data?.link?.url) {
+        warnings.push(`Link node ${node._id} missing url`);
+      }
+    }
+  }
+
+  // Return errors first, then warnings
+  return [...errors, ...warnings];
 }
 
 // ============================================
@@ -1143,10 +1429,18 @@ export function buildTokenWebflowPayload(manifest: TokenManifest | TokenExtracti
   }
   styles.push(createStyle(`${namespace}-token-grid`, tokenGridStyles.join(" ")));
 
+  const finalNodes = [pageWrapperNode, instructionNode, tokenGridNode, ...swatchNodes.reverse()];
+
+  // Validate payload integrity
+  const integrityWarnings = validatePayloadIntegrity(finalNodes, styles);
+  if (integrityWarnings.length > 0) {
+    console.warn("[webflow-converter] Token payload integrity issues:", integrityWarnings);
+  }
+
   return {
     type: "@webflow/XscpData",
     payload: {
-      nodes: [pageWrapperNode, instructionNode, tokenGridNode, ...swatchNodes.reverse()],
+      nodes: finalNodes,
       styles,
       assets: [],
       ix1: [],
@@ -1402,6 +1696,23 @@ export function buildCssTokenPayload(
   // Convert all classes to Webflow styles
   const styles = classIndexToWebflowStyles(classIndex);
 
+  // Apply sanitization to all styles
+  for (const style of styles) {
+    const sanitizeResult = sanitizeStyleLess(style.styleLess);
+    style.styleLess = sanitizeResult.sanitized;
+    if (sanitizeResult.warnings.length > 0) {
+      warnings.push(...sanitizeResult.warnings);
+    }
+    // Sanitize variants too
+    for (const [variant, entry] of Object.entries(style.variants)) {
+      const variantResult = sanitizeStyleLess(entry.styleLess);
+      style.variants[variant] = { styleLess: variantResult.sanitized };
+      if (variantResult.warnings.length > 0) {
+        warnings.push(...variantResult.warnings.map(w => `${style.name}@${variant}: ${w}`));
+      }
+    }
+  }
+
   // Collect all established class names
   const establishedClasses = new Set<string>(
     styles.map((s) => s.name)
@@ -1477,6 +1788,13 @@ export function buildCssTokenPayload(
       children: [instructionId, ...classNodeIds],
       data: { tag: "div", text: false },
     });
+  }
+
+  // Validate payload integrity
+  const integrityWarnings = validatePayloadIntegrity(nodes, styles);
+  if (integrityWarnings.length > 0) {
+    warnings.push(...integrityWarnings);
+    console.warn("[webflow-converter] CSS token payload integrity issues:", integrityWarnings);
   }
 
   return {
@@ -1602,6 +1920,7 @@ export function buildComponentPayload(
     );
   }
 
+  // Apply sanitization to all styles
   for (const style of componentStyles) {
     style.styleLess = sanitizeStyleLessVisibility(style.styleLess);
     // Ensure span classes have display: inline to maintain inline text flow
