@@ -5,6 +5,15 @@
  * and provides CDN URLs for injection into HtmlEmbed nodes.
  */
 
+import {
+  ValidationSeverity,
+  ValidationIssue,
+  warning,
+  info,
+  WarningIssueCodes,
+  InfoIssueCodes,
+} from './validation-types';
+
 // ============================================
 // TYPES
 // ============================================
@@ -24,12 +33,16 @@ export interface DetectedLibraries {
   styles: string[];    // CDN URLs for <link> tags
   names: string[];     // Library names for logging/display
   displayNames: string[];  // Human-readable library names
+  /** Info-level issues for detected libraries */
+  issues: ValidationIssue[];
 }
 
 export interface PaidPluginWarning {
   name: string;
   displayName: string;
   note: string;
+  /** Standardized validation issue */
+  validationIssue: ValidationIssue;
 }
 
 // ============================================
@@ -372,7 +385,7 @@ const CLUB_GREENSOCK_PATTERNS: PaidPluginPattern[] = [
  */
 export function detectLibraries(jsCode: string): DetectedLibraries {
   if (!jsCode || typeof jsCode !== 'string') {
-    return { scripts: [], styles: [], names: [], displayNames: [] };
+    return { scripts: [], styles: [], names: [], displayNames: [], issues: [] };
   }
 
   const detected = new Map<string, LibraryMatch>();
@@ -404,11 +417,22 @@ export function detectLibraries(jsCode: string): DetectedLibraries {
   // Sort by load order
   const sorted = Array.from(withDeps.values()).sort((a, b) => a.order - b.order);
 
+  // Generate info issues for detected libraries
+  const issues: ValidationIssue[] = sorted.map(lib => info(
+    InfoIssueCodes.LIBRARY_DETECTED,
+    `${lib.displayName} detected and will be injected via CDN`,
+    {
+      context: lib.name,
+      suggestion: `CDN: ${lib.cdnUrl}`,
+    }
+  ));
+
   return {
     scripts: sorted.map(lib => lib.cdnUrl),
     styles: sorted.filter(lib => lib.cssUrl).map(lib => lib.cssUrl!),
     names: sorted.map(lib => lib.name),
     displayNames: sorted.map(lib => lib.displayName),
+    issues,
   };
 }
 
@@ -426,6 +450,14 @@ export function detectPaidPlugins(jsCode: string): PaidPluginWarning[] {
       name: p.name,
       displayName: p.displayName,
       note: p.note,
+      validationIssue: warning(
+        WarningIssueCodes.PAID_PLUGIN_REQUIRED,
+        `${p.displayName}: ${p.note}`,
+        {
+          context: p.name,
+          suggestion: p.note,
+        }
+      ),
     }));
 }
 
@@ -508,7 +540,7 @@ export function generateWebflowScriptEmbed(
   const { detectLibs = true, wrapInDOMContentLoaded = true } = options;
 
   // Detect libraries and paid plugins
-  const detectedLibraries = detectLibs ? detectLibraries(userJs) : { scripts: [], styles: [], names: [], displayNames: [] };
+  const detectedLibraries = detectLibs ? detectLibraries(userJs) : { scripts: [], styles: [], names: [], displayNames: [], issues: [] };
   const paidPluginWarnings = detectPaidPlugins(userJs);
 
   // Generate the embed HTML
@@ -571,4 +603,172 @@ export function formatDetectedLibraries(libraries: DetectedLibraries): string {
  */
 export function formatPaidPluginWarnings(warnings: PaidPluginWarning[]): string[] {
   return warnings.map(w => `⚠️ ${w.displayName}: ${w.note}`);
+}
+
+// ============================================
+// CANVAS/WEBGL DETECTION
+// ============================================
+
+export type CanvasLibrary = 'threejs' | 'matterjs' | 'curtains' | 'p5js' | 'pixijs' | 'generic-canvas' | 'generic-webgl';
+
+export interface CanvasDetectionResult {
+  /** Whether any canvas/WebGL usage was detected */
+  detected: boolean;
+  /** Which libraries were detected */
+  libraries: CanvasLibrary[];
+  /** Suggested container ID for the detected library */
+  suggestedContainerId: string;
+}
+
+export interface ValidationWarning {
+  /** @deprecated Use validationIssue.severity instead */
+  type: 'warning' | 'error';
+  message: string;
+  suggestion?: string;
+  /** Standardized validation issue */
+  validationIssue: ValidationIssue;
+}
+
+interface CanvasLibraryPattern {
+  name: CanvasLibrary;
+  displayName: string;
+  patterns: RegExp[];
+  suggestedContainerId: string;
+}
+
+const CANVAS_LIBRARY_PATTERNS: CanvasLibraryPattern[] = [
+  {
+    name: 'threejs',
+    displayName: 'Three.js',
+    patterns: [/\bTHREE\./, /\bTHREE\b/, /WebGLRenderer/],
+    suggestedContainerId: 'three-container',
+  },
+  {
+    name: 'matterjs',
+    displayName: 'Matter.js',
+    patterns: [/\bMatter\.Engine/, /\bMatter\.Render/, /\bMatter\./],
+    suggestedContainerId: 'matter-container',
+  },
+  {
+    name: 'curtains',
+    displayName: 'Curtains.js',
+    patterns: [/\bnew\s+Curtains\s*\(/, /\bCurtains\b/],
+    suggestedContainerId: 'curtains-container',
+  },
+  {
+    name: 'p5js',
+    displayName: 'p5.js',
+    patterns: [/\bfunction\s+setup\s*\(\s*\)/, /\bfunction\s+draw\s*\(\s*\)/, /\bcreateCanvas\s*\(/],
+    suggestedContainerId: 'p5-container',
+  },
+  {
+    name: 'pixijs',
+    displayName: 'PixiJS',
+    patterns: [/\bPIXI\./, /\bPIXI\b/, /\bnew\s+PIXI\.Application/],
+    suggestedContainerId: 'pixi-container',
+  },
+  {
+    name: 'generic-webgl',
+    displayName: 'WebGL',
+    patterns: [/\.getContext\s*\(\s*['"]webgl['"]/, /\.getContext\s*\(\s*['"]webgl2['"]/],
+    suggestedContainerId: 'webgl-container',
+  },
+  {
+    name: 'generic-canvas',
+    displayName: 'Canvas',
+    patterns: [/document\.createElement\s*\(\s*['"]canvas['"]/, /\.getContext\s*\(\s*['"]2d['"]/],
+    suggestedContainerId: 'canvas-container',
+  },
+];
+
+/**
+ * Detect canvas/WebGL library usage in JavaScript code
+ */
+export function detectCanvasWebGL(jsCode: string): CanvasDetectionResult {
+  if (!jsCode || typeof jsCode !== 'string') {
+    return {
+      detected: false,
+      libraries: [],
+      suggestedContainerId: 'canvas-container',
+    };
+  }
+
+  const detectedLibraries: CanvasLibrary[] = [];
+  let suggestedContainerId = 'canvas-container';
+
+  for (const lib of CANVAS_LIBRARY_PATTERNS) {
+    for (const pattern of lib.patterns) {
+      if (pattern.test(jsCode)) {
+        detectedLibraries.push(lib.name);
+        // Use the first detected library's suggested container
+        if (detectedLibraries.length === 1) {
+          suggestedContainerId = lib.suggestedContainerId;
+        }
+        break;
+      }
+    }
+  }
+
+  return {
+    detected: detectedLibraries.length > 0,
+    libraries: detectedLibraries,
+    suggestedContainerId,
+  };
+}
+
+/**
+ * Get display name for a canvas library
+ */
+function getCanvasLibraryDisplayName(library: CanvasLibrary): string {
+  const lib = CANVAS_LIBRARY_PATTERNS.find(l => l.name === library);
+  return lib?.displayName ?? library;
+}
+
+/**
+ * Validate that HTML has appropriate container elements for detected canvas/WebGL code
+ */
+export function validateCanvasContainer(
+  html: string,
+  detection: CanvasDetectionResult
+): ValidationWarning[] {
+  const warnings: ValidationWarning[] = [];
+
+  // If no canvas code detected, no validation needed
+  if (!detection.detected) {
+    return warnings;
+  }
+
+  // Check if HTML has a canvas tag
+  const hasCanvasTag = /<canvas\b/i.test(html);
+  if (hasCanvasTag) {
+    return warnings; // Canvas tag exists, validation passes
+  }
+
+  // Check if HTML has the suggested container ID
+  const containerIdPattern = new RegExp(`id\\s*=\\s*["']${detection.suggestedContainerId}["']`, 'i');
+  if (containerIdPattern.test(html)) {
+    return warnings; // Container ID exists, validation passes
+  }
+
+  // Generate warning for each detected library
+  for (const library of detection.libraries) {
+    const displayName = getCanvasLibraryDisplayName(library);
+    const message = `${displayName} code detected but no canvas element or container found in HTML`;
+    const suggestion = `Add a container element with id="${detection.suggestedContainerId}" or a <canvas> element`;
+    warnings.push({
+      type: 'warning',
+      message,
+      suggestion,
+      validationIssue: warning(
+        WarningIssueCodes.MISSING_CANVAS_CONTAINER,
+        message,
+        {
+          context: displayName,
+          suggestion,
+        }
+      ),
+    });
+  }
+
+  return warnings;
 }

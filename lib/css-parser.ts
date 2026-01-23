@@ -426,11 +426,16 @@ function roundToNearestBreakpoint(width: number, isMinWidth: boolean): { name: B
     return { name: 'desktop', wasRounded: false };
   } else {
     // Max-width: cascade DOWN breakpoints
-    // Standard: 991, 767, 478
-    if (width <= 500) return { name: 'tiny', wasRounded: width !== 478 && width !== 479 };
-    if (width <= 800) return { name: 'small', wasRounded: width !== 767 && width !== 768 };
-    if (width <= 1024) return { name: 'medium', wasRounded: width !== 991 && width !== 992 };
-    // Above 1024 is desktop
+    // Standard Webflow breakpoints: 991px (medium), 767px (small), 478px (tiny)
+    // Map incoming widths to the nearest standard breakpoint:
+    // - <= 479 -> tiny (478/479px)
+    // - 480-767 -> small (767px)
+    // - 768-991 -> medium (991px)
+    // - >= 992 -> desktop (no media query)
+    if (width <= 479) return { name: 'tiny', wasRounded: width !== 478 && width !== 479 };
+    if (width <= 767) return { name: 'small', wasRounded: width !== 767 };
+    if (width <= 991) return { name: 'medium', wasRounded: width !== 991 && width !== 992 };
+    // Above 991 is desktop
     return { name: 'desktop', wasRounded: false };
   }
 }
@@ -711,6 +716,37 @@ function parseGridPlacement(value: string): { start: string; end: string } | nul
   return null;
 }
 
+/**
+ * Sanitize CSS functional values that Webflow doesn't support.
+ * - clamp(min, preferred, max) → use max value
+ * - min(val1, val2, ...) → use first value (usually percentage for fluid layouts)
+ * - max(val1, val2, ...) → use first value (usually percentage for fluid layouts)
+ *
+ * This prevents Webflow Designer from breaking when it encounters these functions.
+ */
+export function sanitizeCssFunctions(value: string): string {
+  let sanitized = value;
+
+  // Handle clamp(min, preferred, max) → use max value
+  sanitized = sanitized.replace(/clamp\(([^,]+),([^,]+),([^)]+)\)/g, (_, min, preferred, max) => {
+    return max.trim();
+  });
+
+  // Handle min(val1, val2, ...) → use first value
+  sanitized = sanitized.replace(/min\(([^)]+)\)/g, (_, values) => {
+    const parts = values.split(',');
+    return parts[0]?.trim() || values;
+  });
+
+  // Handle max(val1, val2, ...) → use first value
+  sanitized = sanitized.replace(/max\(([^)]+)\)/g, (_, values) => {
+    const parts = values.split(',');
+    return parts[0]?.trim() || values;
+  });
+
+  return sanitized;
+}
+
 export function propertiesToStyleLess(properties: Record<string, string>): string {
   return Object.entries(properties).map(([prop, val]) => `${prop}: ${val};`).join(" ");
 }
@@ -883,6 +919,10 @@ interface ParsedSelectorResult {
   parentClasses: string[];
   /** Whether this is a descendant selector */
   isDescendant: boolean;
+  /** Whether this was converted from an element selector (h1 -> heading-h1) */
+  isElementConversion?: boolean;
+  /** The original element selector that was converted (e.g., "h1") */
+  originalElementSelector?: string;
 }
 
 /**
@@ -890,9 +930,32 @@ interface ParsedSelectorResult {
  * Also extracts parent classes from descendant selectors.
  */
 function parseSelector(selector: string): ParsedSelectorResult {
+  // Check for pseudo-class first (remove it for class analysis)
+  const pseudoMatch = selector.match(/:(\w+(?:-\w+)*)(?:\([^)]*\))?\s*$/);
+  const pseudoClass = pseudoMatch ? pseudoMatch[1] : null;
+  const selectorWithoutPseudo = pseudoClass ? selector.replace(pseudoMatch[0], '') : selector;
+
   // Find all classes in the selector
-  const classMatches = selector.match(/\.([a-zA-Z_-][\w-]*)/g);
-  if (!classMatches || classMatches.length === 0) {
+  const classMatches = selectorWithoutPseudo.match(/\.([a-zA-Z_-][\w-]*)/g);
+
+  // Check for element selectors (h1, h2, p, etc.) - look for them after space or at start
+  // Match pattern like ".hero h1" or "h1" (element after space or at start)
+  const elementMatch = selectorWithoutPseudo.match(/(?:^|[\s>]+)([a-z][a-z0-9]*)\s*$/i);
+  const elementSelector = elementMatch ? elementMatch[1].toLowerCase() : null;
+
+  // If we have an element selector, convert it to a class using ELEMENT_TO_CLASS_MAP
+  let targetClassName: string | null = null;
+  let isElementConversion = false;
+
+  if (elementSelector && ELEMENT_TO_CLASS_MAP[elementSelector]) {
+    targetClassName = ELEMENT_TO_CLASS_MAP[elementSelector];
+    isElementConversion = true;
+  } else if (classMatches && classMatches.length > 0) {
+    // Use the LAST class (most specific target)
+    targetClassName = classMatches[classMatches.length - 1].substring(1);
+  }
+
+  if (!targetClassName) {
     return {
       className: null,
       pseudoClass: null,
@@ -903,33 +966,37 @@ function parseSelector(selector: string): ParsedSelectorResult {
     };
   }
 
-  // Check for pseudo-class (remove it for class analysis)
-  const pseudoMatch = selector.match(/:(\w+(?:-\w+)*)(?:\([^)]*\))?\s*$/);
-  const pseudoClass = pseudoMatch ? pseudoMatch[1] : null;
-
   // Check if it's a combo class (e.g., .btn.primary - no space between)
-  const isCombo = /\.[a-zA-Z_-][\w-]*\.[a-zA-Z_-][\w-]*/.test(selector);
+  const isCombo = /\.[a-zA-Z_-][\w-]*\.[a-zA-Z_-][\w-]*/.test(selectorWithoutPseudo);
 
-  // Check if it's a descendant selector (has space or > between classes)
-  const isDescendant = /\.[a-zA-Z_-][\w-]*[\s>]+/.test(selector);
+  // Check if it's a descendant selector (has space or > between)
+  const isDescendant = /[\s>]+/.test(selectorWithoutPseudo.trim()) || isElementConversion;
 
   const comboParentClass =
-    isCombo && !isDescendant && classMatches.length >= 2
+    isCombo && !isDescendant && classMatches && classMatches.length >= 2
       ? classMatches[classMatches.length - 2].substring(1)
       : null;
 
-  // Extract parent classes (all classes except the last one in descendant selectors)
+  // Extract parent classes (all classes before the target)
   const parentClasses: string[] = [];
-  if (isDescendant && classMatches.length > 1) {
-    for (let i = 0; i < classMatches.length - 1; i++) {
+  if (isDescendant && classMatches && classMatches.length >= 1) {
+    // For element conversions like ".hero h1", we want to capture all classes as parents
+    const numParents = isElementConversion ? classMatches.length : classMatches.length - 1;
+    for (let i = 0; i < numParents; i++) {
       parentClasses.push(classMatches[i].substring(1)); // Remove the dot
     }
   }
 
-  // Use the LAST class (most specific target)
-  const className = classMatches[classMatches.length - 1].substring(1);
-
-  return { className, pseudoClass, isCombo, comboParentClass, parentClasses, isDescendant };
+  return {
+    className: targetClassName,
+    pseudoClass,
+    isCombo,
+    comboParentClass,
+    parentClasses,
+    isDescendant,
+    isElementConversion,
+    originalElementSelector: isElementConversion ? elementSelector : undefined
+  };
 }
 
 /**
@@ -951,9 +1018,19 @@ function processRule(
   warnings: CssWarning[],
   breakpoint?: "desktop" | "medium" | "small" | "tiny"
 ): void {
-  const { className, pseudoClass, isCombo, comboParentClass, parentClasses, isDescendant } =
+  const { className, pseudoClass, isCombo, comboParentClass, parentClasses, isDescendant, isElementConversion, originalElementSelector } =
     parseSelector(selector);
   if (!className) return;
+
+  // Add warning for element selector conversion
+  if (isElementConversion && originalElementSelector) {
+    warnings.push({
+      type: "complex_selector",
+      message: `Converted descendant element selector "${selector}" to .${className}. Element "${originalElementSelector}" styles will be applied to Webflow class.`,
+      selector,
+      severity: "info",
+    });
+  }
 
   const properties = parseProperties(propertiesStr, variables, warnings);
   const styleLess = propertiesToStyleLess(properties);
@@ -1807,27 +1884,53 @@ function enforceExplicitLayoutProperties(
 // WEBFLOW STYLE CONVERSION
 // ============================================
 
+/**
+ * Sanitize a styleLess string by removing unsupported CSS functions
+ */
+function sanitizeStyleLess(styleLess: string): string {
+  if (!styleLess) return styleLess;
+
+  // Parse styleLess into properties
+  const props = styleLess.split(";").map(s => s.trim()).filter(Boolean);
+  const sanitized: string[] = [];
+
+  for (const prop of props) {
+    const colonIndex = prop.indexOf(":");
+    if (colonIndex === -1) {
+      sanitized.push(prop);
+      continue;
+    }
+
+    const name = prop.slice(0, colonIndex).trim();
+    const value = prop.slice(colonIndex + 1).trim();
+    const sanitizedValue = sanitizeCssFunctions(value);
+    sanitized.push(`${name}: ${sanitizedValue};`);
+  }
+
+  return sanitized.join(" ");
+}
+
 export function classEntryToWebflowStyle(entry: ClassIndexEntry): WebflowStyle {
   const variants: Record<string, { styleLess: string }> = {};
 
-  // Pseudo-class variants
-  if (entry.hoverStyles) variants["hover"] = { styleLess: entry.hoverStyles };
-  if (entry.focusStyles) variants["focus"] = { styleLess: entry.focusStyles };
-  if (entry.activeStyles) variants["pressed"] = { styleLess: entry.activeStyles };
-  if (entry.visitedStyles) variants["visited"] = { styleLess: entry.visitedStyles };
+  // Pseudo-class variants (sanitize unsupported CSS functions)
+  if (entry.hoverStyles) variants["hover"] = { styleLess: sanitizeStyleLess(entry.hoverStyles) };
+  if (entry.focusStyles) variants["focus"] = { styleLess: sanitizeStyleLess(entry.focusStyles) };
+  if (entry.activeStyles) variants["pressed"] = { styleLess: sanitizeStyleLess(entry.activeStyles) };
+  if (entry.visitedStyles) variants["visited"] = { styleLess: sanitizeStyleLess(entry.visitedStyles) };
 
   // Max-width breakpoints (cascade DOWN from desktop)
   if (entry.mediaQueries.desktop) {
-    variants["desktop"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.desktop, entry.isLayoutContainer) };
+    variants["desktop"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.desktop, entry.isLayoutContainer)) };
   }
   if (entry.mediaQueries.medium) {
-    variants["medium"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.medium, entry.isLayoutContainer) };
+    variants["medium"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.medium, entry.isLayoutContainer)) };
   }
   if (entry.mediaQueries.small) {
-    variants["small"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.small, entry.isLayoutContainer) };
+    variants["small"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.small, entry.isLayoutContainer)) };
   }
   if (entry.mediaQueries.tiny) {
-    variants["tiny"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.tiny, entry.isLayoutContainer) };
+    variants["tiny"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.tiny, entry.isLayoutContainer)) };
   }
 
   // Min-width breakpoints (cascade UP from desktop)
@@ -1836,16 +1939,16 @@ export function classEntryToWebflowStyle(entry: ClassIndexEntry): WebflowStyle {
   // xxlarge (>=1440px) -> "xlarge"
   // xxxlarge (>=1920px) -> "xxlarge"
   if (entry.mediaQueries.xlarge) {
-    variants["large"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.xlarge, entry.isLayoutContainer) };
+    variants["large"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.xlarge, entry.isLayoutContainer)) };
   }
   if (entry.mediaQueries.xxlarge) {
-    variants["xlarge"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.xxlarge, entry.isLayoutContainer) };
+    variants["xlarge"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.xxlarge, entry.isLayoutContainer)) };
   }
   if (entry.mediaQueries.xxxlarge) {
-    variants["xxlarge"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.xxxlarge, entry.isLayoutContainer) };
+    variants["xxlarge"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.xxxlarge, entry.isLayoutContainer)) };
   }
 
-  const baseStyles = normalizeGridStyleLess(entry.baseStyles, entry.isLayoutContainer);
+  const baseStyles = sanitizeStyleLess(normalizeGridStyleLess(entry.baseStyles, entry.isLayoutContainer));
   const validatedBaseStyles = validateStyleLess(baseStyles);
   logGridStyle(entry.className, validatedBaseStyles, entry.isLayoutContainer);
 

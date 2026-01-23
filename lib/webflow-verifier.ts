@@ -20,6 +20,16 @@ import {
   type CircularValidation,
   type StyleValidation,
 } from "./preflight-validator";
+import {
+  ValidationSeverity,
+  ValidationIssue,
+  error,
+  warning,
+  info,
+  fromLegacyStatus,
+  createValidationResult,
+  type ValidationResult,
+} from "./validation-types";
 
 // ============================================
 // TYPES
@@ -27,19 +37,28 @@ import {
 
 export interface VerificationResult {
   phase: string;
+  /** @deprecated Use validationIssues instead */
   status: "PASS" | "WARN" | "FAIL";
+  /** @deprecated Use validationIssues instead */
   issues: string[];
   details: string[];
+  /** Standardized validation issues */
+  validationIssues: ValidationIssue[];
 }
 
 export interface VerificationReport {
+  /** @deprecated Use validationResult.isValid instead */
   overallStatus: "PASS" | "WARN" | "FAIL";
+  /** @deprecated Use validationResult.issues instead */
   criticalFailures: string[];
+  /** @deprecated Use validationResult.issues instead */
   warnings: string[];
   recommendations: string[];
   pasteSafety: Record<string, "SAFE" | "REVIEW" | "DO NOT PASTE">;
   phases: VerificationResult[];
   componentFidelity: Record<string, number>; // component name -> fidelity score (0-100)
+  /** Standardized validation result */
+  validationResult: ValidationResult;
 }
 
 export interface OriginalAnalysis {
@@ -217,6 +236,7 @@ export function verifyCssCoverage(original: OriginalAnalysis, normalized: Normal
   void payload;
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   // Check element selectors
   const unhandledElements = original.elementSelectors.filter(sel => {
@@ -237,6 +257,13 @@ export function verifyCssCoverage(original: OriginalAnalysis, normalized: Normal
   if (unhandledElements.length > 0) {
     issues.push(`${unhandledElements.length} element selectors not promoted`);
     details.push(...unhandledElements.map(sel => `  - ${sel}`));
+    for (const sel of unhandledElements) {
+      validationIssues.push(error(
+        'CSS_ELEMENT_NOT_PROMOTED',
+        `Element selector '${sel}' not promoted to class`,
+        { context: sel }
+      ));
+    }
   }
 
   // Check descendant selectors
@@ -248,16 +275,24 @@ export function verifyCssCoverage(original: OriginalAnalysis, normalized: Normal
   if (unflattenedDescendants.length > 0) {
     issues.push(`${unflattenedDescendants.length} descendant selectors not flattened`);
     details.push(...unflattenedDescendants.map(sel => `  - ${sel}`));
+    for (const sel of unflattenedDescendants) {
+      validationIssues.push(error(
+        'CSS_DESCENDANT_NOT_FLATTENED',
+        `Descendant selector '${sel}' not flattened`,
+        { context: sel }
+      ));
+    }
   }
 
   const status = issues.length > 0 ? "FAIL" : "PASS";
-  return { phase: "CSS Coverage Audit", status, issues, details };
+  return { phase: "CSS Coverage Audit", status, issues, details, validationIssues };
 }
 
 export function verifyTypographyIntegrity(original: OriginalAnalysis, normalized: NormalizationResult, payload: WebflowPayload): VerificationResult {
   void payload;
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   // Check typography elements in normalized HTML
   const missingFontClasses: string[] = [];
@@ -281,9 +316,19 @@ export function verifyTypographyIntegrity(original: OriginalAnalysis, normalized
   for (const el of original.typographyElements) {
     if (["h1", "h2", "h3", "h4", "h5", "h6"].includes(el.tag) && !foundHeadings.has(el.tag)) {
       missingFontClasses.push(`${el.tag} elements`);
+      validationIssues.push(error(
+        'TYPOGRAPHY_MISSING_FONT_CLASS',
+        `${el.tag} elements missing font classes`,
+        { context: el.tag }
+      ));
     }
     if (el.tag === "p" && !foundTextClasses.has("text-body")) {
       missingFontClasses.push("p elements");
+      validationIssues.push(error(
+        'TYPOGRAPHY_MISSING_FONT_CLASS',
+        'p elements missing text-body class',
+        { context: 'p' }
+      ));
     }
   }
 
@@ -293,7 +338,7 @@ export function verifyTypographyIntegrity(original: OriginalAnalysis, normalized
   }
 
   const status = issues.length > 0 ? "FAIL" : "PASS";
-  return { phase: "Typography Integrity Test", status, issues, details };
+  return { phase: "Typography Integrity Test", status, issues, details, validationIssues };
 }
 
 export function verifyLayoutAuthority(original: OriginalAnalysis, normalized: NormalizationResult, payload: WebflowPayload): VerificationResult {
@@ -301,6 +346,7 @@ export function verifyLayoutAuthority(original: OriginalAnalysis, normalized: No
   void payload;
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   // Check layout containers have required properties
   for (const container of original.layoutContainers) {
@@ -325,11 +371,16 @@ export function verifyLayoutAuthority(original: OriginalAnalysis, normalized: No
     if (missingProps.length > 0) {
       issues.push(`${container.selector} missing layout properties: ${missingProps.join(", ")}`);
       details.push(`  - ${container.selector}: missing ${missingProps.join(", ")}`);
+      validationIssues.push(error(
+        'LAYOUT_MISSING_PROPERTIES',
+        `${container.selector} missing layout properties: ${missingProps.join(", ")}`,
+        { context: container.selector }
+      ));
     }
   }
 
   const status = issues.length > 0 ? "FAIL" : "PASS";
-  return { phase: "Layout Authority Test", status, issues, details };
+  return { phase: "Layout Authority Test", status, issues, details, validationIssues };
 }
 
 export function verifyResponsiveVariants(original: OriginalAnalysis, normalized: NormalizationResult, payload: WebflowPayload): VerificationResult {
@@ -337,6 +388,7 @@ export function verifyResponsiveVariants(original: OriginalAnalysis, normalized:
   void normalized;
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   // Check that media queries were converted to variants
   const webflowVariants = new Set<string>();
@@ -352,6 +404,11 @@ export function verifyResponsiveVariants(original: OriginalAnalysis, normalized:
     const hasCorrespondingVariant = webflowVariants.has("medium") || webflowVariants.has("small") || webflowVariants.has("tiny");
     if (!hasCorrespondingVariant) {
       missingBreakpoints.push(mq.query);
+      validationIssues.push(error(
+        'RESPONSIVE_VARIANT_MISSING',
+        `Responsive variant not created for: ${mq.query}`,
+        { context: mq.query }
+      ));
     }
   }
 
@@ -361,7 +418,7 @@ export function verifyResponsiveVariants(original: OriginalAnalysis, normalized:
   }
 
   const status = issues.length > 0 ? "FAIL" : "PASS";
-  return { phase: "Responsive Variant Integrity", status, issues, details };
+  return { phase: "Responsive Variant Integrity", status, issues, details, validationIssues };
 }
 
 export function verifyInteractiveStyling(original: OriginalAnalysis, normalized: NormalizationResult, payload: WebflowPayload): VerificationResult {
@@ -369,6 +426,7 @@ export function verifyInteractiveStyling(original: OriginalAnalysis, normalized:
   void payload;
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   // Check that interactive elements have styling classes
   const nakedLinks: string[] = [];
@@ -376,6 +434,11 @@ export function verifyInteractiveStyling(original: OriginalAnalysis, normalized:
   for (const el of original.interactiveElements) {
     if (el.tag === "a" && el.classes.length === 0) {
       nakedLinks.push("anchor tags without classes");
+      validationIssues.push(error(
+        'INTERACTIVE_ELEMENT_NO_STYLING',
+        'Anchor tag without styling classes',
+        { context: 'a' }
+      ));
     }
   }
 
@@ -385,13 +448,14 @@ export function verifyInteractiveStyling(original: OriginalAnalysis, normalized:
   }
 
   const status = issues.length > 0 ? "FAIL" : "PASS";
-  return { phase: "Link & Interactive Styling Test", status, issues, details };
+  return { phase: "Link & Interactive Styling Test", status, issues, details, validationIssues };
 }
 
 export function verifyTokenConsumption(original: OriginalAnalysis, normalized: NormalizationResult, payload: WebflowPayload): VerificationResult {
   void normalized;
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   // Check that CSS variables are used in the styles
   const usedTokens = new Set<string>();
@@ -408,10 +472,17 @@ export function verifyTokenConsumption(original: OriginalAnalysis, normalized: N
   if (unusedTokens.length > 0) {
     issues.push(`${unusedTokens.length} tokens defined but unused`);
     details.push(...unusedTokens.map(token => `  - ${token}`));
+    for (const token of unusedTokens) {
+      validationIssues.push(warning(
+        'TOKEN_UNUSED',
+        `Token '${token}' defined but unused`,
+        { context: token }
+      ));
+    }
   }
 
   const status = unusedTokens.length > 0 ? "WARN" : "PASS";
-  return { phase: "Token Consumption Test", status, issues, details };
+  return { phase: "Token Consumption Test", status, issues, details, validationIssues };
 }
 
 export function verifyVisibilityRisks(original: OriginalAnalysis, normalized: NormalizationResult, payload: WebflowPayload): VerificationResult {
@@ -419,19 +490,21 @@ export function verifyVisibilityRisks(original: OriginalAnalysis, normalized: No
   void payload;
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   const parsedHtml = parseHtmlString(normalized.html);
   if (!parsedHtml) {
-    return { phase: "Visibility Risk Assessment", status: "FAIL", issues: ["Failed to parse normalized HTML"], details: [] };
+    const failIssue = error('VISIBILITY_PARSE_FAILED', 'Failed to parse normalized HTML');
+    return { phase: "Visibility Risk Assessment", status: "FAIL", issues: ["Failed to parse normalized HTML"], details: [], validationIssues: [failIssue] };
   }
 
   // Parse normalized CSS to get properties map
   const { classIndex } = parseCSS(normalized.css);
 
-  checkVisibilityRecursively(parsedHtml, null, classIndex, issues, details, 0);
+  checkVisibilityRecursively(parsedHtml, null, classIndex, issues, details, 0, validationIssues);
 
   const status = issues.length > 0 ? "WARN" : "PASS";
-  return { phase: "Visibility Risk Assessment", status, issues, details };
+  return { phase: "Visibility Risk Assessment", status, issues, details, validationIssues };
 }
 
 function checkVisibilityRecursively(
@@ -440,7 +513,8 @@ function checkVisibilityRecursively(
   classIndex: ClassIndex,
   issues: string[],
   details: string[],
-  depth: number
+  depth: number,
+  validationIssues?: ValidationIssue[]
 ) {
   const style = getElementStyle(element, classIndex);
   const selector = element.classes.length > 0 ? `.${element.classes.join(".")}` : `<${element.tag}>`;
@@ -450,11 +524,17 @@ function checkVisibilityRecursively(
     const hasHeight = style.height && style.height !== "auto" && style.height !== "0px" && style.height !== "0";
     const hasMinHeight = style["min-height"] && style["min-height"] !== "0px" && style["min-height"] !== "0";
     const isFlexOrGrid = style.display === "flex" || style.display === "grid";
-    
+
     if (!hasHeight && !hasMinHeight && !isFlexOrGrid) {
       if (selector.includes("container") || selector.includes("wrapper") || selector.includes("grid")) {
-         issues.push(`Potential invisible container: "${selector}" has overflow:hidden but no explicit height.`);
+         const msg = `Potential invisible container: "${selector}" has overflow:hidden but no explicit height.`;
+         issues.push(msg);
          details.push(`  - ${selector}: overflow:hidden detected without height/min-height. Ensure children size it correctly.`);
+         validationIssues?.push(warning(
+           'VISIBILITY_OVERFLOW_NO_HEIGHT',
+           msg,
+           { context: selector, suggestion: 'Ensure children size it correctly or add explicit height/min-height' }
+         ));
       }
     }
   }
@@ -462,26 +542,44 @@ function checkVisibilityRecursively(
   // Check: Deep nesting
   if (depth > 12) {
     if (!issues.some(i => i.startsWith("Deep nesting detected"))) {
-        issues.push("Deep nesting detected (>12 levels). Webflow may struggle with this.");
+        const msg = "Deep nesting detected (>12 levels). Webflow may struggle with this.";
+        issues.push(msg);
         details.push(`  - At ${selector} (depth ${depth})`);
+        validationIssues?.push(warning(
+          'VISIBILITY_DEEP_NESTING',
+          msg,
+          { context: `${selector} (depth ${depth})` }
+        ));
     }
   }
 
   // Check: Z-Index negative
   if (style["z-index"] && parseInt(style["z-index"]) < 0) {
-    issues.push(`Negative z-index detected on "${selector}".`);
+    const msg = `Negative z-index detected on "${selector}".`;
+    issues.push(msg);
     details.push(`  - ${selector}: z-index: ${style["z-index"]}. Ensure parent stacking context is correct.`);
+    validationIssues?.push(warning(
+      'VISIBILITY_NEGATIVE_ZINDEX',
+      msg,
+      { context: selector, suggestion: 'Ensure parent stacking context is correct' }
+    ));
   }
 
   // Check: Explicitly hidden
   if (style.opacity === "0" || style.visibility === "hidden") {
-     issues.push(`Element "${selector}" is explicitly hidden.`);
+     const msg = `Element "${selector}" is explicitly hidden.`;
+     issues.push(msg);
      details.push(`  - ${selector}: opacity: ${style.opacity} / visibility: ${style.visibility}`);
+     validationIssues?.push(warning(
+       'VISIBILITY_EXPLICITLY_HIDDEN',
+       msg,
+       { context: selector }
+     ));
   }
 
   for (const child of element.children) {
     if (typeof child !== "string") {
-      checkVisibilityRecursively(child, style, classIndex, issues, details, depth + 1);
+      checkVisibilityRecursively(child, style, classIndex, issues, details, depth + 1, validationIssues);
     }
   }
 }
@@ -539,6 +637,7 @@ export function diagnoseVisibilityIssues(html: string, css: string): string[] {
 export function verifyUUIDIntegrity(payload: WebflowPayload): VerificationResult {
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   const validation = validateUUIDs(payload.payload.nodes, payload.payload.styles);
 
@@ -548,6 +647,13 @@ export function verifyUUIDIntegrity(payload: WebflowPayload): VerificationResult
     if (validation.duplicates.length > 10) {
       details.push(`  ... and ${validation.duplicates.length - 10} more duplicates`);
     }
+    for (const id of validation.duplicates) {
+      validationIssues.push(error(
+        'UUID_DUPLICATE',
+        `Duplicate UUID detected: ${id}`,
+        { context: id }
+      ));
+    }
   }
 
   if (validation.invalidFormat.length > 0) {
@@ -556,10 +662,17 @@ export function verifyUUIDIntegrity(payload: WebflowPayload): VerificationResult
     if (validation.invalidFormat.length > 5) {
       details.push(`  ... and ${validation.invalidFormat.length - 5} more invalid`);
     }
+    for (const id of validation.invalidFormat) {
+      validationIssues.push(error(
+        'UUID_INVALID_FORMAT',
+        `Invalid UUID format: ${id}`,
+        { context: id }
+      ));
+    }
   }
 
   const status = validation.isValid ? "PASS" : "FAIL";
-  return { phase: "UUID Integrity Check", status, issues, details };
+  return { phase: "UUID Integrity Check", status, issues, details, validationIssues };
 }
 
 /**
@@ -569,6 +682,7 @@ export function verifyUUIDIntegrity(payload: WebflowPayload): VerificationResult
 export function verifyNodeReferences(payload: WebflowPayload): VerificationResult {
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   const validation = validateNodeReferences(payload.payload.nodes);
 
@@ -580,15 +694,29 @@ export function verifyNodeReferences(payload: WebflowPayload): VerificationResul
     if (validation.orphanReferences.length > 10) {
       details.push(`  ... and ${validation.orphanReferences.length - 10} more orphans`);
     }
+    for (const ref of validation.orphanReferences) {
+      validationIssues.push(error(
+        'NODE_ORPHAN_REFERENCE',
+        `Node ${ref.parentId} references missing child ${ref.missingChildId}`,
+        { context: `${ref.parentId} -> ${ref.missingChildId}` }
+      ));
+    }
   }
 
   if (validation.unreachableNodes.length > 0) {
     // Unreachable nodes are warnings, not failures
     details.push(`  Warning: ${validation.unreachableNodes.length} unreachable node(s)`);
+    for (const nodeId of validation.unreachableNodes) {
+      validationIssues.push(warning(
+        'NODE_UNREACHABLE',
+        `Node ${nodeId} is unreachable`,
+        { context: nodeId }
+      ));
+    }
   }
 
   const status = validation.isValid ? "PASS" : "FAIL";
-  return { phase: "Node Reference Integrity", status, issues, details };
+  return { phase: "Node Reference Integrity", status, issues, details, validationIssues };
 }
 
 /**
@@ -598,6 +726,7 @@ export function verifyNodeReferences(payload: WebflowPayload): VerificationResul
 export function verifyNoCircularReferences(payload: WebflowPayload): VerificationResult {
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   const validation = detectCircularReferences(payload.payload.nodes);
 
@@ -605,6 +734,11 @@ export function verifyNoCircularReferences(payload: WebflowPayload): Verificatio
     issues.push(`${validation.cycles.length} circular reference(s) detected`);
     for (const cycle of validation.cycles.slice(0, 5)) {
       details.push(`  - Cycle: ${cycle.join(" -> ")}`);
+      validationIssues.push(error(
+        'NODE_CIRCULAR_REFERENCE',
+        `Circular reference detected: ${cycle.join(" -> ")}`,
+        { context: cycle.join(" -> ") }
+      ));
     }
     if (validation.cycles.length > 5) {
       details.push(`  ... and ${validation.cycles.length - 5} more cycles`);
@@ -612,7 +746,7 @@ export function verifyNoCircularReferences(payload: WebflowPayload): Verificatio
   }
 
   const status = validation.isValid ? "PASS" : "FAIL";
-  return { phase: "Circular Reference Check", status, issues, details };
+  return { phase: "Circular Reference Check", status, issues, details, validationIssues };
 }
 
 /**
@@ -621,6 +755,7 @@ export function verifyNoCircularReferences(payload: WebflowPayload): Verificatio
 export function verifyStyleDefinitions(payload: WebflowPayload): VerificationResult {
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   const validation = validateStyles(payload.payload.styles, payload.payload.nodes);
 
@@ -632,6 +767,13 @@ export function verifyStyleDefinitions(payload: WebflowPayload): VerificationRes
     if (validation.invalidStyles.length > 10) {
       details.push(`  ... and ${validation.invalidStyles.length - 10} more invalid styles`);
     }
+    for (const s of validation.invalidStyles) {
+      validationIssues.push(warning(
+        'STYLE_INVALID',
+        `${s.className}: ${s.property}="${s.value}" (${s.reason})`,
+        { context: s.className }
+      ));
+    }
   }
 
   if (validation.missingStyleRefs.length > 0) {
@@ -640,10 +782,16 @@ export function verifyStyleDefinitions(payload: WebflowPayload): VerificationRes
     if (validation.missingStyleRefs.length > 5) {
       details.push(`  ... and ${validation.missingStyleRefs.length - 5} more missing refs`);
     }
+    for (const ref of validation.missingStyleRefs) {
+      validationIssues.push(warning(
+        'STYLE_MISSING_REF',
+        ref,
+      ));
+    }
   }
 
   const status = validation.isValid ? "PASS" : (validation.invalidStyles.length > 0 ? "WARN" : "PASS");
-  return { phase: "Style Definition Check", status, issues, details };
+  return { phase: "Style Definition Check", status, issues, details, validationIssues };
 }
 
 /**
@@ -652,16 +800,29 @@ export function verifyStyleDefinitions(payload: WebflowPayload): VerificationRes
 export function verifyEmbedSizes(payload: WebflowPayload, cssEmbed?: string, jsEmbed?: string): VerificationResult {
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   const validation = validateEmbedSize(payload.payload.nodes, cssEmbed, jsEmbed);
 
   if (validation.errors.length > 0) {
     issues.push(...validation.errors);
     details.push(...validation.errors.map(e => `  - ERROR: ${e}`));
+    for (const e of validation.errors) {
+      validationIssues.push(error(
+        'EMBED_SIZE_EXCEEDED',
+        e,
+      ));
+    }
   }
 
   if (validation.warnings.length > 0) {
     details.push(...validation.warnings.map(w => `  - WARNING: ${w}`));
+    for (const w of validation.warnings) {
+      validationIssues.push(warning(
+        'EMBED_SIZE_LARGE',
+        w,
+      ));
+    }
   }
 
   if (validation.css > 0) {
@@ -672,7 +833,7 @@ export function verifyEmbedSizes(payload: WebflowPayload, cssEmbed?: string, jsE
   }
 
   const status = validation.errors.length > 0 ? "FAIL" : (validation.warnings.length > 0 ? "WARN" : "PASS");
-  return { phase: "Embed Size Check", status, issues, details };
+  return { phase: "Embed Size Check", status, issues, details, validationIssues };
 }
 
 /**
@@ -681,6 +842,7 @@ export function verifyEmbedSizes(payload: WebflowPayload, cssEmbed?: string, jsE
 export function verifyNodeStructure(payload: WebflowPayload): VerificationResult {
   const issues: string[] = [];
   const details: string[] = [];
+  const validationIssues: ValidationIssue[] = [];
 
   const validation = validateNodeStructure(payload.payload.nodes);
 
@@ -690,6 +852,12 @@ export function verifyNodeStructure(payload: WebflowPayload): VerificationResult
     if (validation.errors.length > 10) {
       details.push(`  ... and ${validation.errors.length - 10} more errors`);
     }
+    for (const e of validation.errors) {
+      validationIssues.push(error(
+        'NODE_STRUCTURE_ERROR',
+        e,
+      ));
+    }
   }
 
   if (validation.warnings.length > 0) {
@@ -697,10 +865,16 @@ export function verifyNodeStructure(payload: WebflowPayload): VerificationResult
     if (validation.warnings.length > 5) {
       details.push(`  ... and ${validation.warnings.length - 5} more warnings`);
     }
+    for (const w of validation.warnings) {
+      validationIssues.push(warning(
+        'NODE_STRUCTURE_WARNING',
+        w,
+      ));
+    }
   }
 
   const status = validation.errors.length > 0 ? "FAIL" : (validation.warnings.length > 0 ? "WARN" : "PASS");
-  return { phase: "Node Structure Check", status, issues, details };
+  return { phase: "Node Structure Check", status, issues, details, validationIssues };
 }
 
 /**
@@ -728,7 +902,11 @@ export function runPreflightVerification(
   const warnings: string[] = [];
   const recommendations: string[] = [];
 
+  // Collect all validation issues from all phases
+  const allIssues: ValidationIssue[] = [];
+
   for (const phase of phases) {
+    allIssues.push(...phase.validationIssues);
     if (phase.status === "FAIL") {
       criticalFailures.push(`${phase.phase}: ${phase.issues.join("; ")}`);
     } else if (phase.status === "WARN") {
@@ -758,6 +936,9 @@ export function runPreflightVerification(
     "payload": overallStatus === "FAIL" ? "DO NOT PASTE" : (overallStatus === "WARN" ? "REVIEW" : "SAFE"),
   };
 
+  // Create standardized validation result
+  const validationResult = createValidationResult(allIssues);
+
   return {
     overallStatus,
     criticalFailures,
@@ -766,6 +947,7 @@ export function runPreflightVerification(
     pasteSafety,
     phases,
     componentFidelity: {},
+    validationResult,
   };
 }
 

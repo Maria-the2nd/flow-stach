@@ -10,6 +10,29 @@
  */
 
 import type { WebflowNode, WebflowStyle, WebflowPayload } from "./webflow-converter";
+import type { ValidationWarning, CanvasDetectionResult } from "./js-library-detector";
+import { detectCanvasWebGL, validateCanvasContainer } from "./js-library-detector";
+import { validateJsHtmlXRef, hasJsDomReferences, type XRefResult } from "./js-html-xref";
+import {
+  detectExternalResources,
+  type ExternalResourceResult,
+  type ExternalResource,
+} from "./external-resource-detector";
+import {
+  ValidationSeverity,
+  ValidationIssue,
+  fatal,
+  error,
+  warning,
+  info,
+  FatalIssueCodes,
+  ErrorIssueCodes,
+  WarningIssueCodes,
+  InfoIssueCodes,
+  createValidationResult,
+  formatIssues,
+  type ValidationResult,
+} from "./validation-types";
 
 // ============================================
 // VALIDATION RESULT TYPES
@@ -45,6 +68,28 @@ export interface EmbedSizeValidation {
   errors: string[];
 }
 
+export interface XRefValidation {
+  /** Whether the cross-reference validation passed (no orphan IDs) */
+  isValid: boolean;
+  /** IDs referenced in JS but not found in HTML (ERROR level) */
+  orphanIds: string[];
+  /** Classes referenced in JS but not found in HTML (WARNING level) */
+  orphanClasses: string[];
+  /** Full cross-reference result for detailed inspection */
+  details?: XRefResult;
+  /** Standardized validation issues */
+  issues: ValidationIssue[];
+}
+
+export interface ExternalResourceValidation {
+  /** Whether validation passed (no relative resources) */
+  isValid: boolean;
+  /** Whether there are warnings (CDN resources that need manual addition) */
+  hasWarnings: boolean;
+  /** Full detection result */
+  result: ExternalResourceResult;
+}
+
 export interface PreflightResult {
   isValid: boolean;
   canProceed: boolean;
@@ -53,7 +98,16 @@ export interface PreflightResult {
   circular: CircularValidation;
   styles: StyleValidation;
   embedSize: EmbedSizeValidation;
+  /** JS-HTML cross-reference validation (only present if JS was provided) */
+  xref?: XRefValidation;
+  /** External resource validation (only present if HTML was provided) */
+  externalResources?: ExternalResourceValidation;
+  /** @deprecated Use issues and validationResult instead */
   summary: string;
+  /** Standardized validation issues */
+  issues: ValidationIssue[];
+  /** Standardized validation result */
+  validationResult: ValidationResult;
 }
 
 // ============================================
@@ -606,6 +660,85 @@ export function validateNodeStructure(
 }
 
 // ============================================
+// JS-HTML CROSS-REFERENCE VALIDATION
+// ============================================
+
+/**
+ * Validate JavaScript DOM references against HTML targets.
+ * Detects when JS references elements that don't exist in HTML.
+ *
+ * @param html - HTML content to validate
+ * @param jsCode - JavaScript code to analyze
+ * @returns XRefValidation result
+ */
+export function validateJsHtmlReferences(
+  html: string,
+  jsCode?: string
+): XRefValidation {
+  // If no JavaScript provided, skip validation
+  if (!jsCode || !hasJsDomReferences(jsCode)) {
+    return {
+      isValid: true,
+      orphanIds: [],
+      orphanClasses: [],
+      issues: [],
+    };
+  }
+
+  const xrefResult = validateJsHtmlXRef(jsCode, html);
+
+  return {
+    isValid: xrefResult.isValid,
+    orphanIds: xrefResult.orphanIds,
+    orphanClasses: xrefResult.orphanClasses,
+    details: xrefResult,
+    issues: xrefResult.issues,
+  };
+}
+
+// ============================================
+// CANVAS/WEBGL VALIDATION
+// ============================================
+
+export interface CanvasValidation {
+  hasIssues: boolean;
+  warnings: ValidationWarning[];
+  detection: CanvasDetectionResult;
+}
+
+/**
+ * Validate canvas/WebGL requirements in HTML and JS.
+ * Checks if canvas/WebGL code exists and if appropriate container elements are present.
+ *
+ * This should be called BEFORE converting to Webflow format to warn about missing containers.
+ */
+export function validateCanvasWebGLRequirements(
+  html: string,
+  jsCode?: string
+): CanvasValidation {
+  // If no JavaScript provided, skip canvas detection
+  if (!jsCode) {
+    return {
+      hasIssues: false,
+      warnings: [],
+      detection: { detected: false, libraries: [], suggestedContainerId: 'canvas-container' },
+    };
+  }
+
+  // Detect canvas/WebGL usage in JavaScript
+  const detection = detectCanvasWebGL(jsCode);
+
+  // Validate HTML has appropriate containers
+  const warnings = validateCanvasContainer(html, detection);
+
+  return {
+    hasIssues: warnings.length > 0,
+    warnings,
+    detection,
+  };
+}
+
+// ============================================
 // MASTER VALIDATION FUNCTION
 // ============================================
 
@@ -616,7 +749,9 @@ function generateValidationSummary(
   criticalFailures: string[],
   styles: StyleValidation,
   embedSize: EmbedSizeValidation,
-  nodeStructure: { errors: string[]; warnings: string[] }
+  nodeStructure: { errors: string[]; warnings: string[] },
+  xref?: XRefValidation,
+  externalResources?: ExternalResourceValidation
 ): string {
   const lines: string[] = [];
 
@@ -671,6 +806,29 @@ function generateValidationSummary(
     }
   }
 
+  // Add xref warnings (orphan classes are warnings, not errors)
+  if (xref && xref.orphanClasses.length > 0) {
+    lines.push("JS-HTML CROSS-REFERENCE WARNINGS:");
+    lines.push(`   JS references ${xref.orphanClasses.length} CSS class(es) not found in HTML:`);
+    lines.push(...xref.orphanClasses.slice(0, 5).map(c => `   - .${c}`));
+    if (xref.orphanClasses.length > 5) {
+      lines.push(`   ... and ${xref.orphanClasses.length - 5} more`);
+    }
+  }
+
+  // Add external resource warnings (CDN resources that need manual addition)
+  if (externalResources && externalResources.hasWarnings) {
+    const cdnResources = externalResources.result.all.filter(r => !r.isRelative);
+    if (cdnResources.length > 0) {
+      lines.push("EXTERNAL RESOURCE WARNINGS:");
+      lines.push(`   ${cdnResources.length} external resource(s) need manual addition to Webflow:`);
+      lines.push(...cdnResources.slice(0, 5).map(r => `   - ${r.type === 'stylesheet' ? 'CSS' : 'JS'}: ${r.url}`));
+      if (cdnResources.length > 5) {
+        lines.push(`   ... and ${cdnResources.length - 5} more`);
+      }
+    }
+  }
+
   if (lines.length === 0) {
     lines.push("All validations passed");
   }
@@ -682,6 +840,8 @@ function generateValidationSummary(
  * Create a failed preflight result for invalid payload structure.
  */
 function createFailedPreflightResult(reason: string): PreflightResult {
+  const fatalIssue = fatal(FatalIssueCodes.INVALID_PAYLOAD, reason);
+  const issues = [fatalIssue];
   return {
     isValid: false,
     canProceed: false,
@@ -691,6 +851,8 @@ function createFailedPreflightResult(reason: string): PreflightResult {
     styles: { isValid: true, invalidStyles: [], missingStyleRefs: [] },
     embedSize: { css: 0, js: 0, warnings: [], errors: [] },
     summary: `CRITICAL FAILURES (paste will corrupt project):\n   - ${reason}`,
+    issues,
+    validationResult: createValidationResult(issues),
   };
 }
 
@@ -703,6 +865,10 @@ export function runPreflightValidation(
   options: {
     cssEmbed?: string;
     jsEmbed?: string;
+    /** HTML content for JS-HTML cross-reference validation */
+    html?: string;
+    /** JavaScript code for JS-HTML cross-reference validation */
+    jsCode?: string;
   } = {}
 ): PreflightResult {
   // Defensive validation of payload structure
@@ -722,7 +888,7 @@ export function runPreflightValidation(
     return createFailedPreflightResult("Invalid payload: styles must be an array");
   }
 
-  const { cssEmbed, jsEmbed } = options;
+  const { cssEmbed, jsEmbed, html, jsCode } = options;
 
   // Run all validations
   const uuid = validateUUIDs(nodes, styles);
@@ -732,36 +898,178 @@ export function runPreflightValidation(
   const embedSize = validateEmbedSize(nodes, cssEmbed, jsEmbed);
   const nodeStructure = validateNodeStructure(nodes);
 
-  // Collect critical failures that MUST block
-  const criticalFailures: string[] = [];
-
-  if (!uuid.isValid) {
-    if (uuid.duplicates.length > 0) {
-      criticalFailures.push(`Duplicate UUIDs detected: ${uuid.duplicates.slice(0, 3).join(", ")}${uuid.duplicates.length > 3 ? "..." : ""}`);
-    }
-    if (uuid.invalidFormat.length > 0) {
-      criticalFailures.push(`Invalid UUID format: ${uuid.invalidFormat.slice(0, 3).join(", ")}${uuid.invalidFormat.length > 3 ? "..." : ""}`);
-    }
+  // Run JS-HTML cross-reference validation if HTML and JS are provided
+  let xref: XRefValidation | undefined;
+  if (html && jsCode) {
+    xref = validateJsHtmlReferences(html, jsCode);
   }
 
+  // Run external resource validation if HTML is provided
+  let externalResources: ExternalResourceValidation | undefined;
+  if (html) {
+    const resourceResult = detectExternalResources(html);
+    externalResources = {
+      isValid: !resourceResult.hasErrors,
+      hasWarnings: resourceResult.hasWarnings,
+      result: resourceResult,
+    };
+  }
+
+  // Collect standardized validation issues
+  const issues: ValidationIssue[] = [];
+
+  // Collect critical failures that MUST block (for legacy summary)
+  const criticalFailures: string[] = [];
+
+  // FATAL: Duplicate UUIDs
+  if (uuid.duplicates.length > 0) {
+    for (const dupId of uuid.duplicates) {
+      issues.push(fatal(
+        FatalIssueCodes.DUPLICATE_UUID,
+        `Duplicate UUID detected: ${dupId}`,
+        { context: dupId, suggestion: 'Regenerate node IDs to fix duplicate UUID issues' }
+      ));
+    }
+    criticalFailures.push(`Duplicate UUIDs detected: ${uuid.duplicates.slice(0, 3).join(", ")}${uuid.duplicates.length > 3 ? "..." : ""}`);
+  }
+
+  // ERROR: Invalid UUID format
+  if (uuid.invalidFormat.length > 0) {
+    for (const invalidId of uuid.invalidFormat) {
+      issues.push(error(
+        ErrorIssueCodes.INVALID_UUID_FORMAT,
+        `Invalid UUID format: ${invalidId}`,
+        { context: invalidId, suggestion: 'Use alphanumeric IDs with dashes/underscores' }
+      ));
+    }
+    criticalFailures.push(`Invalid UUID format: ${uuid.invalidFormat.slice(0, 3).join(", ")}${uuid.invalidFormat.length > 3 ? "..." : ""}`);
+  }
+
+  // FATAL: Circular references
   if (!circular.isValid) {
+    for (const cycle of circular.cycles) {
+      issues.push(fatal(
+        FatalIssueCodes.CIRCULAR_REFERENCE,
+        `Circular reference detected: ${cycle.join(" -> ")}`,
+        { context: cycle.join(" -> "), suggestion: 'Check parent-child relationships for circular dependencies' }
+      ));
+    }
     criticalFailures.push(`Circular references detected: ${circular.cycles.length} cycle(s)`);
   }
 
+  // ERROR: Orphan node references
   if (references.orphanReferences.length > 0) {
+    for (const ref of references.orphanReferences) {
+      issues.push(error(
+        ErrorIssueCodes.ORPHAN_REFERENCE,
+        `Node ${ref.parentId} references missing child ${ref.missingChildId}`,
+        { context: `${ref.parentId} -> ${ref.missingChildId}`, suggestion: 'Ensure all child references point to existing nodes' }
+      ));
+    }
     criticalFailures.push(`Orphan node references: ${references.orphanReferences.length} missing`);
   }
 
+  // WARNING: Unreachable nodes
+  if (references.unreachableNodes.length > 0) {
+    for (const nodeId of references.unreachableNodes) {
+      issues.push(warning(
+        WarningIssueCodes.UNREACHABLE_NODE,
+        `Node ${nodeId} is not reachable from any root`,
+        { context: nodeId }
+      ));
+    }
+  }
+
+  // ERROR: Node structure errors
   if (nodeStructure.errors.length > 0) {
+    for (const err of nodeStructure.errors) {
+      issues.push(error(
+        ErrorIssueCodes.NODE_STRUCTURE_ERROR,
+        err,
+      ));
+    }
     criticalFailures.push(`Node structure errors: ${nodeStructure.errors.length} errors`);
   }
 
+  // WARNING: Node structure warnings
+  if (nodeStructure.warnings.length > 0) {
+    for (const warn of nodeStructure.warnings) {
+      issues.push(warning(
+        WarningIssueCodes.NODE_STRUCTURE_WARNING,
+        warn,
+      ));
+    }
+  }
+
+  // ERROR: Embed size exceeded
   if (embedSize.errors.length > 0) {
+    for (const err of embedSize.errors) {
+      issues.push(error(
+        ErrorIssueCodes.EMBED_SIZE_EXCEEDED,
+        err,
+        { suggestion: 'Consider splitting large embeds into smaller chunks' }
+      ));
+    }
     criticalFailures.push(...embedSize.errors);
   }
 
-  const isValid = criticalFailures.length === 0 && styleValidation.isValid;
-  const canProceed = criticalFailures.length === 0;
+  // WARNING: Large embed size
+  if (embedSize.warnings.length > 0) {
+    for (const warn of embedSize.warnings) {
+      issues.push(warning(
+        WarningIssueCodes.EMBED_SIZE_LARGE,
+        warn,
+        { suggestion: 'Consider optimizing or splitting the embed' }
+      ));
+    }
+  }
+
+  // WARNING: Invalid styles
+  if (styleValidation.invalidStyles.length > 0) {
+    for (const s of styleValidation.invalidStyles) {
+      issues.push(warning(
+        WarningIssueCodes.INVALID_STYLE,
+        `${s.className}: ${s.property} = ${s.value} (${s.reason})`,
+        { context: s.className }
+      ));
+    }
+  }
+
+  // WARNING: Missing style references
+  if (styleValidation.missingStyleRefs.length > 0) {
+    for (const ref of styleValidation.missingStyleRefs) {
+      issues.push(warning(
+        WarningIssueCodes.MISSING_STYLE_REF,
+        ref,
+      ));
+    }
+  }
+
+  // Include xref issues (ERROR and WARNING levels)
+  if (xref) {
+    // Add issues from xref (already standardized)
+    issues.push(...(xref.details?.issues || []));
+
+    // Legacy: Add to criticalFailures if orphan IDs exist
+    if (xref.orphanIds.length > 0) {
+      criticalFailures.push(`JS references ${xref.orphanIds.length} missing HTML ID(s): ${xref.orphanIds.slice(0, 3).join(", ")}${xref.orphanIds.length > 3 ? "..." : ""}`);
+    }
+  }
+
+  // Include external resource issues
+  if (externalResources) {
+    issues.push(...externalResources.result.issues);
+
+    // Legacy: Add to criticalFailures if relative resources exist
+    if (!externalResources.isValid) {
+      const relativeResources = externalResources.result.all.filter(r => r.isRelative);
+      criticalFailures.push(`${relativeResources.length} relative resource(s) cannot be loaded: ${relativeResources.slice(0, 3).map(r => r.url).join(", ")}${relativeResources.length > 3 ? "..." : ""}`);
+    }
+  }
+
+  const validationResult = createValidationResult(issues);
+  const isValid = validationResult.isValid;
+  const canProceed = validationResult.canProceed;
 
   return {
     isValid,
@@ -771,7 +1079,11 @@ export function runPreflightValidation(
     circular,
     styles: styleValidation,
     embedSize,
-    summary: generateValidationSummary(criticalFailures, styleValidation, embedSize, nodeStructure),
+    xref,
+    externalResources,
+    summary: generateValidationSummary(criticalFailures, styleValidation, embedSize, nodeStructure, xref, externalResources),
+    issues,
+    validationResult,
   };
 }
 
@@ -814,3 +1126,55 @@ export function formatPreflightResult(result: PreflightResult): string {
 
   return lines.join("\n");
 }
+
+// ============================================
+// RE-EXPORTS FROM EXTERNAL RESOURCE DETECTOR
+// ============================================
+
+export {
+  detectExternalResources,
+  getRelativeResources,
+  getCDNResources,
+  getStylesheetWarnings,
+  getScriptWarnings,
+  hasBlockingResourceIssues,
+  getAllResourceMessages,
+  generateResourceInstructions,
+  filterAutoDetectedScripts,
+} from "./external-resource-detector";
+
+export type {
+  ExternalResource,
+  ExternalResourceResult,
+} from "./external-resource-detector";
+
+// Re-export validation types for convenience
+export {
+  ValidationSeverity,
+  FatalIssueCodes,
+  ErrorIssueCodes,
+  WarningIssueCodes,
+  InfoIssueCodes,
+  createIssue,
+  fatal,
+  error,
+  warning,
+  info,
+  hasBlockingIssues,
+  hasFailureIssues,
+  getIssuesBySeverity,
+  getFatalIssues,
+  getErrorIssues,
+  getWarningIssues,
+  getInfoIssues,
+  countBySeverity,
+  createValidationResult,
+  formatIssues,
+  sortBySeverity,
+  mergeValidationResults,
+} from "./validation-types";
+
+export type {
+  ValidationIssue,
+  ValidationResult,
+} from "./validation-types";

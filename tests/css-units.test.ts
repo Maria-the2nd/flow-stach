@@ -157,13 +157,15 @@ describe("CSS Unit Preservation", () => {
       expect(style?.styleLess).toContain("width: calc(100% - 4rem)");
     });
 
-    it("preserves clamp() in Webflow payload", () => {
+    it("converts clamp() to max value in Webflow payload (prevents Designer breakage)", () => {
       const html = `<h1 class="title">Title</h1>`;
       const css = `.title { font-size: clamp(1.5rem, 4vw, 3rem); }`;
       const result = convertHtmlCssToWebflow(html, css);
 
       const style = result.payload.styles.find((s) => s.name === "title");
-      expect(style?.styleLess).toContain("font-size: clamp(1.5rem, 4vw, 3rem)");
+      // clamp() breaks Webflow Designer, so it's converted to max value
+      expect(style?.styleLess).toContain("font-size: 3rem");
+      expect(style?.styleLess).not.toContain("clamp(");
     });
   });
 

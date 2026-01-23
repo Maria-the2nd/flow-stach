@@ -6,6 +6,8 @@
  * a separate embed block instead of being discarded.
  */
 
+import { minifyCSS } from './css-minifier';
+
 // ============================================
 // TYPES
 // ============================================
@@ -468,10 +470,16 @@ export function routeCSS(rawCSS: string): CSSRoutingResult {
   // STEP 5: Format embed CSS with breakpoints
   // ============================================
 
-  const embedCSS = formatEmbedWithBreakpoints(embedRulesByBreakpoint, embedParts);
+  const formattedEmbedCSS = formatEmbedWithBreakpoints(embedRulesByBreakpoint, embedParts);
 
   // ============================================
-  // STEP 6: Calculate stats and size warnings
+  // STEP 6: Minify embed CSS for size optimization
+  // ============================================
+
+  const embedCSS = minifyCSS(formattedEmbedCSS);
+
+  // ============================================
+  // STEP 7: Calculate stats and size warnings
   // ============================================
 
   const embedSizeBytes = new TextEncoder().encode(embedCSS).length;
@@ -601,18 +609,22 @@ function formatEmbedWithBreakpoints(
 
 /**
  * Wrap embed CSS in a <style> tag for HtmlEmbed
+ * @param embedCSS - CSS to wrap (may be already minified)
+ * @param minify - Whether to minify the CSS (default: false, assumes pre-minified)
  */
-export function wrapEmbedCSSInStyleTag(embedCSS: string): string {
+export function wrapEmbedCSSInStyleTag(embedCSS: string, minify: boolean = false): string {
   if (!embedCSS || !embedCSS.trim()) {
     return '';
   }
+
+  const processedCSS = minify ? minifyCSS(embedCSS) : embedCSS;
 
   return `<style>
 /* === FLOW BRIDGE: Non-Native CSS === */
 /* These styles cannot be represented in Webflow's native style system */
 /* Do not modify - regenerate from source HTML if changes needed */
 
-${embedCSS}
+${processedCSS}
 </style>`;
 }
 

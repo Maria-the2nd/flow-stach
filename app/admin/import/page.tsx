@@ -782,7 +782,7 @@ interface JsTabProps {
 
 function JsTab({ scriptsJs, jsHooks, componentTree, externalScripts, embedCss, embedCssFeatures }: JsTabProps) {
   // Detect libraries and paid plugins from inline scripts
-  const detectedLibraries: DetectedLibraries = scriptsJs ? detectLibraries(scriptsJs) : { scripts: [], styles: [], names: [], displayNames: [] }
+  const detectedLibraries: DetectedLibraries = scriptsJs ? detectLibraries(scriptsJs) : { scripts: [], styles: [], names: [], displayNames: [], issues: [] }
   const paidPluginWarnings: PaidPluginWarning[] = scriptsJs ? detectPaidPlugins(scriptsJs) : []
 
   // Combine external scripts from HTML with detected CDN URLs

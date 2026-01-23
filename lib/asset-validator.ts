@@ -4,6 +4,17 @@
  * to ensure compatibility with Webflow imports.
  */
 
+import {
+  ValidationSeverity,
+  ValidationIssue,
+  error,
+  warning,
+  ErrorIssueCodes,
+  WarningIssueCodes,
+  createValidationResult,
+  type ValidationResult,
+} from './validation-types';
+
 // ============================================
 // TYPES
 // ============================================
@@ -22,9 +33,9 @@ export interface AssetValidation {
   type: AssetURLType;
   /** Whether this URL is valid for Webflow */
   isValid: boolean;
-  /** Warning message (non-blocking issue) */
+  /** @deprecated Use validationIssue instead */
   warning?: string;
-  /** Error message (blocking issue) */
+  /** @deprecated Use validationIssue instead */
   error?: string;
   /** Suggested action to fix the issue */
   suggestedAction?: string;
@@ -32,6 +43,8 @@ export interface AssetValidation {
   lineNumber?: number;
   /** The element or context where URL was found */
   context?: string;
+  /** Standardized validation issue (if any) */
+  validationIssue?: ValidationIssue;
 }
 
 export interface AssetManifest {
@@ -41,9 +54,9 @@ export interface AssetManifest {
   backgroundImages: AssetValidation[];
   /** Font references (@font-face src) */
   fonts: AssetValidation[];
-  /** All error messages */
+  /** @deprecated Use issues instead */
   errors: string[];
-  /** All warning messages */
+  /** @deprecated Use issues instead */
   warnings: string[];
   /** Summary statistics */
   stats: {
@@ -53,6 +66,10 @@ export interface AssetManifest {
     dataUris: number;
     relativePaths: number;
   };
+  /** Standardized validation issues */
+  issues: ValidationIssue[];
+  /** Standardized validation result */
+  validationResult: ValidationResult;
 }
 
 export interface GoogleFontInfo {
@@ -157,44 +174,95 @@ export function validateAssetURL(
         isValid: true,
       };
 
-    case 'protocol-relative':
+    case 'protocol-relative': {
+      const warningMsg = 'Protocol-relative URL upgraded to HTTPS';
+      const suggestedAction = 'Consider using explicit https:// URLs';
       return {
         ...baseResult,
         url: `https:${url}`, // Upgrade to HTTPS
         isValid: true,
-        warning: 'Protocol-relative URL upgraded to HTTPS',
-        suggestedAction: 'Consider using explicit https:// URLs',
+        warning: warningMsg,
+        suggestedAction,
+        validationIssue: warning(
+          WarningIssueCodes.PROTOCOL_RELATIVE_URL,
+          warningMsg,
+          {
+            context: url,
+            suggestion: suggestedAction,
+            lineNumber,
+          }
+        ),
       };
+    }
 
-    case 'data-uri':
+    case 'data-uri': {
       // Data URIs work but have limitations
       const isLargeDataUri = url.length > 50000; // ~50KB
+      const warningMsg = isLargeDataUri
+        ? 'Large data URI detected (>50KB) - may cause performance issues'
+        : 'Data URI detected - requires conversion to hosted image';
+      const suggestedAction = 'Upload to Webflow assets or external CDN and use absolute URL';
+      const issueCode = isLargeDataUri
+        ? WarningIssueCodes.LARGE_DATA_URI
+        : WarningIssueCodes.DATA_URI_DETECTED;
       return {
         ...baseResult,
         isValid: false, // Can't use directly in Webflow paste
-        warning: isLargeDataUri
-          ? 'Large data URI detected (>50KB) - may cause performance issues'
-          : 'Data URI detected - requires conversion to hosted image',
-        suggestedAction: 'Upload to Webflow assets or external CDN and use absolute URL',
+        warning: warningMsg,
+        suggestedAction,
+        validationIssue: warning(
+          issueCode,
+          warningMsg,
+          {
+            context: context || 'data URI',
+            suggestion: suggestedAction,
+            lineNumber,
+          }
+        ),
       };
+    }
 
-    case 'relative':
+    case 'relative': {
+      const errorMsg = 'Relative path will not work in Webflow';
+      const suggestedAction = 'Upload image to a CDN or Webflow assets and replace with absolute URL';
       return {
         ...baseResult,
         isValid: false,
-        error: 'Relative path will not work in Webflow',
-        suggestedAction: 'Upload image to a CDN or Webflow assets and replace with absolute URL',
+        error: errorMsg,
+        suggestedAction,
+        validationIssue: error(
+          ErrorIssueCodes.RELATIVE_ASSET,
+          `${errorMsg}: ${url}`,
+          {
+            context: url,
+            suggestion: suggestedAction,
+            lineNumber,
+          }
+        ),
       };
+    }
 
     case 'invalid':
-    default:
+    default: {
+      const errorMsg = url ? 'Invalid URL format' : 'Empty or missing URL';
+      const suggestedAction = 'Provide a valid absolute URL (https://...)';
       return {
         ...baseResult,
         type: 'invalid',
         isValid: false,
-        error: url ? 'Invalid URL format' : 'Empty or missing URL',
-        suggestedAction: 'Provide a valid absolute URL (https://...)',
+        error: errorMsg,
+        suggestedAction,
+        validationIssue: error(
+          ErrorIssueCodes.RELATIVE_ASSET, // Treat invalid as error too
+          `${errorMsg}: ${url || '(empty)'}`,
+          {
+            context: url || '(empty)',
+            suggestion: suggestedAction,
+            lineNumber,
+          }
+        ),
       };
+    }
   }
 }
 
@@ -233,6 +301,8 @@ export function extractAndValidateAssets(
       dataUris: 0,
       relativePaths: 0,
     },
+    issues: [],
+    validationResult: createValidationResult([]),
   };
 
   // Track seen URLs to avoid duplicates in error messages
@@ -402,6 +472,13 @@ export function extractAndValidateAssets(
   manifest.stats.invalid = allAssets.filter(a => !a.isValid).length;
   manifest.stats.dataUris = allAssets.filter(a => a.type === 'data-uri').length;
   manifest.stats.relativePaths = allAssets.filter(a => a.type === 'relative').length;
+
+  // Collect all validation issues
+  manifest.issues = allAssets
+    .filter(a => a.validationIssue)
+    .map(a => a.validationIssue!);
+
+  manifest.validationResult = createValidationResult(manifest.issues);
 
   return manifest;
 }

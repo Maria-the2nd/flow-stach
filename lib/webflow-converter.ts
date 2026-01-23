@@ -18,7 +18,13 @@ import type { AssetManifest, GoogleFontInfo } from "./asset-validator";
 import { extractAndValidateAssets, detectGoogleFonts } from "./asset-validator";
 import {
   runPreflightValidation,
+  validateCanvasWebGLRequirements,
+  validateJsHtmlReferences,
+  detectExternalResources,
   type PreflightResult,
+  type CanvasValidation,
+  type XRefValidation,
+  type ExternalResourceResult,
 } from "./preflight-validator";
 
 // ============================================
@@ -190,6 +196,10 @@ export interface WebflowPayload {
       /** Detailed validation results */
       details?: PreflightResult;
     };
+    /** JS-HTML cross-reference validation - present when JS was provided */
+    xrefValidation?: XRefValidation;
+    /** External resource detection - present when HTML was parsed */
+    externalResources?: ExternalResourceResult;
   };
 }
 
@@ -249,6 +259,96 @@ function toRem(value: string): string {
   return conv.join(" ");
 }
 
+/**
+ * Convert px values to rem in a single CSS value string.
+ * Keeps 1px values as px (common for thin borders).
+ * Preserves values already in rem, em, %, vw, vh, etc.
+ *
+ * @param value - CSS value string (e.g., "100px", "16px 24px")
+ * @param basePx - Base pixel value for conversion (default: 16)
+ * @returns Converted value string
+ */
+function convertValuePxToRem(value: string, basePx = 16): string {
+  const parts = splitValues(value);
+  const converted = parts.map((part) => {
+    // Match numeric value with unit
+    const match = part.match(/^(-?\d*\.?\d+)(px|rem|em|%|vw|vh|vmin|vmax|ch|ex|pt|pc|in|cm|mm)$/i);
+    if (!match) return part;
+
+    const num = parseFloat(match[1]);
+    const unit = match[2].toLowerCase();
+
+    // Only convert px, skip other units
+    if (unit !== "px") return part;
+
+    // Keep 1px as-is (common for thin borders)
+    if (Math.abs(num) === 1) return part;
+
+    // Convert px to rem
+    const rem = num / basePx;
+    // Format: remove trailing zeros, max 4 decimal places
+    const formatted = rem.toFixed(4).replace(/\.?0+$/, "");
+    return `${formatted}rem`;
+  });
+
+  return converted.join(" ");
+}
+
+/**
+ * Properties where 1px values should always be kept as px.
+ * These typically represent thin borders/lines where sub-pixel rendering matters.
+ */
+const BORDER_PROPERTIES = new Set([
+  "border",
+  "border-width",
+  "border-top-width",
+  "border-right-width",
+  "border-bottom-width",
+  "border-left-width",
+  "border-top",
+  "border-right",
+  "border-bottom",
+  "border-left",
+  "outline",
+  "outline-width",
+  "box-shadow",
+]);
+
+/**
+ * Convert px values to rem in an inline style string.
+ * Parses style="width: 100px; padding: 16px 24px;" and converts px to rem.
+ *
+ * Exceptions:
+ * - 1px values are kept as px (common for thin borders)
+ * - Values already in rem, em, %, vw, vh, etc. are preserved
+ *
+ * @param styleString - Inline style string (e.g., "width: 100px; padding: 16px")
+ * @param basePx - Base pixel value for conversion (default: 16)
+ * @returns Converted style string
+ */
+export function convertInlineStylePxToRem(styleString: string, basePx = 16): string {
+  if (!styleString) return styleString;
+
+  const parts = styleString.split(";").map((p) => p.trim()).filter(Boolean);
+  const converted: string[] = [];
+
+  for (const part of parts) {
+    const colonIdx = part.indexOf(":");
+    if (colonIdx === -1) continue;
+
+    const property = part.slice(0, colonIdx).trim().toLowerCase();
+    const value = part.slice(colonIdx + 1).trim();
+
+    if (!property || !value) continue;
+
+    // Convert the value
+    const convertedValue = convertValuePxToRem(value, basePx);
+    converted.push(`${property}: ${convertedValue}`);
+  }
+
+  return converted.join("; ");
+}
+
 function scaleRem(value: string, factor: number): string {
   const parts = splitValues(value);
   const scaled = parts.map((p) => {
@@ -280,6 +380,12 @@ function parseStyleLessMap(styleLess: string): Map<string, string> {
   return map;
 }
 
+function mapToStyleLess(map: Map<string, string>): string {
+  return Array.from(map.entries())
+    .map(([k, v]) => `${k}: ${v};`)
+    .join(" ");
+}
+
 function applyResponsiveGridFixes(styles: Map<string, WebflowStyle>): void {
   for (const style of styles.values()) {
     const base = parseStyleLessMap(style.styleLess);
@@ -297,9 +403,61 @@ function applyResponsiveGridFixes(styles: Map<string, WebflowStyle>): void {
       style.styleLess = `${currentStyle}${suffix} grid-template-rows: auto;`;
     }
 
-    // Fix 2: Do NOT force mobile column reduction (removed previous logic)
-    // Previously we forced 1fr on mobile, but this breaks layouts that 
-    // intend to keep multiple columns on small screens.
+    // Fix 2: Responsive grid column adjustment for better mobile experience
+    // Reduce columns on smaller breakpoints for grids with repeat(n, 1fr) patterns
+    const gridTemplateColumns = base.get("grid-template-columns");
+    if (gridTemplateColumns) {
+      // Also handle expanded repeat patterns like "1fr 1fr 1fr 1fr"
+      const expandedPattern = gridTemplateColumns.match(/^(1fr\s+)+1fr$/);
+      let columnCount = 0;
+      let repeatMatch = null;
+
+      // Match repeat(n, 1fr) or repeat(n, minmax(...))
+      repeatMatch = gridTemplateColumns.match(/repeat\((\d+),\s*(1fr|minmax\([^)]+\))\)/);
+      if (repeatMatch) {
+        columnCount = parseInt(repeatMatch[1], 10);
+      }
+      // If no repeat() but has expanded pattern, count the columns
+      else if (expandedPattern) {
+        columnCount = gridTemplateColumns.split(/\s+/).length;
+      }
+
+      if (columnCount >= 2) {
+        // For 4+ columns: reduce to 3 on small, 1 on tiny
+        if (columnCount >= 4) {
+          // Small breakpoint (tablet): reduce to 3 columns
+          if (!style.variants.small) {
+            style.variants.small = { styleLess: "" };
+          }
+          const smallMap = parseStyleLessMap(style.variants.small.styleLess);
+          if (!smallMap.has("grid-template-columns")) {
+            smallMap.set("grid-template-columns", "repeat(3, minmax(0, 1fr))");
+            style.variants.small.styleLess = mapToStyleLess(smallMap);
+          }
+
+          // Tiny breakpoint (mobile): reduce to 1 column
+          if (!style.variants.tiny) {
+            style.variants.tiny = { styleLess: "" };
+          }
+          const tinyMap = parseStyleLessMap(style.variants.tiny.styleLess);
+          if (!tinyMap.has("grid-template-columns")) {
+            tinyMap.set("grid-template-columns", "1fr");
+            style.variants.tiny.styleLess = mapToStyleLess(tinyMap);
+          }
+        }
+        // For 2-3 columns: reduce to 1 on tiny only
+        else if (columnCount >= 2) {
+          if (!style.variants.tiny) {
+            style.variants.tiny = { styleLess: "" };
+          }
+          const tinyMap = parseStyleLessMap(style.variants.tiny.styleLess);
+          if (!tinyMap.has("grid-template-columns")) {
+            tinyMap.set("grid-template-columns", "1fr");
+            style.variants.tiny.styleLess = mapToStyleLess(tinyMap);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -685,7 +843,9 @@ function convertToWebflowNodes(
       const rawValue = part.slice(idx + 1).trim();
       if (!rawName || !rawValue) continue;
       const name = rawName.startsWith("--") ? rawName : rawName.toLowerCase();
-      entries.push([name, rawValue]);
+      // Convert px values to rem (except 1px which is kept for thin borders)
+      const convertedValue = convertValuePxToRem(rawValue, 16);
+      entries.push([name, convertedValue]);
     }
     if (entries.length === 0) return null;
     entries.sort((a, b) => a[0].localeCompare(b[0]));
@@ -789,6 +949,27 @@ function convertToWebflowNodes(
 
     const normalizedTag = normalizeTagForWebflow(el.tag);
     const baseClasses = [...el.classes];
+
+    // Add Webflow class for typography elements if they don't have classes
+    // This handles cases where CSS has descendant selectors like ".hero h1"
+    // which creates styles for "heading-h1" class
+    if (baseClasses.length === 0) {
+      const elementMap: Record<string, string> = {
+        h1: "heading-h1",
+        h2: "heading-h2",
+        h3: "heading-h3",
+        h4: "heading-h4",
+        h5: "heading-h5",
+        h6: "heading-h6",
+        p: "text-body",
+        a: "link",
+      };
+      const webflowClass = elementMap[el.tag];
+      if (webflowClass && classIndex.classes[webflowClass]) {
+        baseClasses.push(webflowClass);
+      }
+    }
+
     applyInlineStyleClass(el, baseClasses);
     const hasGrid = baseClasses.some((cls) => isGridClass(cls, classIndex));
     const nodeClasses = hasGrid && !baseClasses.includes("w-layout-grid")
@@ -1564,6 +1745,37 @@ export function convertSectionToWebflow(
     console.warn("[webflow-converter] Asset warnings:", assetManifest.warnings);
   }
 
+  // ==========================================
+  // CANVAS/WEBGL VALIDATION
+  // ==========================================
+  const canvasValidation = validateCanvasWebGLRequirements(normalized.html, section.jsContent);
+  if (canvasValidation.hasIssues) {
+    console.warn("[webflow-converter] Canvas/WebGL warnings:");
+    canvasValidation.warnings.forEach(w => {
+      console.warn(`  ${w.type.toUpperCase()}: ${w.message}`);
+      if (w.suggestion) {
+        console.warn(`  Suggestion: ${w.suggestion}`);
+      }
+    });
+  }
+
+  // ==========================================
+  // EXTERNAL RESOURCE DETECTION
+  // ==========================================
+  const externalResources = detectExternalResources(section.htmlContent);
+  if (externalResources.hasErrors) {
+    console.warn("[webflow-converter] External resource errors:");
+    externalResources.all.filter(r => r.severity === 'error').forEach(r => {
+      console.warn(`  ERROR: ${r.message}`);
+    });
+  }
+  if (externalResources.hasWarnings) {
+    console.warn("[webflow-converter] External resource warnings:");
+    externalResources.all.filter(r => r.severity === 'warning').forEach(r => {
+      console.warn(`  WARNING: ${r.message}`);
+    });
+  }
+
   // Parse HTML
   const parsed = parseHtmlString(normalized.html) ?? parseHtmlString(`<div>${normalized.html}</div>`);
   if (!parsed) {
@@ -1636,11 +1848,29 @@ export function convertSectionToWebflow(
         stats: assetManifest.stats,
         googleFonts: googleFonts ?? undefined,
       },
+      externalResources: externalResources.all.length > 0 ? externalResources : undefined,
     },
   };
 
-  // Run pre-flight validation
-  const preflightResult = runPreflightValidation(payload);
+  // Run JS-HTML cross-reference validation if JS content is present
+  if (section.jsContent) {
+    const xrefResult = validateJsHtmlReferences(normalized.html, section.jsContent);
+    payload.meta.xrefValidation = xrefResult;
+
+    if (!xrefResult.isValid) {
+      console.error("[webflow-converter] JS-HTML cross-reference validation failed:",
+        `${xrefResult.orphanIds.length} orphan ID(s): ${xrefResult.orphanIds.slice(0, 3).join(", ")}`);
+    } else if (xrefResult.orphanClasses.length > 0) {
+      console.warn("[webflow-converter] JS-HTML cross-reference warnings:",
+        `${xrefResult.orphanClasses.length} orphan class(es): ${xrefResult.orphanClasses.slice(0, 3).join(", ")}`);
+    }
+  }
+
+  // Run pre-flight validation (includes xref if HTML and JS provided)
+  const preflightResult = runPreflightValidation(payload, {
+    html: normalized.html,
+    jsCode: section.jsContent,
+  });
   payload.meta.preflightValidation = {
     isValid: preflightResult.isValid,
     canProceed: preflightResult.canProceed,

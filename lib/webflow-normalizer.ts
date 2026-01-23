@@ -397,6 +397,24 @@ function normalizeSelector(selector: string, context: NormalizationContext): str
     return `${paragraphClassMatch[1]}${pseudo}`;
   }
 
+  // Descendant element selectors: .parent h1 -> .heading-h1
+  // Handle class + element descendant selectors (e.g., ".hero h1", ".card p")
+  const descendantElementMatch = base.match(/\.([a-zA-Z_-][\w-]*)\s+(h[1-6]|p|a|ul|ol|li|blockquote|section|nav|header|footer|main|article|aside)$/);
+  if (descendantElementMatch) {
+    const parentClass = descendantElementMatch[1];
+    const element = descendantElementMatch[2];
+    const webflowClass = ELEMENT_TO_CLASS_MAP[element];
+    if (webflowClass) {
+      // Return the Webflow class and add to context for later HTML processing
+      context.descendantMappings.push({
+        parentClass,
+        childClass: webflowClass,
+        className: webflowClass,
+      });
+      return `.${webflowClass}${pseudo}`;
+    }
+  }
+
   // Descendant selectors: .parent .child -> .parent-child (flatten + inject class on child)
   const descendantClassMatch = base.match(/\.([a-zA-Z_-][\w-]*)\s*(>|\s)\s*\.([a-zA-Z_-][\w-]*)$/);
   if (descendantClassMatch) {
