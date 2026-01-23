@@ -35,6 +35,7 @@ export default defineSchema({
     name: v.string(),
     slug: v.string(),
     imageUrl: v.optional(v.string()),
+    userId: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_slug", ["slug"]),
@@ -62,6 +63,8 @@ export default defineSchema({
     name: v.string(),
     slug: v.string(),
     status: v.union(v.literal("draft"), v.literal("complete")),
+    // Owner (Clerk user ID) for user-scoped access
+    userId: v.optional(v.string()),
     // Original HTML (may be large, consider compression)
     sourceHtml: v.optional(v.string()),
     // Metadata
@@ -72,7 +75,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_slug", ["slug"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_user", ["userId"]),
 
   // Import artifacts - stores extracted artifacts per project
   importArtifacts: defineTable({

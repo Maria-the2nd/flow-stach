@@ -14,6 +14,12 @@ import {
 } from "./css-parser";
 import type { Component } from "./componentizer";
 import { normalizeHtmlCssForWebflow } from "./webflow-normalizer";
+import type { AssetManifest, GoogleFontInfo } from "./asset-validator";
+import { extractAndValidateAssets, detectGoogleFonts } from "./asset-validator";
+import {
+  runPreflightValidation,
+  type PreflightResult,
+} from "./preflight-validator";
 
 // ============================================
 // TYPES
@@ -162,6 +168,28 @@ export interface WebflowPayload {
     dynListBindRemovedCount: number;
     paginationRemovedCount: number;
     tokenManifest?: TokenManifest;
+    /** Asset validation results - present when assets were validated */
+    assetValidation?: {
+      /** All asset errors (blocking issues) */
+      errors: string[];
+      /** All asset warnings (non-blocking issues) */
+      warnings: string[];
+      /** Summary statistics */
+      stats: AssetManifest['stats'];
+      /** Google Fonts info if detected */
+      googleFonts?: GoogleFontInfo;
+    };
+    /** Pre-flight validation results - present when payload was validated */
+    preflightValidation?: {
+      /** Whether payload passed all critical validations */
+      isValid: boolean;
+      /** Whether payload can be safely pasted (may have warnings) */
+      canProceed: boolean;
+      /** Human-readable summary of validation results */
+      summary: string;
+      /** Detailed validation results */
+      details?: PreflightResult;
+    };
   };
 }
 
@@ -1431,13 +1459,14 @@ export function buildTokenWebflowPayload(manifest: TokenManifest | TokenExtracti
 
   const finalNodes = [pageWrapperNode, instructionNode, tokenGridNode, ...swatchNodes.reverse()];
 
-  // Validate payload integrity
+  // Validate payload integrity (legacy validation)
   const integrityWarnings = validatePayloadIntegrity(finalNodes, styles);
   if (integrityWarnings.length > 0) {
     console.warn("[webflow-converter] Token payload integrity issues:", integrityWarnings);
   }
 
-  return {
+  // Build the payload
+  const payload: WebflowPayload = {
     type: "@webflow/XscpData",
     payload: {
       nodes: finalNodes,
@@ -1455,6 +1484,20 @@ export function buildTokenWebflowPayload(manifest: TokenManifest | TokenExtracti
       tokenManifest: fullManifest,
     },
   };
+
+  // Run pre-flight validation
+  const preflightResult = runPreflightValidation(payload);
+  payload.meta.preflightValidation = {
+    isValid: preflightResult.isValid,
+    canProceed: preflightResult.canProceed,
+    summary: preflightResult.summary,
+  };
+
+  if (!preflightResult.canProceed) {
+    console.error("[webflow-converter] CRITICAL: Token payload pre-flight validation failed!", preflightResult.summary);
+  }
+
+  return payload;
 }
 
 /**
@@ -1507,6 +1550,20 @@ export function convertSectionToWebflow(
     console.warn("[webflow-normalizer]", normalized.warnings.join(" | "));
   }
 
+  // ==========================================
+  // ASSET VALIDATION - Early in pipeline
+  // ==========================================
+  const assetManifest = extractAndValidateAssets(normalized.html, normalized.css);
+  const googleFonts = detectGoogleFonts(normalized.html);
+
+  // Log asset issues for debugging
+  if (assetManifest.errors.length > 0) {
+    console.warn("[webflow-converter] Asset errors:", assetManifest.errors);
+  }
+  if (assetManifest.warnings.length > 0) {
+    console.warn("[webflow-converter] Asset warnings:", assetManifest.warnings);
+  }
+
   // Parse HTML
   const parsed = parseHtmlString(normalized.html) ?? parseHtmlString(`<div>${normalized.html}</div>`);
   if (!parsed) {
@@ -1547,13 +1604,14 @@ export function convertSectionToWebflow(
     });
   }
 
-  // Validate payload integrity
+  // Validate payload integrity (legacy validation)
   const integrityWarnings = validatePayloadIntegrity(nodes, styles);
   if (integrityWarnings.length > 0) {
     console.warn("[webflow-converter] Integrity issues:", integrityWarnings);
   }
 
-  return {
+  // Build the payload
+  const payload: WebflowPayload = {
     type: "@webflow/XscpData",
     payload: {
       nodes,
@@ -1572,8 +1630,31 @@ export function convertSectionToWebflow(
       dynBindRemovedCount: 0,
       dynListBindRemovedCount: 0,
       paginationRemovedCount: 0,
+      assetValidation: {
+        errors: assetManifest.errors,
+        warnings: assetManifest.warnings,
+        stats: assetManifest.stats,
+        googleFonts: googleFonts ?? undefined,
+      },
     },
   };
+
+  // Run pre-flight validation
+  const preflightResult = runPreflightValidation(payload);
+  payload.meta.preflightValidation = {
+    isValid: preflightResult.isValid,
+    canProceed: preflightResult.canProceed,
+    summary: preflightResult.summary,
+    details: preflightResult,
+  };
+
+  if (!preflightResult.canProceed) {
+    console.error("[webflow-converter] CRITICAL: Pre-flight validation failed!", preflightResult.summary);
+  } else if (!preflightResult.isValid) {
+    console.warn("[webflow-converter] Pre-flight validation passed with warnings:", preflightResult.summary);
+  }
+
+  return payload;
 }
 
 /**
@@ -1690,6 +1771,15 @@ export function buildCssTokenPayload(
   const { namespace = "fp", includePreview = true } = options;
   const warnings: string[] = [];
 
+  // Validate asset URLs in CSS (background images, fonts)
+  const assetManifest = extractAndValidateAssets('', css);
+  if (assetManifest.errors.length > 0) {
+    warnings.push(...assetManifest.errors.map(e => `Asset Error: ${e}`));
+  }
+  if (assetManifest.warnings.length > 0) {
+    warnings.push(...assetManifest.warnings.map(w => `Asset Warning: ${w}`));
+  }
+
   // Parse CSS using the new deterministic parser
   const { classIndex } = parseCSS(css);
 
@@ -1790,31 +1880,49 @@ export function buildCssTokenPayload(
     });
   }
 
-  // Validate payload integrity
+  // Validate payload integrity (legacy validation)
   const integrityWarnings = validatePayloadIntegrity(nodes, styles);
   if (integrityWarnings.length > 0) {
     warnings.push(...integrityWarnings);
     console.warn("[webflow-converter] CSS token payload integrity issues:", integrityWarnings);
   }
 
-  return {
-    webflowPayload: {
-      type: "@webflow/XscpData",
-      payload: {
-        nodes,
-        styles,
-        assets: [],
-        ix1: [],
-        ix2: { interactions: [], events: [], actionLists: [] },
-      },
-      meta: {
-        unlinkedSymbolCount: 0,
-        droppedLinks: 0,
-        dynBindRemovedCount: 0,
-        dynListBindRemovedCount: 0,
-        paginationRemovedCount: 0,
-      },
+  // Build the webflow payload
+  const webflowPayload: WebflowPayload = {
+    type: "@webflow/XscpData",
+    payload: {
+      nodes,
+      styles,
+      assets: [],
+      ix1: [],
+      ix2: { interactions: [], events: [], actionLists: [] },
     },
+    meta: {
+      unlinkedSymbolCount: 0,
+      droppedLinks: 0,
+      dynBindRemovedCount: 0,
+      dynListBindRemovedCount: 0,
+      paginationRemovedCount: 0,
+    },
+  };
+
+  // Run pre-flight validation
+  const preflightResult = runPreflightValidation(webflowPayload);
+  webflowPayload.meta.preflightValidation = {
+    isValid: preflightResult.isValid,
+    canProceed: preflightResult.canProceed,
+    summary: preflightResult.summary,
+  };
+
+  if (!preflightResult.canProceed) {
+    warnings.push(`CRITICAL: Pre-flight validation failed - ${preflightResult.summary}`);
+    console.error("[webflow-converter] CRITICAL: CSS token payload pre-flight validation failed!", preflightResult.summary);
+  } else if (!preflightResult.isValid) {
+    warnings.push(`Pre-flight validation warnings: ${preflightResult.summary}`);
+  }
+
+  return {
+    webflowPayload,
     establishedClasses,
     warnings,
   };
@@ -1846,6 +1954,15 @@ export function buildComponentPayload(
   const warnings: string[] = [];
   const missingClasses: string[] = [];
   const skippedClasses: string[] = [];
+
+  // Validate asset URLs in component HTML
+  const assetManifest = extractAndValidateAssets(component.htmlContent, '');
+  if (assetManifest.errors.length > 0) {
+    warnings.push(...assetManifest.errors.map(e => `Asset Error: ${e}`));
+  }
+  if (assetManifest.warnings.length > 0) {
+    warnings.push(...assetManifest.warnings.map(w => `Asset Warning: ${w}`));
+  }
 
   // Determine ID prefix
   const prefix = options.idPrefix || extractPrefix(component.primaryClass) || "wf";
@@ -1932,31 +2049,54 @@ export function buildComponentPayload(
     }
   }
 
-  // Validate payload integrity
+  // Validate payload integrity (legacy validation)
   const integrityWarnings = validatePayloadIntegrity(nodes, componentStyles);
   if (integrityWarnings.length > 0) {
     warnings.push(...integrityWarnings);
     console.warn(`[webflow-converter] Component "${component.name}" integrity issues:`, integrityWarnings);
   }
 
-  return {
-    webflowPayload: {
-      type: "@webflow/XscpData",
-      payload: {
-        nodes,
-        styles: componentStyles,
-        assets: [],
-        ix1: [],
-        ix2: { interactions: [], events: [], actionLists: [] },
-      },
-      meta: {
-        unlinkedSymbolCount: 0,
-        droppedLinks: 0,
-        dynBindRemovedCount: 0,
-        dynListBindRemovedCount: 0,
-        paginationRemovedCount: 0,
-      },
+  // Build the webflow payload
+  const webflowPayload: WebflowPayload = {
+    type: "@webflow/XscpData",
+    payload: {
+      nodes,
+      styles: componentStyles,
+      assets: [],
+      ix1: [],
+      ix2: { interactions: [], events: [], actionLists: [] },
     },
+    meta: {
+      unlinkedSymbolCount: 0,
+      droppedLinks: 0,
+      dynBindRemovedCount: 0,
+      dynListBindRemovedCount: 0,
+      paginationRemovedCount: 0,
+      assetValidation: assetManifest.stats.total > 0 ? {
+        errors: assetManifest.errors,
+        warnings: assetManifest.warnings,
+        stats: assetManifest.stats,
+      } : undefined,
+    },
+  };
+
+  // Run pre-flight validation
+  const preflightResult = runPreflightValidation(webflowPayload);
+  webflowPayload.meta.preflightValidation = {
+    isValid: preflightResult.isValid,
+    canProceed: preflightResult.canProceed,
+    summary: preflightResult.summary,
+  };
+
+  if (!preflightResult.canProceed) {
+    warnings.push(`CRITICAL: Pre-flight validation failed for "${component.name}" - ${preflightResult.summary}`);
+    console.error(`[webflow-converter] CRITICAL: Component "${component.name}" pre-flight validation failed!`, preflightResult.summary);
+  } else if (!preflightResult.isValid) {
+    warnings.push(`Pre-flight validation warnings for "${component.name}": ${preflightResult.summary}`);
+  }
+
+  return {
+    webflowPayload,
     warnings,
     missingClasses,
   };
@@ -2083,3 +2223,25 @@ export function validateForWebflowPaste(
 
   return [...new Set(warnings)]; // Dedupe
 }
+
+// ============================================
+// RE-EXPORTS FROM ASSET VALIDATOR
+// ============================================
+
+// Re-export asset validator types and functions for convenience
+export {
+  classifyURL,
+  validateAssetURL,
+  extractAndValidateAssets,
+  detectGoogleFonts,
+  processAssetUrls,
+  generateValidationSummary,
+} from "./asset-validator";
+
+export type {
+  AssetURLType,
+  AssetValidation,
+  AssetManifest,
+  GoogleFontInfo,
+  AssetReplacementOptions,
+} from "./asset-validator";

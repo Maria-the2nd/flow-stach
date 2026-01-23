@@ -113,3 +113,147 @@ export const deleteTemplate = mutation({
     }
   },
 })
+
+/**
+ * List user's templates (for Flow-Goodies extension)
+ * Returns all templates with their asset counts
+ */
+export const listMine = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAuth(ctx)
+
+    const templates = await ctx.db.query("templates").collect()
+    const assets = await ctx.db.query("assets").collect()
+
+    const counts = new Map<string, number>()
+    for (const asset of assets) {
+      if (!asset.templateId) continue
+      counts.set(asset.templateId, (counts.get(asset.templateId) ?? 0) + 1)
+    }
+
+    return templates
+      .map((template) => ({
+        _id: template._id,
+        name: template.name,
+        slug: template.slug,
+        imageUrl: template.imageUrl,
+        assetCount: counts.get(template._id) ?? 0,
+        _creationTime: template.createdAt,
+      }))
+      .sort((a, b) => b._creationTime - a._creationTime)
+  },
+})
+
+/**
+ * Get full page payload for a template (for Flow-Goodies extension)
+ * Returns the most recent asset's webflowJson for the given template
+ */
+export const getFullPagePayload = query({
+  args: {
+    templateId: v.id("templates"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx)
+
+    // Get the most recent asset for this template
+    const assets = await ctx.db
+      .query("assets")
+      .withIndex("by_template", (q) => q.eq("templateId", args.templateId))
+      .collect()
+
+    if (assets.length === 0) {
+      throw new Error("No assets found for this template")
+    }
+
+    // Sort by creation time descending (most recent first)
+    const sortedAssets = assets.sort((a, b) => b.createdAt - a.createdAt)
+    const latestAsset = sortedAssets[0]
+
+    // Get the payload for this asset
+    const payload = await ctx.db
+      .query("payloads")
+      .withIndex("by_asset_id", (q) => q.eq("assetId", latestAsset._id))
+      .unique()
+
+    if (!payload) {
+      throw new Error("No payload found for this asset")
+    }
+
+    return {
+      webflowJson: payload.webflowJson,
+      assetTitle: latestAsset.title,
+      assetSlug: latestAsset.slug,
+    }
+  },
+})
+
+/**
+ * Send a draft payload to Flow-Goodies (clipboard-free bridge)
+ * Creates a draft template/asset/payload that Flow-Goodies can fetch via "Insert Full Site"
+ */
+export const sendToFlowGoodies = mutation({
+  args: {
+    name: v.string(),
+    webflowJson: v.string(),
+    source: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx)
+
+    const now = Date.now()
+    const slug = `flow-goodies-draft-${now}`
+
+    // Find or create the "Flow-Goodies Drafts" template
+    let template = await ctx.db
+      .query("templates")
+      .withIndex("by_slug", (q) => q.eq("slug", "flow-goodies-drafts"))
+      .unique()
+
+    if (!template) {
+      const templateId = await ctx.db.insert("templates", {
+        name: "Flow-Goodies Drafts",
+        slug: "flow-goodies-drafts",
+        createdAt: now,
+        updatedAt: now,
+      })
+      template = await ctx.db.get(templateId)
+      if (!template) {
+        throw new Error("Failed to create template")
+      }
+    }
+
+    // Create the asset
+    const assetId = await ctx.db.insert("assets", {
+      slug,
+      title: args.name || `Draft ${now}`,
+      category: "Draft",
+      description: args.source || "Sent from flow-stach import tool",
+      tags: ["draft", "flow-goodies"],
+      templateId: template._id,
+      isNew: true,
+      status: "draft",
+      pasteReliability: "full",
+      supportsCodeCopy: false,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    // Create the payload
+    await ctx.db.insert("payloads", {
+      assetId,
+      webflowJson: args.webflowJson,
+      codePayload: JSON.stringify({ note: "No code payload for draft" }),
+      dependencies: [],
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    return {
+      success: true,
+      assetId,
+      slug,
+      templateId: template._id,
+    }
+  },
+})

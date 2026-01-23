@@ -38,6 +38,10 @@
   ],
   "exclude": [
     "node_modules",
-    "convex"
+    "convex",
+    "flow-bridge-extension",
+    "Flow-Goodies-extension",
+    "temp",
+    "tests"
   ]
 }

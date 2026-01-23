@@ -6,6 +6,20 @@
 import { parseCSS, ClassIndex } from "./css-parser";
 import { NormalizationResult, parseHtmlString, ParsedElement } from "./webflow-normalizer";
 import { WebflowPayload } from "./webflow-converter";
+import {
+  runPreflightValidation,
+  validateUUIDs,
+  validateNodeReferences,
+  detectCircularReferences,
+  validateStyles,
+  validateEmbedSize,
+  validateNodeStructure,
+  type PreflightResult,
+  type UUIDValidation,
+  type OrphanValidation,
+  type CircularValidation,
+  type StyleValidation,
+} from "./preflight-validator";
 
 // ============================================
 // TYPES
@@ -503,14 +517,271 @@ export function diagnoseVisibilityIssues(html: string, css: string): string[] {
     if (!parsedHtml) {
         parsedHtml = parseHtmlString(`<div class="diagnostic-wrapper">${html}</div>`);
     }
-    
+
     if (!parsedHtml) return ["Failed to parse HTML for diagnostics"];
-    
+
     const { classIndex } = parseCSS(css);
     const details: string[] = [];
-    
+
     checkVisibilityRecursively(parsedHtml, null, classIndex, issues, details, 0);
-    
+
     return issues;
 }
+
+// ============================================
+// PRE-FLIGHT VERIFICATION PHASES
+// ============================================
+
+/**
+ * Verify UUID integrity using preflight validator.
+ * Duplicate UUIDs cause unrecoverable Webflow project corruption.
+ */
+export function verifyUUIDIntegrity(payload: WebflowPayload): VerificationResult {
+  const issues: string[] = [];
+  const details: string[] = [];
+
+  const validation = validateUUIDs(payload.payload.nodes, payload.payload.styles);
+
+  if (validation.duplicates.length > 0) {
+    issues.push(`${validation.duplicates.length} duplicate UUID(s) detected`);
+    details.push(...validation.duplicates.slice(0, 10).map(id => `  - Duplicate: ${id}`));
+    if (validation.duplicates.length > 10) {
+      details.push(`  ... and ${validation.duplicates.length - 10} more duplicates`);
+    }
+  }
+
+  if (validation.invalidFormat.length > 0) {
+    issues.push(`${validation.invalidFormat.length} UUID(s) with invalid format`);
+    details.push(...validation.invalidFormat.slice(0, 5).map(id => `  - Invalid: ${id}`));
+    if (validation.invalidFormat.length > 5) {
+      details.push(`  ... and ${validation.invalidFormat.length - 5} more invalid`);
+    }
+  }
+
+  const status = validation.isValid ? "PASS" : "FAIL";
+  return { phase: "UUID Integrity Check", status, issues, details };
+}
+
+/**
+ * Verify node reference integrity using preflight validator.
+ * Orphan references cause Webflow to fail silently or corrupt data.
+ */
+export function verifyNodeReferences(payload: WebflowPayload): VerificationResult {
+  const issues: string[] = [];
+  const details: string[] = [];
+
+  const validation = validateNodeReferences(payload.payload.nodes);
+
+  if (validation.orphanReferences.length > 0) {
+    issues.push(`${validation.orphanReferences.length} orphan node reference(s)`);
+    details.push(...validation.orphanReferences.slice(0, 10).map(
+      ref => `  - Node ${ref.parentId} -> missing child ${ref.missingChildId}`
+    ));
+    if (validation.orphanReferences.length > 10) {
+      details.push(`  ... and ${validation.orphanReferences.length - 10} more orphans`);
+    }
+  }
+
+  if (validation.unreachableNodes.length > 0) {
+    // Unreachable nodes are warnings, not failures
+    details.push(`  Warning: ${validation.unreachableNodes.length} unreachable node(s)`);
+  }
+
+  const status = validation.isValid ? "PASS" : "FAIL";
+  return { phase: "Node Reference Integrity", status, issues, details };
+}
+
+/**
+ * Verify no circular references exist using preflight validator.
+ * Circular references cause infinite loops in Webflow.
+ */
+export function verifyNoCircularReferences(payload: WebflowPayload): VerificationResult {
+  const issues: string[] = [];
+  const details: string[] = [];
+
+  const validation = detectCircularReferences(payload.payload.nodes);
+
+  if (validation.cycles.length > 0) {
+    issues.push(`${validation.cycles.length} circular reference(s) detected`);
+    for (const cycle of validation.cycles.slice(0, 5)) {
+      details.push(`  - Cycle: ${cycle.join(" -> ")}`);
+    }
+    if (validation.cycles.length > 5) {
+      details.push(`  ... and ${validation.cycles.length - 5} more cycles`);
+    }
+  }
+
+  const status = validation.isValid ? "PASS" : "FAIL";
+  return { phase: "Circular Reference Check", status, issues, details };
+}
+
+/**
+ * Verify style definitions using preflight validator.
+ */
+export function verifyStyleDefinitions(payload: WebflowPayload): VerificationResult {
+  const issues: string[] = [];
+  const details: string[] = [];
+
+  const validation = validateStyles(payload.payload.styles, payload.payload.nodes);
+
+  if (validation.invalidStyles.length > 0) {
+    issues.push(`${validation.invalidStyles.length} invalid style declaration(s)`);
+    details.push(...validation.invalidStyles.slice(0, 10).map(
+      s => `  - ${s.className}: ${s.property}="${s.value}" (${s.reason})`
+    ));
+    if (validation.invalidStyles.length > 10) {
+      details.push(`  ... and ${validation.invalidStyles.length - 10} more invalid styles`);
+    }
+  }
+
+  if (validation.missingStyleRefs.length > 0) {
+    issues.push(`${validation.missingStyleRefs.length} missing style reference(s)`);
+    details.push(...validation.missingStyleRefs.slice(0, 5).map(ref => `  - ${ref}`));
+    if (validation.missingStyleRefs.length > 5) {
+      details.push(`  ... and ${validation.missingStyleRefs.length - 5} more missing refs`);
+    }
+  }
+
+  const status = validation.isValid ? "PASS" : (validation.invalidStyles.length > 0 ? "WARN" : "PASS");
+  return { phase: "Style Definition Check", status, issues, details };
+}
+
+/**
+ * Verify embed sizes using preflight validator.
+ */
+export function verifyEmbedSizes(payload: WebflowPayload, cssEmbed?: string, jsEmbed?: string): VerificationResult {
+  const issues: string[] = [];
+  const details: string[] = [];
+
+  const validation = validateEmbedSize(payload.payload.nodes, cssEmbed, jsEmbed);
+
+  if (validation.errors.length > 0) {
+    issues.push(...validation.errors);
+    details.push(...validation.errors.map(e => `  - ERROR: ${e}`));
+  }
+
+  if (validation.warnings.length > 0) {
+    details.push(...validation.warnings.map(w => `  - WARNING: ${w}`));
+  }
+
+  if (validation.css > 0) {
+    details.push(`  CSS embed size: ${Math.round(validation.css / 1024)}KB`);
+  }
+  if (validation.js > 0) {
+    details.push(`  JS embed size: ${Math.round(validation.js / 1024)}KB`);
+  }
+
+  const status = validation.errors.length > 0 ? "FAIL" : (validation.warnings.length > 0 ? "WARN" : "PASS");
+  return { phase: "Embed Size Check", status, issues, details };
+}
+
+/**
+ * Verify node structure using preflight validator.
+ */
+export function verifyNodeStructure(payload: WebflowPayload): VerificationResult {
+  const issues: string[] = [];
+  const details: string[] = [];
+
+  const validation = validateNodeStructure(payload.payload.nodes);
+
+  if (validation.errors.length > 0) {
+    issues.push(`${validation.errors.length} node structure error(s)`);
+    details.push(...validation.errors.slice(0, 10).map(e => `  - ERROR: ${e}`));
+    if (validation.errors.length > 10) {
+      details.push(`  ... and ${validation.errors.length - 10} more errors`);
+    }
+  }
+
+  if (validation.warnings.length > 0) {
+    details.push(...validation.warnings.slice(0, 5).map(w => `  - WARNING: ${w}`));
+    if (validation.warnings.length > 5) {
+      details.push(`  ... and ${validation.warnings.length - 5} more warnings`);
+    }
+  }
+
+  const status = validation.errors.length > 0 ? "FAIL" : (validation.warnings.length > 0 ? "WARN" : "PASS");
+  return { phase: "Node Structure Check", status, issues, details };
+}
+
+/**
+ * Run comprehensive pre-flight verification on a Webflow payload.
+ * This should be run BEFORE allowing paste to prevent project corruption.
+ */
+export function runPreflightVerification(
+  payload: WebflowPayload,
+  options: {
+    cssEmbed?: string;
+    jsEmbed?: string;
+  } = {}
+): VerificationReport {
+  const phases: VerificationResult[] = [
+    verifyUUIDIntegrity(payload),
+    verifyNodeReferences(payload),
+    verifyNoCircularReferences(payload),
+    verifyStyleDefinitions(payload),
+    verifyEmbedSizes(payload, options.cssEmbed, options.jsEmbed),
+    verifyNodeStructure(payload),
+  ];
+
+  // Collect critical failures, warnings, and recommendations
+  const criticalFailures: string[] = [];
+  const warnings: string[] = [];
+  const recommendations: string[] = [];
+
+  for (const phase of phases) {
+    if (phase.status === "FAIL") {
+      criticalFailures.push(`${phase.phase}: ${phase.issues.join("; ")}`);
+    } else if (phase.status === "WARN") {
+      warnings.push(`${phase.phase}: ${phase.issues.join("; ")}`);
+    }
+  }
+
+  // Add recommendations based on issues
+  if (criticalFailures.some(f => f.includes("UUID"))) {
+    recommendations.push("Regenerate node IDs to fix duplicate UUID issues");
+  }
+  if (criticalFailures.some(f => f.includes("circular"))) {
+    recommendations.push("Check parent-child relationships for circular dependencies");
+  }
+  if (criticalFailures.some(f => f.includes("orphan"))) {
+    recommendations.push("Ensure all child references point to existing nodes");
+  }
+  if (warnings.some(w => w.includes("Embed Size"))) {
+    recommendations.push("Consider splitting large embeds into smaller chunks");
+  }
+
+  // Determine overall status
+  const overallStatus = criticalFailures.length > 0 ? "FAIL" : (warnings.length > 0 ? "WARN" : "PASS");
+
+  // Determine paste safety
+  const pasteSafety: Record<string, "SAFE" | "REVIEW" | "DO NOT PASTE"> = {
+    "payload": overallStatus === "FAIL" ? "DO NOT PASTE" : (overallStatus === "WARN" ? "REVIEW" : "SAFE"),
+  };
+
+  return {
+    overallStatus,
+    criticalFailures,
+    warnings,
+    recommendations,
+    pasteSafety,
+    phases,
+    componentFidelity: {},
+  };
+}
+
+// Re-export preflight types and functions for convenience
+export {
+  runPreflightValidation,
+  validateUUIDs,
+  validateNodeReferences,
+  detectCircularReferences,
+  validateStyles,
+  validateEmbedSize,
+  validateNodeStructure,
+  type PreflightResult,
+  type UUIDValidation,
+  type OrphanValidation,
+  type CircularValidation,
+  type StyleValidation,
+} from "./preflight-validator";
 

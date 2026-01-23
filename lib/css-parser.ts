@@ -18,10 +18,15 @@ export interface ClassIndexEntry {
   activeStyles?: string;
   visitedStyles?: string;
   mediaQueries: {
-    desktop?: string;
-    medium?: string;
-    small?: string;
-    tiny?: string;
+    // Max-width breakpoints (cascade DOWN from desktop)
+    desktop?: string;   // base styles (no media query)
+    medium?: string;    // ≤991px (tablet)
+    small?: string;     // ≤767px (mobile landscape)
+    tiny?: string;      // ≤478px (mobile portrait)
+    // Min-width breakpoints (cascade UP from desktop)
+    xlarge?: string;    // ≥1280px
+    xxlarge?: string;   // ≥1440px
+    xxxlarge?: string;  // ≥1920px
   };
   isComboClass: boolean;
   parentClass?: string;
@@ -42,19 +47,35 @@ export interface ClassIndexEntry {
 export interface ClassIndex {
   classes: Record<string, ClassIndexEntry>;
   mediaBreakpoints: {
+    // Max-width breakpoints (cascade DOWN)
     desktop: string;
     medium: string;
     small: string;
     tiny: string;
+    // Min-width breakpoints (cascade UP)
+    xlarge: string;
+    xxlarge: string;
+    xxxlarge: string;
   };
   warnings: CssWarning[];
+  /** CSS rules that couldn't be mapped to Webflow breakpoints (container queries, print, etc.) */
+  nonStandardMediaCss?: string;
 }
 
 export interface CssWarning {
-  type: "unsupported_property" | "unsupported_selector" | "complex_selector" | "animation" | "variable_unresolved" | "breakpoint_unmapped";
+  type:
+    | "unsupported_property"
+    | "unsupported_selector"
+    | "complex_selector"
+    | "animation"
+    | "variable_unresolved"
+    | "breakpoint_unmapped"
+    | "breakpoint_rounded"
+    | "breakpoint_embedded";
   message: string;
   selector?: string;
   property?: string;
+  severity?: "info" | "warning" | "error";
 }
 
 export interface ParsedCssResult {
@@ -360,23 +381,98 @@ function cssLengthToPixels(value: number, unit: string): number {
   return NaN;
 }
 
-function detectBreakpoint(query: string): "desktop" | "medium" | "small" | "tiny" | null {
-  // Match max-width with any common unit (px, rem, em)
-  const maxWidth = query.match(/max-width:\s*([\d.]+)(px|rem|em)/i);
-  if (!maxWidth) return null;
-  const value = parseFloat(maxWidth[1]);
-  const unit = maxWidth[2];
-  const width = cssLengthToPixels(value, unit);
-  if (isNaN(width)) return null;
-  if (width <= 479) return "tiny";
-  if (width <= 767) return "small";
-  if (width <= 991) return "medium";
-  if (width <= 1200) return "desktop";
-  return null;
+// ============================================
+// BREAKPOINT DETECTION
+// ============================================
+
+export type BreakpointName = 'tiny' | 'small' | 'medium' | 'desktop' | 'xlarge' | 'xxlarge' | 'xxxlarge';
+
+export interface BreakpointResult {
+  name: BreakpointName;
+  isMinWidth: boolean;  // true = cascades up (min-width), false = cascades down (max-width)
+  originalWidth: number;
+  wasRounded: boolean;
 }
 
+/**
+ * Check if a media query contains non-standard features that should be embedded as-is
+ */
+function isNonStandardMediaQuery(query: string): boolean {
+  return (
+    /orientation/i.test(query) ||
+    /prefers-color-scheme/i.test(query) ||
+    /prefers-reduced-motion/i.test(query) ||
+    /print/i.test(query) ||
+    /hover:\s*hover/i.test(query) ||
+    /pointer:/i.test(query) ||
+    /@container/i.test(query) ||
+    /aspect-ratio/i.test(query) ||
+    /resolution/i.test(query) ||
+    /color-scheme/i.test(query)
+  );
+}
+
+/**
+ * Round non-standard breakpoint widths to nearest Webflow breakpoint
+ */
+function roundToNearestBreakpoint(width: number, isMinWidth: boolean): { name: BreakpointName; wasRounded: boolean } {
+  if (isMinWidth) {
+    // Min-width: cascade UP breakpoints
+    // Standard: 1280, 1440, 1920
+    if (width >= 1800) return { name: 'xxxlarge', wasRounded: width !== 1920 };
+    if (width >= 1400) return { name: 'xxlarge', wasRounded: width !== 1440 };
+    if (width >= 1200) return { name: 'xlarge', wasRounded: width !== 1280 };
+    // Below 1200 promotes to desktop base
+    return { name: 'desktop', wasRounded: false };
+  } else {
+    // Max-width: cascade DOWN breakpoints
+    // Standard: 991, 767, 478
+    if (width <= 500) return { name: 'tiny', wasRounded: width !== 478 && width !== 479 };
+    if (width <= 800) return { name: 'small', wasRounded: width !== 767 && width !== 768 };
+    if (width <= 1024) return { name: 'medium', wasRounded: width !== 991 && width !== 992 };
+    // Above 1024 is desktop
+    return { name: 'desktop', wasRounded: false };
+  }
+}
+
+/**
+ * Detect breakpoint from a media query string
+ * Supports both max-width (cascade down) and min-width (cascade up)
+ */
+function detectBreakpoint(query: string): BreakpointResult | null {
+  // Extract width value and type
+  const maxMatch = query.match(/max-width:\s*([\d.]+)(px|rem|em)/i);
+  const minMatch = query.match(/min-width:\s*([\d.]+)(px|rem|em)/i);
+
+  if (maxMatch) {
+    const value = parseFloat(maxMatch[1]);
+    const unit = maxMatch[2];
+    const width = cssLengthToPixels(value, unit);
+    if (isNaN(width)) return null;
+
+    // Cascade DOWN breakpoints (max-width)
+    const { name, wasRounded } = roundToNearestBreakpoint(width, false);
+    return { name, isMinWidth: false, originalWidth: width, wasRounded };
+  }
+
+  if (minMatch) {
+    const value = parseFloat(minMatch[1]);
+    const unit = minMatch[2];
+    const width = cssLengthToPixels(value, unit);
+    if (isNaN(width)) return null;
+
+    // Cascade UP breakpoints (min-width)
+    const { name, wasRounded } = roundToNearestBreakpoint(width, true);
+    return { name, isMinWidth: true, originalWidth: width, wasRounded };
+  }
+
+  return null; // Non-standard query (no width-based breakpoint)
+}
+
+/**
+ * Legacy function for backward compatibility - extracts min-width value as number
+ */
 function detectMinWidth(query: string): number | null {
-  // Match min-width with any common unit (px, rem, em)
   const minWidth = query.match(/min-width:\s*([\d.]+)(px|rem|em)/i);
   if (!minWidth) return null;
   const value = parseFloat(minWidth[1]);
@@ -700,20 +796,39 @@ function mergeStyleLessPreserveExisting(existing: string | undefined, incoming: 
   return mapToStyleLess(existingMap);
 }
 
-function minWidthToOverrideBreakpoints(minWidth: number): Array<"medium" | "small" | "tiny"> {
-  // Webflow is desktop-first (base + max-width breakpoints).
-  // For mobile-first CSS (min-width), we promote those rules into base (desktop),
-  // and we "backfill" the previous base (mobile) values into the breakpoints that are BELOW minWidth.
-  //
-  // Breakpoint ranges (Webflow):
-  // - base: >= 992px
-  // - medium: <= 991px
-  // - small: <= 767px
-  // - tiny: <= 479px
+type DownBreakpoint = "medium" | "small" | "tiny";
+type UpBreakpoint = "xlarge" | "xxlarge" | "xxxlarge";
+
+/**
+ * For min-width queries, determine which DOWN breakpoints need backfill.
+ * This is used when promoting mobile-first styles to desktop base.
+ *
+ * Webflow breakpoint ranges:
+ * - xxxlarge: >= 1920px (min-width)
+ * - xxlarge: >= 1440px (min-width)
+ * - xlarge: >= 1280px (min-width)
+ * - base (desktop): 992px - 1279px
+ * - medium: <= 991px (max-width)
+ * - small: <= 767px (max-width)
+ * - tiny: <= 478px (max-width)
+ */
+function minWidthToOverrideBreakpoints(minWidth: number): Array<DownBreakpoint> {
+  // For min-width queries below 1280px, we promote to base and backfill down
   if (minWidth >= 992) return ["medium", "small", "tiny"];
   if (minWidth >= 768) return ["small", "tiny"];
   if (minWidth >= 480) return ["tiny"];
   return [];
+}
+
+/**
+ * For min-width queries >= 1280px, determine which UP breakpoint to use.
+ * These don't need backfill - they cascade UP from desktop.
+ */
+function minWidthToUpBreakpoint(minWidth: number): UpBreakpoint | null {
+  if (minWidth >= 1920) return "xxxlarge";
+  if (minWidth >= 1440) return "xxlarge";
+  if (minWidth >= 1280) return "xlarge";
+  return null; // Below 1280 promotes to base desktop
 }
 
 function applyMinWidthPropertiesToEntry(args: {
@@ -722,8 +837,20 @@ function applyMinWidthPropertiesToEntry(args: {
   minWidth: number;
 }): void {
   const { entry, properties, minWidth } = args;
+
+  // Check if this is an UP breakpoint (>= 1280px)
+  const upBreakpoint = minWidthToUpBreakpoint(minWidth);
+  if (upBreakpoint) {
+    // For xlarge/xxlarge/xxxlarge, styles go directly to that breakpoint
+    // They cascade UP (larger screens inherit from smaller UP breakpoints)
+    const styleLess = propertiesToStyleLess(properties);
+    entry.mediaQueries[upBreakpoint] = mergeStyleLess(entry.mediaQueries[upBreakpoint], styleLess);
+    return;
+  }
+
+  // For min-width < 1280px, use the existing mobile-first to desktop-first conversion
   const overrideBreakpoints = minWidthToOverrideBreakpoints(minWidth);
-  
+
   if (overrideBreakpoints.length === 0) {
     // Applies everywhere; just merge into base.
     entry.baseStyles = mergeStyleLess(entry.baseStyles, propertiesToStyleLess(properties));
@@ -1002,9 +1129,23 @@ export function parseCSS(css: string): ParsedCssResult {
     }
   }
 
+  // Collect non-standard media CSS for embedding
+  const nonStandardMediaBlocks: string[] = [];
+
   // Now parse media blocks
-  for (const { query, content } of mediaBlocks) {
-    const maxBreakpoint = detectBreakpoint(query);
+  for (const { query, content, fullMatch } of mediaBlocks) {
+    // Check for non-standard media queries first
+    if (isNonStandardMediaQuery(query)) {
+      nonStandardMediaBlocks.push(fullMatch);
+      warnings.push({
+        type: "breakpoint_embedded",
+        message: `Non-standard media query moved to embed: ${query}`,
+        severity: "warning",
+      });
+      continue;
+    }
+
+    const breakpointResult = detectBreakpoint(query);
     const minWidth = detectMinWidth(query);
 
     // Parse rules inside media query
@@ -1017,21 +1158,59 @@ export function parseCSS(css: string): ParsedCssResult {
       // Skip non-class selectors
       if (!selectors.includes(".")) continue;
 
-      if (maxBreakpoint) {
-        for (const sel of selectors.split(",")) {
-          processRule(sel.trim(), propertiesStr, variables, classes, warnings, maxBreakpoint);
+      // Handle breakpoints detected by the new unified function
+      if (breakpointResult) {
+        // Add rounding warning if applicable
+        if (breakpointResult.wasRounded) {
+          warnings.push({
+            type: "breakpoint_rounded",
+            message: `Media query "${query}" (${breakpointResult.originalWidth}px) rounded to ${breakpointResult.name}`,
+            severity: "info",
+          });
+        }
+
+        if (breakpointResult.isMinWidth) {
+          // Min-width query: either goes to UP breakpoint or promotes to base
+          const props = parseProperties(propertiesStr, variables, warnings);
+          for (const sel of selectors.split(",")) {
+            const parsed = parseSelector(sel.trim());
+            if (!parsed.className) continue;
+            // Only handle non-pseudo min-width rules for now
+            if (parsed.pseudoClass) continue;
+
+            if (!classes[parsed.className]) {
+              classes[parsed.className] = {
+                className: parsed.className,
+                selectors: [],
+                baseStyles: "",
+                mediaQueries: {},
+                isComboClass: parsed.isCombo,
+                children: [],
+                parentClasses: [],
+                isLayoutContainer: false,
+              };
+            }
+
+            const entry = classes[parsed.className];
+            entry.selectors.push(sel.trim());
+            applyMinWidthPropertiesToEntry({ entry, properties: props, minWidth: breakpointResult.originalWidth });
+          }
+        } else {
+          // Max-width query: goes to DOWN breakpoint (medium, small, tiny) or desktop
+          for (const sel of selectors.split(",")) {
+            const bp = breakpointResult.name === 'desktop' ? undefined : breakpointResult.name as "medium" | "small" | "tiny";
+            processRule(sel.trim(), propertiesStr, variables, classes, warnings, bp);
+          }
         }
         continue;
       }
 
+      // Fallback: use legacy minWidth detection for edge cases
       if (typeof minWidth === "number") {
-        // Mobile-first (min-width) → Webflow desktop-first:
-        // promote these properties into base, and backfill previous base values into smaller breakpoints.
         const props = parseProperties(propertiesStr, variables, warnings);
         for (const sel of selectors.split(",")) {
           const parsed = parseSelector(sel.trim());
           if (!parsed.className) continue;
-          // Only handle non-pseudo min-width rules for now.
           if (parsed.pseudoClass) continue;
 
           if (!classes[parsed.className]) {
@@ -1058,6 +1237,9 @@ export function parseCSS(css: string): ParsedCssResult {
     }
   }
 
+  // Combine non-standard media CSS
+  const nonStandardMediaCss = nonStandardMediaBlocks.length > 0 ? nonStandardMediaBlocks.join("\n\n") : undefined;
+
   // ============================================
   // STEP 2: Merge element typography and spacing into class styles
   // ============================================
@@ -1073,12 +1255,18 @@ export function parseCSS(css: string): ParsedCssResult {
     classIndex: {
       classes,
       mediaBreakpoints: {
-        desktop: "max-width: 1200px",
+        // Max-width breakpoints (cascade DOWN)
+        desktop: "base styles (992px - 1279px)",
         medium: "max-width: 991px",
         small: "max-width: 767px",
-        tiny: "max-width: 479px",
+        tiny: "max-width: 478px",
+        // Min-width breakpoints (cascade UP)
+        xlarge: "min-width: 1280px",
+        xxlarge: "min-width: 1440px",
+        xxxlarge: "min-width: 1920px",
       },
       warnings,
+      nonStandardMediaCss,
     },
     tokensCss,
     cleanCss,
@@ -1622,10 +1810,13 @@ function enforceExplicitLayoutProperties(
 export function classEntryToWebflowStyle(entry: ClassIndexEntry): WebflowStyle {
   const variants: Record<string, { styleLess: string }> = {};
 
+  // Pseudo-class variants
   if (entry.hoverStyles) variants["hover"] = { styleLess: entry.hoverStyles };
   if (entry.focusStyles) variants["focus"] = { styleLess: entry.focusStyles };
   if (entry.activeStyles) variants["pressed"] = { styleLess: entry.activeStyles };
   if (entry.visitedStyles) variants["visited"] = { styleLess: entry.visitedStyles };
+
+  // Max-width breakpoints (cascade DOWN from desktop)
   if (entry.mediaQueries.desktop) {
     variants["desktop"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.desktop, entry.isLayoutContainer) };
   }
@@ -1639,16 +1830,31 @@ export function classEntryToWebflowStyle(entry: ClassIndexEntry): WebflowStyle {
     variants["tiny"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.tiny, entry.isLayoutContainer) };
   }
 
+  // Min-width breakpoints (cascade UP from desktop)
+  // Internal name -> Webflow variant key mapping:
+  // xlarge (>=1280px) -> "large"
+  // xxlarge (>=1440px) -> "xlarge"
+  // xxxlarge (>=1920px) -> "xxlarge"
+  if (entry.mediaQueries.xlarge) {
+    variants["large"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.xlarge, entry.isLayoutContainer) };
+  }
+  if (entry.mediaQueries.xxlarge) {
+    variants["xlarge"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.xxlarge, entry.isLayoutContainer) };
+  }
+  if (entry.mediaQueries.xxxlarge) {
+    variants["xxlarge"] = { styleLess: normalizeGridStyleLess(entry.mediaQueries.xxxlarge, entry.isLayoutContainer) };
+  }
+
   const baseStyles = normalizeGridStyleLess(entry.baseStyles, entry.isLayoutContainer);
   const validatedBaseStyles = validateStyleLess(baseStyles);
   logGridStyle(entry.className, validatedBaseStyles, entry.isLayoutContainer);
-  
+
   // Validate variant styleLess strings as well
   const validatedVariants: Record<string, { styleLess: string }> = {};
   for (const [key, variant] of Object.entries(variants)) {
     validatedVariants[key] = { styleLess: validateStyleLess(variant.styleLess) };
   }
-  
+
   return {
     _id: entry.className,
     fake: false,
@@ -1786,8 +1992,7 @@ export function classIndexToWebflowStyles(classIndex: ClassIndex, filterClasses?
 
   for (const [className, entry] of Object.entries(classIndex.classes)) {
     if (filterClasses && !filterClasses.has(className)) continue;
-    if (!entry.baseStyles && !entry.hoverStyles && !entry.focusStyles && !entry.activeStyles &&
-      !entry.visitedStyles && !entry.mediaQueries.medium && !entry.mediaQueries.small && !entry.mediaQueries.tiny) {
+    if (!hasStyles(entry)) {
       continue;
     }
     styles.push(classEntryToWebflowStyle(entry));
@@ -1801,9 +2006,22 @@ export function getClassNames(classIndex: ClassIndex): string[] {
 }
 
 export function hasStyles(entry: ClassIndexEntry): boolean {
-  return !!(entry.baseStyles || entry.hoverStyles || entry.focusStyles || entry.activeStyles ||
-    entry.visitedStyles || entry.mediaQueries.desktop || entry.mediaQueries.medium ||
-    entry.mediaQueries.small || entry.mediaQueries.tiny);
+  return !!(
+    entry.baseStyles ||
+    entry.hoverStyles ||
+    entry.focusStyles ||
+    entry.activeStyles ||
+    entry.visitedStyles ||
+    // Max-width breakpoints (cascade DOWN)
+    entry.mediaQueries.desktop ||
+    entry.mediaQueries.medium ||
+    entry.mediaQueries.small ||
+    entry.mediaQueries.tiny ||
+    // Min-width breakpoints (cascade UP)
+    entry.mediaQueries.xlarge ||
+    entry.mediaQueries.xxlarge ||
+    entry.mediaQueries.xxxlarge
+  );
 }
 
 export function getStyledClasses(classIndex: ClassIndex): string[] {

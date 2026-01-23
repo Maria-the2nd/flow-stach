@@ -44,6 +44,20 @@ import {
   type FlowbridgeSemanticPatchMeta,
   applyDeterministicComponentNames,
 } from "@/lib/flowbridge-semantic"
+import {
+  detectLibraries,
+  detectPaidPlugins,
+  generateScriptEmbed,
+  type DetectedLibraries,
+  type PaidPluginWarning,
+} from "@/lib/js-library-detector"
+import {
+  routeCSS,
+  wrapEmbedCSSInStyleTag,
+  getRoutingSummary,
+  type CSSRoutingResult,
+  type RouterWarning,
+} from "@/lib/css-embed-router"
 
 // ============================================
 // TYPES
@@ -61,6 +75,10 @@ interface ExtractedArtifacts {
   jsHooks: string[]
   cssVariables: Map<string, string>
   externalScripts: string[]
+  /** CSS that must be embedded (keyframes, ::before/::after, complex selectors, etc.) */
+  embedCss: string
+  /** Summary of features routed to embed */
+  embedCssFeatures: string[]
 }
 
 interface ImportResult {
@@ -197,12 +215,14 @@ interface TokensTabProps {
   tokensJson: string
   tokenWebflowJson: string | null
   onCopyTokens: () => Promise<void>
+  onSendToFlowGoodies: () => Promise<{ success: boolean; assetId?: string }>
   warnings: string[]
   fontInfo?: { googleFonts?: string; families?: string[] }
 }
 
-function TokensTab({ tokensCss, tokensJson, tokenWebflowJson, onCopyTokens, warnings, fontInfo }: TokensTabProps) {
+function TokensTab({ tokensCss, tokensJson, tokenWebflowJson, onCopyTokens, onSendToFlowGoodies, warnings, fontInfo }: TokensTabProps) {
   const [copied, setCopied] = useState(false)
+  const [sent, setSent] = useState(false)
 
   const handleCopyToWebflow = async () => {
     if (!tokenWebflowJson) {
@@ -212,6 +232,18 @@ function TokensTab({ tokensCss, tokensJson, tokenWebflowJson, onCopyTokens, warn
     await onCopyTokens()
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleSendToFlowGoodies = async () => {
+    if (!tokenWebflowJson) {
+      toast.error("No token payload available")
+      return
+    }
+    const result = await onSendToFlowGoodies()
+    if (result.success) {
+      setSent(true)
+      setTimeout(() => setSent(false), 5000)
+    }
   }
 
   const handleCopyJson = () => {
@@ -287,13 +319,17 @@ function TokensTab({ tokensCss, tokensJson, tokenWebflowJson, onCopyTokens, warn
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl font-bold">
             <HugeiconsIcon icon={PaintBoardIcon} size={24} />
-            Step 2: Copy Design Tokens
+            Step 2: Copy XscpData (for Flow-Goodies)
           </CardTitle>
           <CardDescription className="text-base">
-            Paste this <strong>FIRST</strong> into Webflow. Delete the div you just created after pasting, then proceed with individual components.
+            Paste into <strong>Flow-Goodies extension textarea</strong>, then click Insert. Delete the wrapper div after inserting, then proceed with components.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          {/* Warning banner */}
+          <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 text-sm">
+            <strong>⚠️ Do NOT paste into Webflow canvas.</strong> Webflow will show a scam warning. Use Flow-Goodies Insert instead.
+          </div>
           <Button
             size="lg"
             className="w-full text-lg h-14"
@@ -301,8 +337,29 @@ function TokensTab({ tokensCss, tokensJson, tokenWebflowJson, onCopyTokens, warn
             disabled={!tokenWebflowJson}
           >
             <HugeiconsIcon icon={copied ? CheckmarkCircle01Icon : Copy01Icon} size={24} className="mr-2" />
-            {copied ? "Copied! Paste in Webflow" : "Copy Design Tokens"}
+            {copied ? "Copied! Paste in Flow-Goodies" : "Copy XscpData (Design Tokens)"}
           </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or</span>
+            </div>
+          </div>
+
+          <Button
+            size="lg"
+            variant="secondary"
+            className="w-full text-lg h-14"
+            onClick={handleSendToFlowGoodies}
+            disabled={!tokenWebflowJson || sent}
+          >
+            <HugeiconsIcon icon={sent ? CheckmarkCircle01Icon : ArrowRight01Icon} size={24} className="mr-2" />
+            {sent ? "Sent ✅ Go to Webflow Designer → Flow-Goodies → Insert Full Site" : "Send to Flow-Goodies (No Clipboard)"}
+          </Button>
+
           {!tokenWebflowJson && (
             <p className="text-sm text-muted-foreground mt-2 text-center">
               Token payload will be generated after parsing HTML.
@@ -545,20 +602,24 @@ function HtmlTab({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2 text-green-700 dark:text-green-400">
               <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} />
-              Option 1: Full Site (One Paste)
+              Option 1: Full Site (One Insert)
             </CardTitle>
             <CardDescription>
-              Complete site with all CSS styles included. Just paste and you&apos;re done.
+              Complete site with all CSS styles included. Paste into Flow-Goodies extension, click Insert.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* Warning banner */}
+            <div className="p-2 rounded bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 text-xs">
+              ⚠️ Do NOT paste into Webflow canvas. Use Flow-Goodies Insert.
+            </div>
             <Button
               onClick={onCopyFullSiteBaked}
               className="w-full bg-green-600 hover:bg-green-700"
               size="lg"
             >
               <HugeiconsIcon icon={Copy01Icon} size={16} className="mr-2" />
-              Copy Full Site (Styles Baked In)
+              Copy XscpData (Full Site, Styles Baked)
             </Button>
           </CardContent>
         </Card>
@@ -573,20 +634,24 @@ function HtmlTab({
               Option 2: Design Tokens + Full Site
             </CardTitle>
             <CardDescription>
-              Two pastes: First tokens (creates reusable classes), then HTML (references those classes).
+              Two inserts via Flow-Goodies: First tokens (creates reusable classes), then HTML (references those classes).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* Warning banner */}
+            <div className="p-2 rounded bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 text-xs">
+              ⚠️ Do NOT paste into Webflow canvas. Use Flow-Goodies Insert.
+            </div>
             <div className="text-sm text-muted-foreground">
               <strong>Workflow:</strong>
               <ol className="list-decimal list-inside mt-1 space-y-1">
-                <li>Copy &amp; paste Design Tokens (from Tokens tab) — creates {establishedClasses.size} classes</li>
-                <li>Copy &amp; paste Full Site (below) — uses those classes</li>
+                <li>Copy &amp; insert Design Tokens via Flow-Goodies (from Tokens tab) — creates {establishedClasses.size} classes</li>
+                <li>Copy &amp; insert Full Site via Flow-Goodies (below) — uses those classes</li>
               </ol>
             </div>
             {tokensPasted && (
               <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm">
-                ✓ Tokens pasted! Now paste the Full Site below.
+                ✓ Tokens copied! Insert via Flow-Goodies, then copy the Full Site below.
               </div>
             )}
             <Button
@@ -596,7 +661,7 @@ function HtmlTab({
               size="lg"
             >
               <HugeiconsIcon icon={Copy01Icon} size={16} className="mr-2" />
-              Copy Full Site (Token-Stripped)
+              Copy XscpData (Full Site, Token-Stripped)
             </Button>
           </CardContent>
         </Card>
@@ -612,8 +677,12 @@ function HtmlTab({
           <Card className="mt-3">
             <CardHeader className="pb-2">
               <CardDescription>
-                Import specific sections. Use with your existing design tokens or paste tokens first.
+                Import specific sections via Flow-Goodies. Use with your existing design tokens or insert tokens first.
               </CardDescription>
+              {/* Warning banner */}
+              <div className="p-2 rounded bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 text-xs mt-2">
+                ⚠️ Paste into Flow-Goodies extension textarea, NOT Webflow canvas.
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -627,7 +696,7 @@ function HtmlTab({
                     </div>
                     <Button size="sm" onClick={() => onCopyComponent(headerComboComponent)}>
                       <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
-                      Copy for Webflow
+                      Copy XscpData
                     </Button>
                   </div>
                 )}
@@ -647,7 +716,7 @@ function HtmlTab({
                       onClick={() => onCopyComponent(component)}
                     >
                       <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
-                      Copy for Webflow
+                      Copy XscpData
                     </Button>
                   </div>
                 ))}
@@ -707,12 +776,44 @@ interface JsTabProps {
   jsHooks: string[]
   componentTree: ComponentTree | null
   externalScripts: string[]
+  embedCss: string
+  embedCssFeatures: string[]
 }
 
-function JsTab({ scriptsJs, jsHooks, componentTree, externalScripts }: JsTabProps) {
+function JsTab({ scriptsJs, jsHooks, componentTree, externalScripts, embedCss, embedCssFeatures }: JsTabProps) {
+  // Detect libraries and paid plugins from inline scripts
+  const detectedLibraries: DetectedLibraries = scriptsJs ? detectLibraries(scriptsJs) : { scripts: [], styles: [], names: [], displayNames: [] }
+  const paidPluginWarnings: PaidPluginWarning[] = scriptsJs ? detectPaidPlugins(scriptsJs) : []
+
+  // Combine external scripts from HTML with detected CDN URLs
+  const allExternalScripts = [...new Set([...externalScripts, ...detectedLibraries.scripts])]
+  const allExternalStyles = [...detectedLibraries.styles]
+
+  // Wrap embed CSS in style tag for display
+  const embedCssWrapped = embedCss ? wrapEmbedCSSInStyleTag(embedCss) : ""
+
   const handleCopyJs = () => {
     navigator.clipboard.writeText(scriptsJs)
     toast.success("JavaScript copied to clipboard")
+  }
+
+  const handleCopyEmbedCode = () => {
+    const embedCode = generateScriptEmbed(scriptsJs, detectedLibraries, { wrapInDOMContentLoaded: true })
+    navigator.clipboard.writeText(embedCode)
+    toast.success("Complete embed code copied (includes CDN scripts)")
+  }
+
+  const handleCopyEmbedCss = () => {
+    navigator.clipboard.writeText(embedCssWrapped)
+    toast.success("CSS embed copied to clipboard")
+  }
+
+  const handleCopyFullEmbed = () => {
+    // Combine CSS embed and JS embed into one
+    const jsEmbed = generateScriptEmbed(scriptsJs, detectedLibraries, { wrapInDOMContentLoaded: true })
+    const fullEmbed = [embedCssWrapped, jsEmbed].filter(Boolean).join("\n\n")
+    navigator.clipboard.writeText(fullEmbed)
+    toast.success("Full embed code copied (CSS + JS)")
   }
 
   return (
@@ -728,32 +829,127 @@ function JsTab({ scriptsJs, jsHooks, componentTree, externalScripts }: JsTabProp
         <CardContent className="text-sm text-muted-foreground">
           <p>JavaScript must be added manually to Webflow:</p>
           <ol className="list-decimal list-inside mt-2 space-y-1">
-            <li>Copy the JS code below</li>
-            <li>In Webflow, go to Project Settings → Custom Code</li>
-            <li>Paste into &quot;Before &lt;/body&gt; tag&quot; section</li>
-            <li>Alternatively, use an HTML Embed element</li>
+            <li>Copy the embed code below (includes CDN scripts)</li>
+            <li>In Webflow, add an HTML Embed element</li>
+            <li>Paste the embed code</li>
+            <li>Or: Go to Project Settings → Custom Code → Before &lt;/body&gt; tag</li>
           </ol>
         </CardContent>
       </Card>
 
-      {/* External Libraries */}
+      {/* Detected Libraries */}
+      {detectedLibraries.names.length > 0 && (
+        <Card className="border-green-500/50 bg-green-50/50 dark:bg-green-950/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-green-700 dark:text-green-400">
+              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} />
+              Detected Libraries ({detectedLibraries.names.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              These libraries were detected in your code and will be included automatically:
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {detectedLibraries.displayNames.map((name, i) => (
+                <span
+                  key={detectedLibraries.names[i]}
+                  className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Paid Plugin Warnings */}
+      {paidPluginWarnings.length > 0 && (
+        <Card className="border-red-500/50 bg-red-50/50 dark:bg-red-950/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-red-700 dark:text-red-400">
+              <HugeiconsIcon icon={Alert01Icon} size={16} />
+              Paid Plugins Detected ({paidPluginWarnings.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              These plugins require a Club GreenSock membership and no CDN is available:
+            </p>
+            <div className="space-y-2">
+              {paidPluginWarnings.map((warning) => (
+                <div key={warning.name} className="p-2 rounded bg-red-100/50 dark:bg-red-900/20">
+                  <div className="font-medium text-sm text-red-800 dark:text-red-300">{warning.displayName}</div>
+                  <div className="text-xs text-red-700 dark:text-red-400 mt-0.5">{warning.note}</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* CSS Embed (for non-native Webflow CSS) */}
+      {embedCss && (
+        <Card className="border-cyan-500/50 bg-cyan-50/50 dark:bg-cyan-950/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-cyan-700 dark:text-cyan-400">
+              <HugeiconsIcon icon={PaintBoardIcon} size={16} />
+              CSS Embed Required
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              The following CSS features cannot be represented in Webflow&apos;s native style system and must be added via HTML Embed:
+            </p>
+
+            {embedCssFeatures.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {embedCssFeatures.map((feature) => (
+                  <span
+                    key={feature}
+                    className="px-2 py-0.5 rounded text-xs font-medium bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300"
+                  >
+                    {feature}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleCopyEmbedCss}>
+                <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+                Copy CSS Embed
+              </Button>
+              {(scriptsJs || detectedLibraries.names.length > 0) && (
+                <Button variant="default" size="sm" onClick={handleCopyFullEmbed}>
+                  <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+                  Copy Full Embed (CSS + JS)
+                </Button>
+              )}
+            </div>
+
+            <ArtifactViewer
+              content={embedCssWrapped || "// No CSS embed required"}
+              maxHeight="200px"
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* External Libraries (from original HTML) */}
       {externalScripts.length > 0 && (
         <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2 text-amber-700 dark:text-amber-400">
               <HugeiconsIcon icon={Alert01Icon} size={16} />
-              External Libraries Required ({externalScripts.length})
+              External Scripts from HTML ({externalScripts.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              This site uses external libraries. Add these to Webflow:
+              These external scripts were found in the original HTML:
             </p>
-
-            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-              <li>Go to <strong className="text-foreground">Project Settings → Custom Code</strong></li>
-              <li>Paste in <strong className="text-foreground">&quot;Head Code&quot;</strong> section:</li>
-            </ol>
 
             <pre className="p-3 bg-muted rounded text-xs overflow-x-auto font-mono">
               {externalScripts.map((url) => `<script src="${url}"></script>`).join("\n")}
@@ -761,6 +957,7 @@ function JsTab({ scriptsJs, jsHooks, componentTree, externalScripts }: JsTabProp
 
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 const scriptTags = externalScripts
                   .map((url) => `<script src="${url}"></script>`)
@@ -830,21 +1027,51 @@ function JsTab({ scriptsJs, jsHooks, componentTree, externalScripts }: JsTabProp
         </Card>
       )}
 
-      {/* Scripts Preview */}
+      {/* Complete Embed Code (with CDN scripts) */}
+      {(scriptsJs || detectedLibraries.names.length > 0) && (
+        <Card className="border-purple-500/50">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2 text-purple-700 dark:text-purple-400">
+                <HugeiconsIcon icon={CodeIcon} size={16} />
+                Complete Embed Code
+              </CardTitle>
+              <Button variant="default" size="sm" onClick={handleCopyEmbedCode} disabled={!scriptsJs && detectedLibraries.names.length === 0}>
+                <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
+                Copy Embed
+              </Button>
+            </div>
+            <CardDescription>
+              Ready-to-paste HTML embed with CDN scripts and DOMContentLoaded wrapper
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ArtifactViewer
+              content={generateScriptEmbed(scriptsJs, detectedLibraries, { wrapInDOMContentLoaded: true }) || "// No JavaScript found"}
+              maxHeight="300px"
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Scripts Preview (raw JS only) */}
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">scripts.js</CardTitle>
+            <CardTitle className="text-sm">Raw JavaScript (scripts.js)</CardTitle>
             <Button variant="ghost" size="sm" onClick={handleCopyJs} disabled={!scriptsJs}>
               <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
-              Copy
+              Copy JS Only
             </Button>
           </div>
+          <CardDescription>
+            Original JavaScript without CDN scripts or wrapper
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ArtifactViewer
             content={scriptsJs || "// No JavaScript found"}
-            maxHeight="300px"
+            maxHeight="200px"
           />
         </CardContent>
       </Card>
@@ -859,6 +1086,7 @@ function JsTab({ scriptsJs, jsHooks, componentTree, externalScripts }: JsTabProp
 function ImportWizard() {
   const { isLoaded: isUserLoaded } = useUser()
   const importProject = useMutation(api.import.importProject)
+  const sendToFlowGoodies = useMutation(api.templates.sendToFlowGoodies)
 
   // Step state
   const [step, setStep] = useState<Step>("input")
@@ -1028,11 +1256,21 @@ function ImportWizard() {
         strict: process.env.NEXT_PUBLIC_FLOWBRIDGE_STRICT_LLM === "1",
       })
 
-      // 6. Re-parse CSS using literalized values
-      const finalCssResult = parseCSS(literalization.css)
+      // 5.5 Route CSS: separate native Webflow styles from embed-required CSS
+      const cssRouting = routeCSS(literalization.css)
+      const embedCssFeatures = getRoutingSummary(literalization.css)
 
-      // 7. Build token Webflow payload from literal CSS
-      const tokenPayloadResult = buildCssTokenPayload(literalization.css, {
+      // Add routing warnings to the list
+      const routingWarnings = cssRouting.warnings
+        .filter(w => w.severity !== "info") // Only show warnings/errors, not info
+        .map(w => w.reason)
+
+      // 6. Re-parse CSS using native (routed) CSS only
+      // Embed CSS will be included separately in the output
+      const finalCssResult = parseCSS(cssRouting.native || literalization.css)
+
+      // 7. Build token Webflow payload from native CSS
+      const tokenPayloadResult = buildCssTokenPayload(cssRouting.native || literalization.css, {
         namespace: tokens.namespace,
         includePreview: true,
       })
@@ -1053,13 +1291,15 @@ function ImportWizard() {
           2
         ),
         tokensCss: cssResult.tokensCss,
-        stylesCss: literalization.css,
+        stylesCss: cssRouting.native || literalization.css,
         classIndex: finalCssResult.classIndex,
         cleanHtml: normalizedHtml,
         scriptsJs: cleanResult.extractedScripts,
         jsHooks: extractJsHooks(normalizedHtml),
         cssVariables: finalCssResult.cssVariables,
         externalScripts: cleanResult.externalScripts,
+        embedCss: cssRouting.embed,
+        embedCssFeatures,
       })
       setComponentTree(components)
       const manifest = generateTokenManifest(tokens)
@@ -1081,6 +1321,7 @@ function ImportWizard() {
         ...namingResult.warnings,
         ...semanticWarnings,
         ...literalization.warnings,
+        ...routingWarnings,
       ])
       setLlmSummary({
         mode: llmMeta?.mode ?? "fallback",
@@ -1125,7 +1366,7 @@ function ImportWizard() {
       const result = await copyToWebflowClipboard(payload)
       if (result.success) {
         setTokensPasted(true)
-        toast.success("Token styles copied! Paste in Webflow Designer, then you can skip styles on component paste.")
+        toast.success("Token styles copied! Paste in Flow-Goodies extension textarea and click Insert.")
       } else {
         toast.error("Failed to copy to clipboard")
       }
@@ -1134,6 +1375,40 @@ function ImportWizard() {
       toast.error("Failed to copy token payload")
     }
   }, [tokenWebflowJson])
+
+  // Send token payload to Flow-Goodies via backend (clipboard-free)
+  const handleSendToFlowGoodies = useCallback(async () => {
+    if (!tokenWebflowJson) {
+      toast.error("No token payload available")
+      return { success: false }
+    }
+
+    try {
+      const name = projectName || `Draft ${Date.now()}`
+      const result = await sendToFlowGoodies({
+        name,
+        webflowJson: tokenWebflowJson,
+        source: "flow-stach import tool (tokens)",
+      })
+
+      if (result.success) {
+        setTokensPasted(true)
+        toast.success("Sent to backend! Open Flow-Goodies in Webflow Designer and click 'Insert Full Site'.")
+        return { success: true, assetId: result.assetId }
+      } else {
+        toast.error("Failed to send to backend")
+        return { success: false }
+      }
+    } catch (error) {
+      console.error("Send error:", error)
+      if (error instanceof Error && error.message.includes("CONVEX_URL")) {
+        toast.error("Missing Convex credentials. Check .env.local for NEXT_PUBLIC_CONVEX_URL")
+      } else {
+        toast.error("Failed to send to Flow-Goodies")
+      }
+      return { success: false }
+    }
+  }, [tokenWebflowJson, projectName, sendToFlowGoodies])
 
   // Copy component to Webflow clipboard
   const handleCopyComponent = useCallback(
@@ -1157,7 +1432,7 @@ function ImportWizard() {
 
         const copyResult = await copyToWebflowClipboard(JSON.stringify(result.webflowPayload))
         if (copyResult.success) {
-          toast.success(`${component.name} copied! Paste in Webflow Designer.`)
+          toast.success(`${component.name} copied! Paste in Flow-Goodies extension and click Insert.`)
         } else {
           toast.error("Failed to copy to clipboard")
         }
@@ -1213,7 +1488,7 @@ function ImportWizard() {
 
         const copyResult = await copyToWebflowClipboard(JSON.stringify(result.webflowPayload))
         if (copyResult.success) {
-          toast.success(`Full site copied with all styles baked in! (${componentTree.components.length} sections) Paste in Webflow Designer.`)
+          toast.success(`Full site copied! (${componentTree.components.length} sections) Paste in Flow-Goodies extension and click Insert.`)
         } else {
           toast.error("Failed to copy to clipboard")
         }
@@ -1269,7 +1544,7 @@ function ImportWizard() {
 
         const copyResult = await copyToWebflowClipboard(JSON.stringify(result.webflowPayload))
         if (copyResult.success) {
-          toast.success(`Full site copied (token-stripped)! (${componentTree.components.length} sections) Paste in Webflow Designer.`)
+          toast.success(`Full site copied (token-stripped)! (${componentTree.components.length} sections) Paste in Flow-Goodies extension and click Insert.`)
         } else {
           toast.error("Failed to copy to clipboard")
         }
@@ -1658,6 +1933,7 @@ function ImportWizard() {
                 tokensJson={artifacts.tokensJson}
                 tokenWebflowJson={tokenWebflowJson}
                 onCopyTokens={handleCopyTokens}
+                onSendToFlowGoodies={handleSendToFlowGoodies}
                 warnings={validationWarnings}
                 fontInfo={tokenExtraction?.fonts}
               />
@@ -1685,6 +1961,8 @@ function ImportWizard() {
                 jsHooks={artifacts.jsHooks}
                 componentTree={componentTree}
                 externalScripts={artifacts.externalScripts}
+                embedCss={artifacts.embedCss}
+                embedCssFeatures={artifacts.embedCssFeatures}
               />
             </TabsContent>
           </Tabs>
