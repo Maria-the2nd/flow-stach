@@ -8,7 +8,6 @@
 import {
   CSSRoutingTrace,
   RoutedRule,
-  RoutedProperty,
   RoutingReason,
   RoutingTraceSummary,
   RuleDestination,

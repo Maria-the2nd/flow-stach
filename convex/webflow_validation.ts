@@ -377,7 +377,6 @@ export function validateWebflowJson(jsonString: string): PayloadValidationResult
   ];
 
   const hasFatal = issues.some((i) => i.severity === "fatal");
-  const hasError = issues.some((i) => i.severity === "error");
 
   return {
     isValid: issues.length === 0,

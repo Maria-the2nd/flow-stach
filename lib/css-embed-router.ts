@@ -12,7 +12,7 @@
 
 import { minifyCSS } from './css-minifier';
 import { CSSRoutingTracer } from './css-routing-tracer';
-import { CSSRoutingTrace, RoutingReason, BreakpointMapping, RuleCategory } from './routing-types';
+import { CSSRoutingTrace, RoutingReason, BreakpointMapping } from './routing-types';
 
 // Re-export trace types for convenience
 export type { CSSRoutingTrace } from './routing-types';

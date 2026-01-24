@@ -90,7 +90,7 @@ export interface UseStreamingConversionReturn {
 export function useStreamingConversion(
   options: UseStreamingConversionOptions = {}
 ): UseStreamingConversionReturn {
-  const { onSectionComplete, onComplete, onError, ...streamOptions } = options;
+  const streamOptions = options;
 
   // State
   const [progress, setProgress] = useState<ConversionProgress | null>(null);

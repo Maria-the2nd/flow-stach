@@ -5,7 +5,6 @@
  */
 
 import {
-  ValidationSeverity,
   ValidationIssue,
   error,
   warning,

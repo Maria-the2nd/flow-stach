@@ -38,7 +38,7 @@ export default function HowItWorks() {
                 </div>
 
                 <div style={{ marginTop: '40px', textAlign: 'center' }}>
-                    <Link href="/assets?admin=import" className="fb-btn fb-btn-secondary">See an example import</Link>
+                    <Link href="/workspace/import" className="fb-btn fb-btn-secondary">See an example import</Link>
                 </div>
             </div>
         </section>

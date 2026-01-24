@@ -698,7 +698,7 @@ export function extractUIElements(css: string): { buttons?: UIElement[]; inputs?
   let match;
 
   while ((match = buttonRegex.exec(css)) !== null) {
-    const [fullMatch, className] = match;
+    const [, className] = match;
     const styles = match[2];
     
     if (!buttons.some(b => b.name === className)) {
@@ -714,7 +714,7 @@ export function extractUIElements(css: string): { buttons?: UIElement[]; inputs?
   const inputRegex = /\.(input|field|form-control|textbox)[-\w]*\s*\{([^}]+)\}/gi;
   
   while ((match = inputRegex.exec(css)) !== null) {
-    const [fullMatch, className] = match;
+    const [, className] = match;
     const styles = match[2];
     
     if (!inputs.some(i => i.name === className)) {

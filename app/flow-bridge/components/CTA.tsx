@@ -8,7 +8,7 @@ export default function CTA() {
                 <p className="fb-lead" style={{ margin: '0 auto 40px auto' }}>
                     AI can generate the draft. Flow Bridge helps you own the final.
                 </p>
-                <Link href="/assets?admin=import" className="fb-btn fb-btn-primary" style={{ padding: '20px 48px', fontSize: '1.25rem' }}>
+                <Link href="/workspace/import" className="fb-btn fb-btn-primary" style={{ padding: '20px 48px', fontSize: '1.25rem' }}>
                     Try Flow Bridge
                 </Link>
             </div>

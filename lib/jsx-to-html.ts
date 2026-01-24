@@ -77,11 +77,11 @@ function convertJsxAttributes(jsx: string): string {
 /**
  * Remove JSX expressions that can't be converted to static HTML
  */
-function removeJsxExpressions(jsx: string, ctx: ConversionContext): string {
+function removeJsxExpressions(jsx: string): string {
   let html = jsx
 
   // Remove event handlers but track them for JS generation
-  html = html.replace(/\s(on[A-Z]\w+)=\{([^}]+)\}/g, (match, event, handler) => {
+  html = html.replace(/\s(on[A-Z]\w+)=\{([^}]+)\}/g, (_match, _event, _handler) => {
     // We'll handle these separately
     return ''
   })
@@ -94,7 +94,7 @@ function removeJsxExpressions(jsx: string, ctx: ConversionContext): string {
 
   // Convert simple variable expressions to placeholders
   // {variable} → [variable]
-  html = html.replace(/\{(\w+)\}/g, (match, varName) => {
+  html = html.replace(/\{(\w+)\}/g, (_match, varName) => {
     // Check if it's a simple variable reference (not a function call)
     if (!/[().]/.test(varName)) {
       return `<!-- {${varName}} -->`
@@ -115,12 +115,12 @@ function convertConditionals(jsx: string): string {
   let html = jsx
 
   // {condition && <element>} → <element> with comment
-  html = html.replace(/\{(\w+)\s*&&\s*(<[^}]+>)\}/g, (match, condition, element) => {
+  html = html.replace(/\{(\w+)\s*&&\s*(<[^}]+>)\}/g, (_match, condition, element) => {
     return `<!-- if ${condition} -->${element}<!-- endif -->`
   })
 
   // {condition ? <a> : <b>} → first option with comment
-  html = html.replace(/\{(\w+)\s*\?\s*(<[^:]+>)\s*:\s*(<[^}]+>)\}/g, (match, condition, ifTrue, ifFalse) => {
+  html = html.replace(/\{(\w+)\s*\?\s*(<[^:]+>)\s*:\s*(<[^}]+>)\}/g, (_match, condition, ifTrue, ifFalse) => {
     return `<!-- if ${condition} -->${ifTrue}<!-- else -->${ifFalse}<!-- endif -->`
   })
 
@@ -134,7 +134,7 @@ function convertArrayMaps(jsx: string): string {
   let html = jsx
 
   // {items.map(...)} → comment indicating dynamic content
-  html = html.replace(/\{[\w.]+\.map\([^)]+\)\s*=>\s*\([^)]+\)\}/g, (match) => {
+  html = html.replace(/\{[\w.]+\.map\([^)]+\)\s*=>\s*\([^)]+\)\}/g, () => {
     return '<!-- Dynamic list: items rendered from array -->'
   })
 
@@ -294,7 +294,7 @@ export function convertJsxToHtml(
   }
 
   // Build component map from dependencies
-  for (const [name, dep] of dependencies) {
+  for (const [, dep] of dependencies) {
     if (dep.jsxContent) {
       // Recursively convert child components first
       const childResult = convertJsxToHtml(dep, new Map(), [])
@@ -326,7 +326,7 @@ export function convertJsxToHtml(
   html = convertJsxAttributes(html)
   html = convertConditionals(html)
   html = convertArrayMaps(html)
-  html = removeJsxExpressions(html, ctx)
+  html = removeJsxExpressions(html)
 
   // Step 4: Clean up whitespace
   html = html

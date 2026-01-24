@@ -51,7 +51,7 @@ function fixBrInInlineElements(html: string): string {
   // Match patterns like: <span>text<br>text</span>
   const inlineWithBr = /<(span|a|strong|em|i|b)([^>]*)>([^<]*)<br\s*\/?>([^<]*)<\/(span|a|strong|em|i|b)>/gi;
 
-  return html.replace(inlineWithBr, (match, tag, attrs, beforeBr, afterBr, closeTag) => {
+  return html.replace(inlineWithBr, (match, tag, attrs, beforeBr, afterBr) => {
     // Skip if both parts are empty
     if (!beforeBr.trim() && !afterBr.trim()) {
       return match;

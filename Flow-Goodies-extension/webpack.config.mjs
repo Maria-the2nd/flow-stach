@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
-export default {
+const config = {
   entry: "./src/index.tsx",
   output: {
     filename: "bundle.js",
@@ -32,3 +32,5 @@ export default {
     port: 3000,
   },
 };
+
+export default config;
