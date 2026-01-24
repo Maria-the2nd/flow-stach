@@ -702,7 +702,7 @@ export function ImportWizard() {
 
     let stage = "start"
     let pendingArtifacts: ExtractedArtifacts | null = null
-    let tokens: TokenExtraction | null = null
+    let tokens: EnhancedTokenExtraction | null = null
     try {
       stage = "parsing"
       setProcessingStatus("parsing")

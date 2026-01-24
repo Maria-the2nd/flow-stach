@@ -1,264 +1,86 @@
-# Task: Analyze this codebase and generate a hierarchical AGENTS.md structure
+# Generate `AGENTS.md` for **Flow Bridge** (Flow Stach repo)
 
-## Context & Principles
+This repo benefits from a **hierarchical `AGENTS.md` system** so AI coding agents can operate with minimal token usage and minimal wrong assumptions.
 
-You are going to help me create a **hierarchical AGENTS.md system** for this codebase. This is critical for AI coding agents to work efficiently with minimal token usage.
+## 0) Hard source-of-truth rules (KEEP IN SYNC)
 
-### Core Principles:
+When generating `AGENTS.md`, align wording and constraints with:
 
-1. **Root AGENTS.md is LIGHTWEIGHT** - Only universal guidance, links to sub-files
-2. **Nearest-wins hierarchy** - Agents read the closest AGENTS.md to the file being edited
-3. **JIT (Just-In-Time) indexing** - Provide paths/globs/commands, NOT full content
-4. **Token efficiency** - Small, actionable guidance over encyclopedic documentation
-5. **Sub-folder AGENTS.md files have MORE detail** - Specific patterns, examples, commands
+- `AUTHORITATIVE_CURRENT_STATE.md` (**canonical current behavior**; supersedes older docs)
+- `SYSTEM_MANIFEST.md` (**routing + UI IA + naming guardrails**, aligned to current-state)
+- `CLAUDE.md` (**developer quickstart; defers to the manifest**)
 
-## Your Process
+If anything conflicts, **defer to `AUTHORITATIVE_CURRENT_STATE.md`** and mention the deprecation/alternative in a short note.
 
-### Phase 1: Repository Analysis
+## 1) Core principles (non-negotiable)
 
-First, analyze the codebase structure and provide me with:
+1. **Root `AGENTS.md` stays lightweight** (aim \(~100–200\) lines): universal rules + links.
+2. **Nearest-wins**: agents read the closest `AGENTS.md` for the file they’re changing.
+3. **JIT indexing**: provide *paths + commands + where to look*, not pasted file contents.
+4. **Token efficiency**: short checklists and “touch points” beat encyclopedic docs.
+5. **Subfolder `AGENTS.md` files contain the practical details** for that area.
 
-1. **Repository type**: Monorepo, multi-package, or simple single project?
-2. **Primary technology stack**: Languages, frameworks, key tools
-3. **Major directories/packages** that should have their own AGENTS.md:
-   - Apps (e.g., `apps/web`, `apps/api`, `apps/mobile`)
-   - Services (e.g., `services/auth`, `services/transcribe`)
-   - Packages/libs (e.g., `packages/ui`, `packages/shared`)
-   - Workers/jobs (e.g., `workers/queue`, `workers/cron`)
-4. **Build system**: pnpm/npm/yarn workspaces? Turborepo? Lerna? Or simple?
-5. **Testing setup**: Jest, Vitest, Playwright, pytest? Where are tests?
-6. **Key patterns to document**:
-   - Code organization patterns
-   - Important conventions (naming, styling, commits)
-   - Critical files that serve as good examples
-   - Anti-patterns to avoid
+## 2) Repo snapshot (CURRENT)
 
-Present this as a **structured map** before generating any AGENTS.md files.
+- **Type**: Single Next.js app + Convex backend + bundled Chrome extension (multi-root, not a workspace monorepo).
+- **Runtime/tooling**: Bun (`bun.lock`) + Next.js App Router + TypeScript strict.
+- **Backend**: Convex functions + Clerk auth bridged via `requireAuth(ctx)` (see `CLAUDE.md` + current-state doc).
+- **Key product terms (must match UI/docs)**:
+  - **Style Guide (Design Tokens)** (single term; do not split “Design Tokens” vs “Style Guide”)
+  - **Site Structure Payload** (base layout styles only; excludes Style Guide + Embeds styles)
+  - **Imported Projects** / **Extracted Components** vs **Marketplace Templates/Components** (avoid confusing naming)
 
----
+## 3) Root commands (copy/paste)
 
-### Phase 2: Generate Root AGENTS.md
+From repo root:
 
-Create a **lightweight root AGENTS.md** (~100-200 lines max) that includes:
-
-#### Required Sections:
-
-**1. Project Snapshot** (3-5 lines)
-
-- Repo type (monorepo/simple)
-- Primary tech stack
-- Note that sub-packages have their own AGENTS.md files
-
-**2. Root Setup Commands** (5-10 lines)
-
-- Install dependencies (root level)
-- Build all
-- Typecheck all
-- Test all
-
-**3. Universal Conventions** (5-10 lines)
-
-- Code style (TypeScript strict? Prettier? ESLint?)
-- Commit format (Conventional Commits?)
-- Branch strategy
-- PR requirements
-
-**4. Security & Secrets** (3-5 lines)
-
-- Never commit tokens
-- Where secrets go (.env patterns)
-- PII handling if applicable
-
-**5. JIT Index - Directory Map** (10-20 lines)
-Structure like:
-
-```
-## JIT Index (what to open, not what to paste)
-
-### Package Structure
-- Web UI: `apps/web/` → [see apps/web/AGENTS.md](apps/web/AGENTS.md)
-- API: `apps/api/` → [see apps/api/AGENTS.md](apps/api/AGENTS.md)
-- Auth service: `services/auth/` → [see services/auth/AGENTS.md](services/auth/AGENTS.md)
-- Shared packages: `packages/**/` → [see packages/README.md for details]
-
-### Quick Find Commands
-- Search for a function: `rg -n "functionName" apps/** packages/**`
-- Find a component: `rg -n "export.*ComponentName" apps/web/src`
-- Find API routes: `rg -n "export const (GET|POST)" apps/api`
+```bash
+bun install
+bun run dev            # Next.js + Convex (via concurrently)
+bun run convex:dev     # Convex only
+bun run typecheck
+bun run lint
+bun run build
+bun run verify         # Webflow verifier pipeline
+bun run test:flowbridge
 ```
 
-**6. Definition of Done** (3-5 lines)
+## 4) What `AGENTS.md` files to generate (THIS REPO)
 
-- What must pass before a PR is ready
-- Minimal checklist
+Create these files (and keep them aligned with the docs listed in section 0):
 
----
+- `AGENTS.md` (root)
+- `app/AGENTS.md` (Next.js routes, API routes, auth boundaries, manifests)
+- `components/AGENTS.md` (UI components, Style Guide surfaces, mock data)
+- `convex/AGENTS.md` (data model + auth + user scoping)
+- `lib/AGENTS.md` (clipboard/export pipeline + token extraction + generators)
+- `flow-bridge-extension/AGENTS.md` (extension build + env vars + entrypoints)
+- `tests/AGENTS.md` (how to run/extend tests in this repo)
 
-### Phase 3: Generate Sub-Folder AGENTS.md Files
+Optionally add `docs/AGENTS.md` only if you actively maintain `docs/` (many files may be legacy; do not treat docs as authoritative over current-state/spec docs).
 
-For EACH major package/directory identified in Phase 1, create a **detailed AGENTS.md** that includes:
+## 5) What MUST be included in the root `AGENTS.md`
 
-#### Required Sections:
+- **Source-of-truth pointers** (the four docs above, especially `AUTHORITATIVE_CURRENT_STATE.md`)
+- **Setup/run commands** (Bun + Convex + Next)
+- **Naming guardrails** (Marketplace vs Imports; Style Guide (Design Tokens); Site Structure Payload)
+- **JIT Index** mapping to each sub-`AGENTS.md`
+- **Definition of Done**: typecheck + lint + build (plus targeted test/verify if relevant)
 
-**1. Package Identity** (2-3 lines)
+## 6) Subfolder `AGENTS.md` template requirements
 
-- What this package/app/service does
-- Primary tech/framework for THIS package
+Each subfolder `AGENTS.md` should include:
 
-**2. Setup & Run** (5-10 lines)
+- **Identity**: what that folder owns (2–4 lines)
+- **How to run/build** for that folder (or “root-only” if not applicable)
+- **Touch points**: 5–12 files/directories that answer “where do I change X?”
+- **Constraints/gotchas** that prevent regressions (auth, naming, output ordering, legacy routes)
+- **Minimal pre-PR check** for changes in that area
 
-- Install command (if different from root)
-- Dev server command
-- Build command
-- Test command
-- Lint/typecheck commands
+## 7) Quality checks before finalizing
 
-**3. Patterns & Conventions** (10-20 lines)
-**THIS IS THE MOST IMPORTANT SECTION**
-
-- File organization rules (where things go)
-- Naming conventions specific to this package
-- Preferred patterns with **file examples**:
-  ```
-  - ✅ DO: Use functional components like `src/components/Button.tsx`
-  - ❌ DON'T: Use class components like `src/legacy/OldButton.tsx`
-  - ✅ Forms: Copy pattern from `src/components/forms/ContactForm.tsx`
-  - ✅ API calls: Use `src/lib/api/client.ts` wrapper, see example in `src/hooks/useUser.ts`
-  ```
-
-**4. Touch Points / Key Files** (5-10 lines)
-Point to the most important files to understand this package:
-
-```
-- Auth logic: `src/auth/provider.tsx`
-- API client: `src/lib/api.ts`
-- Types: `src/types/index.ts`
-- Config: `src/config.ts`
-```
-
-**5. JIT Index Hints** (5-10 lines)
-Specific search commands for this package:
-
-```
-- Find a React component: `rg -n "export function .*" src/components`
-- Find a hook: `rg -n "export const use" src/hooks`
-- Find route handlers: `rg -n "export async function (GET|POST)" src/app`
-- Find tests: `find . -name "*.test.ts"`
-```
-
-**6. Common Gotchas** (3-5 lines, if applicable)
-
-- "Auth requires `NEXT_PUBLIC_` prefix for client-side use"
-- "Always use `@/` imports for absolute paths"
-- "Database migrations must be run before tests: `pnpm db:migrate`"
-
-**7. Pre-PR Checks** (2-3 lines)
-Package-specific command to run before creating a PR:
-
-```
-pnpm --filter @repo/web typecheck && pnpm --filter @repo/web test && pnpm --filter @repo/web build
-```
-
----
-
-### Phase 4: Special Considerations
-
-For each AGENTS.md file, also consider:
-
-**A. Design System / UI Package**
-If there's a design system or UI library:
-
-```markdown
-## Design System
-
-- Components: `packages/ui/src/components/**`
-- Use design tokens from `packages/ui/src/tokens.ts` (never hardcode colors)
-- See component gallery: `pnpm --filter @repo/ui storybook`
-- Examples:
-  - Buttons: Copy `packages/ui/src/components/Button/Button.tsx`
-  - Forms: Copy `packages/ui/src/components/Input/Input.tsx`
-```
-
-**B. Database / Data Layer**
-If there's a database service:
-
-```markdown
-## Database
-
-- ORM: Prisma / Drizzle / TypeORM
-- Schema: `prisma/schema.prisma`
-- Migrations: `pnpm db:migrate`
-- Seed: `pnpm db:seed`
-- **NEVER** run migrations in tests; use `test-db` script
-- Connection: via `src/lib/db.ts` singleton
-```
-
-**C. API / Backend Service**
-
-```markdown
-## API Patterns
-
-- REST routes: `src/routes/**/*.ts`
-- Auth middleware: `src/middleware/auth.ts` (apply to protected routes)
-- Validation: Use Zod schemas in `src/schemas/**`
-- Error handling: All errors thrown as `ApiError` from `src/lib/errors.ts`
-- Example endpoint: See `src/routes/users/get.ts` for full pattern
-```
-
-**D. Testing Package**
-
-```markdown
-## Testing
-
-- Unit tests: `*.test.ts` colocated with source
-- Integration tests: `tests/integration/**`
-- E2E tests: `tests/e2e/**` (Playwright)
-- Run single test: `pnpm test -- path/to/file.test.ts`
-- Coverage: `pnpm test:coverage` (aim for >80%)
-- Mock external APIs using `src/test/mocks/**`
-```
-
----
-
-## Output Format
-
-Provide the files in this order:
-
-1. **Analysis Summary** (from Phase 1)
-2. **Root AGENTS.md** (complete, ready to copy)
-3. **Each Sub-Folder AGENTS.md** (one at a time, with file path)
-
-For each file, use this format:
-
-```
----
-File: `AGENTS.md` (root)
----
-[full content here]
-
----
-File: `apps/web/AGENTS.md`
----
-[full content here]
-
----
-File: `services/auth/AGENTS.md`
----
-[full content here]
-```
-
----
-
-## Constraints & Quality Checks
-
-Before generating, verify:
-
-- [ ] Root AGENTS.md is under 200 lines
-- [ ] Root links to all sub-AGENTS.md files
-- [ ] Each sub-file has concrete examples (actual file paths)
-- [ ] Commands are copy-paste ready (no placeholders unless unavoidable)
-- [ ] No duplication between root and sub-files
-- [ ] JIT hints use actual patterns from the codebase (ripgrep, find, glob)
-- [ ] Every "✅ DO" has a real file example
-- [ ] Every "❌ DON'T" references a real anti-pattern or legacy file
-- [ ] Pre-PR checks are single copy-paste commands
+- [ ] Root `AGENTS.md` is **< 200 lines**
+- [ ] Root links to each subfolder `AGENTS.md`
+- [ ] Terminology matches `AUTHORITATIVE_CURRENT_STATE.md` + `SYSTEM_MANIFEST.md`
+- [ ] Commands match `package.json` scripts
+- [ ] No “placeholder examples” — only real paths in this repo

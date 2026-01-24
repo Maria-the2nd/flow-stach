@@ -318,125 +318,67 @@ export function extractAndValidateAssets(
   // Track seen URLs to avoid duplicates in error messages
   const seenUrls = new Set<string>();
 
-  // ==========================================
-  // Extract <img src="...">
-  // ==========================================
-  const imgPattern = /<img[^>]+src=["']([^"']+)["']/gi;
-  let match: RegExpExecArray | null;
+  // Helper to extract and validate URLs from a pattern match
+  const extractUrls = (
+    content: string,
+    pattern: RegExp,
+    context: string,
+    targetArray: AssetValidation[],
+    urlKeyPrefix: string,
+    isCss = false
+  ) => {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(content)) !== null) {
+      const url = match[1];
+      const lineNumber = getLineNumber(content, match.index);
+      const validation = validateAssetURL(url, context, lineNumber);
+      targetArray.push(validation);
 
-  while ((match = imgPattern.exec(html)) !== null) {
-    const url = match[1];
-    const lineNumber = getLineNumber(html, match.index);
-    const validation = validateAssetURL(url, '<img src>', lineNumber);
-    manifest.images.push(validation);
-
-    const urlKey = `img:${url}`;
-    if (!seenUrls.has(urlKey)) {
-      seenUrls.add(urlKey);
-      if (validation.error) {
-        manifest.errors.push(`Line ${lineNumber}: Image src - ${validation.error} "${url}"`);
-      }
-      if (validation.warning) {
-        manifest.warnings.push(`Line ${lineNumber}: Image src - ${validation.warning} "${url}"`);
+      const urlKey = `${urlKeyPrefix}:${url}`;
+      if (!seenUrls.has(urlKey)) {
+        seenUrls.add(urlKey);
+        const prefix = isCss ? `CSS Line ${lineNumber}` : `Line ${lineNumber}`;
+        if (validation.error) {
+          manifest.errors.push(`${prefix}: ${context} - ${validation.error} "${url}"`);
+        }
+        if (validation.warning) {
+          manifest.warnings.push(`${prefix}: ${context} - ${validation.warning} "${url}"`);
+        }
       }
     }
-  }
+  };
 
-  // ==========================================
-  // Extract <source src="..."> and srcset
-  // ==========================================
+  // Extract <img src="...">
+  extractUrls(html, /<img[^>]+src=["']([^"']+)["']/gi, '<img src>', manifest.images, 'img');
+
+  // Extract <source src="..."> and srcset (special handling for multiple URLs)
   const sourcePattern = /<source[^>]+(?:src|srcset)=["']([^"']+)["']/gi;
+  let match: RegExpExecArray | null;
   while ((match = sourcePattern.exec(html)) !== null) {
-    // srcset can have multiple URLs separated by commas
     const srcValue = match[1];
     const lineNumber = getLineNumber(html, match.index);
-
     // Split srcset entries (e.g., "image1.jpg 1x, image2.jpg 2x")
-    const urls = srcValue.split(',').map(entry => {
-      // Remove size descriptors (1x, 2x, 300w, etc.)
-      return entry.trim().split(/\s+/)[0];
-    }).filter(Boolean);
-
+    const urls = srcValue.split(',').map(entry => entry.trim().split(/\s+/)[0]).filter(Boolean);
     for (const url of urls) {
       const validation = validateAssetURL(url, '<source>', lineNumber);
       manifest.images.push(validation);
-
       const urlKey = `source:${url}`;
       if (!seenUrls.has(urlKey)) {
         seenUrls.add(urlKey);
-        if (validation.error) {
-          manifest.errors.push(`Line ${lineNumber}: Source - ${validation.error} "${url}"`);
-        }
-        if (validation.warning) {
-          manifest.warnings.push(`Line ${lineNumber}: Source - ${validation.warning} "${url}"`);
-        }
+        if (validation.error) manifest.errors.push(`Line ${lineNumber}: Source - ${validation.error} "${url}"`);
+        if (validation.warning) manifest.warnings.push(`Line ${lineNumber}: Source - ${validation.warning} "${url}"`);
       }
     }
   }
 
-  // ==========================================
   // Extract <video poster="..."> and <video src="...">
-  // ==========================================
-  const videoPattern = /<video[^>]+(?:poster|src)=["']([^"']+)["']/gi;
-  while ((match = videoPattern.exec(html)) !== null) {
-    const url = match[1];
-    const lineNumber = getLineNumber(html, match.index);
-    const validation = validateAssetURL(url, '<video>', lineNumber);
-    manifest.images.push(validation);
+  extractUrls(html, /<video[^>]+(?:poster|src)=["']([^"']+)["']/gi, '<video>', manifest.images, 'video');
 
-    const urlKey = `video:${url}`;
-    if (!seenUrls.has(urlKey)) {
-      seenUrls.add(urlKey);
-      if (validation.error) {
-        manifest.errors.push(`Line ${lineNumber}: Video - ${validation.error} "${url}"`);
-      }
-      if (validation.warning) {
-        manifest.warnings.push(`Line ${lineNumber}: Video - ${validation.warning} "${url}"`);
-      }
-    }
-  }
-
-  // ==========================================
   // Extract background-image: url(...)
-  // ==========================================
-  const bgPattern = /background(?:-image)?:\s*url\(["']?([^"')]+)["']?\)/gi;
-  while ((match = bgPattern.exec(css)) !== null) {
-    const url = match[1];
-    const lineNumber = getLineNumber(css, match.index);
-    const validation = validateAssetURL(url, 'background-image', lineNumber);
-    manifest.backgroundImages.push(validation);
-
-    const urlKey = `bg:${url}`;
-    if (!seenUrls.has(urlKey)) {
-      seenUrls.add(urlKey);
-      if (validation.error) {
-        manifest.errors.push(`CSS Line ${lineNumber}: Background - ${validation.error} "${url}"`);
-      }
-      if (validation.warning) {
-        manifest.warnings.push(`CSS Line ${lineNumber}: Background - ${validation.warning} "${url}"`);
-      }
-    }
-  }
+  extractUrls(css, /background(?:-image)?:\s*url\(["']?([^"')]+)["']?\)/gi, 'Background', manifest.backgroundImages, 'bg', true);
 
   // Also check for background-image in HTML inline styles
-  const inlineBgPattern = /style=["'][^"']*background(?:-image)?:\s*url\(["']?([^"')]+)["']?\)[^"']*["']/gi;
-  while ((match = inlineBgPattern.exec(html)) !== null) {
-    const url = match[1];
-    const lineNumber = getLineNumber(html, match.index);
-    const validation = validateAssetURL(url, 'inline background-image', lineNumber);
-    manifest.backgroundImages.push(validation);
-
-    const urlKey = `inline-bg:${url}`;
-    if (!seenUrls.has(urlKey)) {
-      seenUrls.add(urlKey);
-      if (validation.error) {
-        manifest.errors.push(`Line ${lineNumber}: Inline background - ${validation.error} "${url}"`);
-      }
-      if (validation.warning) {
-        manifest.warnings.push(`Line ${lineNumber}: Inline background - ${validation.warning} "${url}"`);
-      }
-    }
-  }
+  extractUrls(html, /style=["'][^"']*background(?:-image)?:\s*url\(["']?([^"')]+)["']?\)[^"']*["']/gi, 'Inline background', manifest.backgroundImages, 'inline-bg');
 
   // ==========================================
   // Extract @font-face src: url(...)

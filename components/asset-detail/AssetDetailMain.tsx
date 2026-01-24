@@ -18,6 +18,8 @@ import { extractJsHooks } from "@/lib/html-parser";
 import { parseTokenManifest } from "@/lib/token-extractor";
 import { useFavorites } from "@/components/favorites/FavoritesProvider";
 import { formatDate, isPlaceholderPayload, parseCodePayload } from "@/lib/payload-utils";
+import { SafetyReportPanel } from "@/components/validation/SafetyReportPanel";
+import { ensureWebflowPasteSafety } from "@/lib/webflow-safety-gate";
 
 type Asset = Doc<"assets">;
 type Payload = Doc<"payloads">;
@@ -222,6 +224,18 @@ export function AssetDetailMain({ asset, payload }: AssetDetailMainProps) {
     () => !!payload?.webflowJson && !isPlaceholderPayload(payload.webflowJson),
     [payload?.webflowJson]
   );
+  const safetyReport = useMemo(() => {
+    if (!hasWebflowPayload) return null;
+    try {
+      return ensureWebflowPasteSafety({
+        payload: payload?.webflowJson || "",
+        cssEmbed: payload?.cssEmbed,
+        jsEmbed: payload?.jsEmbed,
+      }).report;
+    } catch {
+      return null;
+    }
+  }, [hasWebflowPayload, payload?.webflowJson, payload?.cssEmbed, payload?.jsEmbed]);
 
   const canPasteToWebflow = asset.pasteReliability === "full" || asset.pasteReliability === "partial";
   const webflowDisabled = !hasWebflowPayload || !canPasteToWebflow;
@@ -321,6 +335,11 @@ export function AssetDetailMain({ asset, payload }: AssetDetailMainProps) {
 
       {/* Info Cards Row */}
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        {safetyReport && (
+          <div className="sm:col-span-2 lg:col-span-3 2xl:col-span-4">
+            <SafetyReportPanel report={safetyReport} />
+          </div>
+        )}
         <div className="rounded-lg border border-border bg-card p-3">
           <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             Dependencies

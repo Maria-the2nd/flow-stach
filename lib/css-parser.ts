@@ -751,48 +751,73 @@ export function propertiesToStyleLess(properties: Record<string, string>): strin
   return Object.entries(properties).map(([prop, val]) => `${prop}: ${val};`).join(" ");
 }
 
-function mergeStyleLess(existing: string | undefined, newStyles: string): string {
-  if (!existing) return newStyles;
-  if (!newStyles) return existing;
-
-  const existingProps = new Map<string, string>();
-  existing.split(";").forEach((prop) => {
-    const parts = prop.split(":");
-    if (parts.length >= 2) {
-      const name = parts[0]?.trim();
-      const value = parts.slice(1).join(":").trim();
-      if (name && value) existingProps.set(name, value);
-    }
-  });
-
-  newStyles.split(";").forEach((prop) => {
-    const parts = prop.split(":");
-    if (parts.length >= 2) {
-      const name = parts[0]?.trim();
-      const value = parts.slice(1).join(":").trim();
-      if (name && value) existingProps.set(name, value);
-    }
-  });
-
-  return Array.from(existingProps.entries()).map(([prop, val]) => `${prop}: ${val};`).join(" ");
-}
-
+/**
+ * Convert styleLess string to Map of property -> value.
+ * Core utility for all styleLess operations.
+ */
 function styleLessToMap(styleLess: string | undefined): Map<string, string> {
   const map = new Map<string, string>();
   if (!styleLess) return map;
-  styleLess.split(";").forEach((prop) => {
-    const parts = prop.split(":");
-    if (parts.length >= 2) {
-      const name = parts[0]?.trim();
-      const value = parts.slice(1).join(":").trim();
-      if (name && value) map.set(name, value);
-    }
-  });
+  for (const prop of styleLess.split(";")) {
+    const colonIdx = prop.indexOf(":");
+    if (colonIdx === -1) continue;
+    const name = prop.substring(0, colonIdx).trim();
+    const value = prop.substring(colonIdx + 1).trim();
+    if (name && value) map.set(name, value);
+  }
   return map;
 }
 
+/**
+ * Convert Map of properties back to styleLess string.
+ */
 function mapToStyleLess(map: Map<string, string>): string {
   return Array.from(map.entries()).map(([prop, val]) => `${prop}: ${val};`).join(" ");
+}
+
+/**
+ * Merge two styleLess strings.
+ * @param mode 'override' = new values replace existing, 'preserve' = existing values kept
+ */
+function mergeStyleLess(
+  existing: string | undefined,
+  incoming: string,
+  mode: 'override' | 'preserve' = 'override'
+): string {
+  if (!existing) return incoming;
+  if (!incoming) return existing;
+  const existingMap = styleLessToMap(existing);
+  const incomingMap = styleLessToMap(incoming);
+  if (mode === 'override') {
+    for (const [k, v] of incomingMap) existingMap.set(k, v);
+  } else {
+    for (const [k, v] of incomingMap) {
+      if (!existingMap.has(k)) existingMap.set(k, v);
+    }
+  }
+  return mapToStyleLess(existingMap);
+}
+
+/**
+ * Split CSS properties string, handling values with parentheses (e.g., rgb(), var()).
+ * Returns array of individual property declarations.
+ */
+function splitCssProperties(propertiesStr: string): string[] {
+  const properties: string[] = [];
+  let current = "";
+  let parenDepth = 0;
+  for (const char of propertiesStr) {
+    if (char === "(") parenDepth++;
+    else if (char === ")") parenDepth--;
+    if (char === ";" && parenDepth === 0) {
+      if (current.trim()) properties.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) properties.push(current.trim());
+  return properties;
 }
 
 /**
@@ -817,20 +842,6 @@ function validateStyleLess(styleLess: string): string {
   return styleLess;
 }
 
-/**
- * Merge styleLess but preserve existing properties (existing wins).
- * Useful when backfilling mobile values into breakpoint variants.
- */
-function mergeStyleLessPreserveExisting(existing: string | undefined, incoming: string): string {
-  if (!existing) return incoming;
-  if (!incoming) return existing;
-  const existingMap = styleLessToMap(existing);
-  const incomingMap = styleLessToMap(incoming);
-  for (const [k, v] of incomingMap.entries()) {
-    if (!existingMap.has(k)) existingMap.set(k, v);
-  }
-  return mapToStyleLess(existingMap);
-}
 
 type DownBreakpoint = "medium" | "small" | "tiny";
 type UpBreakpoint = "xlarge" | "xxlarge" | "xxxlarge";
@@ -900,7 +911,7 @@ function applyMinWidthPropertiesToEntry(args: {
     if (prevVal) {
       const backfill = `${propName}: ${prevVal};`;
       for (const bp of overrideBreakpoints) {
-        entry.mediaQueries[bp] = mergeStyleLessPreserveExisting(entry.mediaQueries[bp], backfill);
+        entry.mediaQueries[bp] = mergeStyleLess(entry.mediaQueries[bp], backfill, 'preserve');
       }
     }
     // Promote desktop/tablet value into base (desktop-first).
@@ -1408,23 +1419,7 @@ function parseTypographyProperties(
   warnings: CssWarning[]
 ): ElementTypography {
   const result: ElementTypography = {};
-
-  // Split properties, handling values with parentheses
-  const properties: string[] = [];
-  let current = "";
-  let parenDepth = 0;
-
-  for (const char of propertiesStr) {
-    if (char === "(") parenDepth++;
-    else if (char === ")") parenDepth--;
-    if (char === ";" && parenDepth === 0) {
-      if (current.trim()) properties.push(current.trim());
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  if (current.trim()) properties.push(current.trim());
+  const properties = splitCssProperties(propertiesStr);
 
   for (const prop of properties) {
     const colonIndex = prop.indexOf(":");
@@ -1603,23 +1598,7 @@ function parseSpacingProperties(
   warnings: CssWarning[]
 ): ElementSpacing {
   const result: ElementSpacing = {};
-
-  // Split properties, handling values with parentheses
-  const properties: string[] = [];
-  let current = "";
-  let parenDepth = 0;
-
-  for (const char of propertiesStr) {
-    if (char === "(") parenDepth++;
-    else if (char === ")") parenDepth--;
-    if (char === ";" && parenDepth === 0) {
-      if (current.trim()) properties.push(current.trim());
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  if (current.trim()) properties.push(current.trim());
+  const properties = splitCssProperties(propertiesStr);
 
   for (const prop of properties) {
     const colonIndex = prop.indexOf(":");
