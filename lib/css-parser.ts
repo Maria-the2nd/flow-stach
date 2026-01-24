@@ -933,7 +933,7 @@ function parseSelector(selector: string): ParsedSelectorResult {
   // Check for pseudo-class first (remove it for class analysis)
   const pseudoMatch = selector.match(/:(\w+(?:-\w+)*)(?:\([^)]*\))?\s*$/);
   const pseudoClass = pseudoMatch ? pseudoMatch[1] : null;
-  const selectorWithoutPseudo = pseudoClass ? selector.replace(pseudoMatch[0], '') : selector;
+  const selectorWithoutPseudo = pseudoMatch ? selector.replace(pseudoMatch[0], "") : selector;
 
   // Find all classes in the selector
   const classMatches = selectorWithoutPseudo.match(/\.([a-zA-Z_-][\w-]*)/g);
@@ -995,7 +995,7 @@ function parseSelector(selector: string): ParsedSelectorResult {
     parentClasses,
     isDescendant,
     isElementConversion,
-    originalElementSelector: isElementConversion ? elementSelector : undefined
+    originalElementSelector: isElementConversion && elementSelector ? elementSelector : undefined
   };
 }
 

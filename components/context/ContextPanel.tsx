@@ -35,7 +35,7 @@ export function ContextPanel() {
       </Card>
 
       {/* Pro Tip */}
-      <Card size="sm" className="bg-primary/5 border-primary/20 dark:bg-[lab(4_2.18_0.72)]">
+      <Card size="sm" className="bg-primary/5 border-primary/20 (4_2.18_0.72)]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-primary">
             <HugeiconsIcon icon={StarIcon} size={14} />

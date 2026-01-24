@@ -11,6 +11,24 @@ export interface TokenVariable {
   value?: string;
 }
 
+export interface RadiusToken {
+  name: string;
+  value: string;
+  size: 'small' | 'medium' | 'large' | 'xlarge';
+}
+
+export interface ShadowToken {
+  name: string;
+  value: string;
+  intensity: 'xxsmall' | 'xsmall' | 'small' | 'medium' | 'large' | 'xlarge' | 'xxlarge';
+}
+
+export interface UIElement {
+  name: string;
+  classes: string[];
+  styles?: string;
+}
+
 export interface TokenExtraction {
   name: string;
   slug: string;
@@ -20,6 +38,15 @@ export interface TokenExtraction {
   fonts?: {
     googleFonts: string;
     families: string[];
+  };
+}
+
+export interface EnhancedTokenExtraction extends TokenExtraction {
+  radius?: RadiusToken[];
+  shadows?: ShadowToken[];
+  uiElements?: {
+    buttons?: UIElement[];
+    inputs?: UIElement[];
   };
 }
 
@@ -38,7 +65,25 @@ export interface TokenManifest {
 }
 
 /**
- * Extract tokens from CSS content
+ * Extract enhanced tokens from CSS content (includes radius, shadows, UI elements)
+ */
+export function extractEnhancedTokens(
+  css: string,
+  html?: string,
+  designSystemName: string = "Design System"
+): EnhancedTokenExtraction {
+  const baseExtraction = extractTokens(css, html, designSystemName);
+  
+  return {
+    ...baseExtraction,
+    radius: extractRadiusTokens(css),
+    shadows: extractShadowTokens(css),
+    uiElements: extractUIElements(css),
+  };
+}
+
+/**
+ * Extract tokens from CSS content (basic version)
  */
 export function extractTokens(
   css: string,
@@ -521,4 +566,168 @@ export function parseTokenManifest(json: string): TokenManifest | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Extract border-radius tokens from CSS
+ */
+export function extractRadiusTokens(css: string): RadiusToken[] {
+  const radiusTokens: RadiusToken[] = [];
+  const varRegex = /--radius-([\w-]+)\s*:\s*([^;]+);/g;
+  let match;
+
+  while ((match = varRegex.exec(css)) !== null) {
+    const [, name, value] = match;
+    const cleanValue = value.trim();
+    
+    // Determine size category
+    let size: RadiusToken['size'] = 'medium';
+    const nameLower = name.toLowerCase();
+    if (nameLower.includes('small') || nameLower.includes('sm')) {
+      size = 'small';
+    } else if (nameLower.includes('large') || nameLower.includes('lg')) {
+      size = 'large';
+    } else if (nameLower.includes('xlarge') || nameLower.includes('xl')) {
+      size = 'xlarge';
+    }
+
+    radiusTokens.push({
+      name,
+      value: cleanValue,
+      size,
+    });
+  }
+
+  // Also extract from border-radius properties
+  const propRegex = /border-radius\s*:\s*([^;]+);/g;
+  const uniqueValues = new Set<string>();
+  
+  while ((match = propRegex.exec(css)) !== null) {
+    const value = match[1].trim();
+    // Skip CSS variables references
+    if (!value.startsWith('var(') && !uniqueValues.has(value)) {
+      uniqueValues.add(value);
+    }
+  }
+
+  // Add unique literal values
+  uniqueValues.forEach((value, idx) => {
+    if (!radiusTokens.some(t => t.value === value)) {
+      radiusTokens.push({
+        name: `radius-${idx + 1}`,
+        value,
+        size: 'medium',
+      });
+    }
+  });
+
+  return radiusTokens;
+}
+
+/**
+ * Extract box-shadow tokens from CSS
+ */
+export function extractShadowTokens(css: string): ShadowToken[] {
+  const shadowTokens: ShadowToken[] = [];
+  const varRegex = /--shadow-([\w-]+)\s*:\s*([^;]+);/g;
+  let match;
+
+  while ((match = varRegex.exec(css)) !== null) {
+    const [, name, value] = match;
+    const cleanValue = value.trim();
+    
+    // Determine intensity
+    let intensity: ShadowToken['intensity'] = 'medium';
+    const nameLower = name.toLowerCase();
+    if (nameLower.includes('xxsmall') || nameLower === 'xxs') {
+      intensity = 'xxsmall';
+    } else if (nameLower.includes('xsmall') || nameLower === 'xs') {
+      intensity = 'xsmall';
+    } else if (nameLower.includes('small') || nameLower === 'sm') {
+      intensity = 'small';
+    } else if (nameLower.includes('large') || nameLower === 'lg') {
+      intensity = 'large';
+    } else if (nameLower.includes('xlarge') || nameLower === 'xl') {
+      intensity = 'xlarge';
+    } else if (nameLower.includes('xxlarge') || nameLower === 'xxl') {
+      intensity = 'xxlarge';
+    }
+
+    shadowTokens.push({
+      name,
+      value: cleanValue,
+      intensity,
+    });
+  }
+
+  // Also extract from box-shadow properties
+  const propRegex = /box-shadow\s*:\s*([^;]+);/g;
+  const uniqueValues = new Set<string>();
+  
+  while ((match = propRegex.exec(css)) !== null) {
+    const value = match[1].trim();
+    // Skip CSS variables and 'none'
+    if (!value.startsWith('var(') && value !== 'none' && !uniqueValues.has(value)) {
+      uniqueValues.add(value);
+    }
+  }
+
+  // Add unique literal values
+  uniqueValues.forEach((value, idx) => {
+    if (!shadowTokens.some(t => t.value === value)) {
+      shadowTokens.push({
+        name: `shadow-${idx + 1}`,
+        value,
+        intensity: 'medium',
+      });
+    }
+  });
+
+  return shadowTokens;
+}
+
+/**
+ * Extract UI element patterns from CSS
+ */
+export function extractUIElements(css: string): { buttons?: UIElement[]; inputs?: UIElement[] } {
+  const buttons: UIElement[] = [];
+  const inputs: UIElement[] = [];
+
+  // Button patterns
+  const buttonRegex = /\.(btn|button|cta|action)[-\w]*\s*\{([^}]+)\}/gi;
+  let match;
+
+  while ((match = buttonRegex.exec(css)) !== null) {
+    const [fullMatch, className] = match;
+    const styles = match[2];
+    
+    if (!buttons.some(b => b.name === className)) {
+      buttons.push({
+        name: className,
+        classes: [className],
+        styles,
+      });
+    }
+  }
+
+  // Input patterns
+  const inputRegex = /\.(input|field|form-control|textbox)[-\w]*\s*\{([^}]+)\}/gi;
+  
+  while ((match = inputRegex.exec(css)) !== null) {
+    const [fullMatch, className] = match;
+    const styles = match[2];
+    
+    if (!inputs.some(i => i.name === className)) {
+      inputs.push({
+        name: className,
+        classes: [className],
+        styles,
+      });
+    }
+  }
+
+  return {
+    buttons: buttons.length > 0 ? buttons : undefined,
+    inputs: inputs.length > 0 ? inputs : undefined,
+  };
 }

@@ -1,7 +1,13 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isProtectedRoute = createRouteMatcher(["/assets(.*)"]);
+// Define protected routes (require authentication)
+const isProtectedRoute = createRouteMatcher([
+  "/account(.*)",
+  "/admin(.*)",
+  "/assets(.*)",
+  "/workspace(.*)",
+]);
 
 // Temporarily disable auth for testing
 const DISABLE_AUTH = process.env.NEXT_PUBLIC_DISABLE_AUTH === "true";
@@ -9,6 +15,7 @@ const DISABLE_AUTH = process.env.NEXT_PUBLIC_DISABLE_AUTH === "true";
 export default DISABLE_AUTH
   ? () => NextResponse.next()
   : clerkMiddleware(async (auth, req) => {
+      // Only protect specific routes, let everything else through
       if (isProtectedRoute(req)) {
         await auth.protect();
       }

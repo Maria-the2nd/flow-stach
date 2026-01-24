@@ -408,8 +408,10 @@ function normalizeSelector(selector: string, context: NormalizationContext): str
       // Return the Webflow class and add to context for later HTML processing
       context.descendantMappings.push({
         parentClass,
-        childClass: webflowClass,
+        target: element,
+        targetType: "tag",
         className: webflowClass,
+        combinator: " ",
       });
       return `.${webflowClass}${pseudo}`;
     }

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow Bridge Test - All 5 Outputs</title>
+  
+  <!-- LIBRARIES: Should be detected and shown in Step 5 -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+  
+  <style>
+    /* ============================================
+       DESIGN TOKENS - Should go to Step 1
+       Basic CSS variables, hex/rgb colors, px/rem spacing
+       ============================================ */
+    :root {
+      /* Colors - simple formats */
+      --color-primary: #1a1a2e;
+      --color-secondary: #16213e;
+      --color-accent: #e94560;
+      --color-text: #ffffff;
+      --color-text-muted: rgb(180, 180, 190);
+      --color-surface: #0f0f1a;
+      
+      /* Typography */
+      --font-display: "Inter", sans-serif;
+      --font-body: "Inter", sans-serif;
+      --font-size-base: 16px;
+      --font-size-lg: 1.25rem;
+      --font-size-xl: 2rem;
+      --font-size-hero: 4rem;
+      --line-height-tight: 1.1;
+      --line-height-normal: 1.6;
+      
+      /* Spacing */
+      --spacing-xs: 8px;
+      --spacing-sm: 16px;
+      --spacing-md: 24px;
+      --spacing-lg: 48px;
+      --spacing-xl: 96px;
+      --spacing-section: 120px;
+      
+      /* Borders */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+    }
+    
+    /* ============================================
+       NATIVE CSS - Should go to Webflow JSON (Step 2)
+       Flexbox, grid, basic styling
+       ============================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: var(--font-body);
+      font-size: var(--font-size-base);
+      line-height: var(--line-height-normal);
+      color: var(--color-text);
+      background-color: var(--color-surface);
+    }
+    
+    .section {
+      padding: var(--spacing-section) var(--spacing-lg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    
+    /* Hero Section */
+    .hero {
+      text-align: center;
+    }
+    
+    .hero__title {
+      font-family: var(--font-display);
+      font-size: var(--font-size-hero);
+      font-weight: 700;
+      line-height: var(--line-height-tight);
+      margin-bottom: var(--spacing-md);
+    }
+    
+    .hero__subtitle {
+      font-size: var(--font-size-lg);
+      color: var(--color-text-muted);
+      max-width: 600px;
+      margin: 0 auto var(--spacing-lg);
+    }
+    
+    .hero__cta {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding: var(--spacing-sm) var(--spacing-md);
+      background-color: var(--color-accent);
+      color: var(--color-text);
+      text-decoration: none;
+      border-radius: var(--radius-full);
+      font-weight: 600;
+      transition: transform 0.3s ease;
+    }
+    
+    .hero__cta:hover {
+      transform: scale(1.05);
+    }
+    
+    /* Feature Grid */
+    .features {
+      background-color: var(--color-primary);
+    }
+    
+    .features__grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--spacing-md);
+    }
+    
+    .feature-card {
+      background-color: var(--color-secondary);
+      padding: var(--spacing-lg);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+    
+    .feature-card__icon {
+      width: 48px;
+      height: 48px;
+      background-color: var(--color-accent);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    
+    .feature-card__title {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+    }
+    
+    .feature-card__description {
+      color: var(--color-text-muted);
+      font-size: 14px;
+    }
+    
+    /* Stats Section */
+    .stats {
+      text-align: center;
+    }
+    
+    .stats__grid {
+      display: flex;
+      justify-content: center;
+      gap: var(--spacing-xl);
+    }
+    
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+    
+    .stat__number {
+      font-size: 3.5rem;
+      font-weight: 700;
+      font-family: var(--font-display);
+    }
+    
+    .stat__label {
+      color: var(--color-text-muted);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    
+    /* ============================================
+       MODERN CSS - Should go to CSS Embed (Step 3)
+       oklch, color-mix, @container, :has(), backdrop-filter
+       ============================================ */
+    
+    /* oklch colors - NOT supported in Webflow native */
+    .gradient-text {
+      background: linear-gradient(
+        135deg,
+        oklch(0.7 0.25 330),
+        oklch(0.6 0.3 280),
+        oklch(0.5 0.25 230)
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    
+    /* color-mix - NOT supported in Webflow native */
+    .color-mix-bg {
+      background-color: color-mix(in srgb, var(--color-accent) 80%, white);
+    }
+    
+    /* Container queries - NOT supported in Webflow native */
+    .card-container {
+      container-type: inline-size;
+      container-name: card;
+    }
+    
+    @container card (min-width: 400px) {
+      .feature-card {
+        flex-direction: row;
+        align-items: center;
+      }
+      
+      .feature-card__icon {
+        flex-shrink: 0;
+      }
+    }
+    
+    /* :has() selector - NOT supported in Webflow native */
+    .feature-card:has(.feature-card__badge) {
+      border: 2px solid var(--color-accent);
+    }
+    
+    .features__grid:has(.feature-card:hover) .feature-card:not(:hover) {
+      opacity: 0.6;
+      filter: blur(1px);
+    }
+    
+    /* backdrop-filter - partially supported but complex */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    /* @layer - NOT supported in Webflow native */
+    @layer utilities {
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+    }
+    
+    /* Complex animations for scroll */
+    .reveal-up {
+      opacity: 0;
+      transform: translateY(60px);
+    }
+    
+    .reveal-scale {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    
+    .split-text .char {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(100%);
+    }
+  </style>
+</head>
+<body>
+  
+  <!-- HERO SECTION -->
+  <section class="section hero">
+    <div class="container">
+      <h1 class="hero__title gradient-text split-text">
+        Build Faster.<br>Ship Better.
+      </h1>
+      <p class="hero__subtitle reveal-up">
+        Transform your workflow with AI-powered tools that understand design. 
+        From concept to production in minutes, not hours.
+      </p>
+      <a href="#features" class="hero__cta reveal-scale">
+        <span>Get Started</span>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10 3a1 1 0 011 1v10.586l3.293-3.293a1 1 0 111.414 1.414l-5 5a1 1 0 01-1.414 0l-5-5a1 1 0 111.414-1.414L9 14.586V4a1 1 0 011-1z"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+  
+  <!-- FEATURES SECTION -->
+  <section id="features" class="section features">
+    <div class="container">
+      <div class="features__grid">
+        
+        <div class="card-container">
+          <div class="feature-card glass-card reveal-up">
+            <div class="feature-card__icon">⚡</div>
+            <div>
+              <span class="feature-card__badge">New</span>
+              <h3 class="feature-card__title">Lightning Fast</h3>
+              <p class="feature-card__description">
+                Convert designs to code in seconds with our optimized AI pipeline.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-container">
+          <div class="feature-card glass-card reveal-up">
+            <div class="feature-card__icon">🎨</div>
+            <div>
+              <h3 class="feature-card__title">Design Tokens</h3>
+              <p class="feature-card__description">
+                Automatic extraction and organization of your design system variables.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-container">
+          <div class="feature-card glass-card reveal-up">
+            <div class="feature-card__icon">✨</div>
+            <div>
+              <h3 class="feature-card__title">Modern CSS</h3>
+              <p class="feature-card__description">
+                Support for oklch, container queries, and all the latest CSS features.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-container">
+          <div class="feature-card glass-card reveal-up">
+            <div class="feature-card__icon">🔄</div>
+            <div>
+              <h3 class="feature-card__title">Smart Animations</h3>
+              <p class="feature-card__description">
+                GSAP and Lenis detection with automatic CDN configuration.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-container">
+          <div class="feature-card glass-card reveal-up">
+            <div class="feature-card__icon">🛡️</div>
+            <div>
+              <h3 class="feature-card__title">Validation</h3>
+              <p class="feature-card__description">
+                Pre-copy validation prevents Webflow Designer corruption.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-container">
+          <div class="feature-card glass-card reveal-up">
+            <div class="feature-card__icon">📦</div>
+            <div>
+              <h3 class="feature-card__title">Multi-Output</h3>
+              <p class="feature-card__description">
+                Separate design tokens, structure, embeds, and libraries.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </section>
+  
+  <!-- STATS SECTION -->
+  <section class="section stats">
+    <div class="container">
+      <div class="stats__grid">
+        <div class="stat reveal-up">
+          <span class="stat__number gradient-text" data-count="500">0</span>
+          <span class="stat__label">Components</span>
+        </div>
+        <div class="stat reveal-up">
+          <span class="stat__number gradient-text" data-count="10">0</span>
+          <span class="stat__label">Seconds Avg</span>
+        </div>
+        <div class="stat reveal-up">
+          <span class="stat__number gradient-text" data-count="99">0</span>
+          <span class="stat__label">Success Rate</span>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- ============================================
+       JAVASCRIPT - Should go to JS Embed (Step 4)
+       GSAP animations, Lenis smooth scroll, counters
+       ============================================ -->
+  <script>
+    // Register GSAP plugins
+    gsap.registerPlugin(ScrollTrigger);
+    
+    // Initialize Lenis smooth scroll
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+    
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+    
+    // Update ScrollTrigger on Lenis scroll
+    lenis.on('scroll', ScrollTrigger.update);
+    
+    gsap.ticker.add((time) => {
+      lenis.raf(time * 1000);
+    });
+    
+    gsap.ticker.lagSmoothing(0);
+    
+    // Split text animation for hero title
+    const heroTitle = document.querySelector('.hero__title');
+    if (heroTitle) {
+      const text = heroTitle.innerHTML;
+      heroTitle.innerHTML = text.split('').map(char => 
+        char === ' ' ? ' ' : `<span class="char">${char}</span>`
+      ).join('');
+      
+      gsap.to('.hero__title .char', {
+        opacity: 1,
+        y: 0,
+        duration: 0.6,
+        stagger: 0.03,
+        ease: 'power3.out',
+        delay: 0.3
+      });
+    }
+    
+    // Reveal animations on scroll
+    gsap.utils.toArray('.reveal-up').forEach((element) => {
+      gsap.to(element, {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: element,
+          start: 'top 80%',
+          toggleActions: 'play none none reverse'
+        }
+      });
+    });
+    
+    gsap.utils.toArray('.reveal-scale').forEach((element) => {
+      gsap.to(element, {
+        opacity: 1,
+        scale: 1,
+        duration: 0.8,
+        ease: 'back.out(1.7)',
+        scrollTrigger: {
+          trigger: element,
+          start: 'top 80%',
+          toggleActions: 'play none none reverse'
+        }
+      });
+    });
+    
+    // Counter animation for stats
+    gsap.utils.toArray('[data-count]').forEach((counter) => {
+      const target = parseInt(counter.dataset.count);
+      
+      gsap.to(counter, {
+        innerHTML: target,
+        duration: 2,
+        ease: 'power2.out',
+        snap: { innerHTML: 1 },
+        scrollTrigger: {
+          trigger: counter,
+          start: 'top 80%',
+          toggleActions: 'play none none reset'
+        },
+        onUpdate: function() {
+          counter.innerHTML = Math.round(this.targets()[0].innerHTML);
+        }
+      });
+    });
+    
+    // Feature cards stagger animation
+    ScrollTrigger.batch('.feature-card', {
+      onEnter: (elements) => {
+        gsap.to(elements, {
+          opacity: 1,
+          y: 0,
+          stagger: 0.15,
+          duration: 0.8,
+          ease: 'power3.out'
+        });
+      },
+      start: 'top 85%'
+    });
+  </script>
+  
+</body>
+</html>

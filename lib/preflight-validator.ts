@@ -19,6 +19,10 @@ import {
   type ExternalResource,
 } from "./external-resource-detector";
 import {
+  validateHTMLStructure,
+  type HTMLValidationResult,
+} from "./html-validator";
+import {
   ValidationSeverity,
   ValidationIssue,
   fatal,
@@ -33,6 +37,74 @@ import {
   formatIssues,
   type ValidationResult,
 } from "./validation-types";
+
+// ============================================
+// VALID WEBFLOW VARIANT KEYS
+// ============================================
+
+/**
+ * Valid Webflow breakpoint names.
+ * Only these breakpoints are supported in Webflow Designer.
+ */
+export const VALID_BREAKPOINTS = new Set([
+  'main',     // Base/desktop (default)
+  'medium',   // Tablet landscape (991px)
+  'small',    // Tablet portrait (767px)
+  'tiny',     // Mobile landscape (479px)
+  'xl',       // Large desktop (1280px)
+  'xxl',      // Extra large desktop (1440px+)
+]);
+
+/**
+ * Valid CSS pseudo-state names for Webflow variants.
+ * These map to :hover, :focus, etc. pseudo-classes.
+ */
+export const VALID_PSEUDO_STATES = new Set([
+  'hover',
+  'focus',
+  'active',
+  'visited',
+  'focus-visible',
+  'focus-within',
+  'checked',
+  'disabled',
+  'placeholder',
+  'selection',
+]);
+
+/**
+ * All valid variant keys (breakpoints + pseudo-states).
+ */
+export const VALID_VARIANT_KEYS = new Set([
+  ...VALID_BREAKPOINTS,
+  ...VALID_PSEUDO_STATES,
+]);
+
+/**
+ * Reserved Webflow class prefixes that conflict with webflow.js.
+ * User-generated styles MUST NOT use these prefixes.
+ */
+export const RESERVED_CLASS_PREFIXES = [
+  'w-',       // Core Webflow classes (w-container, w-nav, etc.)
+];
+
+/**
+ * Reserved Webflow class names that are special functional classes.
+ */
+export const RESERVED_CLASS_NAMES = new Set([
+  // Layout classes
+  'w-layout-grid', 'w-layout-hflex', 'w-layout-vflex', 'w-layout-blockcontainer',
+  // Container classes
+  'w-container', 'w-row', 'w-col', 'w-clearfix',
+  // Component classes
+  'w-button', 'w-slider', 'w-slide', 'w-nav', 'w-nav-menu', 'w-nav-link',
+  'w-dropdown', 'w-dropdown-toggle', 'w-dropdown-list', 'w-dropdown-link',
+  'w-tab-menu', 'w-tab-link', 'w-tab-content', 'w-tab-pane',
+  'w-form', 'w-input', 'w-select', 'w-checkbox', 'w-radio',
+  'w-lightbox', 'w-lightbox-content',
+  // Utility classes
+  'w-inline-block', 'w-embed', 'w-richtext', 'w-video',
+]);
 
 // ============================================
 // VALIDATION RESULT TYPES
@@ -59,6 +131,10 @@ export interface StyleValidation {
   isValid: boolean;
   invalidStyles: Array<{ className: string; property: string; value: string; reason: string }>;
   missingStyleRefs: string[];
+  /** Invalid variant keys detected (e.g., invalid breakpoints or pseudo-states) */
+  invalidVariantKeys: Array<{ className: string; variantKey: string }>;
+  /** Reserved w- class names used by LLM (conflicts with webflow.js) */
+  reservedClassNames: string[];
 }
 
 export interface EmbedSizeValidation {
@@ -98,10 +174,14 @@ export interface PreflightResult {
   circular: CircularValidation;
   styles: StyleValidation;
   embedSize: EmbedSizeValidation;
+  /** Node depth validation - checks for excessive nesting */
+  depth: DepthValidation;
   /** JS-HTML cross-reference validation (only present if JS was provided) */
   xref?: XRefValidation;
   /** External resource validation (only present if HTML was provided) */
   externalResources?: ExternalResourceValidation;
+  /** HTML structure validation (only present if HTML was provided) */
+  htmlStructure?: HTMLValidationResult;
   /** @deprecated Use issues and validationResult instead */
   summary: string;
   /** Standardized validation issues */
@@ -425,6 +505,23 @@ function validateCSSSnippet(
 }
 
 /**
+ * Check if a class name uses a reserved Webflow prefix or name.
+ */
+function isReservedClassName(className: string): boolean {
+  // Check exact reserved names
+  if (RESERVED_CLASS_NAMES.has(className)) {
+    return true;
+  }
+  // Check reserved prefixes
+  for (const prefix of RESERVED_CLASS_PREFIXES) {
+    if (className.startsWith(prefix)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Validate all styles and their references.
  */
 export function validateStyles(
@@ -438,10 +535,18 @@ export function validateStyles(
   const styleMap = new Map<string, WebflowStyle>();
   const invalidStyles: Array<{ className: string; property: string; value: string; reason: string }> = [];
   const missingStyleRefs: string[] = [];
+  const invalidVariantKeys: Array<{ className: string; variantKey: string }> = [];
+  const reservedClassNames: string[] = [];
 
   // Build style map and validate styleLess
   for (const style of safeStyles) {
     styleMap.set(style.name, style);
+
+    // CRITICAL: Check if user-generated style uses reserved w- prefix
+    // This is different from node class references - these are STYLE DEFINITIONS
+    if (isReservedClassName(style.name)) {
+      reservedClassNames.push(style.name);
+    }
 
     // Validate base styleLess
     if (style.styleLess) {
@@ -456,17 +561,29 @@ export function validateStyles(
       }
     }
 
-    // Validate variant styleLess
-    for (const [variantName, variant] of Object.entries(style.variants)) {
-      if (variant.styleLess) {
-        const variantErrors = validateCSSSnippet(variant.styleLess);
-        for (const err of variantErrors) {
-          invalidStyles.push({
-            className: `${style.name}@${variantName}`,
-            property: err.property,
-            value: err.value,
-            reason: err.reason,
+    // Validate variant styleLess AND variant keys
+    if (style.variants && typeof style.variants === 'object') {
+      for (const [variantKey, variant] of Object.entries(style.variants)) {
+        // CRITICAL: Validate variant key against allowed breakpoints/states
+        // Invalid keys cause [PersistentUIState] errors and Designer crashes
+        if (!VALID_VARIANT_KEYS.has(variantKey)) {
+          invalidVariantKeys.push({
+            className: style.name,
+            variantKey,
           });
+        }
+
+        // Validate variant styleLess content
+        if (variant && variant.styleLess) {
+          const variantErrors = validateCSSSnippet(variant.styleLess);
+          for (const err of variantErrors) {
+            invalidStyles.push({
+              className: `${style.name}@${variantKey}`,
+              property: err.property,
+              value: err.value,
+              reason: err.reason,
+            });
+          }
         }
       }
     }
@@ -476,8 +593,11 @@ export function validateStyles(
   for (const node of safeNodes) {
     if (Array.isArray(node.classes)) {
       for (const classRef of node.classes) {
-        // Skip Webflow built-in classes
-        if (classRef.startsWith("w-") || classRef === "w-layout-grid") {
+        // Skip Webflow built-in classes ONLY for reference checks
+        // (nodes CAN reference built-in classes like w-layout-grid)
+        if (isReservedClassName(classRef)) {
+          // This is OK - nodes can USE Webflow classes
+          // We only block DEFINING new styles with reserved names
           continue;
         }
         if (!styleMap.has(classRef)) {
@@ -487,10 +607,19 @@ export function validateStyles(
     }
   }
 
+  // Validation passes only if all checks pass
+  const isValid =
+    invalidStyles.length === 0 &&
+    missingStyleRefs.length === 0 &&
+    invalidVariantKeys.length === 0 &&
+    reservedClassNames.length === 0;
+
   return {
-    isValid: invalidStyles.length === 0 && missingStyleRefs.length === 0,
+    isValid,
     invalidStyles,
     missingStyleRefs,
+    invalidVariantKeys,
+    reservedClassNames,
   };
 }
 
@@ -660,6 +789,96 @@ export function validateNodeStructure(
 }
 
 // ============================================
+// DEPTH VALIDATION
+// ============================================
+
+/**
+ * Maximum allowed nesting depth for Webflow nodes.
+ * Exceeding this limit can cause Webflow Designer to crash.
+ */
+export const MAX_NODE_DEPTH = 50;
+
+export interface DepthValidation {
+  isValid: boolean;
+  maxDepthFound: number;
+  /** Nodes that exceed the depth limit */
+  deepNodes: Array<{ nodeId: string; depth: number; path: string[] }>;
+}
+
+/**
+ * Validate that node hierarchy doesn't exceed maximum depth.
+ * Excessive nesting (>50 levels) crashes Webflow Designer.
+ */
+export function validateNodeDepth(nodes: WebflowNode[]): DepthValidation {
+  if (!Array.isArray(nodes) || nodes.length === 0) {
+    return { isValid: true, maxDepthFound: 0, deepNodes: [] };
+  }
+
+  const nodeMap = new Map<string, WebflowNode>();
+  const deepNodes: Array<{ nodeId: string; depth: number; path: string[] }> = [];
+  let maxDepthFound = 0;
+
+  // Build node map
+  for (const node of nodes) {
+    nodeMap.set(node._id, node);
+  }
+
+  // Find root nodes (nodes that are not children of any other node)
+  const childIds = new Set<string>();
+  for (const node of nodes) {
+    if (Array.isArray(node.children)) {
+      for (const childId of node.children) {
+        childIds.add(childId);
+      }
+    }
+  }
+  const rootIds = nodes.map(n => n._id).filter(id => !childIds.has(id));
+
+  // DFS to find maximum depth
+  function measureDepth(nodeId: string, currentDepth: number, path: string[], visited: Set<string>): void {
+    if (visited.has(nodeId)) return; // Prevent infinite loops from circular refs
+    visited.add(nodeId);
+
+    const node = nodeMap.get(nodeId);
+    if (!node) return;
+
+    const newPath = [...path, nodeId];
+
+    // Track max depth
+    if (currentDepth > maxDepthFound) {
+      maxDepthFound = currentDepth;
+    }
+
+    // Check if this node exceeds the limit
+    if (currentDepth > MAX_NODE_DEPTH) {
+      deepNodes.push({
+        nodeId,
+        depth: currentDepth,
+        path: newPath,
+      });
+    }
+
+    // Recurse to children
+    if (Array.isArray(node.children)) {
+      for (const childId of node.children) {
+        measureDepth(childId, currentDepth + 1, newPath, visited);
+      }
+    }
+  }
+
+  // Start from each root
+  for (const rootId of rootIds) {
+    measureDepth(rootId, 1, [], new Set());
+  }
+
+  return {
+    isValid: deepNodes.length === 0,
+    maxDepthFound,
+    deepNodes,
+  };
+}
+
+// ============================================
 // JS-HTML CROSS-REFERENCE VALIDATION
 // ============================================
 
@@ -735,6 +954,401 @@ export function validateCanvasWebGLRequirements(
     hasIssues: warnings.length > 0,
     warnings,
     detection,
+  };
+}
+
+// ============================================
+// GHOST VARIANT VALIDATION
+// ============================================
+
+/**
+ * UUID format regex - checks for proper UUID v4 format.
+ * Webflow variant keys that reference nodes should be proper UUIDs.
+ */
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Check if a string is a valid UUID v4 format.
+ */
+export function isUUIDFormat(str: string): boolean {
+  return UUID_V4_REGEX.test(str);
+}
+
+export interface GhostVariantValidation {
+  isValid: boolean;
+  ghostVariants: Array<{
+    className: string;
+    variantKey: string;
+    styleId: string;
+  }>;
+}
+
+/**
+ * Validate that variant keys in styles reference valid targets.
+ * Variant keys can be:
+ * 1. Valid breakpoint names (main, medium, small, tiny, xl, xxl)
+ * 2. Valid pseudo-state names (hover, focus, active, etc.)
+ * 3. UUIDs that exist in nodes (for component overrides)
+ *
+ * Ghost variants reference non-existent nodes and cause Designer instability.
+ */
+export function validateGhostVariants(
+  styles: WebflowStyle[],
+  nodes: WebflowNode[]
+): GhostVariantValidation {
+  if (!Array.isArray(styles) || !Array.isArray(nodes)) {
+    return { isValid: true, ghostVariants: [] };
+  }
+
+  const nodeIds = new Set(nodes.map(n => n._id));
+  const ghostVariants: Array<{ className: string; variantKey: string; styleId: string }> = [];
+
+  for (const style of styles) {
+    if (!style.variants || typeof style.variants !== 'object') continue;
+
+    for (const variantKey of Object.keys(style.variants)) {
+      // Check if key is a valid breakpoint
+      const isBreakpoint = VALID_BREAKPOINTS.has(variantKey);
+      // Check if key is a valid pseudo-state
+      const isState = VALID_PSEUDO_STATES.has(variantKey);
+      // Check if key is a UUID format that exists in nodes (component overrides)
+      const isExistingNode = isUUIDFormat(variantKey) && nodeIds.has(variantKey);
+
+      // If none of the above, it's a ghost variant
+      if (!isBreakpoint && !isState && !isExistingNode) {
+        // Only flag as ghost if it looks like a UUID (component override attempt)
+        // Regular invalid variant keys are already caught by validateStyles
+        if (isUUIDFormat(variantKey)) {
+          ghostVariants.push({
+            className: style.name,
+            variantKey,
+            styleId: style._id,
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    isValid: ghostVariants.length === 0,
+    ghostVariants,
+  };
+}
+
+// ============================================
+// INTERACTION REFERENCE VALIDATION (ix2)
+// ============================================
+
+export interface InteractionValidation {
+  isValid: boolean;
+  orphanTargets: Array<{
+    interactionIndex: number;
+    interactionName?: string;
+    targetId: string;
+    targetType: 'trigger' | 'action';
+  }>;
+}
+
+/**
+ * Extract all target IDs from an interaction object.
+ * Interactions can reference nodes in triggers and actions.
+ */
+function extractInteractionTargetIds(interaction: unknown): string[] {
+  const targets: string[] = [];
+
+  if (!interaction || typeof interaction !== 'object') return targets;
+
+  const obj = interaction as Record<string, unknown>;
+
+  // Check common target locations in ix2 structure
+  // Trigger targets
+  if (obj.trigger && typeof obj.trigger === 'object') {
+    const trigger = obj.trigger as Record<string, unknown>;
+    if (typeof trigger.target === 'string') targets.push(trigger.target);
+    if (typeof trigger.targetId === 'string') targets.push(trigger.targetId);
+    if (typeof trigger.selector === 'string' && trigger.selector.startsWith('#')) {
+      targets.push(trigger.selector.slice(1)); // Remove # prefix
+    }
+  }
+
+  // Action targets in actionLists
+  if (obj.actionTypeId && typeof obj.target === 'object') {
+    const target = obj.target as Record<string, unknown>;
+    if (typeof target.id === 'string') targets.push(target.id);
+  }
+
+  // Recursively check nested objects
+  for (const value of Object.values(obj)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        targets.push(...extractInteractionTargetIds(item));
+      }
+    } else if (value && typeof value === 'object') {
+      targets.push(...extractInteractionTargetIds(value));
+    }
+  }
+
+  return targets;
+}
+
+/**
+ * Validate that ix2 interaction references point to existing nodes.
+ * Orphan interaction targets cause runtime errors in Webflow.
+ */
+export function validateInteractionReferences(
+  payload: WebflowPayload
+): InteractionValidation {
+  const orphanTargets: InteractionValidation['orphanTargets'] = [];
+
+  if (!payload?.payload?.nodes || !Array.isArray(payload.payload.nodes)) {
+    return { isValid: true, orphanTargets };
+  }
+
+  const nodeIds = new Set(payload.payload.nodes.map(n => n._id));
+
+  // Check ix2 interactions
+  const ix2 = payload.payload.ix2;
+  if (ix2?.interactions && Array.isArray(ix2.interactions)) {
+    ix2.interactions.forEach((interaction, idx) => {
+      const targets = extractInteractionTargetIds(interaction);
+      const interactionObj = interaction as Record<string, unknown>;
+
+      for (const targetId of targets) {
+        // Only check if targetId looks like a node reference (UUID-like)
+        if (targetId && !nodeIds.has(targetId) && isUUIDFormat(targetId)) {
+          orphanTargets.push({
+            interactionIndex: idx,
+            interactionName: typeof interactionObj.name === 'string' ? interactionObj.name : undefined,
+            targetId,
+            targetType: 'trigger',
+          });
+        }
+      }
+    });
+  }
+
+  // Check ix2 events
+  if (ix2?.events && Array.isArray(ix2.events)) {
+    for (const event of ix2.events) {
+      const targets = extractInteractionTargetIds(event);
+      for (const targetId of targets) {
+        if (targetId && !nodeIds.has(targetId) && isUUIDFormat(targetId)) {
+          orphanTargets.push({
+            interactionIndex: -1,
+            targetId,
+            targetType: 'trigger',
+          });
+        }
+      }
+    }
+  }
+
+  // Check actionLists
+  if (ix2?.actionLists && Array.isArray(ix2.actionLists)) {
+    for (const actionList of ix2.actionLists) {
+      const targets = extractInteractionTargetIds(actionList);
+      for (const targetId of targets) {
+        if (targetId && !nodeIds.has(targetId) && isUUIDFormat(targetId)) {
+          orphanTargets.push({
+            interactionIndex: -1,
+            targetId,
+            targetType: 'action',
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    isValid: orphanTargets.length === 0,
+    orphanTargets,
+  };
+}
+
+// ============================================
+// ASSET REFERENCE VALIDATION
+// ============================================
+
+export interface AssetValidation {
+  isValid: boolean;
+  orphanAssets: Array<{
+    nodeId: string;
+    assetId: string;
+    assetType: 'image' | 'video' | 'other';
+  }>;
+}
+
+/**
+ * Validate that asset references in nodes point to existing assets.
+ */
+export function validateAssetReferences(
+  payload: WebflowPayload
+): AssetValidation {
+  const orphanAssets: AssetValidation['orphanAssets'] = [];
+
+  if (!payload?.payload?.nodes || !Array.isArray(payload.payload.nodes)) {
+    return { isValid: true, orphanAssets };
+  }
+
+  // Build asset ID set
+  const assetIds = new Set<string>();
+  if (Array.isArray(payload.payload.assets)) {
+    for (const asset of payload.payload.assets) {
+      if (asset && typeof asset === 'object' && '_id' in asset) {
+        assetIds.add((asset as { _id: string })._id);
+      }
+    }
+  }
+
+  // Skip validation if no assets are defined (common case)
+  if (assetIds.size === 0) {
+    return { isValid: true, orphanAssets };
+  }
+
+  // Check node asset references
+  for (const node of payload.payload.nodes) {
+    const data = node.data as Record<string, unknown> | undefined;
+
+    // Check direct asset reference
+    if (data?.asset && typeof data.asset === 'string') {
+      if (!assetIds.has(data.asset)) {
+        orphanAssets.push({
+          nodeId: node._id,
+          assetId: data.asset,
+          assetType: node.type === 'Image' ? 'image' : node.type === 'Video' ? 'video' : 'other',
+        });
+      }
+    }
+
+    // Check attr.src that might reference assets
+    if (data?.attr && typeof data.attr === 'object') {
+      const attr = data.attr as Record<string, unknown>;
+      if (typeof attr.src === 'string' && attr.src.startsWith('asset://')) {
+        const assetRef = attr.src.replace('asset://', '');
+        if (!assetIds.has(assetRef)) {
+          orphanAssets.push({
+            nodeId: node._id,
+            assetId: assetRef,
+            assetType: 'image',
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    isValid: orphanAssets.length === 0,
+    orphanAssets,
+  };
+}
+
+// ============================================
+// CHILDREN REFERENCE VALIDATION
+// ============================================
+
+export interface ChildrenValidation {
+  isValid: boolean;
+  orphanChildren: Array<{
+    parentId: string;
+    missingChildId: string;
+  }>;
+}
+
+/**
+ * Validate that all children references in nodes point to existing nodes.
+ * This is FATAL - orphan children WILL crash Designer.
+ */
+export function validateChildrenReferences(
+  nodes: WebflowNode[]
+): ChildrenValidation {
+  if (!Array.isArray(nodes)) {
+    return { isValid: true, orphanChildren: [] };
+  }
+
+  const nodeIds = new Set(nodes.map(n => n._id));
+  const orphanChildren: ChildrenValidation['orphanChildren'] = [];
+
+  for (const node of nodes) {
+    if (Array.isArray(node.children)) {
+      for (const childId of node.children) {
+        if (!nodeIds.has(childId)) {
+          orphanChildren.push({
+            parentId: node._id,
+            missingChildId: childId,
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    isValid: orphanChildren.length === 0,
+    orphanChildren,
+  };
+}
+
+// ============================================
+// COMPONENT VARIANT VALIDATION
+// ============================================
+
+export interface ComponentValidation {
+  isValid: boolean;
+  issues: string[];
+}
+
+/**
+ * Validate component structures and their variants.
+ * Components may have nested structures that need recursive validation.
+ */
+export function validateComponentStructure(
+  payload: WebflowPayload
+): ComponentValidation {
+  const issues: string[] = [];
+
+  // Check for components array if present
+  const components = (payload.payload as Record<string, unknown>).components;
+  if (!components || !Array.isArray(components)) {
+    return { isValid: true, issues };
+  }
+
+  // Validate each component
+  for (const component of components) {
+    if (!component || typeof component !== 'object') continue;
+
+    const comp = component as Record<string, unknown>;
+
+    // Check component has required fields
+    if (!comp._id) {
+      issues.push('Component missing _id');
+    }
+
+    // Check component nodes if present
+    if (comp.nodes && Array.isArray(comp.nodes)) {
+      const childrenResult = validateChildrenReferences(comp.nodes as WebflowNode[]);
+      if (!childrenResult.isValid) {
+        for (const orphan of childrenResult.orphanChildren) {
+          issues.push(`Component ${comp._id}: node ${orphan.parentId} references missing child ${orphan.missingChildId}`);
+        }
+      }
+    }
+
+    // Check component styles if present
+    if (comp.styles && Array.isArray(comp.styles)) {
+      const ghostResult = validateGhostVariants(
+        comp.styles as WebflowStyle[],
+        (comp.nodes as WebflowNode[]) || []
+      );
+      if (!ghostResult.isValid) {
+        for (const ghost of ghostResult.ghostVariants) {
+          issues.push(`Component ${comp._id}: style ${ghost.className} has ghost variant ${ghost.variantKey}`);
+        }
+      }
+    }
+  }
+
+  return {
+    isValid: issues.length === 0,
+    issues,
   };
 }
 
@@ -848,8 +1462,9 @@ function createFailedPreflightResult(reason: string): PreflightResult {
     uuid: { isValid: false, duplicates: [], invalidFormat: [] },
     references: { isValid: false, orphanReferences: [], unreachableNodes: [] },
     circular: { isValid: true, cycles: [] },
-    styles: { isValid: true, invalidStyles: [], missingStyleRefs: [] },
+    styles: { isValid: true, invalidStyles: [], missingStyleRefs: [], invalidVariantKeys: [], reservedClassNames: [] },
     embedSize: { css: 0, js: 0, warnings: [], errors: [] },
+    depth: { isValid: true, maxDepthFound: 0, deepNodes: [] },
     summary: `CRITICAL FAILURES (paste will corrupt project):\n   - ${reason}`,
     issues,
     validationResult: createValidationResult(issues),
@@ -897,6 +1512,22 @@ export function runPreflightValidation(
   const styleValidation = validateStyles(styles, nodes);
   const embedSize = validateEmbedSize(nodes, cssEmbed, jsEmbed);
   const nodeStructure = validateNodeStructure(nodes);
+  const depthValidation = validateNodeDepth(nodes);
+
+  // NEW: Ghost variant validation
+  const ghostVariantValidation = validateGhostVariants(styles, nodes);
+
+  // NEW: Children reference validation (more thorough than orphan detection)
+  const childrenValidation = validateChildrenReferences(nodes);
+
+  // NEW: Interaction reference validation
+  const interactionValidation = validateInteractionReferences(payload);
+
+  // NEW: Asset reference validation
+  const assetValidation = validateAssetReferences(payload);
+
+  // NEW: Component structure validation
+  const componentValidation = validateComponentStructure(payload);
 
   // Run JS-HTML cross-reference validation if HTML and JS are provided
   let xref: XRefValidation | undefined;
@@ -913,6 +1544,12 @@ export function runPreflightValidation(
       hasWarnings: resourceResult.hasWarnings,
       result: resourceResult,
     };
+  }
+
+  // Run HTML structure validation if HTML is provided
+  let htmlStructure: HTMLValidationResult | undefined;
+  if (html) {
+    htmlStructure = validateHTMLStructure(html);
   }
 
   // Collect standardized validation issues
@@ -1045,6 +1682,124 @@ export function runPreflightValidation(
     }
   }
 
+  // ERROR: Invalid variant keys (causes [PersistentUIState] crash in Webflow Designer)
+  if (styleValidation.invalidVariantKeys.length > 0) {
+    for (const { className, variantKey } of styleValidation.invalidVariantKeys) {
+      issues.push(error(
+        ErrorIssueCodes.INVALID_VARIANT_KEY,
+        `Style "${className}" has invalid variant key "${variantKey}"`,
+        {
+          context: `${className}@${variantKey}`,
+          suggestion: `Use valid breakpoints (${Array.from(VALID_BREAKPOINTS).join(', ')}) or states (${Array.from(VALID_PSEUDO_STATES).slice(0, 4).join(', ')}...)`
+        }
+      ));
+    }
+    criticalFailures.push(`Invalid variant keys: ${styleValidation.invalidVariantKeys.length} invalid key(s) - will cause [PersistentUIState] crash`);
+  }
+
+  // ERROR: Reserved Webflow class names (conflicts with webflow.js)
+  if (styleValidation.reservedClassNames.length > 0) {
+    for (const className of styleValidation.reservedClassNames) {
+      issues.push(error(
+        ErrorIssueCodes.RESERVED_CLASS_NAME,
+        `Style "${className}" uses reserved Webflow class name`,
+        {
+          context: className,
+          suggestion: 'Rename the class to not start with "w-" - this prefix is reserved for Webflow\'s internal classes'
+        }
+      ));
+    }
+    criticalFailures.push(`Reserved class names: ${styleValidation.reservedClassNames.slice(0, 3).join(', ')}${styleValidation.reservedClassNames.length > 3 ? '...' : ''}`);
+  }
+
+  // ERROR: Ghost variant keys (references non-existent nodes)
+  if (!ghostVariantValidation.isValid) {
+    for (const ghost of ghostVariantValidation.ghostVariants) {
+      issues.push(error(
+        ErrorIssueCodes.GHOST_VARIANT_KEY,
+        `Style "${ghost.className}" has variant key "${ghost.variantKey}" that references non-existent node`,
+        {
+          context: `${ghost.className}@${ghost.variantKey}`,
+          suggestion: 'This variant key appears to be a component override for a node that doesn\'t exist. It will be stripped during sanitization.'
+        }
+      ));
+    }
+    criticalFailures.push(`Ghost variant keys: ${ghostVariantValidation.ghostVariants.length} variant(s) reference non-existent nodes`);
+  }
+
+  // FATAL: Orphan children references (crashes Designer)
+  if (!childrenValidation.isValid) {
+    for (const orphan of childrenValidation.orphanChildren) {
+      issues.push(fatal(
+        FatalIssueCodes.CIRCULAR_REFERENCE, // Using circular as closest match for FATAL orphan
+        `Node "${orphan.parentId}" has child "${orphan.missingChildId}" that doesn't exist`,
+        {
+          context: `${orphan.parentId} -> ${orphan.missingChildId}`,
+          suggestion: 'This will crash Webflow Designer. The missing child reference will be removed during sanitization.'
+        }
+      ));
+    }
+    criticalFailures.push(`Orphan children: ${childrenValidation.orphanChildren.length} node(s) reference missing children - WILL CRASH DESIGNER`);
+  }
+
+  // ERROR: Orphan interaction targets
+  if (!interactionValidation.isValid) {
+    for (const orphan of interactionValidation.orphanTargets) {
+      issues.push(error(
+        ErrorIssueCodes.ORPHAN_INTERACTION_TARGET,
+        `Interaction ${orphan.interactionName || `#${orphan.interactionIndex}`} references non-existent node: "${orphan.targetId}"`,
+        {
+          context: `ix2.${orphan.targetType}:${orphan.targetId}`,
+          suggestion: 'This interaction will be extracted to jsEmbed as GSAP code since the target node doesn\'t exist.'
+        }
+      ));
+    }
+    criticalFailures.push(`Orphan interaction targets: ${interactionValidation.orphanTargets.length} interaction(s) reference missing nodes`);
+  }
+
+  // WARNING: Orphan asset references (non-critical but should be noted)
+  if (!assetValidation.isValid) {
+    for (const orphan of assetValidation.orphanAssets) {
+      issues.push(warning(
+        WarningIssueCodes.ORPHAN_ASSET_WARNING,
+        `Node "${orphan.nodeId}" references non-existent ${orphan.assetType} asset: "${orphan.assetId}"`,
+        {
+          context: `${orphan.nodeId}:${orphan.assetId}`,
+          suggestion: 'The asset reference will be cleared. You may need to re-upload the asset in Webflow.'
+        }
+      ));
+    }
+  }
+
+  // ERROR: Component structure issues
+  if (!componentValidation.isValid) {
+    for (const issue of componentValidation.issues) {
+      issues.push(error(
+        ErrorIssueCodes.NODE_STRUCTURE_ERROR,
+        issue,
+        {
+          suggestion: 'Component structure issues may cause paste failures. Consider simplifying the component.'
+        }
+      ));
+    }
+    criticalFailures.push(`Component issues: ${componentValidation.issues.length} structural problem(s)`);
+  }
+
+  // FATAL: Excessive nesting depth (causes Webflow Designer crash)
+  if (!depthValidation.isValid) {
+    for (const deepNode of depthValidation.deepNodes) {
+      issues.push(fatal(
+        FatalIssueCodes.EXCESSIVE_DEPTH,
+        `Node "${deepNode.nodeId}" exceeds maximum depth (${deepNode.depth} > ${MAX_NODE_DEPTH})`,
+        {
+          context: `Depth: ${deepNode.depth}, Path: ${deepNode.path.slice(-5).join(' -> ')}`,
+          suggestion: 'Flatten the HTML structure - Webflow Designer crashes with deeply nested elements'
+        }
+      ));
+    }
+    criticalFailures.push(`Excessive nesting: ${depthValidation.deepNodes.length} node(s) exceed ${MAX_NODE_DEPTH} levels - max depth found: ${depthValidation.maxDepthFound}`);
+  }
+
   // Include xref issues (ERROR and WARNING levels)
   if (xref) {
     // Add issues from xref (already standardized)
@@ -1067,6 +1822,16 @@ export function runPreflightValidation(
     }
   }
 
+  // Include HTML structure issues
+  if (htmlStructure) {
+    issues.push(...htmlStructure.issues);
+
+    // Legacy: Add to criticalFailures if nested forms exist
+    if (htmlStructure.errors.length > 0) {
+      criticalFailures.push(`HTML structure errors: ${htmlStructure.errors.length} issue(s)`);
+    }
+  }
+
   const validationResult = createValidationResult(issues);
   const isValid = validationResult.isValid;
   const canProceed = validationResult.canProceed;
@@ -1079,8 +1844,10 @@ export function runPreflightValidation(
     circular,
     styles: styleValidation,
     embedSize,
+    depth: depthValidation,
     xref,
     externalResources,
+    htmlStructure,
     summary: generateValidationSummary(criticalFailures, styleValidation, embedSize, nodeStructure, xref, externalResources),
     issues,
     validationResult,
@@ -1147,6 +1914,23 @@ export type {
   ExternalResource,
   ExternalResourceResult,
 } from "./external-resource-detector";
+
+// ============================================
+// RE-EXPORTS FROM HTML VALIDATOR
+// ============================================
+
+export {
+  validateHTMLStructure,
+  detectNestedForms,
+  detectMissingAlt,
+  detectEmptyLinks,
+  detectInvalidNesting,
+  detectDeprecatedElements,
+} from "./html-validator";
+
+export type {
+  HTMLValidationResult,
+} from "./html-validator";
 
 // Re-export validation types for convenience
 export {

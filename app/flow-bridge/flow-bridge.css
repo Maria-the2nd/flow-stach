@@ -1,16 +1,16 @@
 /* Flow Bridge - Creative Studio Warmth Theme */
 :root {
   --fb-color-light: #FAFAFA;
-  --fb-color-dark: #2d2f2e;
+  --fb-color-dark: #f8fafc;
   /* Charcoal from SKILL.md */
   --fb-color-accent: #ff531f;
   /* Coral from SKILL.md */
   --fb-color-accent-hover: #e0481b;
 
-  --fb-color-text-dark: #1A1A1A;
+  --fb-color-text-dark: #0f172a;
   --fb-color-text-light: #FAFAFA;
-  --fb-color-text-muted: rgba(26, 26, 26, 0.65);
-  --fb-color-text-muted-inv: rgba(250, 250, 250, 0.65);
+  --fb-color-text-muted: rgba(15, 23, 42, 0.6);
+  --fb-color-text-muted-inv: rgba(250, 250, 250, 0.6);
 
   --fb-font-display: "Antonio", sans-serif;
   --fb-font-body: "Onest", -apple-system, sans-serif;

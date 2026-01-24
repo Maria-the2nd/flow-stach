@@ -43,7 +43,23 @@ export const list = query({
     }
 
     // Sort by updatedAt descending (newest first)
-    return assets.sort((a, b) => b.updatedAt - a.updatedAt)
+    const sortedAssets = assets.sort((a, b) => b.updatedAt - a.updatedAt)
+
+    // Get thumbnail URLs for all assets
+    const assetsWithThumbnails = await Promise.all(
+      sortedAssets.map(async (asset) => {
+        let thumbnailUrl: string | null = null
+        if (asset.thumbnailStorageId) {
+          thumbnailUrl = await ctx.storage.getUrl(asset.thumbnailStorageId)
+        }
+        return {
+          ...asset,
+          thumbnailUrl,  // New storage URL (use this over previewImageUrl)
+        }
+      })
+    )
+
+    return assetsWithThumbnails
   },
 })
 
@@ -122,6 +138,16 @@ export const deleteById = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx)
 
+    const asset = await ctx.db.get(args.assetId)
+    if (!asset) {
+      throw new Error("Asset not found")
+    }
+
+    // Delete thumbnail from storage if exists
+    if (asset.thumbnailStorageId) {
+      await ctx.storage.delete(asset.thumbnailStorageId)
+    }
+
     const payload = await ctx.db
       .query("payloads")
       .withIndex("by_asset_id", (q) => q.eq("assetId", args.assetId))
@@ -146,5 +172,79 @@ export const deleteById = mutation({
       deletedPayload: !!payload,
       deletedFavorites: favorites.length,
     }
+  },
+})
+
+/**
+ * Generate an upload URL for asset thumbnail
+ * Returns a pre-signed URL that can be used to upload an image
+ */
+export const generateThumbnailUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireAuth(ctx)
+    return await ctx.storage.generateUploadUrl()
+  },
+})
+
+/**
+ * Update asset thumbnail after upload
+ * Saves the storage ID to the asset and deletes the old thumbnail if exists
+ */
+export const updateThumbnail = mutation({
+  args: {
+    assetId: v.id("assets"),
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    const asset = await ctx.db.get(args.assetId)
+    if (!asset) {
+      throw new Error("Asset not found")
+    }
+
+    // Delete old thumbnail if exists
+    if (asset.thumbnailStorageId) {
+      await ctx.storage.delete(asset.thumbnailStorageId)
+    }
+
+    // Update asset with new thumbnail
+    await ctx.db.patch(args.assetId, {
+      thumbnailStorageId: args.storageId,
+      updatedAt: Date.now(),
+    })
+
+    return { success: true }
+  },
+})
+
+/**
+ * Delete asset thumbnail
+ */
+export const deleteThumbnail = mutation({
+  args: {
+    assetId: v.id("assets"),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    const asset = await ctx.db.get(args.assetId)
+    if (!asset) {
+      throw new Error("Asset not found")
+    }
+
+    // Delete thumbnail from storage if exists
+    if (asset.thumbnailStorageId) {
+      await ctx.storage.delete(asset.thumbnailStorageId)
+    }
+
+    // Remove thumbnail reference from asset
+    await ctx.db.patch(args.assetId, {
+      thumbnailStorageId: undefined,
+      updatedAt: Date.now(),
+    })
+
+    return { success: true }
   },
 })

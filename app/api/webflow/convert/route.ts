@@ -1,5 +1,16 @@
 import { NextResponse } from "next/server";
 import { isValidWebflowPayload, type WebflowPayload } from "@/lib/webflow-converter";
+import {
+  runPreflightValidation,
+  formatPreflightResult,
+  validateInteractionReferences,
+} from "@/lib/preflight-validator";
+import { sanitizeWebflowPayload, type EmbedContent } from "@/lib/webflow-sanitizer";
+import { prepareHTMLForWebflow } from "@/lib/validation/html-sanitizer";
+import { detectEmbedRequiredCSS, validateEmbedSize } from "@/lib/validation/css-feature-detector";
+import { validateDesignTokens } from "@/lib/validation/design-token-validator";
+import { validateCSSEmbed, validateJSEmbed, validateLibraryImports } from "@/lib/validation/embed-validator";
+import { detectLibraries } from "@/lib/js-library-detector";
 
 // Debug mode - set WEBFLOW_CONVERT_DEBUG=true for verbose logging
 const DEBUG = process.env.WEBFLOW_CONVERT_DEBUG === "true";
@@ -563,6 +574,23 @@ These are NOT special types - use "Block" for all of them!
 - children: ["modifier"] if this class has combo modifiers
 - variants: { "hover": { "styleLess": "..." } } for hover states
 
+## CRITICAL CONSTRAINTS - VIOLATING THESE CRASHES WEBFLOW
+
+### VARIANT KEYS - ONLY THESE ARE VALID:
+Breakpoints: "main", "medium", "small", "tiny", "xl", "xxl"
+Pseudo-states: "hover", "focus", "active", "visited", "focus-visible", "focus-within", "checked", "disabled", "placeholder", "selection"
+
+NEVER use any other variant keys! Invalid keys cause [PersistentUIState] crash error.
+Examples of INVALID keys: "desktop", "mobile", "tablet", "768", "1024", "md", "lg", "sm"
+
+### CLASS NAMES - NEVER USE w- PREFIX:
+NEVER create class names starting with "w-" - this is Webflow's reserved namespace.
+Reserved classes like w-container, w-nav, w-slider etc. are built-in Webflow classes.
+Using w- prefix conflicts with webflow.js and corrupts Designer state.
+
+Good: "container", "nav", "hero-section", "btn-primary"
+BAD: "w-container", "w-nav", "w-hero", "w-btn"
+
 ## STYLES TO CREATE
 ${styleDefinitions.join('\n')}
 
@@ -584,6 +612,58 @@ ${html}
   },
   "meta": { "unlinkedSymbolCount": 0, "droppedLinks": 0, "dynBindRemovedCount": 0, "dynListBindRemovedCount": 0, "paginationRemovedCount": 0 }
 }`;
+}
+
+/**
+ * Extract design tokens from CSS variables as JSON
+ */
+function extractDesignTokensJSON(cssVars: Map<string, string>): string {
+  const colors: Record<string, string> = {};
+  const spacing: Record<string, string> = {};
+  const typography: Record<string, string> = {};
+  const other: Record<string, string> = {};
+
+  for (const [name, value] of cssVars) {
+    const cleanName = name.replace(/^--/, '');
+
+    // Categorize by naming convention
+    if (cleanName.includes('color') || cleanName.includes('bg') || cleanName.includes('text') || cleanName.match(/^(primary|secondary|accent|neutral|success|error|warning|info)/)) {
+      colors[cleanName] = value;
+    } else if (cleanName.match(/(spacing|gap|margin|padding|size|width|height|radius)/)) {
+      spacing[cleanName] = value;
+    } else if (cleanName.match(/(font|text|line-height|letter-spacing|weight)/)) {
+      typography[cleanName] = value;
+    } else {
+      other[cleanName] = value;
+    }
+  }
+
+  const tokens: Record<string, unknown> = {};
+  if (Object.keys(colors).length > 0) tokens.colors = colors;
+  if (Object.keys(spacing).length > 0) tokens.spacing = spacing;
+  if (Object.keys(typography).length > 0) tokens.typography = typography;
+  if (Object.keys(other).length > 0) tokens.other = other;
+
+  return JSON.stringify(tokens, null, 2);
+}
+
+/**
+ * Extract JavaScript from HTML
+ */
+function extractJavaScript(html: string): string {
+  const scripts: string[] = [];
+  const scriptRegex = /<script(?:[^>]*)>([\s\S]*?)<\/script>/gi;
+  let match;
+
+  while ((match = scriptRegex.exec(html)) !== null) {
+    const content = match[1].trim();
+    if (content && !match[0].includes('src=')) {
+      // Only inline scripts, not external
+      scripts.push(content);
+    }
+  }
+
+  return scripts.join('\n\n');
 }
 
 export async function POST(request: Request) {
@@ -626,11 +706,58 @@ export async function POST(request: Request) {
 
   const model = process.env.OPENROUTER_MODEL || "openai/gpt-4.1";
 
-  // Log CSS variable resolution
+  // ============================================================================
+  // STEP 1: HTML Sanitization
+  // ============================================================================
+  const htmlSanitization = prepareHTMLForWebflow(body.html);
+  const sanitizedHTML = htmlSanitization.sanitizedHTML;
+
+  if (!htmlSanitization.validation.valid) {
+    console.warn("[webflow-convert]", requestId, "html_validation_failed", {
+      errors: htmlSanitization.validation.errors,
+    });
+  }
+
+  if (htmlSanitization.changesApplied.length > 0) {
+    console.info("[webflow-convert]", requestId, "html_sanitized", {
+      changes: htmlSanitization.changesApplied,
+    });
+  }
+
+  // ============================================================================
+  // STEP 2: CSS Feature Detection & Splitting
+  // ============================================================================
   const cssVars = extractCssVariables(body.css);
+  const cssDetection = detectEmbedRequiredCSS(body.css);
+
+  console.info("[webflow-convert]", requestId, "css_detection", {
+    needsEmbed: cssDetection.needsEmbed,
+    detectedFeatures: cssDetection.detectedFeatures.map(f => f.name),
+    warnings: cssDetection.warnings.length,
+  });
+
+  // Use native-compatible CSS for Webflow conversion
+  const cssForConversion = cssDetection.nativeCSS || body.css;
 
   // Parse CSS for logging
-  const { classStyles, tagStyles } = parseCssRules(body.css, cssVars);
+  const { classStyles, tagStyles } = parseCssRules(cssForConversion, cssVars);
+
+  // ============================================================================
+  // STEP 3: Extract Design Tokens
+  // ============================================================================
+  const designTokensJSON = cssVars.size > 0 ? extractDesignTokensJSON(cssVars) : null;
+
+  // ============================================================================
+  // STEP 4: Extract JavaScript & Detect Libraries
+  // ============================================================================
+  const extractedJS = extractJavaScript(sanitizedHTML);
+  const combinedJS = extractedJS; // Could also check for inline JS in CSS
+  const libraryDetection = detectLibraries(combinedJS + '\n' + body.css);
+
+  console.info("[webflow-convert]", requestId, "library_detection", {
+    detected: libraryDetection.names,
+    scriptCount: libraryDetection.scripts.length,
+  });
 
   console.info("[webflow-convert]", requestId, "css_parsed", {
     cssVars: cssVars.size,
@@ -652,7 +779,12 @@ export async function POST(request: Request) {
     }
   }
 
-  const prompt = buildPrompt(body);
+  // Build prompt with sanitized HTML and native CSS only
+  const prompt = buildPrompt({
+    ...body,
+    html: sanitizedHTML,
+    css: cssForConversion,
+  });
   console.info("[webflow-convert]", requestId, "request", {
     model,
     sectionName: body.sectionName,
@@ -688,7 +820,7 @@ export async function POST(request: Request) {
         {
           role: "system",
           content:
-            "You are a precise converter that outputs only valid JSON for Webflow clipboard payloads.",
+            "You are a precise converter that outputs only valid JSON for Webflow clipboard payloads. CRITICAL: Only use valid variant keys (main/medium/small/tiny/xl/xxl for breakpoints, hover/focus/active/visited/focus-visible/focus-within/checked/disabled/placeholder/selection for states). NEVER create class names starting with 'w-' prefix - this is Webflow's reserved namespace.",
         },
         { role: "user", content: prompt },
       ],
@@ -757,6 +889,7 @@ export async function POST(request: Request) {
     console.info("[webflow-convert]", requestId, "payload_fixes", { fixes });
   }
 
+  // Basic structure check first
   if (!isValidWebflowPayload(payload)) {
     console.warn("[webflow-convert]", requestId, "invalid_payload", {
       hasType: "type" in payload,
@@ -774,14 +907,185 @@ export async function POST(request: Request) {
     );
   }
 
+  // CRITICAL: Run preflight validation to prevent Designer corruption
+  const preflightResult = runPreflightValidation(payload);
+  let finalPayload = payload;
+  let sanitizationApplied = false;
+  const validationWarnings: string[] = [];
+  let extractedEmbedContent: EmbedContent | undefined;
+
+  // Detect broken interaction indexes for embed extraction
+  const interactionValidation = validateInteractionReferences(payload);
+  const brokenInteractionIndexes = interactionValidation.orphanTargets
+    .filter(t => t.interactionIndex >= 0)
+    .map(t => t.interactionIndex);
+
+  if (!preflightResult.canProceed) {
+    // Validation failed with blocking issues - attempt sanitization
+    console.warn("[webflow-convert]", requestId, "validation_failed", {
+      summary: preflightResult.summary,
+      errors: preflightResult.issues.filter(i => i.severity === "fatal" || i.severity === "error").length,
+    });
+
+    const sanitizationResult = sanitizeWebflowPayload(payload, {
+      brokenInteractionIndexes,
+    });
+    finalPayload = sanitizationResult.payload;
+    sanitizationApplied = sanitizationResult.hadIssues;
+    extractedEmbedContent = sanitizationResult.embedContent;
+
+    if (sanitizationResult.hadIssues) {
+      console.info("[webflow-convert]", requestId, "sanitization_applied", {
+        changes: sanitizationResult.changes,
+        hasEmbedContent: !!sanitizationResult.embedContent,
+      });
+      validationWarnings.push(...sanitizationResult.changes);
+    }
+
+    // Re-validate after sanitization
+    const revalidation = runPreflightValidation(finalPayload);
+    if (!revalidation.canProceed) {
+      console.error("[webflow-convert]", requestId, "sanitization_failed", {
+        summary: revalidation.summary,
+      });
+      return NextResponse.json(
+        {
+          error: "Conversion produced invalid Webflow JSON that could not be auto-fixed",
+          details: formatPreflightResult(revalidation),
+          requestId,
+        },
+        { status: 422 }
+      );
+    }
+  } else if (!preflightResult.isValid) {
+    // Has warnings but can proceed - still sanitize to be safe
+    const sanitizationResult = sanitizeWebflowPayload(payload, {
+      brokenInteractionIndexes,
+    });
+    if (sanitizationResult.hadIssues) {
+      finalPayload = sanitizationResult.payload;
+      sanitizationApplied = true;
+      extractedEmbedContent = sanitizationResult.embedContent;
+      validationWarnings.push(...sanitizationResult.changes);
+      console.info("[webflow-convert]", requestId, "sanitization_applied_for_warnings", {
+        changes: sanitizationResult.changes,
+        hasEmbedContent: !!sanitizationResult.embedContent,
+      });
+    }
+
+    // Add validation warnings to response
+    const preflightWarnings = preflightResult.issues.filter(
+      (issue) => issue.severity === "warning"
+    );
+    preflightWarnings.forEach((issue) => validationWarnings.push(issue.message));
+  }
+
+  // ============================================================================
+  // STEP 5: Validate Each Output
+  // ============================================================================
+
+  // Validate design tokens
+  const tokenValidation = designTokensJSON
+    ? validateDesignTokens(designTokensJSON)
+    : { valid: true, errors: [], warnings: [] };
+
+  // Validate CSS embed
+  const cssEmbedValidation = cssDetection.embedCSS
+    ? validateCSSEmbed(cssDetection.embedCSS)
+    : { valid: true, errors: [], warnings: [], size: 0, sizeFormatted: '0B' };
+
+  // Validate JS embed
+  const jsEmbedValidation = combinedJS
+    ? validateJSEmbed(combinedJS)
+    : { valid: true, errors: [], warnings: [], size: 0, sizeFormatted: '0B' };
+
+  // Validate library imports
+  const libraryImportValidation = libraryDetection.scripts.length > 0
+    ? validateLibraryImports({
+        scripts: libraryDetection.scripts,
+        styles: libraryDetection.styles,
+      })
+    : { valid: true, errors: [], warnings: [] };
+
+  // Webflow JSON validation (already done above)
+  const webflowValidation = {
+    valid: preflightResult.isValid,
+    errors: preflightResult.issues
+      .filter((i) => i.severity === 'fatal' || i.severity === 'error')
+      .map((i) => i.message),
+    warnings: validationWarnings,
+  };
+
   console.info("[webflow-convert]", requestId, "success", {
-    nodes: payload.payload.nodes.length,
-    styles: payload.payload.styles.length,
+    nodes: finalPayload.payload.nodes.length,
+    styles: finalPayload.payload.styles.length,
+    sanitized: sanitizationApplied,
+    warnings: validationWarnings.length,
+    hasDesignTokens: !!designTokensJSON,
+    hasCSSEmbed: !!cssDetection.embedCSS,
+    hasJSEmbed: !!combinedJS,
+    hasLibraries: libraryDetection.scripts.length > 0,
   });
+
+  // ============================================================================
+  // Merge extracted embed content with detected CSS/JS embeds
+  // ============================================================================
+  const finalCSSEmbed = [
+    cssDetection.embedCSS,
+    extractedEmbedContent?.css,
+  ].filter(Boolean).join('\n\n') || null;
+
+  const finalJSEmbed = [
+    combinedJS,
+    extractedEmbedContent?.js,
+  ].filter(Boolean).join('\n\n') || null;
+
+  // Determine if content was extracted to embeds
+  const extractedToEmbed = extractedEmbedContent ? {
+    hasCSSExtracted: !!extractedEmbedContent.css,
+    hasJSExtracted: !!extractedEmbedContent.js,
+    warnings: extractedEmbedContent.warnings,
+  } : undefined;
+
+  // ============================================================================
+  // RETURN: 5 Separate Outputs
+  // ============================================================================
   return NextResponse.json({
+    // === FIVE OUTPUTS ===
+    designTokens: designTokensJSON || null,
+    webflowJson: JSON.stringify(finalPayload),
+    cssEmbed: finalCSSEmbed,
+    jsEmbed: finalJSEmbed,
+    libraryImports: libraryDetection.scripts.length > 0 || libraryDetection.styles.length > 0
+      ? {
+          scripts: libraryDetection.scripts,
+          styles: libraryDetection.styles,
+        }
+      : null,
+
+    // === VALIDATION RESULTS ===
+    validationResults: {
+      designTokens: tokenValidation,
+      webflowJson: webflowValidation,
+      cssEmbed: cssEmbedValidation,
+      jsEmbed: jsEmbedValidation,
+    },
+
+    // === EXTRACTION METADATA ===
+    extractedToEmbed,
+
+    // === METADATA ===
+    hasEmbeds: !!(finalCSSEmbed || finalJSEmbed),
+    detectedLibraries: libraryDetection.names,
+    cssFeatures: cssDetection.detectedFeatures.map((f) => f.name),
+
+    // === BACKWARDS COMPATIBILITY ===
     model,
-    webflowJson: JSON.stringify(payload),
-    payload,
+    payload: finalPayload, // Keep for backwards compat
     requestId,
+    validation: {
+      sanitized: sanitizationApplied,
+      warnings: validationWarnings.length > 0 ? validationWarnings : undefined,
+    },
   });
 }

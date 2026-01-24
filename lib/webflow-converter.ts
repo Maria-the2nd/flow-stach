@@ -26,6 +26,8 @@ import {
   type XRefValidation,
   type ExternalResourceResult,
 } from "./preflight-validator";
+import { routeCSS, wrapEmbedCSSInStyleTag } from "./css-embed-router";
+import { generateWebflowScriptEmbed } from "./js-library-detector";
 
 // ============================================
 // TYPES
@@ -167,6 +169,10 @@ export interface WebflowPayload {
       actionLists: unknown[];
     };
   };
+  /** Complete <style> block for CSS that cannot be represented natively */
+  embedCSS?: string;
+  /** Complete <script> block(s) with CDN libraries and user code */
+  embedJS?: string;
   meta: {
     unlinkedSymbolCount: number;
     droppedLinks: number;
@@ -200,6 +206,12 @@ export interface WebflowPayload {
     xrefValidation?: XRefValidation;
     /** External resource detection - present when HTML was parsed */
     externalResources?: ExternalResourceResult;
+    /** Quick check flags for embed requirements */
+    hasEmbedCSS: boolean;
+    hasEmbedJS: boolean;
+    /** Size of embed blocks in bytes */
+    embedCSSSize: number;
+    embedJSSize: number;
   };
 }
 
@@ -1663,6 +1675,10 @@ export function buildTokenWebflowPayload(manifest: TokenManifest | TokenExtracti
       dynListBindRemovedCount: 0,
       paginationRemovedCount: 0,
       tokenManifest: fullManifest,
+      hasEmbedCSS: false,
+      hasEmbedJS: false,
+      embedCSSSize: 0,
+      embedJSSize: 0,
     },
   };
 
@@ -1726,15 +1742,55 @@ export function convertSectionToWebflow(
   // Ensure page wrapper exists
   const { html, css } = ensurePageWrapper(section.htmlContent, section.cssContent);
 
-  const normalized = normalizeHtmlCssForWebflow(html, css);
+  // ==========================================
+  // CSS ROUTING - CRITICAL: Route BEFORE normalization
+  // ==========================================
+  // The normalizer strips pseudo-elements and other non-native CSS.
+  // We must route FIRST to capture embed-worthy CSS before it's removed.
+  const cssRouting = routeCSS(css);
+  const nativeCSS = cssRouting.native;
+  const embedCSSRaw = cssRouting.embed;
+
+  // Now normalize only the NATIVE CSS
+  const normalized = normalizeHtmlCssForWebflow(html, nativeCSS);
   if (normalized.warnings.length > 0) {
     console.warn("[webflow-normalizer]", normalized.warnings.join(" | "));
+  }
+
+  // Wrap embed CSS in <style> tags if present
+  const embedCSS = embedCSSRaw ? wrapEmbedCSSInStyleTag(embedCSSRaw, true) : '';
+
+  // Log routing stats
+  if (cssRouting.stats.embedRules > 0) {
+    console.log(`[css-routing] Routed ${cssRouting.stats.embedRules}/${cssRouting.stats.totalRules} rules to embed`);
+  }
+
+  // ==========================================
+  // JS DETECTION & EMBED GENERATION
+  // ==========================================
+  let embedJS = '';
+  if (section.jsContent) {
+    const jsResult = generateWebflowScriptEmbed(section.jsContent, {
+      detectLibs: true,
+      wrapInDOMContentLoaded: true,
+    });
+    embedJS = jsResult.embedHtml;
+
+    // Log detected libraries
+    if (jsResult.detectedLibraries.names.length > 0) {
+      console.log(`[js-detection] Detected libraries: ${jsResult.detectedLibraries.displayNames.join(', ')}`);
+    }
+
+    // Warn about paid plugins
+    if (jsResult.paidPluginWarnings.length > 0) {
+      console.warn('[js-detection] Paid plugins detected:', jsResult.paidPluginWarnings.map(p => p.displayName).join(', '));
+    }
   }
 
   // ==========================================
   // ASSET VALIDATION - Early in pipeline
   // ==========================================
-  const assetManifest = extractAndValidateAssets(normalized.html, normalized.css);
+  const assetManifest = extractAndValidateAssets(normalized.html, nativeCSS);
   const googleFonts = detectGoogleFonts(normalized.html);
 
   // Log asset issues for debugging
@@ -1783,10 +1839,11 @@ export function convertSectionToWebflow(
     return createEmptyPayload();
   }
 
-  // Use ClassIndex from normalization if available, otherwise parse
+  // Use ClassIndex from normalization if available, otherwise parse NATIVE CSS
+  // IMPORTANT: We parse the native CSS (after routing) so only Webflow-compatible styles are included
   let classIndex = normalized.classIndex;
   if (!classIndex) {
-    const parsedResult = parseCSS(normalized.css);
+    const parsedResult = parseCSS(nativeCSS);
     classIndex = parsedResult.classIndex;
   }
 
@@ -1822,6 +1879,10 @@ export function convertSectionToWebflow(
     console.warn("[webflow-converter] Integrity issues:", integrityWarnings);
   }
 
+  // Calculate embed sizes
+  const embedCSSSize = embedCSS ? new Blob([embedCSS]).size : 0;
+  const embedJSSize = embedJS ? new Blob([embedJS]).size : 0;
+
   // Build the payload
   const payload: WebflowPayload = {
     type: "@webflow/XscpData",
@@ -1836,6 +1897,9 @@ export function convertSectionToWebflow(
         actionLists: [],
       },
     },
+    // Include embed blocks if present
+    embedCSS: embedCSS || undefined,
+    embedJS: embedJS || undefined,
     meta: {
       unlinkedSymbolCount: 0,
       droppedLinks: 0,
@@ -1849,6 +1913,11 @@ export function convertSectionToWebflow(
         googleFonts: googleFonts ?? undefined,
       },
       externalResources: externalResources.all.length > 0 ? externalResources : undefined,
+      // Quick check flags for embed requirements
+      hasEmbedCSS: embedCSSSize > 0,
+      hasEmbedJS: embedJSSize > 0,
+      embedCSSSize,
+      embedJSSize,
     },
   };
 
@@ -1939,6 +2008,10 @@ function createEmptyPayload(): WebflowPayload {
       dynBindRemovedCount: 0,
       dynListBindRemovedCount: 0,
       paginationRemovedCount: 0,
+      hasEmbedCSS: false,
+      hasEmbedJS: false,
+      embedCSSSize: 0,
+      embedJSSize: 0,
     },
   };
 }
@@ -2133,6 +2206,10 @@ export function buildCssTokenPayload(
       dynBindRemovedCount: 0,
       dynListBindRemovedCount: 0,
       paginationRemovedCount: 0,
+      hasEmbedCSS: false,
+      hasEmbedJS: false,
+      embedCSSSize: 0,
+      embedJSSize: 0,
     },
   };
 
@@ -2307,6 +2384,10 @@ export function buildComponentPayload(
         warnings: assetManifest.warnings,
         stats: assetManifest.stats,
       } : undefined,
+      hasEmbedCSS: false,
+      hasEmbedJS: false,
+      embedCSSSize: 0,
+      embedJSSize: 0,
     },
   };
 

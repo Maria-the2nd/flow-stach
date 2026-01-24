@@ -1,7 +1,42 @@
 import { mutation } from "./_generated/server"
-import { v } from "convex/values"
+import { v, ConvexError } from "convex/values"
 import { requireAdmin } from "./auth"
 import { Id } from "./_generated/dataModel"
+import { validateAndSanitizeWebflowJson } from "./webflow_validation"
+
+/**
+ * CRITICAL: Validate and sanitize Webflow JSON before storing.
+ * This prevents corrupted payloads from reaching the database.
+ *
+ * @param webflowJson - The raw webflowJson string
+ * @returns Object with sanitized JSON and validation info
+ */
+function safeWebflowJson(webflowJson: string | undefined): {
+  json: string;
+  warnings: string[];
+  wasInvalid: boolean;
+} {
+  const placeholderJson = JSON.stringify({ placeholder: true });
+
+  if (!webflowJson || webflowJson.trim() === "" || webflowJson.trim() === "{}") {
+    return { json: placeholderJson, warnings: [], wasInvalid: false };
+  }
+
+  const result = validateAndSanitizeWebflowJson(webflowJson);
+
+  // If validation completely failed, use placeholder
+  if (!result.validation.canProceed && result.validation.issues.some(i => i.code === "INVALID_JSON" || i.code === "INVALID_STRUCTURE")) {
+    console.warn("[import] Invalid webflowJson, using placeholder:", result.validation.summary);
+    return { json: placeholderJson, warnings: [`Invalid payload: ${result.validation.summary}`], wasInvalid: true };
+  }
+
+  // Return sanitized JSON with any warnings
+  return {
+    json: result.sanitizedJson,
+    warnings: result.changes,
+    wasInvalid: result.sanitizationApplied,
+  };
+}
 
 /**
  * Import sections from parsed HTML
@@ -45,6 +80,7 @@ export const importSections = mutation({
       payloadsCreated: 0,
       payloadsUpdated: 0,
       errors: [] as string[],
+      validationWarnings: [] as string[],
     }
 
     const existingTemplate = await ctx.db
@@ -55,12 +91,12 @@ export const importSections = mutation({
     const templateId = existingTemplate
       ? existingTemplate._id
       : await ctx.db.insert("templates", {
-          name: args.designSystemName,
-          slug: args.designSystemSlug,
-          imageUrl: args.designSystemImageUrl,
-          createdAt: now,
-          updatedAt: now,
-        })
+        name: args.designSystemName,
+        slug: args.designSystemSlug,
+        imageUrl: args.designSystemImageUrl,
+        createdAt: now,
+        updatedAt: now,
+      })
 
     if (existingTemplate) {
       await ctx.db.patch(existingTemplate._id, {
@@ -101,11 +137,18 @@ export const importSections = mutation({
           .unique()
 
         if (existingPayload) {
+          // CRITICAL: Validate and sanitize webflowJson before storing
+          const tokenJsonToStore = args.tokenWebflowJson
+            ? safeWebflowJson(args.tokenWebflowJson)
+            : { json: normalizeWebflowJson(existingPayload.webflowJson), warnings: [], wasInvalid: false };
+
+          if (tokenJsonToStore.warnings.length > 0) {
+            results.validationWarnings.push(`Token payload: ${tokenJsonToStore.warnings.join(", ")}`);
+          }
+
           await ctx.db.patch(existingPayload._id, {
             codePayload: `/* TOKEN MANIFEST */\n${args.tokenManifest}`,
-            webflowJson: args.tokenWebflowJson
-              ? args.tokenWebflowJson
-              : normalizeWebflowJson(existingPayload.webflowJson),
+            webflowJson: tokenJsonToStore.json,
             updatedAt: now,
           })
         }
@@ -128,9 +171,15 @@ export const importSections = mutation({
           updatedAt: now,
         })
 
+        // CRITICAL: Validate and sanitize webflowJson before storing
+        const tokenJsonResult = safeWebflowJson(args.tokenWebflowJson);
+        if (tokenJsonResult.warnings.length > 0) {
+          results.validationWarnings.push(`Token payload: ${tokenJsonResult.warnings.join(", ")}`);
+        }
+
         await ctx.db.insert("payloads", {
           assetId: tokenAssetId,
-          webflowJson: args.tokenWebflowJson ?? placeholderWebflowJson,
+          webflowJson: tokenJsonResult.json,
           codePayload: `/* TOKEN MANIFEST */\n${args.tokenManifest}`,
           dependencies: [],
           createdAt: now,
@@ -202,23 +251,34 @@ export const importSections = mutation({
 
         if (existingPayload) {
           // Update payload - use provided webflowJson if available
+          // CRITICAL: Validate and sanitize webflowJson before storing
           const dependencies = section.dependencies ?? existingPayload.dependencies ?? []
-          const webflowJson = section.webflowJson
-            ? section.webflowJson
-            : normalizeWebflowJson(existingPayload.webflowJson)
+          const jsonResult = section.webflowJson
+            ? safeWebflowJson(section.webflowJson)
+            : { json: normalizeWebflowJson(existingPayload.webflowJson), warnings: [], wasInvalid: false };
+
+          if (jsonResult.warnings.length > 0) {
+            results.validationWarnings.push(`${section.name}: ${jsonResult.warnings.join(", ")}`);
+          }
+
           await ctx.db.patch(existingPayload._id, {
             codePayload: section.codePayload,
-            webflowJson,
+            webflowJson: jsonResult.json,
             dependencies,
             updatedAt: now,
           })
           results.payloadsUpdated++
         } else {
           // Create payload - use provided webflowJson or placeholder
-          const webflowJson = section.webflowJson ?? placeholderWebflowJson
+          // CRITICAL: Validate and sanitize webflowJson before storing
+          const jsonResult = safeWebflowJson(section.webflowJson);
+          if (jsonResult.warnings.length > 0) {
+            results.validationWarnings.push(`${section.name}: ${jsonResult.warnings.join(", ")}`);
+          }
+
           await ctx.db.insert("payloads", {
             assetId: assetId,
-            webflowJson,
+            webflowJson: jsonResult.json,
             codePayload: section.codePayload,
             dependencies: section.dependencies ?? [],
             createdAt: now,
@@ -346,9 +406,30 @@ export const importProject = mutation({
     ),
     tokenWebflowJson: v.optional(v.string()),
     sourceHtml: v.optional(v.string()),
+    fonts: v.optional(v.array(v.object({
+      name: v.string(),
+      source: v.string(),
+      url: v.optional(v.string()),
+      status: v.string(),
+      warning: v.optional(v.boolean()),
+      installationGuide: v.string(),
+    }))),
+    images: v.optional(v.array(v.object({
+      url: v.string(),
+      type: v.string(),
+      estimatedSize: v.optional(v.number()),
+      sizeWarning: v.boolean(),
+      blocked: v.boolean(),
+      classification: v.string(),
+    }))),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx)
+    // REQUIRE authentication - no orphan projects allowed
+    const user = await ctx.auth.getUserIdentity();
+    if (!user) {
+      throw new ConvexError("Authentication required to import projects");
+    }
+    const clerkId = user.subject;
 
     const now = Date.now()
     const results = {
@@ -359,7 +440,32 @@ export const importProject = mutation({
       payloadsUpdated: 0,
       artifactsStored: 0,
       errors: [] as string[],
+      validationWarnings: [] as string[],
     }
+
+    // PHASE 2: Font Detection & Image Validation
+    // Note: Font detection and image validation will be performed client-side
+    // and passed as part of the artifacts in a future update.
+    // For now, we store placeholder data that the client will populate.
+
+    // Parse design tokens if available (including enhanced tokens: radius, shadows)
+    let designTokensData = undefined;
+    if (args.artifacts.tokensJson) {
+      try {
+        const parsedTokens = JSON.parse(args.artifacts.tokensJson);
+        designTokensData = {
+          colors: parsedTokens.colors || [],
+          typography: parsedTokens.typography || [],
+          spacing: parsedTokens.spacing || [],
+          radius: parsedTokens.radius || [],
+          shadows: parsedTokens.shadows || [],
+        };
+      } catch (e) {
+        results.validationWarnings.push(`Failed to parse design tokens: ${e}`);
+      }
+    }
+
+
 
     // 1. Create or update import project
     const existingProject = await ctx.db
@@ -369,14 +475,25 @@ export const importProject = mutation({
 
     let projectId: Id<"importProjects">
 
+    const fontData = args.fonts ?? [];
+    const imageData = args.images ?? [];
+
     if (existingProject) {
+      // Verify ownership - can only update your own projects
+      if (existingProject.userId !== clerkId) {
+        throw new ConvexError("Not authorized to update this project");
+      }
       await ctx.db.patch(existingProject._id, {
         name: args.projectName,
         status: "complete",
+        userId: clerkId,
         sourceHtml: args.sourceHtml,
         componentCount: args.components.length,
         classCount: Object.keys(JSON.parse(args.artifacts.classIndex).classes || {}).length,
         hasTokens: !!args.artifacts.tokensJson,
+        fonts: fontData.length > 0 ? fontData : undefined,
+        images: imageData.length > 0 ? imageData : undefined,
+        designTokens: designTokensData,
         updatedAt: now,
       })
       projectId = existingProject._id
@@ -384,11 +501,15 @@ export const importProject = mutation({
       projectId = await ctx.db.insert("importProjects", {
         name: args.projectName,
         slug: args.projectSlug,
+        userId: clerkId,
         status: "complete",
         sourceHtml: args.sourceHtml,
         componentCount: args.components.length,
         classCount: Object.keys(JSON.parse(args.artifacts.classIndex).classes || {}).length,
         hasTokens: !!args.artifacts.tokensJson,
+        fonts: fontData.length > 0 ? fontData : undefined,
+        images: imageData.length > 0 ? imageData : undefined,
+        designTokens: designTokensData,
         createdAt: now,
         updatedAt: now,
       })
@@ -411,47 +532,47 @@ export const importProject = mutation({
     // Store each artifact type
     const artifactTypes: Array<{
       type:
-        | "tokens_json"
-        | "tokens_css"
-        | "styles_css"
-        | "class_index"
-        | "clean_html"
-        | "scripts_js"
-        | "external_scripts"
-        | "js_hooks"
-        | "token_webflow_json"
-        | "component_manifest"
+      | "tokens_json"
+      | "tokens_css"
+      | "styles_css"
+      | "class_index"
+      | "clean_html"
+      | "scripts_js"
+      | "external_scripts"
+      | "js_hooks"
+      | "token_webflow_json"
+      | "component_manifest"
       content: string | undefined
     }> = [
-      { type: "tokens_json", content: args.artifacts.tokensJson },
-      { type: "tokens_css", content: args.artifacts.tokensCss },
-      { type: "styles_css", content: args.artifacts.stylesCss },
-      { type: "class_index", content: args.artifacts.classIndex },
-      { type: "clean_html", content: args.artifacts.cleanHtml },
-      { type: "scripts_js", content: args.artifacts.scriptsJs },
-      {
-        type: "external_scripts",
-        content: args.artifacts.externalScripts ? JSON.stringify(args.artifacts.externalScripts) : undefined,
-      },
-      {
-        type: "js_hooks",
-        content: args.artifacts.jsHooks ? JSON.stringify(args.artifacts.jsHooks) : undefined,
-      },
-      { type: "token_webflow_json", content: args.tokenWebflowJson },
-      {
-        type: "component_manifest",
-        content: JSON.stringify(
-          args.components.map((c) => ({
-            id: c.id,
-            name: c.name,
-            slug: c.slug,
-            category: c.category,
-            classesUsed: c.classesUsed,
-            jsHooks: c.jsHooks,
-          }))
-        ),
-      },
-    ]
+        { type: "tokens_json", content: args.artifacts.tokensJson },
+        { type: "tokens_css", content: args.artifacts.tokensCss },
+        { type: "styles_css", content: args.artifacts.stylesCss },
+        { type: "class_index", content: args.artifacts.classIndex },
+        { type: "clean_html", content: args.artifacts.cleanHtml },
+        { type: "scripts_js", content: args.artifacts.scriptsJs },
+        {
+          type: "external_scripts",
+          content: args.artifacts.externalScripts ? JSON.stringify(args.artifacts.externalScripts) : undefined,
+        },
+        {
+          type: "js_hooks",
+          content: args.artifacts.jsHooks ? JSON.stringify(args.artifacts.jsHooks) : undefined,
+        },
+        { type: "token_webflow_json", content: args.tokenWebflowJson },
+        {
+          type: "component_manifest",
+          content: JSON.stringify(
+            args.components.map((c) => ({
+              id: c.id,
+              name: c.name,
+              slug: c.slug,
+              category: c.category,
+              classesUsed: c.classesUsed,
+              jsHooks: c.jsHooks,
+            }))
+          ),
+        },
+      ]
 
     for (const { type, content } of artifactTypes) {
       if (content) {
@@ -475,11 +596,11 @@ export const importProject = mutation({
     const templateId = existingTemplate
       ? existingTemplate._id
       : await ctx.db.insert("templates", {
-          name: args.projectName,
-          slug: templateSlug,
-          createdAt: now,
-          updatedAt: now,
-        })
+        name: args.projectName,
+        slug: templateSlug,
+        createdAt: now,
+        updatedAt: now,
+      })
 
     if (args.tokenWebflowJson) {
       const tokenSlug = `${args.projectSlug}-tokens`
@@ -488,7 +609,7 @@ export const importProject = mutation({
         .withIndex("by_slug", (q) => q.eq("slug", tokenSlug))
         .unique()
 
-        if (existingTokenAsset) {
+      if (existingTokenAsset) {
         await ctx.db.patch(existingTokenAsset._id, {
           title: `${args.projectName} - Tokens`,
           status: "published",
@@ -503,8 +624,14 @@ export const importProject = mutation({
           .unique()
 
         if (existingPayload) {
+          // CRITICAL: Validate and sanitize webflowJson before storing
+          const tokenJsonResult = safeWebflowJson(args.tokenWebflowJson);
+          if (tokenJsonResult.warnings.length > 0) {
+            results.validationWarnings.push(`Token payload: ${tokenJsonResult.warnings.join(", ")}`);
+          }
+
           await ctx.db.patch(existingPayload._id, {
-            webflowJson: args.tokenWebflowJson,
+            webflowJson: tokenJsonResult.json,
             codePayload: args.artifacts.tokensJson
               ? `/* TOKEN MANIFEST */\n${args.artifacts.tokensJson}`
               : `/* CSS */\n${args.artifacts.stylesCss}`,
@@ -530,9 +657,15 @@ export const importProject = mutation({
           updatedAt: now,
         })
 
+        // CRITICAL: Validate and sanitize webflowJson before storing
+        const tokenJsonResult = safeWebflowJson(args.tokenWebflowJson);
+        if (tokenJsonResult.warnings.length > 0) {
+          results.validationWarnings.push(`Token payload: ${tokenJsonResult.warnings.join(", ")}`);
+        }
+
         await ctx.db.insert("payloads", {
           assetId: tokenAssetId,
-          webflowJson: args.tokenWebflowJson,
+          webflowJson: tokenJsonResult.json,
           codePayload: args.artifacts.tokensJson
             ? `/* TOKEN MANIFEST */\n${args.artifacts.tokensJson}`
             : `/* CSS */\n${args.artifacts.stylesCss}`,
@@ -602,9 +735,15 @@ export const importProject = mutation({
 
         const tokenDep = args.tokenWebflowJson ? [`${args.projectSlug}-tokens`] : []
 
+        // CRITICAL: Validate and sanitize webflowJson before storing
+        const componentJsonResult = safeWebflowJson(component.webflowJson);
+        if (componentJsonResult.warnings.length > 0) {
+          results.validationWarnings.push(`${component.name}: ${componentJsonResult.warnings.join(", ")}`);
+        }
+
         if (existingPayload) {
           await ctx.db.patch(existingPayload._id, {
-            webflowJson: component.webflowJson || JSON.stringify({ placeholder: true }),
+            webflowJson: componentJsonResult.json,
             codePayload: component.codePayload,
             dependencies: tokenDep,
             updatedAt: now,
@@ -613,7 +752,7 @@ export const importProject = mutation({
         } else {
           await ctx.db.insert("payloads", {
             assetId,
-            webflowJson: component.webflowJson || JSON.stringify({ placeholder: true }),
+            webflowJson: componentJsonResult.json,
             codePayload: component.codePayload,
             dependencies: tokenDep,
             createdAt: now,

@@ -41,12 +41,12 @@ export function ThemeToggle() {
           <HugeiconsIcon
             icon={SunIcon}
             strokeWidth={1.5}
-            className="size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+            className="size-4 rotate-0 scale-100 transition-all  "
           />
           <HugeiconsIcon
             icon={MoonIcon}
             strokeWidth={1.5}
-            className="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+            className="absolute size-4 rotate-90 scale-0 transition-all  "
           />
           <span className="sr-only">Toggle theme</span>
         </Button>

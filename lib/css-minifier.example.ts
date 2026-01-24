@@ -95,37 +95,34 @@ if (sizeCheck.warning) {
 console.log("\n" + "=".repeat(50) + "\n");
 
 // ============================================
-// EXAMPLE 4: Custom Minification Options
+// EXAMPLE 4: minifyCSSWithStats Usage
 // ============================================
 
-// Remove whitespace but keep comments (useful for debugging)
+const statsResult = minifyCSSWithStats(exampleCSS);
+
+console.log("MINIFY WITH STATS (one-step minification):");
+console.log(`  Original size:  ${statsResult.stats.originalSize} bytes`);
+console.log(`  Minified size:  ${statsResult.stats.minifiedSize} bytes`);
+console.log(`  Reduction:      ${statsResult.stats.reduction} bytes`);
+console.log(`  Percentage:     ${statsResult.stats.reductionPercent}%`);
+console.log("\n" + "=".repeat(50) + "\n");
+
+// ============================================
+// EXAMPLE 5: Custom Minification Options
+// ============================================
+
+// Keep comments (useful for debugging)
 const minifiedWithComments = minifyCSS(exampleCSS, {
   removeComments: false,
   removeWhitespace: true,
-  preserveCommaSpace: true,
 });
 
 console.log("CUSTOM OPTIONS (keep comments):");
-console.log(minifiedWithComments);
+console.log(minifiedWithComments.substring(0, 200) + '...');
 console.log("\n" + "=".repeat(50) + "\n");
-
-// Remove space after commas for maximum compression
-const maxMinified = minifyCSS(exampleCSS, {
-  removeComments: true,
-  removeWhitespace: true,
-  preserveCommaSpace: false, // Remove all spaces after commas
-});
-
-console.log("MAXIMUM COMPRESSION (no comma spacing):");
-console.log(maxMinified);
-console.log("\n" + "=".repeat(50) + "\n");
-
-const maxStats = getMinificationStats(exampleCSS, maxMinified);
-console.log("MAXIMUM COMPRESSION STATS:");
-console.log(`  Saved: ${maxStats.savedBytes} bytes (${maxStats.savedPercent}%)`);
 
 // ============================================
-// EXAMPLE 5: Real-world Use Case
+// EXAMPLE 6: Real-world Use Case
 // ============================================
 
 console.log("\n" + "=".repeat(50) + "\n");

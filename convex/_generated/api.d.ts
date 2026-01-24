@@ -11,12 +11,14 @@
 import type * as admin from "../admin.js";
 import type * as assets from "../assets.js";
 import type * as auth from "../auth.js";
+import type * as backfill from "../backfill.js";
 import type * as favorites from "../favorites.js";
 import type * as import_ from "../import.js";
 import type * as payloads from "../payloads.js";
 import type * as projects from "../projects.js";
 import type * as templates from "../templates.js";
 import type * as users from "../users.js";
+import type * as webflow_validation from "../webflow_validation.js";
 
 import type {
   ApiFromModules,
@@ -28,12 +30,14 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   assets: typeof assets;
   auth: typeof auth;
+  backfill: typeof backfill;
   favorites: typeof favorites;
   import: typeof import_;
   payloads: typeof payloads;
   projects: typeof projects;
   templates: typeof templates;
   users: typeof users;
+  webflow_validation: typeof webflow_validation;
 }>;
 
 /**

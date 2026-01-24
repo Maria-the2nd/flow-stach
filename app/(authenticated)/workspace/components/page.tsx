@@ -1,0 +1,113 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Cuboid, Search, ShoppingCart, ExternalLink, Box } from "lucide-react";
+import Link from 'next/link';
+
+const MOCK_COMPONENTS = [
+    {
+        id: 'c1',
+        title: 'Premium Hero Section',
+        category: 'Hero',
+        description: 'Spline-integrated hero section with glassmorphism effects.',
+        image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=300&h=200',
+        author: 'FlowBridge'
+    },
+    {
+        id: 'c2',
+        title: 'Glass Sticky Nav',
+        category: 'Navigation',
+        description: 'Advanced sticky navigation with blurred background and micro-interactions.',
+        image: 'https://images.unsplash.com/photo-1614332287897-cdc485fa562d?auto=format&fit=crop&q=80&w=300&h=200',
+        author: 'UI Labs'
+    },
+    {
+        id: 'c3',
+        title: 'Animated Card Grid',
+        category: 'Grid',
+        description: 'Hover-responsive card grid with subtle 3D transforms.',
+        image: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?auto=format&fit=crop&q=80&w=300&h=200',
+        author: 'FlowBridge'
+    }
+];
+
+export default function ComponentsPage() {
+    return (
+        <div className="space-y-8">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Component Library</h1>
+                    <p className="text-slate-500 mt-1">Standalone premium components for your projects.</p>
+                </div>
+                <Link href="/explore">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200/50 font-bold px-6 h-11 rounded-xl transition-all">
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Get More
+                    </Button>
+                </Link>
+            </div>
+
+            <div className="flex items-center gap-4 bg-white/50 backdrop-blur border border-slate-200 rounded-2xl p-4 shadow-sm">
+                <Search className="w-5 h-5 text-slate-400 ml-2" />
+                <input
+                    type="text"
+                    placeholder="Search components..."
+                    className="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-slate-400"
+                />
+            </div>
+
+            <div className="grid grid-cols-1 gap-6">
+                {MOCK_COMPONENTS.map((component) => (
+                    <div key={component.id} className="group bg-white/90 backdrop-blur-xl rounded-3xl border border-slate-200 overflow-hidden hover:shadow-2xl hover:border-slate-300 transition-all duration-500 flex items-stretch shadow-xl shadow-slate-200/40">
+                        <div className="w-64 bg-slate-50 flex items-center justify-center border-r border-slate-100 overflow-hidden">
+                            <img
+                                src={component.image}
+                                alt={component.title}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            />
+                        </div>
+                        <div className="flex-1 p-8 flex items-center justify-between">
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="font-bold text-slate-900 text-xl group-hover:text-blue-600 transition-colors">{component.title}</h3>
+                                    <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">{component.category}</span>
+                                </div>
+                                <p className="text-slate-500 text-sm leading-relaxed max-w-xl">
+                                    {component.description}
+                                </p>
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Box className="w-3 h-3" />
+                                    By {component.author}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-900 font-bold h-11 px-6 rounded-xl">
+                                    Preview
+                                </Button>
+                                <Button className="bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-200/50 font-bold h-11 px-8 rounded-xl transition-all">
+                                    Copy to Webflow <ExternalLink className="w-4 h-4 ml-2" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                {/* Marketplace Upsell */}
+                <Link href="/explore" className="group border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-between p-8 hover:!bg-white hover:border-blue-300 transition-all cursor-pointer !bg-white/40 backdrop-blur shadow-lg shadow-slate-200/30">
+                    <div className="flex items-center gap-6">
+                        <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Cuboid className="w-7 h-7 text-blue-500" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-slate-900 text-lg">Needs more parts?</h3>
+                            <p className="text-sm text-slate-500">Discover hundreds of pre-built sections ready for your projects.</p>
+                        </div>
+                    </div>
+                    <Button variant="ghost" className="text-blue-600 font-bold hover:bg-blue-50 h-12 px-8 rounded-2xl">
+                        Browse Components
+                    </Button>
+                </Link>
+            </div>
+        </div>
+    );
+}

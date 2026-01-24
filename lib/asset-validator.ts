@@ -47,6 +47,16 @@ export interface AssetValidation {
   validationIssue?: ValidationIssue;
 }
 
+export interface ImageValidationResult {
+  url: string;
+  type: 'img' | 'background' | 'video-poster';
+  estimatedSize?: number;    // Bytes (if data URI)
+  sizeWarning: boolean;      // > 5MB
+  blocked: boolean;          // > 10MB
+  classification: AssetURLType;
+  context?: string;
+}
+
 export interface AssetManifest {
   /** Image elements (<img src="...">) */
   images: AssetValidation[];
@@ -701,6 +711,132 @@ export function processAssetUrls(
   );
 
   return { html: processedHtml, replacements };
+}
+
+// ============================================
+// IMAGE SIZE VALIDATION
+// ============================================
+
+/**
+ * Calculate the size of a data URI in bytes.
+ */
+function calculateDataUriSize(dataUri: string): number {
+  // Data URI format: data:image/png;base64,XXXXXXX
+  // The base64 portion is what we need to measure
+  const base64Match = dataUri.match(/^data:[^,]+,(.+)$/);
+  if (!base64Match) return 0;
+
+  const base64Data = base64Match[1];
+
+  // Base64 encoding increases size by ~33%
+  // To get original size: (base64Length * 3) / 4
+  // Account for padding characters (=)
+  const padding = (base64Data.match(/=/g) || []).length;
+  return Math.floor((base64Data.length * 3) / 4) - padding;
+}
+
+/**
+ * Validate image sizes and flag oversized images.
+ *
+ * Rules:
+ * - Data URI > 5MB → Show warning
+ * - Data URI > 10MB → Block import
+ * - Relative paths → Block (won't work in Webflow)
+ * - External URLs → Allow but cannot verify size
+ *
+ * @param manifest - Asset manifest from extractAndValidateAssets
+ * @returns Array of image validation results
+ */
+export function validateImageSizes(manifest: AssetManifest): ImageValidationResult[] {
+  const results: ImageValidationResult[] = [];
+
+  const SIZE_WARNING_THRESHOLD = 5 * 1024 * 1024;  // 5MB
+  const SIZE_BLOCK_THRESHOLD = 10 * 1024 * 1024;   // 10MB
+
+  // Process all images
+  manifest.images.forEach((img) => {
+    const classification = classifyURL(img.url);
+    let estimatedSize: number | undefined;
+    let sizeWarning = false;
+    let blocked = false;
+
+    // Block relative paths
+    if (classification === 'relative' || classification === 'invalid') {
+      blocked = true;
+    }
+
+    // Calculate size for data URIs
+    if (classification === 'data-uri') {
+      estimatedSize = calculateDataUriSize(img.url);
+
+      if (estimatedSize > SIZE_BLOCK_THRESHOLD) {
+        blocked = true;
+        sizeWarning = true;
+      } else if (estimatedSize > SIZE_WARNING_THRESHOLD) {
+        sizeWarning = true;
+      }
+    }
+
+    results.push({
+      url: img.url.substring(0, 100), // Truncate for display
+      type: 'img',
+      estimatedSize,
+      sizeWarning,
+      blocked,
+      classification,
+      context: img.context,
+    });
+  });
+
+  // Process background images
+  manifest.backgroundImages.forEach((bg) => {
+    const classification = classifyURL(bg.url);
+    let estimatedSize: number | undefined;
+    let sizeWarning = false;
+    let blocked = false;
+
+    // Block relative paths
+    if (classification === 'relative' || classification === 'invalid') {
+      blocked = true;
+    }
+
+    // Calculate size for data URIs
+    if (classification === 'data-uri') {
+      estimatedSize = calculateDataUriSize(bg.url);
+
+      if (estimatedSize > SIZE_BLOCK_THRESHOLD) {
+        blocked = true;
+        sizeWarning = true;
+      } else if (estimatedSize > SIZE_WARNING_THRESHOLD) {
+        sizeWarning = true;
+      }
+    }
+
+    results.push({
+      url: bg.url.substring(0, 100), // Truncate for display
+      type: 'background',
+      estimatedSize,
+      sizeWarning,
+      blocked,
+      classification,
+      context: bg.context,
+    });
+  });
+
+  return results;
+}
+
+/**
+ * Format bytes to human-readable size.
+ */
+export function formatBytes(bytes?: number): string {
+  if (!bytes) return 'Unknown';
+
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  if (bytes === 0) return '0 Bytes';
+
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
 }
 
 // ============================================

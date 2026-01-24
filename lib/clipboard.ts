@@ -1,6 +1,19 @@
+"use client";
+
 import { toast } from "sonner";
+import { runPreflightValidation, type PreflightResult } from "./preflight-validator";
+import { sanitizeWebflowPayload, type SanitizationResult } from "./webflow-sanitizer";
+import type { WebflowPayload } from "./webflow-converter";
 
 export type CopyResult = { success: true } | { success: false; reason: string };
+
+/**
+ * Extended copy result with validation info.
+ * CRITICAL: Used to prevent corrupted payloads from reaching Webflow Designer.
+ */
+export type ValidatedCopyResult =
+  | { success: true; warnings?: string[]; sanitized?: boolean }
+  | { success: false; reason: string; validationErrors?: string[] };
 
 /**
  * Remove transition declarations from Webflow styleLess strings.
@@ -24,7 +37,7 @@ type WebflowStyle = {
   name?: string;
 };
 
-type WebflowPayload = {
+type LooseWebflowPayload = {
   type?: string;
   payload?: {
     nodes?: unknown;
@@ -37,7 +50,7 @@ type WebflowPayload = {
  */
 function normalizeWebflowJson(jsonString: string): string {
   try {
-    const parsed = JSON.parse(jsonString) as WebflowPayload;
+    const parsed = JSON.parse(jsonString) as LooseWebflowPayload;
     if (!parsed || parsed.type !== "@webflow/XscpData" || !parsed.payload) {
       return jsonString;
     }
@@ -240,14 +253,129 @@ function copyFallback(jsonString: string): Promise<CopyResult> {
 }
 
 /**
- * Copy Webflow JSON to clipboard.
+ * Validate and sanitize a Webflow payload before copy.
+ * CRITICAL: This prevents corrupted payloads from reaching Webflow Designer.
+ *
+ * Returns the validated/sanitized JSON string if safe, or null if blocked.
+ */
+function validateAndSanitizePayload(jsonString: string): {
+  safeJson: string | null;
+  validation: PreflightResult | null;
+  sanitization: SanitizationResult | null;
+  blocked: boolean;
+  blockReason?: string;
+} {
+  let payload: WebflowPayload;
+
+  try {
+    payload = JSON.parse(jsonString) as WebflowPayload;
+  } catch {
+    return {
+      safeJson: null,
+      validation: null,
+      sanitization: null,
+      blocked: true,
+      blockReason: "Invalid JSON - cannot parse payload",
+    };
+  }
+
+  // Skip validation for placeholder payloads
+  if (!payload || (payload as { placeholder?: boolean }).placeholder === true) {
+    return {
+      safeJson: null,
+      validation: null,
+      sanitization: null,
+      blocked: true,
+      blockReason: "Placeholder payload - no Webflow JSON available",
+    };
+  }
+
+  // Validate the payload structure
+  if (payload.type !== "@webflow/XscpData" || !payload.payload?.nodes || !payload.payload?.styles) {
+    return {
+      safeJson: null,
+      validation: null,
+      sanitization: null,
+      blocked: true,
+      blockReason: "Invalid Webflow payload structure",
+    };
+  }
+
+  // Run preflight validation
+  const validation = runPreflightValidation(payload);
+
+  // If validation passes without critical issues, return as-is
+  if (validation.canProceed && validation.isValid) {
+    return {
+      safeJson: jsonString,
+      validation,
+      sanitization: null,
+      blocked: false,
+    };
+  }
+
+  // If validation fails with blocking issues, try to sanitize
+  if (!validation.canProceed) {
+    console.warn("[clipboard] Validation failed, attempting sanitization:", validation.summary);
+
+    const sanitization = sanitizeWebflowPayload(payload);
+
+    // Re-validate after sanitization
+    const revalidation = runPreflightValidation(sanitization.payload);
+
+    if (revalidation.canProceed) {
+      console.info("[clipboard] Sanitization fixed issues:", sanitization.changes);
+      return {
+        safeJson: JSON.stringify(sanitization.payload),
+        validation: revalidation,
+        sanitization,
+        blocked: false,
+      };
+    }
+
+    // Sanitization didn't fix all issues - BLOCK the copy
+    console.error("[clipboard] Sanitization failed to fix all issues:", revalidation.summary);
+    return {
+      safeJson: null,
+      validation: revalidation,
+      sanitization,
+      blocked: true,
+      blockReason: "Payload has critical issues that cannot be auto-fixed",
+    };
+  }
+
+  // Validation has warnings but can proceed - sanitize anyway to be safe
+  const sanitization = sanitizeWebflowPayload(payload);
+  if (sanitization.hadIssues) {
+    console.info("[clipboard] Applied sanitization fixes:", sanitization.changes);
+    return {
+      safeJson: JSON.stringify(sanitization.payload),
+      validation,
+      sanitization,
+      blocked: false,
+    };
+  }
+
+  return {
+    safeJson: jsonString,
+    validation,
+    sanitization: null,
+    blocked: false,
+  };
+}
+
+/**
+ * Copy Webflow JSON to clipboard with validation.
+ *
+ * CRITICAL SAFETY: This function validates payloads before copying to prevent
+ * corrupted JSON from reaching Webflow Designer and corrupting projects.
  *
  * Uses the modern Clipboard API (ClipboardItem) as the primary method,
  * which works in Chrome/Edge without any extension.
  *
  * Falls back to extension or document-based copy if needed.
  */
-export async function copyWebflowJson(jsonString: string | undefined): Promise<CopyResult> {
+export async function copyWebflowJson(jsonString: string | undefined): Promise<ValidatedCopyResult> {
   if (!jsonString) {
     toast.error("No Webflow payload found");
     return { success: false, reason: "no_payload" };
@@ -261,21 +389,116 @@ export async function copyWebflowJson(jsonString: string | undefined): Promise<C
     return { success: false, reason: "no_payload" };
   }
 
+  // CRITICAL: Validate and sanitize before copy
+  const { safeJson, validation, sanitization, blocked, blockReason } = validateAndSanitizePayload(normalized);
+
+  if (blocked) {
+    const errorMsg = blockReason || "Validation failed";
+    toast.error(`Cannot copy - ${errorMsg}`);
+    console.error("[clipboard] Copy blocked:", blockReason, validation?.summary);
+
+    // Extract validation errors for detailed feedback
+    const validationErrors = validation?.issues
+      ?.filter((i) => i.severity === "fatal" || i.severity === "error")
+      ?.map((i) => i.message) || [];
+
+    return {
+      success: false,
+      reason: "validation_failed",
+      validationErrors: validationErrors.length > 0 ? validationErrors : [blockReason || "Unknown error"],
+    };
+  }
+
+  // Use the safe (potentially sanitized) payload
+  const payloadToCopy = safeJson!;
+
   // Try modern Clipboard API first (works in Chrome/Edge without extension)
-  const clipboardResult = await copyWithClipboardApi(normalized);
+  const clipboardResult = await copyWithClipboardApi(payloadToCopy);
   if (clipboardResult.success) {
-    return clipboardResult;
+    // Show success with any warnings
+    const warnings: string[] = [];
+
+    if (sanitization?.hadIssues) {
+      warnings.push(`Auto-fixed ${sanitization.changes.length} issue(s)`);
+      console.info("[clipboard] Sanitization applied:", sanitization.changes);
+    }
+
+    const validationWarnings =
+      validation?.issues.filter((issue) => issue.severity === "warning") || [];
+
+    if (validation && !validation.isValid && validationWarnings.length > 0) {
+      warnings.push(`${validationWarnings.length} warning(s) - check console`);
+      console.warn("[clipboard] Validation warnings:", validationWarnings);
+    }
+
+    if (warnings.length > 0) {
+      toast.warning(`Copied with fixes: ${warnings.join(", ")}`);
+    }
+
+    return { success: true, warnings, sanitized: sanitization?.hadIssues };
   }
 
   // Fall back to extension if installed
   if (isExtensionInstalled()) {
-    return copyViaExtension(normalized);
+    const result = await copyViaExtension(payloadToCopy);
+    if (result.success) {
+      return { success: true, sanitized: sanitization?.hadIssues };
+    }
+    return result;
   }
 
   // Last resort: document-based copy
-  return copyFallback(normalized);
+  const fallbackResult = await copyFallback(payloadToCopy);
+  if (fallbackResult.success) {
+    return { success: true, sanitized: sanitization?.hadIssues };
+  }
+  return fallbackResult;
 }
 
 // Aliases for consistency with import page
 export const copyToWebflowClipboard = copyWebflowJson;
 export const copyCodeToClipboard = copyText;
+
+/**
+ * Validate a Webflow payload without copying.
+ * Use this to check payloads before showing copy button.
+ */
+export function validateWebflowPayload(jsonString: string | undefined): {
+  isValid: boolean;
+  canProceed: boolean;
+  errors: string[];
+  warnings: string[];
+} {
+  if (!jsonString) {
+    return { isValid: false, canProceed: false, errors: ["No payload"], warnings: [] };
+  }
+
+  try {
+    const payload = JSON.parse(jsonString) as WebflowPayload;
+
+    // Skip placeholder payloads
+    if (!payload || (payload as { placeholder?: boolean }).placeholder === true) {
+      return { isValid: false, canProceed: false, errors: ["Placeholder payload"], warnings: [] };
+    }
+
+    // Basic structure check
+    if (payload.type !== "@webflow/XscpData" || !payload.payload?.nodes || !payload.payload?.styles) {
+      return { isValid: false, canProceed: false, errors: ["Invalid structure"], warnings: [] };
+    }
+
+    const validation = runPreflightValidation(payload);
+
+    return {
+      isValid: validation.isValid,
+      canProceed: validation.canProceed,
+      errors: validation.issues
+        .filter((i) => i.severity === "fatal" || i.severity === "error")
+        .map((i) => i.message),
+      warnings: validation.issues
+        .filter((i) => i.severity === "warning")
+        .map((i) => i.message),
+    };
+  } catch {
+    return { isValid: false, canProceed: false, errors: ["Invalid JSON"], warnings: [] };
+  }
+}

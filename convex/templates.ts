@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server"
 import { v } from "convex/values"
 import { requireAuth, requireAdmin } from "./auth"
+import { validateAndSanitizeWebflowJson } from "./webflow_validation"
 
 export const list = query({
   args: {},
@@ -67,6 +68,11 @@ export const deleteTemplate = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx)
 
+    const template = await ctx.db.get(args.templateId)
+    if (!template) {
+      throw new Error("Template not found")
+    }
+
     // Get all assets for this template
     const assets = await ctx.db
       .query("assets")
@@ -78,6 +84,11 @@ export const deleteTemplate = mutation({
 
     // Delete each asset and its payload
     for (const asset of assets) {
+      // Delete asset thumbnail from storage if exists
+      if (asset.thumbnailStorageId) {
+        await ctx.storage.delete(asset.thumbnailStorageId)
+      }
+
       // Delete payload if exists
       const payload = await ctx.db
         .query("payloads")
@@ -101,6 +112,11 @@ export const deleteTemplate = mutation({
 
       await ctx.db.delete(asset._id)
       deletedAssets++
+    }
+
+    // Delete template thumbnail from storage if exists
+    if (template.thumbnailStorageId) {
+      await ctx.storage.delete(template.thumbnailStorageId)
     }
 
     // Delete the template itself
@@ -132,16 +148,100 @@ export const listMine = query({
       counts.set(asset.templateId, (counts.get(asset.templateId) ?? 0) + 1)
     }
 
-    return templates
-      .map((template) => ({
-        _id: template._id,
-        name: template.name,
-        slug: template.slug,
-        imageUrl: template.imageUrl,
-        assetCount: counts.get(template._id) ?? 0,
-        _creationTime: template.createdAt,
-      }))
-      .sort((a, b) => b._creationTime - a._creationTime)
+    // Get thumbnail URLs for all templates
+    const templatesWithThumbnails = await Promise.all(
+      templates.map(async (template) => {
+        let thumbnailUrl: string | null = null
+        if (template.thumbnailStorageId) {
+          thumbnailUrl = await ctx.storage.getUrl(template.thumbnailStorageId)
+        }
+        return {
+          _id: template._id,
+          name: template.name,
+          slug: template.slug,
+          imageUrl: template.imageUrl,  // Legacy fallback
+          thumbnailUrl,                 // New storage URL
+          assetCount: counts.get(template._id) ?? 0,
+          _creationTime: template.createdAt,
+        }
+      })
+    )
+
+    return templatesWithThumbnails.sort((a, b) => b._creationTime - a._creationTime)
+  },
+})
+
+/**
+ * Generate an upload URL for template thumbnail
+ * Returns a pre-signed URL that can be used to upload an image
+ */
+export const generateThumbnailUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireAuth(ctx)
+    return await ctx.storage.generateUploadUrl()
+  },
+})
+
+/**
+ * Update template thumbnail after upload
+ * Saves the storage ID to the template and deletes the old thumbnail if exists
+ */
+export const updateThumbnail = mutation({
+  args: {
+    templateId: v.id("templates"),
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx)
+
+    const template = await ctx.db.get(args.templateId)
+    if (!template) {
+      throw new Error("Template not found")
+    }
+
+    // Delete old thumbnail if exists
+    if (template.thumbnailStorageId) {
+      await ctx.storage.delete(template.thumbnailStorageId)
+    }
+
+    // Update template with new thumbnail
+    await ctx.db.patch(args.templateId, {
+      thumbnailStorageId: args.storageId,
+      updatedAt: Date.now(),
+    })
+
+    return { success: true }
+  },
+})
+
+/**
+ * Delete template thumbnail
+ */
+export const deleteThumbnail = mutation({
+  args: {
+    templateId: v.id("templates"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx)
+
+    const template = await ctx.db.get(args.templateId)
+    if (!template) {
+      throw new Error("Template not found")
+    }
+
+    // Delete thumbnail from storage if exists
+    if (template.thumbnailStorageId) {
+      await ctx.storage.delete(template.thumbnailStorageId)
+    }
+
+    // Remove thumbnail reference from template
+    await ctx.db.patch(args.templateId, {
+      thumbnailStorageId: undefined,
+      updatedAt: Date.now(),
+    })
+
+    return { success: true }
   },
 })
 
@@ -191,6 +291,9 @@ export const getFullPagePayload = query({
 /**
  * Send a draft payload to Flow-Goodies (clipboard-free bridge)
  * Creates a draft template/asset/payload that Flow-Goodies can fetch via "Insert Full Site"
+ *
+ * CRITICAL: Validates and sanitizes webflowJson before storing to prevent
+ * corrupted payloads from reaching Webflow Designer.
  */
 export const sendToFlowGoodies = mutation({
   args: {
@@ -200,6 +303,13 @@ export const sendToFlowGoodies = mutation({
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx)
+
+    // CRITICAL: Validate and sanitize webflowJson before storing
+    const validationResult = validateAndSanitizeWebflowJson(args.webflowJson);
+
+    if (!validationResult.validation.canProceed) {
+      throw new Error(`Invalid Webflow payload: ${validationResult.validation.summary}`);
+    }
 
     const now = Date.now()
     const slug = `flow-goodies-draft-${now}`
@@ -239,10 +349,10 @@ export const sendToFlowGoodies = mutation({
       updatedAt: now,
     })
 
-    // Create the payload
+    // Create the payload with validated/sanitized JSON
     await ctx.db.insert("payloads", {
       assetId,
-      webflowJson: args.webflowJson,
+      webflowJson: validationResult.sanitizedJson,
       codePayload: JSON.stringify({ note: "No code payload for draft" }),
       dependencies: [],
       createdAt: now,
@@ -254,6 +364,10 @@ export const sendToFlowGoodies = mutation({
       assetId,
       slug,
       templateId: template._id,
+      validation: {
+        sanitized: validationResult.sanitizationApplied,
+        changes: validationResult.changes.length > 0 ? validationResult.changes : undefined,
+      },
     }
   },
 })

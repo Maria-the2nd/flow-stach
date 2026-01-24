@@ -23,6 +23,8 @@ import {
 import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -37,7 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { extractTokens, extractFontFamilies, extractGoogleFontsUrl, type TokenExtraction } from "@/lib/token-extractor"
+import { extractTokens, extractEnhancedTokens, extractFontFamilies, extractGoogleFontsUrl, type TokenExtraction, type EnhancedTokenExtraction } from "@/lib/token-extractor"
 import { parseCSS, type ClassIndex } from "@/lib/css-parser"
 import { componentizeHtml, type ComponentTree, type Component } from "@/lib/componentizer"
 import { buildCssTokenPayload, buildComponentPayload, validateForWebflowPaste } from "@/lib/webflow-converter"
@@ -45,6 +47,7 @@ import { copyToWebflowClipboard } from "@/lib/clipboard"
 import { normalizeHtmlCssForWebflow } from "@/lib/webflow-normalizer"
 import { literalizeCssForWebflow } from "@/lib/webflow-literalizer"
 import { diagnoseVisibilityIssues } from "@/lib/webflow-verifier"
+import { extractImages, type ImageAsset } from "@/lib/image-extractor"
 import {
   applySemanticPatchResponse,
   buildSemanticPatchRequest,
@@ -110,13 +113,13 @@ function detectAndRemoveUnsupportedContent(html: string): UnsupportedContentResu
   // Detect Tailwind CDN or config
   const tailwindCdnRegex = /<script[^>]*src=["'][^"']*tailwindcss[^"']*["'][^>]*>[\s\S]*?<\/script>|<script[^>]*src=["'][^"']*tailwindcss[^"']*["'][^>]*\/?>/gi
   const tailwindConfigRegex = /<script[^>]*>[\s\S]*?tailwind\.config[\s\S]*?<\/script>/gi
-  
+
   if (tailwindCdnRegex.test(cleanedHtml)) {
     cleanedHtml = cleanedHtml.replace(tailwindCdnRegex, '<!-- Removed: Tailwind CDN -->')
     removedReferences.push('Tailwind CSS CDN')
     hasTailwind = true
   }
-  
+
   if (tailwindConfigRegex.test(cleanedHtml)) {
     cleanedHtml = cleanedHtml.replace(tailwindConfigRegex, '<!-- Removed: Tailwind config -->')
     if (!removedReferences.includes('Tailwind CSS CDN')) {
@@ -352,9 +355,9 @@ function TokensTab(props: {
               </div>
             )}
 
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800 text-sm">
-              <p className="font-bold text-blue-900 dark:text-blue-100 mb-2">Instructions:</p>
-              <ol className="list-decimal list-inside space-y-2 text-blue-800/80 dark:text-blue-200/80">
+            <div className="bg-blue-50  p-4 rounded-lg border border-blue-200  text-sm">
+              <p className="font-bold text-blue-900  mb-2">Instructions:</p>
+              <ol className="list-decimal list-inside space-y-2 text-blue-800/80 ">
                 <li>Go to <strong>Site Settings → Fonts</strong> in Webflow</li>
                 <li>Search and add each font listed above</li>
                 <li><strong>Wait</strong> for the fonts to be ready in the Designer</li>
@@ -402,9 +405,9 @@ function TokensTab(props: {
                 </div>
               ))}
             </div>
-            <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800 text-sm mt-4">
-              <p className="font-bold text-amber-900 dark:text-amber-100 mb-2">Instructions:</p>
-              <ol className="list-decimal list-inside space-y-2 text-amber-800/80 dark:text-amber-200/80">
+            <div className="bg-amber-50  p-4 rounded-lg border border-amber-200  text-sm mt-4">
+              <p className="font-bold text-amber-900  mb-2">Instructions:</p>
+              <ol className="list-decimal list-inside space-y-2 text-amber-800/80 ">
                 <li>Go to <strong>Site Settings → Custom Code</strong> in Webflow</li>
                 <li>Add these script tags to the <strong>Head Code</strong> or <strong>Footer Code</strong></li>
                 <li>Save and Publish changes</li>
@@ -414,7 +417,7 @@ function TokensTab(props: {
         </Card>
       )}
 
-      {/* Step 3: Tokens */}
+      {/* Step 3: Style Guide (Design Tokens) */}
       <Card className="border-2 border-primary/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl font-bold">
@@ -423,7 +426,7 @@ function TokensTab(props: {
               (fontInfo?.families && fontInfo.families.length > 0 ? 1 : 0) +
               (externalScripts && externalScripts.length > 0 ? 1 : 0) +
               1
-            }: Copy Design Tokens
+            }: Copy Style Guide (Design Tokens)
           </CardTitle>
           <CardDescription className="text-base">
             Paste this <strong>FIRST</strong> into Webflow. Delete the div you just created after pasting, then proceed with the components.
@@ -432,7 +435,7 @@ function TokensTab(props: {
         <CardContent>
           <Button size="lg" className="w-full text-lg h-14" onClick={handleCopyToWebflow} disabled={!tokenWebflowJson}>
             <HugeiconsIcon icon={copied ? CheckmarkCircle01Icon : Copy01Icon} size={24} className="mr-2" />
-            {copied ? "Copied! Paste in Webflow" : "Copy Design Tokens to Webflow"}
+            {copied ? "Copied! Paste in Webflow" : "Copy Style Guide (Design Tokens) to Webflow"}
           </Button>
           {!tokenWebflowJson && <p className="text-sm text-muted-foreground mt-2 text-center">Token payload will be generated after parsing HTML.</p>}
         </CardContent>
@@ -558,7 +561,7 @@ function HtmlTab(props: {
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Components ({componentTree.components.length})</CardTitle>
-            <CardDescription className="text-amber-600 dark:text-amber-400 font-medium">
+            <CardDescription className="text-amber-600  font-medium">
               ⚠️ These are for copying to Webflow. To save in this app, click &quot;Save to Database&quot; above.
             </CardDescription>
           </CardHeader>
@@ -661,6 +664,8 @@ export function ImportWizard() {
   const [tokensPasted, setTokensPasted] = useState(false)
   const [skipEstablishedStyles, setSkipEstablishedStyles] = useState(true)
   const [validationWarnings, setValidationWarnings] = useState<string[]>([])
+  const [detectedImages, setDetectedImages] = useState<ImageAsset[]>([])
+  const [detectedFonts, setDetectedFonts] = useState<any[]>([])
   const [llmSummary, setLlmSummary] = useState<LlmSummary | null>(null)
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>("idle")
   const [unsupportedContentDialog, setUnsupportedContentDialog] = useState<{
@@ -676,11 +681,11 @@ export function ImportWizard() {
       toast.error("Please paste HTML content")
       return
     }
-    
+
     // Check for unsupported content (React, Tailwind, TypeScript)
     const unsupportedCheck = detectAndRemoveUnsupportedContent(htmlInput)
     let processedHtml = htmlInput
-    
+
     if (unsupportedCheck.removedReferences.length > 0) {
       // Show warning dialog
       setUnsupportedContentDialog({
@@ -694,7 +699,7 @@ export function ImportWizard() {
       processedHtml = unsupportedCheck.cleanedHtml
       setHtmlInput(processedHtml)
     }
-    
+
     let stage = "start"
     let pendingArtifacts: ExtractedArtifacts | null = null
     let tokens: TokenExtraction | null = null
@@ -709,15 +714,37 @@ export function ImportWizard() {
       stage = "extracting"
       setProcessingStatus("extracting")
       const name = projectName || "Imported Design"
-      
-      // Use updated extractTokens with HTML support for font detection
-      tokens = extractTokens(normalization.css, htmlInput, name)
-      
+
+      // Use enhanced token extraction with HTML support for font detection
+      tokens = extractEnhancedTokens(normalization.css, htmlInput, name)
+
       // Prepare JS content including external scripts
-      const externalScriptComments = cleanResult.externalScripts.length > 0 
+      const externalScriptComments = cleanResult.externalScripts.length > 0
         ? cleanResult.externalScripts.map(url => `// External Library: ${url}`).join('\n') + '\n\n'
         : '';
       const fullScriptsJs = externalScriptComments + cleanResult.extractedScripts;
+
+      // Format tokens for database storage
+      const colorTokens = tokens.variables
+        .filter(v => v.type === 'color')
+        .map(v => ({
+          name: v.cssVar.replace('--', ''),
+          value: v.values?.light || v.value || '',
+        }));
+
+      const typographyTokens = tokens.variables
+        .filter(v => v.type === 'fontFamily')
+        .map(v => ({
+          name: v.cssVar.replace('--', ''),
+          value: v.value || '',
+        }));
+
+      const spacingTokens = tokens.variables
+        .filter(v => v.type === 'spacing')
+        .map(v => ({
+          name: v.cssVar.replace('--', ''),
+          value: v.value || '',
+        }));
 
       pendingArtifacts = {
         tokensJson: JSON.stringify(
@@ -725,6 +752,11 @@ export function ImportWizard() {
             name: tokens.name,
             namespace: tokens.namespace,
             variables: tokens.variables,
+            colors: colorTokens,
+            typography: typographyTokens,
+            spacing: spacingTokens,
+            radius: tokens.radius || [],
+            shadows: tokens.shadows || [],
             fonts: tokens.fonts ? {
               googleFonts: tokens.fonts.googleFonts || "",
               headSnippet: tokens.fonts.googleFonts ? `<link href="${tokens.fonts.googleFonts}" rel="stylesheet">` : "",
@@ -892,6 +924,24 @@ export function ImportWizard() {
         ...literalization.warnings,
         ...visibilityWarnings,
       ])
+
+      // Extract images for the database
+      const images = extractImages(normalization.html, literalization.css)
+      setDetectedImages(images)
+
+      // Map fonts for the database
+      const googleFontsUrl = tokens?.fonts?.googleFonts || "";
+      const fontFamilies = tokens?.fonts?.families || [];
+      const mappedFonts = fontFamilies.map(f => ({
+        name: f,
+        source: "Google Fonts",
+        url: googleFontsUrl,
+        status: "pending",
+        warning: false,
+        installationGuide: `Go to Site Settings -> Fonts and add ${f}`
+      }));
+      setDetectedFonts(mappedFonts)
+
       setLlmSummary({
         mode: llmMeta?.mode ?? "fallback",
         model: llmMeta?.model,
@@ -1088,6 +1138,8 @@ export function ImportWizard() {
         components: componentsToImport,
         tokenWebflowJson: tokenWebflowJson || undefined,
         sourceHtml: htmlInput.length < 500000 ? htmlInput : undefined,
+        images: detectedImages,
+        fonts: detectedFonts,
       })
       setImportResult(result)
       setStep("complete")
@@ -1107,13 +1159,13 @@ export function ImportWizard() {
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    
+
     // Reject .tsx, .jsx, .ts files directly
     if (file.name.endsWith(".tsx") || file.name.endsWith(".jsx") || file.name.endsWith(".ts")) {
       toast.error("This importer only supports HTML files. React/TypeScript files (.tsx, .jsx, .ts) are not supported.")
       return
     }
-    
+
     if (!file.name.endsWith(".html") && !file.name.endsWith(".htm")) {
       toast.error("Please upload an HTML file")
       return
@@ -1124,7 +1176,7 @@ export function ImportWizard() {
       setHtmlInput(content)
       const name = file.name.replace(/\.html?$/i, "").replace(/-/g, " ")
       setProjectName(name.charAt(0).toUpperCase() + name.slice(1))
-      
+
       // Quick check for potential issues
       const quickCheck = detectAndRemoveUnsupportedContent(content)
       if (quickCheck.removedReferences.length > 0) {
@@ -1159,320 +1211,325 @@ export function ImportWizard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-8 pb-20">
       {/* Unsupported Content Warning Dialog */}
-      <AlertDialog 
-        open={unsupportedContentDialog.open} 
+      <AlertDialog
+        open={unsupportedContentDialog.open}
         onOpenChange={(open) => setUnsupportedContentDialog(prev => ({ ...prev, open }))}
       >
-        <AlertDialogContent className="sm:max-w-md">
+        <AlertDialogContent className="glass-card border-none shadow-2xl sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+            <AlertDialogTitle className="flex items-center gap-2 text-blue-600">
               <HugeiconsIcon icon={Alert01Icon} size={24} />
-              Unsupported Content Removed
+              Refined Processing
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4 pt-4">
-              <div className="text-sm">
-                This importer only works with <strong>pure HTML, CSS, and JavaScript</strong> pages.
+            <AlertDialogDescription className="space-y-4 pt-4 text-slate-600 font-medium">
+              <div>
+                To ensure a premium design system integration, we refined your code:
               </div>
-              
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-2">
-                <div className="font-medium text-amber-700 dark:text-amber-400">We removed the following:</div>
-                <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
+
+              <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 space-y-2">
+                <div className="font-bold text-blue-900 ">Adjustments made:</div>
+                <ul className="list-disc list-inside text-sm space-y-1 text-blue-800/70">
                   {unsupportedContentDialog.removedReferences.map((ref, i) => (
                     <li key={i} className="font-mono text-xs">{ref}</li>
                   ))}
                 </ul>
               </div>
-              
-              <div className="text-sm space-y-2 text-muted-foreground">
-                {unsupportedContentDialog.hasReact && (
-                  <div>• <strong>React/JSX</strong> components are not supported. Export your React app to static HTML first.</div>
-                )}
-                {unsupportedContentDialog.hasTypescript && (
-                  <div>• <strong>TypeScript (.tsx)</strong> files need to be compiled to JavaScript first.</div>
-                )}
-                {unsupportedContentDialog.hasTailwind && (
-                  <div>• <strong>Tailwind CSS</strong> utility classes are not supported. Use compiled/purged CSS instead.</div>
-                )}
-              </div>
-              
-              <div className="text-xs text-muted-foreground border-t pt-3">
-                For best results, use single-page HTML exports with inline or linked CSS/JS.
-              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
-            <Button 
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-8 shadow-lg shadow-blue-200/50"
               onClick={() => setUnsupportedContentDialog(prev => ({ ...prev, open: false }))}
             >
-              Continue with Cleaned HTML
+              Perfect, Proceed
             </Button>
           </div>
         </AlertDialogContent>
       </AlertDialog>
 
-      <div>
-        <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Tools</span>
-        <h2 className="mt-2 font-display text-xl uppercase tracking-tight text-foreground">
-          Import HTML
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Extract components from AI-generated HTML and convert to Webflow-ready assets.
+      <div className="flex flex-col items-center text-center space-y-3 pt-10">
+        <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-blue-600/60 bg-blue-50 px-4 py-1.5 rounded-full">Project Engine</span>
+        <h1 className="premium-gradient-text font-display text-4xl leading-none tracking-tight sm:text-6xl uppercase">
+          Import Design
+        </h1>
+        <p className="max-w-xl text-slate-500 font-medium text-sm sm:text-base leading-relaxed">
+          Inject any AI-generated HTML/CSS into your library. <br className="hidden sm:block" />
+          We'll automatically extract components, tokens, and assets.
         </p>
-        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-          <HugeiconsIcon icon={Alert01Icon} size={14} />
-          Supports single-page HTML with CSS &amp; JavaScript only. No React, TypeScript, or Tailwind.
-        </p>
-      </div>
-
-      <div className="flex items-center gap-2 text-xs">
-        <span className={cn("px-3 py-1 rounded-full", step === "input" ? "bg-primary text-primary-foreground" : "bg-muted")}>
-          1. Input
-        </span>
-        <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="text-muted-foreground" />
-        <span className={cn("px-3 py-1 rounded-full", step === "artifacts" ? "bg-primary text-primary-foreground" : "bg-muted")}>
-          2. Artifacts
-        </span>
-        <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="text-muted-foreground" />
-        <span className={cn("px-3 py-1 rounded-full", step === "complete" ? "bg-primary text-primary-foreground" : "bg-muted")}>
-          3. Complete
-        </span>
       </div>
 
       {step === "input" && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Paste HTML</CardTitle>
-              <CardDescription>
-                Paste the full HTML file from any AI tool. 
-                <span className="block mt-1 text-amber-600 dark:text-amber-400">
-                  Supports pure HTML/CSS/JS only — no React, TypeScript (.tsx/.jsx), or Tailwind.
-                </span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-4">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="projectName">Project Name</Label>
-                  <Input
-                    id="projectName"
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
-                    placeholder="e.g., Flow Party Landing"
-                  />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="projectSlug">Slug (optional)</Label>
-                  <Input
-                    id="projectSlug"
-                    value={projectSlug}
-                    onChange={(e) => setProjectSlug(e.target.value)}
-                    placeholder="auto-generated"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button size="lg" onClick={handleParse} disabled={!htmlInput.trim() || processingStatus !== "idle"}>
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={20} className="mr-2" />
-                  Parse HTML & Extract Artifacts
-                </Button>
-              </div>
-
-              {processingStatus !== "idle" && <ProcessingTimeline status={processingStatus} />}
-
-              <CollapsibleSection
-                title="HTML Content"
-                defaultOpen={!htmlInput}
-                rightElement={
-                  <div className="flex items-center gap-2">
-                    <Label
-                      htmlFor="fileUpload"
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs border rounded-lg cursor-pointer hover:bg-muted"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <HugeiconsIcon icon={Upload04Icon} size={14} />
-                      Upload .html
+        <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          <Card className="glass-card border-none overflow-hidden rounded-[40px]">
+            <CardContent className="p-1.5 sm:p-2">
+              <div className="relative group">
+                <div className="flex flex-col sm:flex-row gap-2 mb-2">
+                  <div className="flex-grow glass-card border-none rounded-[32px] px-6 py-4 focus-within:ring-2 ring-blue-500/20 transition-all flex items-center gap-4">
+                    <HugeiconsIcon icon={FileEditIcon} className="text-blue-500" size={20} />
+                    <input
+                      className="bg-transparent border-none text-slate-900 font-bold placeholder:text-slate-300 w-full focus:outline-none"
+                      placeholder="Name your masterpiece"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                    />
+                  </div>
+                  <div className="glass-card border-none rounded-[32px] px-6 py-4 flex items-center gap-2 cursor-pointer hover:bg-white/80 transition-all overflow-hidden relative">
+                    <Label htmlFor="fileUpload" className="flex items-center gap-3 cursor-pointer">
+                      <HugeiconsIcon icon={Upload04Icon} className="text-slate-400 group-hover:text-blue-500" size={20} />
+                      <span className="text-sm font-bold text-slate-600 whitespace-nowrap">Upload .html</span>
                     </Label>
                     <input id="fileUpload" type="file" accept=".html,.htm" className="hidden" onChange={handleFileUpload} />
-                    {htmlInput && (
-                      <span className="text-xs text-muted-foreground">{htmlInput.length.toLocaleString()} chars</span>
-                    )}
                   </div>
-                }
-              >
-                <div className="space-y-2 pt-2">
+                </div>
+
+                <div className="bg-slate-50/50 rounded-[32px] p-6 min-h-[400px] border border-slate-100/50 relative overflow-hidden transition-all duration-700 group-focus-within:border-blue-500/20 group-focus-within:bg-white/40">
                   <Textarea
                     id="htmlInput"
                     value={htmlInput}
                     onChange={(e) => setHtmlInput(e.target.value)}
-                    placeholder="<html>...</html>"
-                    className="font-mono text-sm min-h-[300px]"
+                    placeholder="Paste the code here..."
+                    className="absolute inset-0 bg-transparent border-none focus-visible:ring-0 font-mono text-sm resize-none p-8 text-slate-600 h-full w-full"
                   />
+                  {!htmlInput && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                      <HugeiconsIcon icon={CodeIcon} size={120} className="text-slate-400" strokeWidth={1} />
+                    </div>
+                  )}
                 </div>
-              </CollapsibleSection>
+
+                <div className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest px-4">
+                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} className="text-green-500" />
+                    HTML / CSS / JS ONLY
+                  </div>
+
+                  <Button
+                    size="lg"
+                    onClick={handleParse}
+                    disabled={!htmlInput.trim() || processingStatus !== "idle"}
+                    className="bg-blue-600 hover:bg-black text-white rounded-full px-12 h-14 font-black shadow-xl shadow-blue-200/50 group transition-all duration-500 hover:scale-105"
+                  >
+                    {processingStatus === "idle" ? (
+                      <>
+                        <span className="mr-3">EXTRACT ASSETS</span>
+                        <HugeiconsIcon icon={ArrowRight01Icon} size={20} className="group-hover:translate-x-1 transition-transform" />
+                      </>
+                    ) : (
+                      <span className="animate-pulse">PROCESSING...</span>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
+
+          {processingStatus !== "idle" && (
+            <div className="mt-12 glass-card p-10 rounded-[40px] border-none animate-in fade-in zoom-in duration-700">
+              <ProcessingTimeline status={processingStatus} />
+            </div>
+          )}
         </div>
       )}
 
       {step === "artifacts" && artifacts && (
-        <div className="space-y-6">
-          <div className="flex gap-4 sticky top-0 z-10 bg-background/95 backdrop-blur py-2 border-b">
-            <Button variant="outline" onClick={handleReset}>
-              Start Over
-            </Button>
-            <Button className="flex-1" onClick={handleImport} disabled={isImporting}>
-              {isImporting ? (
-                <>
-                  <span className="animate-spin mr-2">⏳</span>
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="mr-2" />
-                  Save to Database (+ Full Page)
-                </>
-              )}
-            </Button>
-          </div>
-
-          {llmSummary && (
-            <CollapsibleSection
-              title={
-                <div className="flex items-center gap-2">
-                  <HugeiconsIcon icon={Layers01Icon} size={16} />
-                  LLM Summary
-                </div>
-              }
-            >
-              <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
-                <div>
-                  <div className="text-xs text-muted-foreground">Mode</div>
-                  <div className="font-medium">{llmSummary.mode.toUpperCase()}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Model</div>
-                  <div className="font-medium">{llmSummary.model || "n/a"}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Remaining var()</div>
-                  <div className="font-medium">{llmSummary.remainingCssVarCount}</div>
-                </div>
-                <div className="sm:col-span-3">
-                  <div className="text-xs text-muted-foreground">Reason</div>
-                  <div className="font-medium">{llmSummary.reason || "n/a"}</div>
+        <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            {/* Header Status Card */}
+            <div className="glass-card border-none p-8 rounded-[40px] flex flex-col sm:flex-row items-center justify-between gap-6 overflow-hidden relative group">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] scale-[4] group-hover:rotate-12 transition-transform duration-1000 pointer-events-none">
+                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={120} />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-black tracking-tighter uppercase text-slate-900">{projectName}</h2>
+                <div className="flex flex-wrap gap-3">
+                  <Badge variant="secondary" className="rounded-full bg-blue-50 text-blue-600 border-none px-4 py-1 font-bold text-[10px] uppercase">
+                    {componentTree?.components.length || 0} Components
+                  </Badge>
+                  <Badge variant="secondary" className="rounded-full bg-slate-50 text-slate-600 border-none px-4 py-1 font-bold text-[10px] uppercase tracking-widest font-mono">
+                    {Object.keys(artifacts.classIndex.classes).length} Styles
+                  </Badge>
+                  {llmSummary?.mode !== "live" && (
+                    <Badge variant="secondary" className="rounded-full bg-purple-50 text-purple-600 border-none px-4 py-1 font-bold text-[10px] uppercase">
+                      AI Optimized
+                    </Badge>
+                  )}
                 </div>
               </div>
-            </CollapsibleSection>
-          )}
+              <Button
+                onClick={handleImport}
+                disabled={isImporting}
+                className="bg-blue-600 hover:bg-black text-white rounded-full px-10 h-16 font-black shadow-2xl shadow-blue-200/50 text-lg transition-all duration-500"
+              >
+                {isImporting ? (
+                  <>
+                    <Loader2 className="animate-spin mr-3" size={24} />
+                    SAVING...
+                  </>
+                ) : (
+                  <>
+                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={24} className="mr-3 text-white/50" />
+                    SAVE TO LIBRARY
+                  </>
+                )}
+              </Button>
+            </div>
 
-          <Tabs defaultValue="tokens" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="tokens" className="flex items-center gap-2">
-                <HugeiconsIcon icon={PaintBoardIcon} size={14} />
-                Tokens
-              </TabsTrigger>
-              <TabsTrigger value="css" className="flex items-center gap-2">
-                <HugeiconsIcon icon={CodeIcon} size={14} />
-                CSS
-              </TabsTrigger>
-              <TabsTrigger value="html" className="flex items-center gap-2">
-                <HugeiconsIcon icon={FileEditIcon} size={14} />
-                HTML
-              </TabsTrigger>
-              <TabsTrigger value="js" className="flex items-center gap-2">
-                <HugeiconsIcon icon={JavaScriptIcon} size={14} />
-                JS
-              </TabsTrigger>
-            </TabsList>
+            {/* Visual Preview Grid */}
+            <div className="glass-card border-none p-10 rounded-[40px] space-y-8">
+              <div className="flex items-center justify-between">
+                <h3 className="font-black text-lg uppercase tracking-widest text-slate-900 border-l-4 border-blue-600 pl-6">Detected Visuals</h3>
+                <span className="text-xs font-bold text-slate-400">{detectedImages.length} Matches</span>
+              </div>
 
-            <TabsContent value="tokens" className="mt-6">
-              <TokensTab
-                tokensCss={artifacts.tokensCss}
-                tokensJson={artifacts.tokensJson}
-                tokenWebflowJson={tokenWebflowJson}
-                onCopyTokens={handleCopyTokens}
-                warnings={validationWarnings}
-                fontInfo={tokenExtraction?.fonts}
-              />
-            </TabsContent>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {detectedImages.slice(0, 8).map((img, i) => (
+                  <div key={i} className="aspect-square rounded-[24px] overflow-hidden bg-slate-50 border border-slate-100 group relative">
+                    <img src={img.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Badge className="bg-white/90 text-black border-none rounded-full text-[8px]">{img.type.split('/')[1]}</Badge>
+                    </div>
+                  </div>
+                ))}
+                {detectedImages.length === 0 && (
+                  <div className="col-span-full py-10 flex flex-col items-center justify-center text-slate-300 gap-4">
+                    <HugeiconsIcon icon={Layers01Icon} size={48} strokeWidth={1} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">No static images found</span>
+                  </div>
+                )}
+              </div>
+            </div>
 
-            <TabsContent value="css" className="mt-6">
-              <CssTab stylesCss={artifacts.stylesCss} classIndex={artifacts.classIndex} />
-            </TabsContent>
+            {/* Component Tree View */}
+            <div className="glass-card border-none p-10 rounded-[40px] space-y-8">
+              <div className="flex items-center justify-between">
+                <h3 className="font-black text-lg uppercase tracking-widest text-slate-900 border-l-4 border-blue-600 pl-6">Structure</h3>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="skip-toggle" className="text-[10px] font-black text-slate-400 uppercase">Skip Core Styles</Label>
+                  <input
+                    id="skip-toggle"
+                    type="checkbox"
+                    className="rounded-full h-4 w-4 accent-blue-600"
+                    checked={skipEstablishedStyles}
+                    onChange={(e) => setSkipEstablishedStyles(e.target.checked)}
+                  />
+                </div>
+              </div>
 
-            <TabsContent value="html" className="mt-6">
-              <HtmlTab
-                cleanHtml={artifacts.cleanHtml}
-                componentTree={componentTree}
-                classIndex={artifacts.classIndex}
-                establishedClasses={establishedClasses}
-                tokensPasted={tokensPasted}
-                skipEstablishedStyles={skipEstablishedStyles}
-                onSkipEstablishedStylesChange={setSkipEstablishedStyles}
-                onCopyComponent={handleCopyComponent}
-              />
-            </TabsContent>
+              <div className="grid gap-3 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
+                {componentTree?.components.map((c) => (
+                  <div key={c.id} className="glass-card border-none rounded-[32px] p-6 flex items-center justify-between hover:bg-white/80 transition-all border border-transparent hover:border-slate-100 group">
+                    <div className="flex items-center gap-5">
+                      <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 font-black text-sm">
+                        {c.type === "nav" ? "NAV" : c.type === "hero" ? "HERO" : "SEC"}
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-900">{c.name}</div>
+                        <div className="text-[10px] uppercase font-bold tracking-widest text-slate-400">{c.classesUsed.length} classes detected</div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-full bg-slate-50 text-slate-900 font-bold hover:bg-blue-600 hover:text-white transition-all text-[10px] group-hover:px-6"
+                      onClick={() => handleCopyComponent(c)}
+                    >
+                      COPY
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
-            <TabsContent value="js" className="mt-6">
-              <JsTab scriptsJs={artifacts.scriptsJs} />
-            </TabsContent>
-          </Tabs>
+          <aside className="space-y-8">
+            {/* Fonts Checklist */}
+            <div className="glass-card border-none p-10 rounded-[40px] space-y-6">
+              <h3 className="font-black text-sm uppercase tracking-widest text-slate-900">Font Stack</h3>
+              <div className="space-y-4">
+                {detectedFonts.map((font, i) => (
+                  <div key={i} className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900 text-sm">{font.name}</span>
+                      <Badge className="bg-green-50 text-green-600 border-none rounded-full text-[8px] font-black">GOO</Badge>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                      <div className="h-full w-full bg-green-500" />
+                    </div>
+                  </div>
+                ))}
+                {detectedFonts.length === 0 && (
+                  <p className="text-xs text-slate-400 italic">No custom font families found.</p>
+                )}
+              </div>
+            </div>
+
+            {/* LLM Engine Data */}
+            {llmSummary && (
+              <div className="glass-card border-none p-10 rounded-[40px] space-y-6 bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-2xl shadow-purple-200/50">
+                <div className="flex items-center gap-3 opacity-80">
+                  <HugeiconsIcon icon={JavaScriptIcon} size={16} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Optimizing Intelligence</span>
+                </div>
+                <div className="space-y-4">
+                  <div className="text-3xl font-black tracking-tighter leading-none">
+                    {llmSummary.htmlMutations} Adjustments
+                  </div>
+                  <p className="text-xs font-medium text-white/70 leading-relaxed uppercase tracking-wider italic">
+                    "AI parsed your architecture and mapped {llmSummary.renamedComponents} custom components with semantic accuracy."
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-white/10 flex justify-between items-center text-[10px] font-black tracking-[0.2em] opacity-80 uppercase">
+                  <span>MODEL: {llmSummary.model?.split('/').pop() || "FP-GEN-V2"}</span>
+                  <span>V:{llmSummary.mode.toUpperCase()}</span>
+                </div>
+              </div>
+            )}
+
+            <Button
+              variant="outline"
+              onClick={handleReset}
+              className="w-full rounded-full border-2 border-slate-100 hover:bg-slate-50 font-black h-14 text-slate-400 uppercase tracking-widest text-[10px]"
+            >
+              Reset Engine
+            </Button>
+          </aside>
         </div>
       )}
 
       {step === "complete" && importResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-600">
-              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={24} />
-              Import Complete
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="animate-in fade-in zoom-in duration-1000 max-w-2xl mx-auto">
+          <Card className="glass-card border-none p-12 rounded-[50px] text-center space-y-8 shadow-2xl shadow-blue-100">
+            <div className="mx-auto h-24 w-24 rounded-[32px] bg-green-50 flex items-center justify-center text-green-500 shadow-lg shadow-green-100">
+              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={48} />
+            </div>
+            <div className="space-y-2">
+              <h2 className="premium-gradient-text text-4xl font-black uppercase tracking-tight">Injection Successful</h2>
+              <p className="text-slate-500 font-medium">Your design has been fully converted and indexed.</p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-lg bg-muted">
-                <div className="text-2xl font-bold">{importResult.assetsCreated}</div>
-                <div className="text-sm text-muted-foreground">Assets Created</div>
+              <div className="bg-slate-50/50 p-6 rounded-[32px]">
+                <div className="text-3xl font-black text-slate-900">{importResult.assetsCreated}</div>
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">New Assets</div>
               </div>
-              <div className="p-4 rounded-lg bg-muted">
-                <div className="text-2xl font-bold">{importResult.assetsUpdated}</div>
-                <div className="text-sm text-muted-foreground">Assets Updated</div>
-              </div>
-              <div className="p-4 rounded-lg bg-muted">
-                <div className="text-2xl font-bold">{importResult.artifactsStored}</div>
-                <div className="text-sm text-muted-foreground">Artifacts Stored</div>
-              </div>
-              <div className="p-4 rounded-lg bg-muted">
-                <div className="text-2xl font-bold text-amber-600">{importResult.errors.length}</div>
-                <div className="text-sm text-muted-foreground">Errors</div>
+              <div className="bg-slate-50/50 p-6 rounded-[32px]">
+                <div className="text-3xl font-black text-slate-900">{importResult.artifactsStored}</div>
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">Artifacts</div>
               </div>
             </div>
 
-            {importResult.errors.length > 0 && (
-              <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/50">
-                <div className="font-medium text-amber-600 mb-2">Errors:</div>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  {importResult.errors.map((error, i) => (
-                    <li key={i}>• {error}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="flex gap-4">
-              <Button variant="outline" onClick={handleReset}>
-                Import Another
+            <div className="flex flex-col gap-4">
+              <Button asChild className="bg-black hover:bg-blue-600 text-white rounded-full h-16 font-black text-lg transition-all duration-500">
+                <Link href="/assets">EXPLORE LIBRARY</Link>
               </Button>
-              <Button asChild className="flex-1">
-                <Link href="/assets">View Assets</Link>
+              <Button variant="ghost" onClick={handleReset} className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+                Import Another Project
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </Card>
+        </div>
       )}
     </div>
   )

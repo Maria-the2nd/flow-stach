@@ -141,8 +141,8 @@ function CodeTabPanel({ label, description, code }: CodeTabPanelProps) {
           {copying ? "Copied!" : "Copy"}
         </Button>
       </div>
-      <div className="bg-zinc-950">
-        <pre className="max-h-[500px] overflow-auto p-4 text-xs text-zinc-200 font-mono leading-relaxed whitespace-pre">
+      <div className="bg-slate-50/80 backdrop-blur border-t border-slate-100">
+        <pre className="max-h-[500px] overflow-auto p-4 text-xs text-slate-700 font-mono leading-relaxed whitespace-pre">
           <code>{code}</code>
         </pre>
       </div>
@@ -199,11 +199,11 @@ function SnippetSection({ title, code, language, defaultExpanded = false }: Snip
       </div>
       <div
         className={cn(
-          "bg-zinc-950 overflow-hidden transition-all",
+          "bg-slate-50/80 backdrop-blur overflow-hidden transition-all border-t border-slate-100",
           expanded ? "max-h-[400px]" : "max-h-0"
         )}
       >
-        <pre className="max-h-[380px] overflow-auto p-4 text-xs text-zinc-200 font-mono leading-relaxed whitespace-pre">
+        <pre className="max-h-[380px] overflow-auto p-4 text-xs text-slate-700 font-mono leading-relaxed whitespace-pre">
           <code>{code}</code>
         </pre>
       </div>
@@ -415,7 +415,7 @@ export function AssetDetailMain({ asset, payload }: AssetDetailMainProps) {
             <div className="mt-2 space-y-2">
               <div className="flex flex-wrap gap-1">
                 {fontFamilies.map((font) => (
-                  <span key={font} className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded text-xs font-semibold">
+                  <span key={font} className="bg-blue-100  text-blue-800  px-2 py-0.5 rounded text-xs font-semibold">
                     {font}
                   </span>
                 ))}

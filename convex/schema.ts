@@ -15,7 +15,8 @@ export default defineSchema({
     description: v.optional(v.string()),
     tags: v.array(v.string()),
     templateId: v.optional(v.id("templates")),
-    previewImageUrl: v.optional(v.string()),
+    previewImageUrl: v.optional(v.string()),           // DEPRECATED: Keep for backwards compatibility
+    thumbnailStorageId: v.optional(v.id("_storage")),  // Convex file storage
     previewVideoUrl: v.optional(v.string()),
     isNew: v.boolean(),
     status: v.union(v.literal("draft"), v.literal("published")),
@@ -34,7 +35,8 @@ export default defineSchema({
   templates: defineTable({
     name: v.string(),
     slug: v.string(),
-    imageUrl: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),                  // DEPRECATED: Keep for backwards compatibility
+    thumbnailStorageId: v.optional(v.id("_storage")),  // Convex file storage
     userId: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -42,9 +44,51 @@ export default defineSchema({
 
   payloads: defineTable({
     assetId: v.id("assets"),
-    webflowJson: v.string(),
-    codePayload: v.string(),
-    dependencies: v.array(v.string()),
+
+    // === FIVE SEPARATE OUTPUTS ===
+    designTokens: v.optional(v.string()),      // JSON: { colors, typography, spacing }
+    webflowJson: v.optional(v.string()),       // @webflow/XscpData JSON
+    cssEmbed: v.optional(v.string()),          // Modern CSS content (no <style> tags)
+    jsEmbed: v.optional(v.string()),           // JavaScript content (no <script> tags)
+    libraryImports: v.optional(v.object({
+      scripts: v.array(v.string()),            // CDN URLs: ["https://cdn.../gsap.min.js"]
+      styles: v.array(v.string()),             // CDN URLs: ["https://cdn.../font.css"]
+    })),
+
+    // === VALIDATION METADATA ===
+    validationResults: v.optional(v.object({
+      designTokens: v.object({
+        valid: v.boolean(),
+        errors: v.array(v.string()),
+        warnings: v.array(v.string())
+      }),
+      webflowJson: v.object({
+        valid: v.boolean(),
+        errors: v.array(v.string()),
+        warnings: v.array(v.string())
+      }),
+      cssEmbed: v.object({
+        valid: v.boolean(),
+        errors: v.array(v.string()),
+        warnings: v.array(v.string())
+      }),
+      jsEmbed: v.object({
+        valid: v.boolean(),
+        errors: v.array(v.string()),
+        warnings: v.array(v.string())
+      }),
+    })),
+
+    // === FEATURE DETECTION ===
+    hasEmbeds: v.optional(v.boolean()),                    // True if cssEmbed or jsEmbed exist
+    detectedLibraries: v.optional(v.array(v.string())),    // ["GSAP", "ScrollTrigger", "Lenis"]
+    cssFeatures: v.optional(v.array(v.string())),          // ["oklch", "@container", ":has()"]
+
+    // === BACKWARDS COMPATIBILITY (DEPRECATED) ===
+    codePayload: v.optional(v.string()),       // DEPRECATED - keep for old assets
+    dependencies: v.optional(v.array(v.string())), // DEPRECATED
+
+    // === TIMESTAMPS ===
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_asset_id", ["assetId"]),
@@ -63,14 +107,64 @@ export default defineSchema({
     name: v.string(),
     slug: v.string(),
     status: v.union(v.literal("draft"), v.literal("complete")),
-    // Owner (Clerk user ID) for user-scoped access
-    userId: v.optional(v.string()),
+    // Owner (Clerk user ID) - REQUIRED, no orphan projects allowed
+    userId: v.string(),
+    // Project thumbnail (Convex file storage reference)
+    thumbnailStorageId: v.optional(v.id("_storage")),
     // Original HTML (may be large, consider compression)
     sourceHtml: v.optional(v.string()),
     // Metadata
     componentCount: v.optional(v.number()),
     classCount: v.optional(v.number()),
     hasTokens: v.optional(v.boolean()),
+
+    // Font detection results
+    fonts: v.optional(v.array(v.object({
+      name: v.string(),
+      source: v.string(),
+      url: v.optional(v.string()),
+      status: v.string(),
+      warning: v.optional(v.boolean()),
+      installationGuide: v.string(),
+    }))),
+
+    // Image validation results
+    images: v.optional(v.array(v.object({
+      url: v.string(),
+      type: v.string(),
+      estimatedSize: v.optional(v.number()),
+      sizeWarning: v.boolean(),
+      blocked: v.boolean(),
+      classification: v.string(),
+    }))),
+
+    // Design tokens (for quick access)
+    designTokens: v.optional(v.object({
+      colors: v.array(v.object({
+        name: v.string(),
+        value: v.string(),
+      })),
+      typography: v.array(v.object({
+        name: v.string(),
+        value: v.string(),
+      })),
+      spacing: v.optional(v.array(v.object({
+        name: v.string(),
+        value: v.string(),
+      }))),
+      // Enhanced tokens
+      radius: v.optional(v.array(v.object({
+        name: v.string(),
+        value: v.string(),
+        size: v.string(),
+      }))),
+      shadows: v.optional(v.array(v.object({
+        name: v.string(),
+        value: v.string(),
+        intensity: v.string(),
+      }))),
+    })),
+
     createdAt: v.number(),
     updatedAt: v.number(),
   })

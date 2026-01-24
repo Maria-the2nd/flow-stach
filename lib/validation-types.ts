@@ -86,6 +86,8 @@ export const FatalIssueCodes = {
   INVALID_JSON: 'INVALID_JSON',
   /** Invalid payload structure - missing required fields */
   INVALID_PAYLOAD: 'INVALID_PAYLOAD',
+  /** Excessive nesting depth (>50 levels) causes Webflow Designer crash */
+  EXCESSIVE_DEPTH: 'EXCESSIVE_DEPTH',
 } as const;
 
 // ============================================
@@ -112,6 +114,20 @@ export const ErrorIssueCodes = {
   TEXT_NODE_HAS_CHILDREN: 'TEXT_NODE_HAS_CHILDREN',
   /** Embed exceeds Webflow size limit */
   EMBED_SIZE_EXCEEDED: 'EMBED_SIZE_EXCEEDED',
+  /** Nested form elements - invalid HTML that breaks form submission */
+  NESTED_FORM: 'NESTED_FORM',
+  /** Invalid variant key (unknown breakpoint or state) - causes [PersistentUIState] error */
+  INVALID_VARIANT_KEY: 'INVALID_VARIANT_KEY',
+  /** Reserved Webflow class name (w-*) used - conflicts with webflow.js */
+  RESERVED_CLASS_NAME: 'RESERVED_CLASS_NAME',
+  /** Ghost variant key - references non-existent node ID */
+  GHOST_VARIANT_KEY: 'GHOST_VARIANT_KEY',
+  /** Orphan interaction target - ix2 references non-existent node */
+  ORPHAN_INTERACTION_TARGET: 'ORPHAN_INTERACTION_TARGET',
+  /** Orphan asset reference - node references non-existent asset */
+  ORPHAN_ASSET_REFERENCE: 'ORPHAN_ASSET_REFERENCE',
+  /** Orphan child reference - children array contains non-existent node ID (FATAL level) */
+  ORPHAN_CHILD_REFERENCE: 'ORPHAN_CHILD_REFERENCE',
 } as const;
 
 // ============================================
@@ -152,6 +168,18 @@ export const WarningIssueCodes = {
   UNREACHABLE_NODE: 'UNREACHABLE_NODE',
   /** Node structure warning */
   NODE_STRUCTURE_WARNING: 'NODE_STRUCTURE_WARNING',
+  /** Empty link without accessible text */
+  EMPTY_LINK: 'EMPTY_LINK',
+  /** Block element inside inline element */
+  INVALID_NESTING: 'INVALID_NESTING',
+  /** Ghost variant was stripped and removed */
+  GHOST_VARIANT_STRIPPED: 'GHOST_VARIANT_STRIPPED',
+  /** Interaction was extracted to JS embed due to invalid references */
+  INTERACTION_EXTRACTED_TO_EMBED: 'INTERACTION_EXTRACTED_TO_EMBED',
+  /** CSS was extracted to embed due to unsupported features */
+  CSS_EXTRACTED_TO_EMBED: 'CSS_EXTRACTED_TO_EMBED',
+  /** Asset reference was orphaned but non-critical */
+  ORPHAN_ASSET_WARNING: 'ORPHAN_ASSET_WARNING',
 } as const;
 
 // ============================================
@@ -172,6 +200,8 @@ export const InfoIssueCodes = {
   CSS_VAR_RESOLVED: 'CSS_VAR_RESOLVED',
   /** Dynamic JS reference skipped (template literal/variable) */
   DYNAMIC_REFERENCE_SKIPPED: 'DYNAMIC_REFERENCE_SKIPPED',
+  /** Deprecated HTML element detected */
+  DEPRECATED_ELEMENT: 'DEPRECATED_ELEMENT',
 } as const;
 
 // ============================================
