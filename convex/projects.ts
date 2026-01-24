@@ -2,6 +2,12 @@ import { query, mutation } from "./_generated/server"
 import { v } from "convex/values"
 import { requireAuth } from "./auth"
 import { ConvexError } from "convex/values"
+import type { Doc } from "./_generated/dataModel"
+
+type ComponentWithPayload = {
+  component: Doc<"assets">
+  payload: Doc<"payloads"> | null
+}
 
 /**
  * User-scoped project queries for Chrome extension
@@ -152,10 +158,7 @@ export const getProjectById = query({
       .withIndex("by_slug", (q) => q.eq("slug", project.slug))
       .unique();
 
-    let components: Array<{
-      component: any;
-      payload: any;
-    }> = [];
+    let components: ComponentWithPayload[] = [];
 
     if (template) {
       const assets = await ctx.db
@@ -209,10 +212,7 @@ export const getProjectBySlug = query({
       .withIndex("by_slug", (q) => q.eq("slug", project.slug))
       .unique();
 
-    let components: Array<{
-      component: any;
-      payload: any;
-    }> = [];
+    let components: ComponentWithPayload[] = [];
 
     if (template) {
       const assets = await ctx.db

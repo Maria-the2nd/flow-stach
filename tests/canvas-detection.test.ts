@@ -4,6 +4,7 @@
 
 import { detectCanvasWebGL, validateCanvasContainer } from '../lib/js-library-detector';
 import { validateCanvasWebGLRequirements } from '../lib/preflight-validator';
+import { describe, test, expect } from "vitest";
 
 describe('Canvas/WebGL Detection', () => {
   describe('detectCanvasWebGL', () => {

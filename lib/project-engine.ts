@@ -39,10 +39,27 @@ export interface EngineResult {
         codePayload: string;
     }>;
     tokenWebflowJson: string;
-    fonts: any[];
+    fonts: DetectedFont[];
     images: ImageAsset[];
-    llmSummary?: any;
+    llmSummary?: LlmSummary;
 }
+
+export type DetectedFont = {
+    name: string;
+    source: string;
+    url?: string;
+    status: string;
+    warning?: boolean;
+    installationGuide: string;
+};
+
+export type LlmSummary = {
+    mode: FlowbridgeSemanticPatchMeta["mode"];
+    model?: string;
+    renamedComponents: number;
+    htmlMutations: number;
+    cssMutations: number;
+};
 
 /**
  * The core engine for processing HTML/CSS into Webflow-ready project artifacts.

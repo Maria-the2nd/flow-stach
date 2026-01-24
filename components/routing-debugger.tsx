@@ -460,7 +460,7 @@ function RuleItem({ rule, expanded, onToggle }: RuleItemProps) {
               <span className="bp-icon">📱</span>
               <span className="bp-original">{rule.breakpoint.original}</span>
               <span className="bp-arrow">→</span>
-              <span className="bp-mapped">Webflow "{rule.breakpoint.mapped}"</span>
+              <span className="bp-mapped">Webflow &ldquo;{rule.breakpoint.mapped}&rdquo;</span>
               {rule.breakpoint.wasRounded && (
                 <span className="bp-rounded">(rounded)</span>
               )}

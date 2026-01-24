@@ -26,7 +26,7 @@ export interface WebflowNode {
     text?: string;
     href?: string;
     attr?: Record<string, string>;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -38,7 +38,7 @@ export interface WebflowStyle {
   namespace: string;
   comb: string;
   styleLess: string;
-  variants: Record<string, any>;
+  variants: Record<string, unknown>;
   children: string[];
   selector: string | null;
 }
@@ -48,9 +48,9 @@ export interface WebflowPayload {
   payload: {
     nodes: WebflowNode[];
     styles: WebflowStyle[];
-    assets: any[];
-    ix2?: any;
-    meta?: any;
+    assets: unknown[];
+    ix2?: unknown;
+    meta?: Record<string, unknown>;
   };
 }
 
@@ -58,7 +58,7 @@ export interface ValidationError {
   severity: 'error' | 'warning';
   rule: string;
   message: string;
-  context?: any;
+  context?: Record<string, unknown>;
 }
 
 export interface ValidationResult {

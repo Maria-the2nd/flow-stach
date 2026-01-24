@@ -23,6 +23,7 @@ const eslintConfig = defineConfig([
     "docs/osmo_mirror/**",
     // Built/generated extension files (minified code)
     "flow-stach-designer-extension/dist/**",
+    "Flow-Goodies-extension/public/**",
   ]),
 ]);
 

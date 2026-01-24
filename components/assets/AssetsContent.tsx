@@ -29,6 +29,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ASSET_CATEGORIES } from "@/lib/assets/categories"
 import { copyWebflowJson } from "@/lib/clipboard"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { SafetyReportPanel } from "@/components/validation/SafetyReportPanel"
+import { ensureWebflowPasteSafety } from "@/lib/webflow-safety-gate"
+import { isPlaceholderPayload } from "@/lib/payload-utils"
 import { toast } from "sonner"
 import { parseTokenManifest } from "@/lib/token-extractor"
 import { CodeIcon, JavaScriptIcon, Alert01Icon } from "@hugeicons/core-free-icons"
@@ -79,12 +82,10 @@ function extractExternalScripts(html: string): string[] {
 function CodeBlock({
   title,
   code,
-  language,
   icon
 }: {
   title: string
   code: string
-  language: string
   icon: typeof CodeIcon
 }) {
   const [copied, setCopied] = useState(false)
@@ -677,15 +678,11 @@ export function AssetsContent() {
     }
   }
 
-  let groupFontUrl: string | null = null
   let groupFontFamilies: string[] = []
   if (tokenPayload?.codePayload && tokenPayload.codePayload.startsWith("/* TOKEN MANIFEST */")) {
     const withoutPrefix = tokenPayload.codePayload.replace("/* TOKEN MANIFEST */", "").trim()
     const manifestJson = withoutPrefix.split("/* CSS */")[0].trim()
     const manifest = parseTokenManifest(manifestJson)
-    if (manifest?.fonts?.googleFonts) {
-      groupFontUrl = manifest.fonts.googleFonts
-    }
     // Try to get families from manifest first
     if (manifest?.fonts?.families && manifest.fonts.families.length > 0) {
       groupFontFamilies = manifest.fonts.families
@@ -713,6 +710,32 @@ export function AssetsContent() {
     if (!fullPageCode.html) return []
     return extractExternalScripts(fullPageCode.html)
   }, [fullPageCode.html])
+
+  const tokenSafetyReport = useMemo(() => {
+    if (!tokenPayload?.webflowJson || isPlaceholderPayload(tokenPayload.webflowJson)) return null
+    try {
+      return ensureWebflowPasteSafety({
+        payload: tokenPayload.webflowJson,
+        cssEmbed: tokenPayload?.cssEmbed,
+        jsEmbed: tokenPayload?.jsEmbed,
+      }).report
+    } catch {
+      return null
+    }
+  }, [tokenPayload?.webflowJson, tokenPayload?.cssEmbed, tokenPayload?.jsEmbed])
+
+  const fullPageSafetyReport = useMemo(() => {
+    if (!fullPagePayload?.webflowJson || isPlaceholderPayload(fullPagePayload.webflowJson)) return null
+    try {
+      return ensureWebflowPasteSafety({
+        payload: fullPagePayload.webflowJson,
+        cssEmbed: fullPagePayload?.cssEmbed,
+        jsEmbed: fullPagePayload?.jsEmbed,
+      }).report
+    } catch {
+      return null
+    }
+  }, [fullPagePayload?.webflowJson, fullPagePayload?.cssEmbed, fullPagePayload?.jsEmbed])
 
   return (
     <div className="flex flex-1 flex-col p-6">
@@ -909,6 +932,14 @@ export function AssetsContent() {
                   <p className="text-xs text-muted-foreground text-center">
                     Best for: Rebuilding a full page layout
                   </p>
+                  {fullPageSafetyReport && (
+                    <details className="rounded-lg border border-green-200 bg-white/70 p-3 text-xs">
+                      <summary className="cursor-pointer font-semibold text-green-700">Safety Report</summary>
+                      <div className="mt-3">
+                        <SafetyReportPanel report={fullPageSafetyReport} />
+                      </div>
+                    </details>
+                  )}
                 </CardContent>
               </Card>
 
@@ -946,6 +977,26 @@ export function AssetsContent() {
                   <p className="text-xs text-muted-foreground text-center">
                     Best for: Building a design system, reusing styles
                   </p>
+                  {tokenSafetyReport && (
+                    <details className="rounded-lg border border-blue-200 bg-white/70 p-3 text-xs">
+                      <summary className="cursor-pointer font-semibold text-blue-700">
+                        Safety Report: Style Guide (Design Tokens)
+                      </summary>
+                      <div className="mt-3">
+                        <SafetyReportPanel report={tokenSafetyReport} />
+                      </div>
+                    </details>
+                  )}
+                  {fullPageSafetyReport && (
+                    <details className="rounded-lg border border-blue-200 bg-white/70 p-3 text-xs">
+                      <summary className="cursor-pointer font-semibold text-blue-700">
+                        Safety Report: Site Structure
+                      </summary>
+                      <div className="mt-3">
+                        <SafetyReportPanel report={fullPageSafetyReport} />
+                      </div>
+                    </details>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -1025,7 +1076,6 @@ export function AssetsContent() {
                 <CodeBlock
                   title="HTML"
                   code={fullPageCode.html}
-                  language="html"
                   icon={CodeIcon}
                 />
               )}
@@ -1035,7 +1085,6 @@ export function AssetsContent() {
                 <CodeBlock
                   title="CSS"
                   code={fullPageCode.css}
-                  language="css"
                   icon={CodeIcon}
                 />
               )}

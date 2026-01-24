@@ -3,7 +3,7 @@
  * These tests verify that source CSS intent is not lost during conversion.
  */
 
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { parseCSS, ELEMENT_TO_CLASS_MAP } from "../lib/css-parser";
 import { literalizeCssForWebflow } from "../lib/webflow-literalizer";
 

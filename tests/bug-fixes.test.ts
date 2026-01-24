@@ -5,7 +5,7 @@
  * 2. Descendant selector handling
  */
 
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { parseCSS } from "../lib/css-parser";
 import { convertHtmlCssToWebflow } from "../lib/webflow-converter";
 

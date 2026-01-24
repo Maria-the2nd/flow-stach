@@ -5,12 +5,15 @@
  */
 
 import type { WebflowPayload, WebflowNode, WebflowStyle } from "./webflow-converter";
-import type { EnhancedTokenExtraction } from "./token-extractor";
+import type { EnhancedTokenExtraction, TokenVariable, RadiusToken, ShadowToken } from "./token-extractor";
 
 interface StyleGuideOptions {
   namespace?: string;
   includeTitle?: boolean;
 }
+
+type InlineStyleAttr = { name: string; value: string };
+type StyleMap = typeof ISOLATED_STYLES;
 
 // Self-contained, isolated styles that won't conflict
 const ISOLATED_STYLES = {
@@ -232,11 +235,11 @@ export function generateStyleGuidePayload(
 }
 
 function generateColorsSection(
-  colorTokens: any[],
+  colorTokens: TokenVariable[],
   nodes: WebflowNode[],
   genId: (prefix?: string) => string,
-  STYLES: any,
-  inlineStyle: (styles: string) => any
+  STYLES: StyleMap,
+  inlineStyle: (styles: string) => InlineStyleAttr
 ): string {
   const sectionChildren: string[] = [];
 
@@ -344,8 +347,8 @@ function generateTypographySection(
   tokens: EnhancedTokenExtraction,
   nodes: WebflowNode[],
   genId: (prefix?: string) => string,
-  STYLES: any,
-  inlineStyle: (styles: string) => any
+  STYLES: StyleMap,
+  inlineStyle: (styles: string) => InlineStyleAttr
 ): string {
   const sectionChildren: string[] = [];
 
@@ -407,11 +410,11 @@ function generateTypographySection(
 }
 
 function generateSpacingSection(
-  spacingTokens: any[],
+  spacingTokens: TokenVariable[],
   nodes: WebflowNode[],
   genId: (prefix?: string) => string,
-  STYLES: any,
-  inlineStyle: (styles: string) => any
+  STYLES: StyleMap,
+  inlineStyle: (styles: string) => InlineStyleAttr
 ): string {
   const sectionChildren: string[] = [];
 
@@ -520,11 +523,11 @@ function generateSpacingSection(
 }
 
 function generateRadiusSection(
-  radiusTokens: any[],
+  radiusTokens: RadiusToken[],
   nodes: WebflowNode[],
   genId: (prefix?: string) => string,
-  STYLES: any,
-  inlineStyle: (styles: string) => any
+  STYLES: StyleMap,
+  inlineStyle: (styles: string) => InlineStyleAttr
 ): string {
   const sectionChildren: string[] = [];
 
@@ -629,11 +632,11 @@ function generateRadiusSection(
 }
 
 function generateShadowsSection(
-  shadowTokens: any[],
+  shadowTokens: ShadowToken[],
   nodes: WebflowNode[],
   genId: (prefix?: string) => string,
-  STYLES: any,
-  inlineStyle: (styles: string) => any
+  STYLES: StyleMap,
+  inlineStyle: (styles: string) => InlineStyleAttr
 ): string {
   const sectionChildren: string[] = [];
 
@@ -744,8 +747,8 @@ function generateUIComponentsSection(
   tokens: EnhancedTokenExtraction,
   nodes: WebflowNode[],
   genId: (prefix?: string) => string,
-  STYLES: any,
-  inlineStyle: (styles: string) => any
+  STYLES: StyleMap,
+  inlineStyle: (styles: string) => InlineStyleAttr
 ): string {
   const sectionChildren: string[] = [];
 

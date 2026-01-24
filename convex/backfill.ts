@@ -1,5 +1,4 @@
 import { mutation, query, internalMutation } from "./_generated/server";
-import { v } from "convex/values";
 import { requireAdmin } from "./auth";
 import { extractImages } from "../lib/image-extractor";
 

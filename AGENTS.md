@@ -10,6 +10,12 @@ This repo uses a **nearest-wins** `AGENTS.md` hierarchy: when editing a file, re
 
 If anything conflicts, **defer to `AUTHORITATIVE_CURRENT_STATE.md`**.
 
+## Documentation location policy (IMPORTANT)
+
+- **All documentation should live under `docs/`** (feature docs, implementation notes, how-tos, architecture writeups).
+- **Do not** add new “random” `.md` files at repo root or scattered throughout folders.
+- **Explicit exceptions**: this root `AGENTS.md` and `CLAUDE.md` may live at the repo root.
+
 ## Quick commands (repo root)
 
 ```bash

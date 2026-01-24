@@ -2,6 +2,12 @@
 
 **THE SYSTEM MANIFEST IS THE SOURCE OF TRUTH**: Always refer to `SYSTEM_MANIFEST.md` for current routing, features, and UI architecture.
 
+## Documentation location policy (IMPORTANT)
+
+- **All documentation should live under `docs/`** (feature docs, implementation notes, how-tos, architecture writeups).
+- **Do not** add new `.md` docs at repo root or scattered throughout folders.
+- **Explicit exceptions**: this `CLAUDE.md` and the root `AGENTS.md` may live at the repo root.
+
 ## Project Overview
 Flow Stach (Flow Bridge) is a Webflow ecosystem.
 - **Tool**: HTML to Webflow converter.

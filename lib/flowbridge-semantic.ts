@@ -1300,7 +1300,7 @@ export function generateBEMClassRenames(
       const { element, modifier } = inferElementRole(el);
 
       // Generate BEM name
-      let bemName = formatBEM(
+      const bemName = formatBEM(
         `${options.namespace}${options.blockName}`,
         element,
         modifier

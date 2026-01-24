@@ -72,11 +72,11 @@ export function LibraryImportGuide({ libraries, detectedNames }: LibraryImportGu
               Go to <strong>Project Settings → Custom Code</strong> in Webflow
             </li>
             <li>
-              Add script tags to <strong>"Head Code"</strong> section
+              Add script tags to <strong>&ldquo;Head Code&rdquo;</strong> section
             </li>
             {libraries.styles.length > 0 && (
               <li>
-                Add link tags to <strong>"Head Code"</strong> section
+                Add link tags to <strong>&ldquo;Head Code&rdquo;</strong> section
               </li>
             )}
             <li>Save and publish your site</li>

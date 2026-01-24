@@ -141,13 +141,10 @@ function processRules(
 
     const entries = parseProperties(rule.properties);
     const processed: PropertyEntry[] = [];
-    let removedCustomProps = false;
-
     for (const entry of entries) {
       const name = entry.name;
       // Don't strip custom properties - they act as fallback for unresolved vars
       // if (name.startsWith("--")) {
-      //   removedCustomProps = true;
       //   continue;
       // }
       if (name.toLowerCase() === "content") {

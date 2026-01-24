@@ -687,7 +687,7 @@ export function sanitizeClassNames(payload: WebflowPayload): {
 
   result.payload.styles = result.payload.styles.map((style) => {
     const parts = style.name.split(":");
-    let baseName = parts[0];
+    const baseName = parts[0];
     const state = parts[1];
 
     // Check if name needs sanitization

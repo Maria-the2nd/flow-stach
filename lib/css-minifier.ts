@@ -84,6 +84,8 @@ export function minifyCSS(css: string, options: MinifyOptions = {}): string {
     result = result.replace(/\s*;\s*/g, ';');
     result = result.replace(/\s*:\s*/g, ':');
     result = result.replace(/\s*,\s*/g, ',');
+    result = result.replace(/\s*>\s*/g, '>');
+    result = result.replace(/@media\s+\(/gi, '@media(');
 
     // Step 5: Remove trailing semicolons before closing braces
     result = result.replace(/;}/g, '}');

@@ -2,12 +2,14 @@
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
 import { Id } from "@/convex/_generated/dataModel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from 'next/link';
+import { useMemo } from "react";
 import { DesignTokensCard } from "@/components/project/design-tokens-card";
 import { FontChecklistCard } from "@/components/project/font-checklist-card";
 import { ComponentsList } from "@/components/project/components-list";
@@ -18,6 +20,20 @@ import { copyWebflowJson } from "@/lib/clipboard";
 import { regenerateAllIds } from "@/lib/webflow-sanitizer";
 import { extractEnhancedTokens, type EnhancedTokenExtraction } from "@/lib/token-extractor";
 import { generateStyleGuidePayload } from "@/lib/webflow-style-guide-generator";
+import type { WebflowPayload } from "@/lib/webflow-converter";
+import { ensureWebflowPasteSafety } from "@/lib/webflow-safety-gate";
+import { SafetyReportPanel } from "@/components/validation/SafetyReportPanel";
+
+type ImportProject = Doc<"importProjects">;
+type ImportArtifact = Doc<"importArtifacts">;
+type AssetPayload = Doc<"payloads"> | null;
+type ComponentEntry = { component: Doc<"assets">; payload: AssetPayload };
+type TokenValue = { name: string; value: string };
+type DesignTokens = {
+    colors: TokenValue[];
+    typography: TokenValue[];
+    spacing?: TokenValue[];
+};
 
 export function ProjectDetailsView({ id }: { id: string }) {
     // Fetch project data from Convex
@@ -53,7 +69,7 @@ export function ProjectDetailsView({ id }: { id: string }) {
     return <ProjectContent project={project} components={components} artifacts={artifacts} />;
 }
 
-function StyleGuideTab({ cssArtifact, project }: { cssArtifact: any; project: any }) {
+function StyleGuideTab({ cssArtifact, project }: { cssArtifact?: ImportArtifact; project: ImportProject }) {
     // Extract enhanced tokens from CSS
     const enhancedTokens: EnhancedTokenExtraction | null = (() => {
         if (!cssArtifact?.content) return null;
@@ -105,23 +121,32 @@ function StyleGuideTab({ cssArtifact, project }: { cssArtifact: any; project: an
     return <StyleGuideView tokens={enhancedTokens} onCopyWebflowPayload={handleCopyStyleGuidePayload} />;
 }
 
-function ProjectContent({ project, components, artifacts }: any) {
+function ProjectContent({
+    project,
+    components,
+    artifacts,
+}: {
+    project: ImportProject;
+    components: ComponentEntry[];
+    artifacts: ImportArtifact[];
+}) {
     // Extract all relevant artifacts
-    const cssArtifact = artifacts?.find((a: any) => a.type === 'styles_css');
-    const jsArtifact = artifacts?.find((a: any) => a.type === 'scripts_js');
-    const tokensJsonArtifact = artifacts?.find((a: any) => a.type === 'tokens_json');
-    const tokensCssArtifact = artifacts?.find((a: any) => a.type === 'tokens_css');
-    const tokenWebflowJsonArtifact = artifacts?.find((a: any) => a.type === 'token_webflow_json');
-    const jsHooksArtifact = artifacts?.find((a: any) => a.type === 'js_hooks');
-    const externalScriptsArtifact = artifacts?.find((a: any) => a.type === 'external_scripts');
+    const cssArtifact = artifacts.find((a) => a.type === "styles_css");
+    const jsArtifact = artifacts.find((a) => a.type === "scripts_js");
+    const tokensJsonArtifact = artifacts.find((a) => a.type === "tokens_json");
+    const tokensCssArtifact = artifacts.find((a) => a.type === "tokens_css");
+    const tokenWebflowJsonArtifact = artifacts.find((a) => a.type === "token_webflow_json");
+    const jsHooksArtifact = artifacts.find((a) => a.type === "js_hooks");
+    const externalScriptsArtifact = artifacts.find((a) => a.type === "external_scripts");
 
     // Bug 4 Fix: Parse external libraries/dependencies
     const externalLibraries: Array<{ url: string; name: string; type: 'script' | 'style' }> = [];
     if (externalScriptsArtifact?.content) {
         try {
-            const urls = JSON.parse(externalScriptsArtifact.content);
+            const urls = JSON.parse(externalScriptsArtifact.content) as unknown;
             if (Array.isArray(urls)) {
-                urls.forEach((url: string) => {
+                urls.forEach((url) => {
+                    if (typeof url !== "string") return;
                     // Detect library name from URL
                     const urlLower = url.toLowerCase();
                     let name = 'External Library';
@@ -187,8 +212,8 @@ function ProjectContent({ project, components, artifacts }: any) {
     // JS Hooks (event handlers, interactions)
     if (jsHooksArtifact?.content) {
         try {
-            const hooks = JSON.parse(jsHooksArtifact.content);
-            if (Array.isArray(hooks) && hooks.length > 0) {
+            const hooks = JSON.parse(jsHooksArtifact.content) as unknown;
+            if (Array.isArray(hooks) && hooks.length > 0 && hooks.every((hook) => typeof hook === "string")) {
                 embeds.push({
                     type: 'JavaScript',
                     label: 'Event Hooks',
@@ -202,17 +227,17 @@ function ProjectContent({ project, components, artifacts }: any) {
     }
 
     // Bug 1 Fix: Resolve design tokens from project OR artifact fallback
-    const resolvedTokens = (() => {
+    const resolvedTokens: DesignTokens | null = (() => {
         // First, try project.designTokens
         if (project.designTokens &&
             (project.designTokens.colors?.length > 0 || project.designTokens.typography?.length > 0)) {
-            return project.designTokens;
+            return project.designTokens as DesignTokens;
         }
         // Fallback: parse from tokens_json artifact
         if (tokensJsonArtifact?.content) {
             try {
-                const parsed = JSON.parse(tokensJsonArtifact.content);
-                if (parsed.colors?.length > 0 || parsed.typography?.length > 0) {
+                const parsed = JSON.parse(tokensJsonArtifact.content) as Partial<DesignTokens>;
+                if (parsed.colors?.length || parsed.typography?.length) {
                     return {
                         colors: parsed.colors || [],
                         typography: parsed.typography || [],
@@ -226,20 +251,20 @@ function ProjectContent({ project, components, artifacts }: any) {
         return null;
     })();
 
-    const handleCopySiteStructure = async () => {
+    const siteStructurePayload = useMemo<WebflowPayload | null>(() => {
         try {
-            // Combine all component payloads with UUID regeneration
-            // to prevent circular references and ID collisions
-            const allNodes: any[] = [];
-            const allStyles: any[] = [];
+            const allNodes: WebflowPayload["payload"]["nodes"] = [];
+            const allStyles: WebflowPayload["payload"]["styles"] = [];
             const seenStyleNames = new Set<string>();
             const tokenStyleNames = new Set<string>();
 
             if (tokenWebflowJsonArtifact?.content) {
                 try {
-                    const tokenPayload = JSON.parse(tokenWebflowJsonArtifact.content);
-                    if (Array.isArray(tokenPayload?.payload?.styles)) {
-                        tokenPayload.payload.styles.forEach((style: any) => {
+                    const tokenPayload = JSON.parse(tokenWebflowJsonArtifact.content) as {
+                        payload?: { styles?: Array<{ name?: string; _id?: string }> };
+                    };
+                    if (Array.isArray(tokenPayload.payload?.styles)) {
+                        tokenPayload.payload.styles.forEach((style) => {
                             const styleName = style?.name || style?._id;
                             if (styleName) tokenStyleNames.add(styleName);
                         });
@@ -249,18 +274,13 @@ function ProjectContent({ project, components, artifacts }: any) {
                 }
             }
 
-            components.forEach(({ payload }: { payload: any }) => {
+            components.forEach(({ payload }) => {
                 if (payload?.webflowJson) {
                     try {
-                        const parsed = JSON.parse(payload.webflowJson);
-
-                        // Skip placeholder payloads
-                        if (parsed.placeholder === true) {
+                        const parsed = JSON.parse(payload.webflowJson) as { placeholder?: boolean };
+                        if (parsed.placeholder) {
                             return;
                         }
-
-                        // CRITICAL: Regenerate all IDs to prevent circular references
-                        // when merging multiple component payloads
                         const regenerated = regenerateAllIds(parsed);
 
                         if (regenerated.payload?.nodes) {
@@ -268,7 +288,7 @@ function ProjectContent({ project, components, artifacts }: any) {
                         }
 
                         if (Array.isArray(regenerated.payload?.styles)) {
-                            regenerated.payload.styles.forEach((style: any) => {
+                            regenerated.payload.styles.forEach((style) => {
                                 const styleName = style?.name || style?._id;
                                 if (!styleName) return;
                                 if (tokenStyleNames.has(styleName)) return;
@@ -277,7 +297,6 @@ function ProjectContent({ project, components, artifacts }: any) {
                                 allStyles.push(style);
                             });
                         }
-
                     } catch (e) {
                         console.error("Failed to parse component payload:", e);
                     }
@@ -285,11 +304,10 @@ function ProjectContent({ project, components, artifacts }: any) {
             });
 
             if (allNodes.length === 0) {
-                toast.error("No extracted components available to copy");
-                return;
+                return null;
             }
 
-            const fullPayload = {
+            const payload: WebflowPayload = {
                 type: "@webflow/XscpData",
                 payload: {
                     nodes: allNodes,
@@ -304,10 +322,35 @@ function ProjectContent({ project, components, artifacts }: any) {
                     dynBindRemovedCount: 0,
                     dynListBindRemovedCount: 0,
                     paginationRemovedCount: 0,
+                    hasEmbedCSS: false,
+                    hasEmbedJS: false,
+                    embedCSSSize: 0,
+                    embedJSSize: 0,
                 },
             };
+            return payload;
+        } catch (error) {
+            console.error("Failed to build site structure payload:", error);
+            return null;
+        }
+    }, [components, tokenWebflowJsonArtifact?.content]);
 
-            await copyWebflowJson(JSON.stringify(fullPayload));
+    const siteSafetyReport = useMemo(() => {
+        if (!siteStructurePayload) return null;
+        try {
+            return ensureWebflowPasteSafety({ payload: siteStructurePayload }).report;
+        } catch {
+            return null;
+        }
+    }, [siteStructurePayload]);
+
+    const handleCopySiteStructure = async () => {
+        try {
+            if (!siteStructurePayload) {
+                toast.error("No extracted components available to copy");
+                return;
+            }
+            await copyWebflowJson(JSON.stringify(siteStructurePayload));
         } catch (error) {
             toast.error("Failed to copy site structure");
             console.error(error);
@@ -350,12 +393,17 @@ function ProjectContent({ project, components, artifacts }: any) {
                     <Button
                         onClick={handleCopySiteStructure}
                         className="bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-200/50 font-bold px-8 h-11 rounded-xl transition-all"
-                        disabled={components.length === 0}
+                        disabled={!siteStructurePayload}
                     >
                         Copy Site Structure (Base Styles)
                     </Button>
                 </div>
             </div>
+            {siteSafetyReport && (
+                <div className="mb-6">
+                    <SafetyReportPanel report={siteSafetyReport} />
+                </div>
+            )}
 
             <Tabs defaultValue="overview" className="w-full">
                 <TabsList className="w-full justify-start p-1 bg-slate-100/80 backdrop-blur rounded-[20px] h-auto inline-flex gap-1 mb-10 shadow-inner">
@@ -401,13 +449,13 @@ function ProjectContent({ project, components, artifacts }: any) {
                                         onClick={async () => {
                                             try {
                                                 const cssVars: string[] = [];
-                                                resolvedTokens.colors?.forEach((c: any) => cssVars.push(`--${c.name}: ${c.value}`));
-                                                resolvedTokens.typography?.forEach((t: any) => cssVars.push(`--${t.name}: ${t.value}`));
-                                                resolvedTokens.spacing?.forEach((s: any) => cssVars.push(`--${s.name}: ${s.value}`));
+                                                resolvedTokens.colors?.forEach((c) => cssVars.push(`--${c.name}: ${c.value}`));
+                                                resolvedTokens.typography?.forEach((t) => cssVars.push(`--${t.name}: ${t.value}`));
+                                                resolvedTokens.spacing?.forEach((s) => cssVars.push(`--${s.name}: ${s.value}`));
                                                 const hiddenDiv = `<div style="${cssVars.join('; ')}; display: none;" data-flow-tokens="true"></div>`;
                                                 await navigator.clipboard.writeText(hiddenDiv);
                                                 toast.success("Style Guide (Design Tokens) copied!", { description: "Paste into Webflow body, then delete the DIV." });
-                                            } catch (e) {
+                                            } catch {
                                                 toast.error("Failed to copy Style Guide (Design Tokens)");
                                             }
                                         }}
@@ -469,7 +517,7 @@ function ProjectContent({ project, components, artifacts }: any) {
                                         </Badge>
                                     </div>
                                     <p className="text-slate-500 font-medium">
-                                        These external CDN resources must be added to your Webflow project's custom code settings.
+                                        These external CDN resources must be added to your Webflow project&apos;s custom code settings.
                                     </p>
                                 </div>
 
@@ -516,7 +564,7 @@ function ProjectContent({ project, components, artifacts }: any) {
                             <div className="space-y-2">
                                 <h3 className="text-2xl font-bold text-slate-900">Custom Embeds</h3>
                                 <p className="text-slate-500 font-medium">
-                                    These custom code fragments (JS/CSS) must be pasted into Webflow Embed elements because they aren't supported natively.
+                                    These custom code fragments (JS/CSS) must be pasted into Webflow Embed elements because they aren&apos;t supported natively.
                                 </p>
                             </div>
 

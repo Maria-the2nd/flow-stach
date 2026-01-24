@@ -37,6 +37,6 @@ export interface WebflowClipboardData {
   payload: {
     nodes: WebflowNode[];
     styles: WebflowStyle[];
-    assets: any[];
+    assets: unknown[];
   };
 }

@@ -955,14 +955,6 @@ export async function POST(request: Request) {
     ? validateJSEmbed(extractedEmbedContent.js)
     : { valid: true, errors: [], warnings: [], size: 0, sizeFormatted: '0B' };
 
-  // Validate library imports
-  const libraryImportValidation = libraryDetection.scripts.length > 0
-    ? validateLibraryImports({
-        scripts: libraryDetection.scripts,
-        styles: libraryDetection.styles,
-      })
-    : { valid: true, errors: [], warnings: [] };
-
   // Webflow JSON validation (already done above)
   const webflowValidation = {
     valid: safetyGate.preflight.isValid,

@@ -312,22 +312,22 @@ describe("CSS Minifier", () => {
       expect(result.warning).toBeUndefined();
     });
 
-    it("detects CSS exceeding soft limit (10KB)", () => {
-      const largishCSS = "a".repeat(11 * 1024); // 11KB
+    it("detects CSS exceeding soft limit (40KB)", () => {
+      const largishCSS = "a".repeat(41 * 1024); // 41KB
       const result = checkSizeLimit(largishCSS);
 
       expect(result.exceedsSoftLimit).toBe(true);
       expect(result.exceedsHardLimit).toBe(false);
-      expect(result.warning).toContain("10KB");
+      expect(result.warning).toContain("40KB");
     });
 
-    it("detects CSS exceeding hard limit (100KB)", () => {
-      const hugeCSS = "a".repeat(101 * 1024); // 101KB
+    it("detects CSS exceeding hard limit (50KB)", () => {
+      const hugeCSS = "a".repeat(51 * 1024); // 51KB
       const result = checkSizeLimit(hugeCSS);
 
       expect(result.exceedsSoftLimit).toBe(true);
       expect(result.exceedsHardLimit).toBe(true);
-      expect(result.warning).toContain("100KB");
+      expect(result.warning).toContain("50KB");
     });
   });
 

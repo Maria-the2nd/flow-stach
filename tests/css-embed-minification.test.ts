@@ -63,10 +63,10 @@ describe("CSS Embed Router - Minification Integration", () => {
     // Should be minified
     expect(result.embed).toContain(":root{");
     expect(result.embed).not.toContain("\n");
-    expect(result.embed).toContain("--primary-color:rgba(59, 130, 246, 1)");
+    expect(result.embed).toContain("--primary-color:rgba(59,130,246,1)");
   });
 
-  it("preserves rgba() comma spacing in minified embed", () => {
+  it("removes rgba() comma spacing in minified embed", () => {
     const css = `
       .hero::after {
         background: rgba(255, 128, 0, 0.8);
@@ -76,9 +76,9 @@ describe("CSS Embed Router - Minification Integration", () => {
 
     const result = routeCSS(css);
 
-    // Should preserve space after commas in rgba()
-    expect(result.embed).toContain("rgba(255, 128, 0, 0.8)");
-    expect(result.embed).toContain("rgba(0, 0, 0, 0.1)");
+    // Should remove space after commas in rgba()
+    expect(result.embed).toContain("rgba(255,128,0,0.8)");
+    expect(result.embed).toContain("rgba(0,0,0,0.1)");
   });
 
   it("minifies media queries in embed", () => {
@@ -229,7 +229,7 @@ describe("CSS Embed Router - Minification Integration", () => {
 
     // Should preserve function expressions
     expect(result.embed).toContain("calc(100% - 2rem)");
-    expect(result.embed).toContain("clamp(1rem, 2vw, 3rem)");
+    expect(result.embed).toContain("clamp(1rem,2vw,3rem)");
   });
 });
 

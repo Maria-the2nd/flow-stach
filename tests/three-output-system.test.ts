@@ -7,7 +7,7 @@
  * 3. JS Embed Block (CDN scripts + user code)
  */
 
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect } from 'vitest';
 import { convertSectionToWebflow } from '../lib/webflow-converter';
 import type { DetectedSection } from '../lib/html-parser';
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import Link from "next/link"
 import { useUser } from "@clerk/nextjs"
 import { useMutation } from "convex/react"
@@ -24,11 +24,10 @@ import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { SafetyReportPanel } from "@/components/validation/SafetyReportPanel"
 import { Loader2 } from "lucide-react"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 
 import { extractCleanHtml, extractJsHooks, extractCssForSection, getClassesUsed } from "@/lib/html-parser"
@@ -39,13 +38,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { extractTokens, extractEnhancedTokens, extractFontFamilies, extractGoogleFontsUrl, type TokenExtraction, type EnhancedTokenExtraction } from "@/lib/token-extractor"
+import { extractEnhancedTokens, type TokenExtraction, type EnhancedTokenExtraction } from "@/lib/token-extractor"
 import { parseCSS, type ClassIndex } from "@/lib/css-parser"
 import { componentizeHtml, type ComponentTree, type Component } from "@/lib/componentizer"
 import { buildCssTokenPayload, buildComponentPayload, validateForWebflowPaste } from "@/lib/webflow-converter"
 import { copyWebflowJson } from "@/lib/clipboard"
 import { normalizeHtmlCssForWebflow } from "@/lib/webflow-normalizer"
 import { literalizeCssForWebflow } from "@/lib/webflow-literalizer"
+import { ensureWebflowPasteSafety } from "@/lib/webflow-safety-gate"
 import { diagnoseVisibilityIssues } from "@/lib/webflow-verifier"
 import { extractImages, type ImageAsset } from "@/lib/image-extractor"
 import {
@@ -65,6 +65,15 @@ interface UnsupportedContentResult {
   hasReact: boolean
   hasTailwind: boolean
   hasTypescript: boolean
+}
+
+type DetectedFont = {
+  name: string
+  source: string
+  url?: string
+  status: string
+  warning?: boolean
+  installationGuide: string
 }
 
 /**
@@ -295,357 +304,6 @@ function ArtifactViewer({ content, maxHeight = "400px" }: { content: string; max
   )
 }
 
-function TokensTab(props: {
-  tokensCss: string
-  tokensJson: string
-  tokenWebflowJson: string | null
-  onCopyTokens: () => Promise<void>
-  warnings: string[]
-  fontInfo?: { googleFonts?: string; families?: string[] }
-  externalScripts?: string[]
-}) {
-  const { tokenWebflowJson, onCopyTokens, warnings, fontInfo, externalScripts } = props
-  const [copied, setCopied] = useState(false)
-
-  const handleCopyToWebflow = async () => {
-    if (!tokenWebflowJson) {
-      toast.error("No token payload available")
-      return
-    }
-    await onCopyTokens()
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const handleCopyFontUrl = () => {
-    if (fontInfo?.googleFonts) {
-      navigator.clipboard.writeText(fontInfo.googleFonts)
-      toast.success("Font URL copied")
-    }
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Step 1: Fonts */}
-      {fontInfo?.families && fontInfo.families.length > 0 && (
-        <Card className="border-blue-500/50 border-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-600 text-xl font-bold">
-              <HugeiconsIcon icon={CodeIcon} size={24} />
-              Step 1: Install Fonts
-            </CardTitle>
-            <CardDescription className="text-base font-semibold">
-              Add these fonts to your Webflow project BEFORE pasting components.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex flex-col gap-4">
-              {fontInfo.families.map((font) => (
-                <div key={font} className="flex flex-col">
-                  <span className="text-3xl font-extrabold mb-1">
-                    Please install {font} and wait
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {fontInfo.googleFonts && (
-              <div className="text-sm font-mono text-muted-foreground bg-muted/50 p-2 rounded break-all">
-                {fontInfo.googleFonts}
-              </div>
-            )}
-
-            <div className="bg-blue-50  p-4 rounded-lg border border-blue-200  text-sm">
-              <p className="font-bold text-blue-900  mb-2">Instructions:</p>
-              <ol className="list-decimal list-inside space-y-2 text-blue-800/80 ">
-                <li>Go to <strong>Site Settings → Fonts</strong> in Webflow</li>
-                <li>Search and add each font listed above</li>
-                <li><strong>Wait</strong> for the fonts to be ready in the Designer</li>
-                <li>Proceed to Step 2 below</li>
-              </ol>
-            </div>
-
-            {fontInfo.googleFonts && (
-              <Button variant="outline" className="w-full text-blue-700" onClick={handleCopyFontUrl}>
-                <HugeiconsIcon icon={Copy01Icon} size={16} className="mr-2" />
-                Copy Font URL
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 2: External Scripts */}
-      {externalScripts && externalScripts.length > 0 && (
-        <Card className="border-amber-500/50 border-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-600 text-xl font-bold">
-              <HugeiconsIcon icon={JavaScriptIcon} size={24} />
-              Step {fontInfo?.families && fontInfo.families.length > 0 ? 2 : 1}: External Scripts
-            </CardTitle>
-            <CardDescription className="text-base font-semibold">
-              Add these scripts to your Webflow project settings (Custom Code).
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-2">
-              {externalScripts.map((url) => (
-                <div key={url} className="bg-muted p-2 rounded text-sm font-mono break-all flex justify-between items-center">
-                  <span>{url}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`<script src="${url}"></script>`)
-                      toast.success("Script tag copied")
-                    }}
-                  >
-                    <HugeiconsIcon icon={Copy01Icon} size={14} />
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <div className="bg-amber-50  p-4 rounded-lg border border-amber-200  text-sm mt-4">
-              <p className="font-bold text-amber-900  mb-2">Instructions:</p>
-              <ol className="list-decimal list-inside space-y-2 text-amber-800/80 ">
-                <li>Go to <strong>Site Settings → Custom Code</strong> in Webflow</li>
-                <li>Add these script tags to the <strong>Head Code</strong> or <strong>Footer Code</strong></li>
-                <li>Save and Publish changes</li>
-              </ol>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 3: Style Guide (Design Tokens) */}
-      <Card className="border-2 border-primary/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl font-bold">
-            <HugeiconsIcon icon={PaintBoardIcon} size={24} />
-            Step {
-              (fontInfo?.families && fontInfo.families.length > 0 ? 1 : 0) +
-              (externalScripts && externalScripts.length > 0 ? 1 : 0) +
-              1
-            }: Copy Style Guide (Design Tokens)
-          </CardTitle>
-          <CardDescription className="text-base">
-            Paste this <strong>FIRST</strong> into Webflow. Delete the div you just created after pasting, then proceed with the components.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button size="lg" className="w-full text-lg h-14" onClick={handleCopyToWebflow} disabled={!tokenWebflowJson}>
-            <HugeiconsIcon icon={copied ? CheckmarkCircle01Icon : Copy01Icon} size={24} className="mr-2" />
-            {copied ? "Copied! Paste in Webflow" : "Copy Style Guide (Design Tokens) to Webflow"}
-          </Button>
-          {!tokenWebflowJson && <p className="text-sm text-muted-foreground mt-2 text-center">Token payload will be generated after parsing HTML.</p>}
-        </CardContent>
-      </Card>
-
-
-      {warnings.length > 0 && (
-        <CollapsibleSection title={`Warnings (${warnings.length})`}>
-          <ul className="text-sm text-muted-foreground space-y-1">
-            {warnings.map((w, i) => (
-              <li key={i}>• {w}</li>
-            ))}
-          </ul>
-        </CollapsibleSection>
-      )}
-    </div>
-  )
-}
-
-function CssTab({ stylesCss, classIndex }: { stylesCss: string; classIndex: ClassIndex }) {
-  const handleCopy = () => {
-    navigator.clipboard.writeText(stylesCss)
-    toast.success("CSS copied to clipboard")
-  }
-  return (
-    <div className="space-y-6">
-      <CollapsibleSection
-        title="styles.css"
-        rightElement={
-          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleCopy() }}>
-            <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
-            Copy
-          </Button>
-        }
-      >
-        <ArtifactViewer content={stylesCss} />
-      </CollapsibleSection>
-
-      <CollapsibleSection
-        title={`Class Coverage (${Object.keys(classIndex.classes).length} classes)`}
-      >
-        <ArtifactViewer content={JSON.stringify(classIndex, null, 2)} maxHeight="300px" />
-      </CollapsibleSection>
-    </div>
-  )
-}
-
-function HtmlTab(props: {
-  cleanHtml: string
-  componentTree: ComponentTree | null
-  classIndex: ClassIndex
-  establishedClasses: Set<string>
-  tokensPasted: boolean
-  skipEstablishedStyles: boolean
-  onSkipEstablishedStylesChange: (v: boolean) => void
-  onCopyComponent: (c: Component) => void
-}) {
-  const {
-    cleanHtml,
-    componentTree,
-    establishedClasses,
-    tokensPasted,
-    skipEstablishedStyles,
-    onSkipEstablishedStylesChange,
-    onCopyComponent,
-  } = props
-
-  const orderedComponents = componentTree
-    ? [...componentTree.components].sort((a, b) => a.order - b.order)
-    : []
-  const navComponent = orderedComponents.find((c) => c.type === "nav")
-  const heroComponent = orderedComponents.find((c) => c.type === "hero")
-  const fullPageComponent: Component = {
-    id: "full-page-copy",
-    name: "Full Page (Whole Site)",
-    type: "wrapper",
-    tagName: "div",
-    primaryClass: "",
-    htmlContent: `<div>\n${cleanHtml}\n</div>`,
-    classesUsed: [],
-    assetsUsed: [],
-    jsHooks: [],
-    children: [],
-    order: -2,
-  }
-  const headerComboComponent: Component | null =
-    navComponent && heroComponent
-      ? {
-        id: "header-combo",
-        name: "Header (Nav + Hero)",
-        type: "header",
-        tagName: "div",
-        primaryClass: "",
-        htmlContent: `<div>\n${navComponent.htmlContent}\n${heroComponent.htmlContent}\n</div>`,
-        classesUsed: [],
-        assetsUsed: [],
-        jsHooks: Array.from(new Set([...navComponent.jsHooks, ...heroComponent.jsHooks])),
-        children: [],
-        order: -1,
-      }
-      : null
-
-  const handleCopyHtml = () => {
-    navigator.clipboard.writeText(cleanHtml)
-    toast.success("HTML copied to clipboard")
-  }
-
-  return (
-    <div className="space-y-6">
-      <CollapsibleSection
-        title="clean.html"
-        rightElement={
-          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleCopyHtml() }}>
-            <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
-            Copy
-          </Button>
-        }
-      >
-        <ArtifactViewer content={cleanHtml} />
-      </CollapsibleSection>
-
-      {componentTree && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Components ({componentTree.components.length})</CardTitle>
-            <CardDescription className="text-amber-600  font-medium">
-              ⚠️ These are for copying to Webflow. To save in this app, click &quot;Save to Database&quot; above.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="skipEstablishedStyles">Skip established styles</Label>
-              <input
-                id="skipEstablishedStyles"
-                type="checkbox"
-                checked={skipEstablishedStyles}
-                onChange={(e) => onSkipEstablishedStylesChange(e.target.checked)}
-              />
-              <span className="text-xs text-muted-foreground">
-                {tokensPasted
-                  ? "Tokens pasted. Skipping reduces '-2' duplicates."
-                  : "Paste tokens first to enable skipping."}
-              </span>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border p-3">
-                <div className="text-sm font-medium">{fullPageComponent.name}</div>
-                <div className="mt-1 text-xs text-muted-foreground">Includes styles. Paste in Webflow canvas.</div>
-                <Button size="sm" variant="default" className="mt-3 w-full bg-blue-600 hover:bg-blue-700" onClick={() => onCopyComponent(fullPageComponent)}>
-                  Copy to Webflow
-                </Button>
-              </div>
-              {headerComboComponent && (
-                <div className="rounded-lg border p-3">
-                  <div className="text-sm font-medium">{headerComboComponent.name}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {navComponent?.name} + {heroComponent?.name}
-                  </div>
-                  <Button size="sm" variant="default" className="mt-3 w-full bg-blue-600 hover:bg-blue-700" onClick={() => onCopyComponent(headerComboComponent)}>
-                    Copy to Webflow
-                  </Button>
-                </div>
-              )}
-              {componentTree.components.map((c) => (
-                <div key={c.id} className="rounded-lg border p-3">
-                  <div className="text-sm font-medium">{c.name}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {c.classesUsed.slice(0, 6).join(" ")}
-                  </div>
-                  <Button size="sm" variant="default" className="mt-3 w-full bg-blue-600 hover:bg-blue-700" onClick={() => onCopyComponent(c)}>
-                    Copy to Webflow
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <CollapsibleSection title={`Established Classes (${establishedClasses.size})`}>
-        <ArtifactViewer content={Array.from(establishedClasses).join("\n")} maxHeight="300px" />
-      </CollapsibleSection>
-    </div>
-  )
-}
-
-function JsTab({ scriptsJs }: { scriptsJs: string }) {
-  const handleCopyJs = () => {
-    if (!scriptsJs) return
-    navigator.clipboard.writeText(scriptsJs)
-    toast.success("JavaScript copied")
-  }
-  return (
-    <div className="space-y-6">
-      <CollapsibleSection
-        title="scripts.js"
-        rightElement={
-          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleCopyJs() }} disabled={!scriptsJs}>
-            <HugeiconsIcon icon={Copy01Icon} size={14} className="mr-1" />
-            Copy
-          </Button>
-        }
-      >
-        <ArtifactViewer content={scriptsJs || "// No JavaScript found"} maxHeight="300px" />
-      </CollapsibleSection>
-    </div>
-  )
-}
-
 export function ImportWizard() {
   const { isLoaded: isUserLoaded } = useUser()
   const importProject = useMutation(api.import.importProject)
@@ -661,11 +319,9 @@ export function ImportWizard() {
   const [tokenExtraction, setTokenExtraction] = useState<TokenExtraction | null>(null)
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
-  const [tokensPasted, setTokensPasted] = useState(false)
   const [skipEstablishedStyles, setSkipEstablishedStyles] = useState(true)
-  const [validationWarnings, setValidationWarnings] = useState<string[]>([])
   const [detectedImages, setDetectedImages] = useState<ImageAsset[]>([])
-  const [detectedFonts, setDetectedFonts] = useState<any[]>([])
+  const [detectedFonts, setDetectedFonts] = useState<DetectedFont[]>([])
   const [llmSummary, setLlmSummary] = useState<LlmSummary | null>(null)
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>("idle")
   const [unsupportedContentDialog, setUnsupportedContentDialog] = useState<{
@@ -917,13 +573,16 @@ export function ImportWizard() {
       setTokenWebflowJson(JSON.stringify(tokenPayloadResult.webflowPayload))
       setEstablishedClasses(tokenPayloadResult.establishedClasses)
       setTokenExtraction(tokens)
-      setValidationWarnings([
+      const combinedWarnings = [
         ...warnings,
         ...tokenPayloadResult.warnings,
         ...normalization.warnings,
         ...literalization.warnings,
         ...visibilityWarnings,
-      ])
+      ]
+      if (combinedWarnings.length > 0) {
+        console.info("Import warnings:", combinedWarnings)
+      }
 
       // Extract images for the database
       const images = extractImages(normalization.html, literalization.css)
@@ -986,25 +645,25 @@ export function ImportWizard() {
     }
   }, [htmlInput, projectName, projectSlug])
 
-  const handleCopyTokens = useCallback(async () => {
-    if (!tokenWebflowJson) {
-      toast.error("No token payload available")
-      return
+  const componentSafetyReports = useMemo(() => {
+    if (!artifacts || !componentTree) {
+      return new Map<string, ReturnType<typeof ensureWebflowPasteSafety>["report"]>()
     }
-    try {
-      const payload = JSON.parse(tokenWebflowJson)
-      const result = await copyWebflowJson(payload)
-      if (result.success) {
-        setTokensPasted(true)
-        toast.success("Token styles copied! Paste in Webflow Designer.")
-      } else {
-        toast.error("Failed to copy to clipboard")
+
+    const reports = new Map<string, ReturnType<typeof ensureWebflowPasteSafety>["report"]>()
+    for (const component of componentTree.components) {
+      try {
+        const result = buildComponentPayload(component, artifacts.classIndex, establishedClasses, {
+          skipEstablishedStyles,
+        })
+        const safety = ensureWebflowPasteSafety({ payload: result.webflowPayload })
+        reports.set(component.id, safety.report)
+      } catch {
+        // Skip report if payload fails to build or validate
       }
-    } catch (error) {
-      console.error("Copy error:", error)
-      toast.error("Failed to copy token payload")
     }
-  }, [tokenWebflowJson])
+    return reports
+  }, [artifacts, componentTree, establishedClasses, skipEstablishedStyles])
 
   const handleCopyComponent = useCallback(
     async (component: Component) => {
@@ -1154,7 +813,19 @@ export function ImportWizard() {
     } finally {
       setIsImporting(false)
     }
-  }, [artifacts, componentTree, tokenExtraction, projectName, projectSlug, tokenWebflowJson, htmlInput, establishedClasses, importProject])
+  }, [
+    artifacts,
+    componentTree,
+    tokenExtraction,
+    projectName,
+    projectSlug,
+    tokenWebflowJson,
+    htmlInput,
+    establishedClasses,
+    importProject,
+    detectedImages,
+    detectedFonts,
+  ])
 
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -1201,7 +872,6 @@ export function ImportWizard() {
     setTokenExtraction(null)
     setImportResult(null)
     setValidationWarnings([])
-    setTokensPasted(false)
     setSkipEstablishedStyles(false)
     setLlmSummary(null)
   }, [])
@@ -1256,7 +926,7 @@ export function ImportWizard() {
         </h1>
         <p className="max-w-xl text-slate-500 font-medium text-sm sm:text-base leading-relaxed">
           Inject any AI-generated HTML/CSS into your library. <br className="hidden sm:block" />
-          We'll automatically extract components, tokens, and assets.
+          We&apos;ll automatically extract components, tokens, and assets.
         </p>
       </div>
 
@@ -1418,27 +1088,40 @@ export function ImportWizard() {
               </div>
 
               <div className="grid gap-3 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
-                {componentTree?.components.map((c) => (
-                  <div key={c.id} className="glass-card border-none rounded-[32px] p-6 flex items-center justify-between hover:bg-white/80 transition-all border border-transparent hover:border-slate-100 group">
-                    <div className="flex items-center gap-5">
-                      <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 font-black text-sm">
-                        {c.type === "nav" ? "NAV" : c.type === "hero" ? "HERO" : "SEC"}
+                {componentTree?.components.map((c) => {
+                  const safetyReport = componentSafetyReports.get(c.id)
+                  return (
+                    <div key={c.id} className="glass-card border-none rounded-[32px] p-6 hover:bg-white/80 transition-all border border-transparent hover:border-slate-100 group">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-5">
+                          <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 font-black text-sm">
+                            {c.type === "nav" ? "NAV" : c.type === "hero" ? "HERO" : "SEC"}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900">{c.name}</div>
+                            <div className="text-[10px] uppercase font-bold tracking-widest text-slate-400">{c.classesUsed.length} classes detected</div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="rounded-full bg-slate-50 text-slate-900 font-bold hover:bg-blue-600 hover:text-white transition-all text-[10px] group-hover:px-6"
+                          onClick={() => handleCopyComponent(c)}
+                        >
+                          COPY
+                        </Button>
                       </div>
-                      <div>
-                        <div className="font-bold text-slate-900">{c.name}</div>
-                        <div className="text-[10px] uppercase font-bold tracking-widest text-slate-400">{c.classesUsed.length} classes detected</div>
-                      </div>
+                      {safetyReport && (
+                        <details className="mt-4 rounded-2xl border border-slate-100 bg-white/70 p-3 text-xs">
+                          <summary className="cursor-pointer font-semibold text-slate-700">Safety Report</summary>
+                          <div className="mt-3">
+                            <SafetyReportPanel report={safetyReport} />
+                          </div>
+                        </details>
+                      )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="rounded-full bg-slate-50 text-slate-900 font-bold hover:bg-blue-600 hover:text-white transition-all text-[10px] group-hover:px-6"
-                      onClick={() => handleCopyComponent(c)}
-                    >
-                      COPY
-                    </Button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -1477,7 +1160,7 @@ export function ImportWizard() {
                     {llmSummary.htmlMutations} Adjustments
                   </div>
                   <p className="text-xs font-medium text-white/70 leading-relaxed uppercase tracking-wider italic">
-                    "AI parsed your architecture and mapped {llmSummary.renamedComponents} custom components with semantic accuracy."
+                    &ldquo;AI parsed your architecture and mapped {llmSummary.renamedComponents} custom components with semantic accuracy.&rdquo;
                   </p>
                 </div>
                 <div className="pt-4 border-t border-white/10 flex justify-between items-center text-[10px] font-black tracking-[0.2em] opacity-80 uppercase">

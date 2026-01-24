@@ -271,7 +271,7 @@ export function InsertPanel() {
             <li>Copy Webflow JSON from Flow Stach or your code</li>
             <li>Paste it in the textarea above</li>
             <li>Select an element in the Webflow canvas (optional)</li>
-            <li>Click "Insert into Canvas"</li>
+            <li>Click &ldquo;Insert into Canvas&rdquo;</li>
           </ol>
           <p>
             <strong>Note:</strong> Elements will be inserted as children of the selected element,

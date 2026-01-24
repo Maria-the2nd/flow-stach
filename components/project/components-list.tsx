@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Copy, CheckCircle } from "lucide-react";
 import { copyWebflowJson, copyText } from "@/lib/clipboard";
+import { isPlaceholderPayload } from "@/lib/payload-utils";
+import { ensureWebflowPasteSafety } from "@/lib/webflow-safety-gate";
+import { SafetyReportPanel } from "@/components/validation/SafetyReportPanel";
 
 interface Component {
   _id: string;
@@ -112,7 +115,19 @@ export function ComponentsList({ components }: ComponentsListProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {components.map(({ component, payload }) => (
+        {components.map(({ component, payload }) => {
+          const safetyReport = (() => {
+            if (!payload?.webflowJson || isPlaceholderPayload(payload.webflowJson)) return null;
+            try {
+              return ensureWebflowPasteSafety({
+                payload: payload.webflowJson,
+              }).report;
+            } catch {
+              return null;
+            }
+          })();
+
+          return (
           <Card key={component._id} className="!bg-white/80 backdrop-blur-xl border-slate-200 shadow-xl shadow-slate-200/50 rounded-[24px] overflow-hidden hover:border-blue-200 transition-all">
             <CardContent className="p-8">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -156,9 +171,19 @@ export function ComponentsList({ components }: ComponentsListProps) {
                   )}
                 </div>
               </div>
+              {safetyReport && (
+                <details className="mt-5 rounded-xl border border-slate-200 bg-white/70 p-3 text-sm">
+                  <summary className="cursor-pointer font-semibold text-slate-700">
+                    Safety Report
+                  </summary>
+                  <div className="mt-3">
+                    <SafetyReportPanel report={safetyReport} />
+                  </div>
+                </details>
+              )}
             </CardContent>
           </Card>
-        ))}
+        )})}
       </div>
 
       {/* Summary */}

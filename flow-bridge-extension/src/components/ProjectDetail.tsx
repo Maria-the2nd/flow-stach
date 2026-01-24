@@ -87,7 +87,7 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
         <div className="empty-icon">📋</div>
         <div className="empty-title">No copyable artifacts</div>
         <div className="empty-desc">
-          This project doesn't have any artifacts that can be copied
+          This project doesn&apos;t have any artifacts that can be copied
         </div>
       </div>
     )

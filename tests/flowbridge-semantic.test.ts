@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "fs";
-import assert from "assert";
+import { describe, it, expect } from "vitest";
 import { extractCleanHtml } from "../lib/html-parser";
 import { normalizeHtmlCssForWebflow } from "../lib/webflow-normalizer";
 import { parseCSS } from "../lib/css-parser";
@@ -11,50 +11,55 @@ import {
 } from "../lib/flowbridge-semantic";
 import { requestFlowbridgeSemanticPatch } from "../lib/flowbridge-llm";
 
-async function run() {
-  const primaryPath = "/mnt/data/flow-bridge-bento.html";
-  const fallbackPath = "temp/tests/flow-bridge-bento.html";
-  const inputPath = existsSync(primaryPath) ? primaryPath : fallbackPath;
+describe("flowbridge semantic patching", () => {
+  it("uses mock LLM responses and applies component naming", async () => {
+    const primaryPath = "/mnt/data/flow-bridge-bento.html";
+    const fallbackPath = "temp/tests/flow-bridge-bento.html";
+    const inputPath = existsSync(primaryPath) ? primaryPath : fallbackPath;
 
-  const html = readFileSync(inputPath, "utf-8");
-  const clean = extractCleanHtml(html);
-  const normalization = normalizeHtmlCssForWebflow(clean.cleanHtml, clean.extractedStyles);
-  const cssResult = parseCSS(normalization.css);
+    expect(existsSync(inputPath)).toBe(true);
 
-  let components = componentizeHtml(normalization.html);
-  const namingResult = applyDeterministicComponentNames(components);
-  components = namingResult.componentTree;
-  const semanticContext = buildSemanticPatchRequest(
-    normalization.html,
-    components,
-    cssResult.classIndex,
-    cssResult.cssVariables
-  );
+    const html = readFileSync(inputPath, "utf-8");
+    const clean = extractCleanHtml(html);
+    const normalization = normalizeHtmlCssForWebflow(clean.cleanHtml, clean.extractedStyles);
+    const cssResult = parseCSS(normalization.css);
 
-  process.env.USE_LLM = "0";
-  process.env.FLOWBRIDGE_LLM_MOCK = "1";
-  const disabled = await requestFlowbridgeSemanticPatch(semanticContext.request, { model: "mock" });
-  assert.strictEqual(disabled.patch, null, "LLM should be disabled when USE_LLM=0");
+    let components = componentizeHtml(normalization.html);
+    const namingResult = applyDeterministicComponentNames(components);
+    components = namingResult.componentTree;
+    const semanticContext = buildSemanticPatchRequest(
+      normalization.html,
+      components,
+      cssResult.classIndex,
+      cssResult.cssVariables
+    );
 
-  process.env.USE_LLM = "1";
-  const response = await requestFlowbridgeSemanticPatch(semanticContext.request, { model: "mock" });
-  assert(response.patch, "Expected mock LLM response");
+    const originalUseLlm = process.env.USE_LLM;
+    const originalMock = process.env.FLOWBRIDGE_LLM_MOCK;
 
-  const patched = applySemanticPatchResponse({
-    componentTree: components,
-    patch: response.patch,
+    try {
+      process.env.USE_LLM = "0";
+      process.env.FLOWBRIDGE_LLM_MOCK = "1";
+      const disabled = await requestFlowbridgeSemanticPatch(semanticContext.request, { model: "mock" });
+      expect(disabled.patch).toBeNull();
+
+      process.env.USE_LLM = "1";
+      const response = await requestFlowbridgeSemanticPatch(semanticContext.request, { model: "mock" });
+      expect(response.patch).toBeTruthy();
+
+      const patched = applySemanticPatchResponse({
+        componentTree: components,
+        patch: response.patch!,
+      });
+
+      const names = patched.componentTree.components.map((component) => component.name);
+      const expected = ["Nav", "Hero", "Bento/Features", "Problem", "How it works", "Pricing", "Footer"];
+      expected.forEach((name) => {
+        expect(names).toContain(name);
+      });
+    } finally {
+      process.env.USE_LLM = originalUseLlm;
+      process.env.FLOWBRIDGE_LLM_MOCK = originalMock;
+    }
   });
-
-  const names = patched.componentTree.components.map((component) => component.name);
-  const expected = ["Nav", "Hero", "Bento/Features", "Problem", "How it works", "Pricing", "Footer"];
-  expected.forEach((name) => {
-    assert(names.includes(name), `Missing component name: ${name}`);
-  });
-
-  console.log("flowbridge-semantic test passed");
-}
-
-run().catch((error) => {
-  console.error(error);
-  process.exit(1);
 });

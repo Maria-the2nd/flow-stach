@@ -4,21 +4,18 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { UploadCloud, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from 'next/link';
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle, FileText, Files, CheckCircle2, Loader2 } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { processProjectImport, ProcessingStage } from "@/lib/project-engine";
-import { useRouter } from "next/navigation";
+import { processProjectImport } from "@/lib/project-engine";
 import { toast } from "sonner";
 
 export default function ImportPage() {
-    const router = useRouter();
     const importMutation = useMutation(api.import.importProject);
 
     const [importType, setImportType] = useState<'single' | 'multi'>('single');
@@ -110,7 +107,7 @@ export default function ImportPage() {
             const reader = new FileReader();
             const fileContent = await new Promise<string>((resolve, reject) => {
                 reader.onload = (e) => resolve(e.target?.result as string);
-                reader.onerror = (e) => reject(new Error("Failed to read file"));
+                reader.onerror = () => reject(new Error("Failed to read file"));
                 reader.readAsText(selectedFile);
             });
 
@@ -149,9 +146,10 @@ export default function ImportPage() {
             } else {
                 throw new Error("Failed to create project record");
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Import error:", err);
-            setError(err.message || "An unexpected error occurred during import");
+            const message = err instanceof Error ? err.message : "An unexpected error occurred during import";
+            setError(message);
             setIsImporting(false);
         }
     };
@@ -164,7 +162,7 @@ export default function ImportPage() {
                 </div>
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 mb-2">Import Successful</h1>
-                    <p className="text-slate-500">Your project "{projectName}" is ready and converted.</p>
+                    <p className="text-slate-500">Your project &ldquo;{projectName}&rdquo; is ready and converted.</p>
                 </div>
                 <Link href={`/workspace/projects/${newProjectId}`}>
                     <Button className="bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200/50 px-12 h-14 rounded-2xl font-bold text-lg">
