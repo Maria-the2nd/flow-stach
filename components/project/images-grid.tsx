@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -140,13 +141,16 @@ export function ImagesGrid({ images }: ImagesGridProps) {
                 {/* Image Preview */}
                 {canDisplay && !isDataUri ? (
                   <div className="relative aspect-video bg-slate-50 border-b border-slate-100 overflow-hidden group">
-                    <img
+                    <Image
                       src={image.url}
                       alt={`Asset ${idx + 1}`}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      onError={(event) => {
+                        (event.currentTarget as HTMLImageElement).style.display = "none";
                       }}
+                      unoptimized
                     />
                     {isOversized && (
                       <div className="absolute inset-0 bg-blue-600/30 backdrop-blur-md flex items-center justify-center p-4 transition-all group-hover:bg-blue-600/40">

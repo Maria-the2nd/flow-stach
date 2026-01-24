@@ -4,7 +4,7 @@
  * that won't conflict with imported project styles
  */
 
-import type { WebflowPayload, WebflowNode, WebflowStyle } from "./webflow-converter";
+import type { WebflowPayload, WebflowNode } from "./webflow-converter";
 import type { EnhancedTokenExtraction, TokenVariable, RadiusToken, ShadowToken } from "./token-extractor";
 
 interface StyleGuideOptions {
@@ -138,14 +138,11 @@ export function generateStyleGuidePayload(
     childrenIds.push(headerSectionId);
   }
 
-  let sectionCount = 0;
-  
   // Colors Section
   const colorTokens = tokens.variables.filter(v => v.type === 'color');
   if (colorTokens.length > 0) {
     const colorSectionId = generateColorsSection(colorTokens, nodes, genId, ISOLATED_STYLES, inlineStyle);
     childrenIds.push(colorSectionId);
-    sectionCount++;
   }
 
   // Typography Section
@@ -153,7 +150,6 @@ export function generateStyleGuidePayload(
   if (typographyTokens.length > 0 || tokens.fonts?.families) {
     const typographySectionId = generateTypographySection(tokens, nodes, genId, ISOLATED_STYLES, inlineStyle);
     childrenIds.push(typographySectionId);
-    sectionCount++;
   }
 
   // Spacing Section - Show if tokens exist OR show defaults
@@ -167,26 +163,22 @@ export function generateStyleGuidePayload(
   ];
   const spacingSectionId = generateSpacingSection(spacingToShow, nodes, genId, ISOLATED_STYLES, inlineStyle);
   childrenIds.push(spacingSectionId);
-  sectionCount++;
 
   // Radius Section
   if (tokens.radius && tokens.radius.length > 0) {
     const radiusSectionId = generateRadiusSection(tokens.radius, nodes, genId, ISOLATED_STYLES, inlineStyle);
     childrenIds.push(radiusSectionId);
-    sectionCount++;
   }
 
   // Shadows Section
   if (tokens.shadows && tokens.shadows.length > 0) {
     const shadowsSectionId = generateShadowsSection(tokens.shadows, nodes, genId, ISOLATED_STYLES, inlineStyle);
     childrenIds.push(shadowsSectionId);
-    sectionCount++;
   }
 
   // UI Components Section - ALWAYS show this with examples
   const uiComponentsSectionId = generateUIComponentsSection(tokens, nodes, genId, ISOLATED_STYLES, inlineStyle);
   childrenIds.push(uiComponentsSectionId);
-  sectionCount++;
 
   // Mark last section to remove bottom border
   if (childrenIds.length > 0) {

@@ -28,6 +28,16 @@ Library layer:
 - Always scope reads/writes by `userId` (Clerk subject) for user-owned objects (imports, derived assets).
 - Do not introduce concepts that current-state explicitly excludes (teams, shared ownership, purchases/orders).
 
+## Generated types (REQUIRED after schema changes)
+
+If you change `convex/schema.ts` (or Convex function signatures), regenerate and commit `convex/_generated/*`:
+
+```bash
+bunx convex codegen
+```
+
+Details live in `docs/development/convex-types.md`.
+
 ## Pipeline expectations (high level)
 
 Import processing produces:

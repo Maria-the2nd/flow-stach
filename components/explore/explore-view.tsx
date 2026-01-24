@@ -5,6 +5,7 @@ import { useState } from "react";
 import { PUBLIC_TEMPLATES, PUBLIC_COMPONENTS, PUBLIC_TOOLS } from "./mock-data";
 import { Button } from "@/components/ui/button";
 import Link from 'next/link';
+import Image from "next/image";
 import { Layers, Box, Wrench, ArrowRight } from "lucide-react";
 
 export function ExploreView() {
@@ -51,10 +52,13 @@ export function ExploreView() {
                         {PUBLIC_TEMPLATES.map((item) => (
                             <div key={item.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-2xl hover:border-slate-300 transition-all duration-300 flex flex-col h-full">
                                 <div className="aspect-video bg-slate-50 relative overflow-hidden">
-                                    <img
+                                    <Image
                                         src={item.image}
                                         alt={item.name}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                        fill
+                                        sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                                        className="object-cover group-hover:scale-105 transition-transform duration-700"
+                                        unoptimized
                                     />
                                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-slate-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm tracking-wider uppercase">
                                         {item.price}
@@ -79,10 +83,13 @@ export function ExploreView() {
                         {PUBLIC_COMPONENTS.map((item) => (
                             <div key={item.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-2xl hover:border-slate-300 transition-all duration-300 flex flex-col h-full">
                                 <div className="aspect-video bg-slate-50 relative overflow-hidden">
-                                    <img
+                                    <Image
                                         src={item.image}
                                         alt={item.name}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                        fill
+                                        sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                                        className="object-cover group-hover:scale-105 transition-transform duration-700"
+                                        unoptimized
                                     />
                                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-slate-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm tracking-wider uppercase">
                                         {item.price}

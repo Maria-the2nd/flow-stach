@@ -12,9 +12,14 @@ interface LibraryImportGuideProps {
     styles: string[]
   }
   detectedNames?: string[]
+  validation?: {
+    valid: boolean
+    errors: string[]
+    warnings: string[]
+  }
 }
 
-export function LibraryImportGuide({ libraries, detectedNames }: LibraryImportGuideProps) {
+export function LibraryImportGuide({ libraries, detectedNames, validation }: LibraryImportGuideProps) {
   const hasLibraries = libraries.scripts.length > 0 || libraries.styles.length > 0
 
   if (!hasLibraries) {
@@ -82,6 +87,32 @@ export function LibraryImportGuide({ libraries, detectedNames }: LibraryImportGu
             <li>Save and publish your site</li>
           </ol>
         </div>
+
+        {validation && (validation.errors.length > 0 || validation.warnings.length > 0) && (
+          <div className="space-y-2">
+            {validation.errors.length > 0 && (
+              <div className="p-3 rounded bg-red-50 border border-red-200">
+                <p className="font-medium text-red-900 mb-2 text-sm">Validation Errors:</p>
+                <ul className="list-disc list-inside space-y-1 text-sm text-red-800">
+                  {validation.errors.map((error, idx) => (
+                    <li key={idx}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {validation.warnings.length > 0 && (
+              <div className="p-3 rounded bg-amber-50 border border-amber-200">
+                <p className="font-medium text-amber-900 mb-2 text-sm">Validation Warnings:</p>
+                <ul className="list-disc list-inside space-y-1 text-sm text-amber-800">
+                  {validation.warnings.map((warning, idx) => (
+                    <li key={idx}>{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         {libraries.scripts.length > 0 && (
           <div className="space-y-2">

@@ -300,6 +300,7 @@ export function detectReactPatterns(code: string): ReactPattern[] {
  * Parse a React component file
  */
 export function parseReactComponent(code: string, _fileName: string = 'Component.jsx'): ParsedComponent {
+  void _fileName;
   const warnings: string[] = []
 
   // Parse imports

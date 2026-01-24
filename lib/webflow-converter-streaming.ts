@@ -10,7 +10,7 @@
  */
 
 import type { DetectedSection } from "./html-parser";
-import { parseFullHtml, detectSections, extractCleanHtml, extractCssForSection } from "./html-parser";
+import { parseFullHtml, extractCleanHtml } from "./html-parser";
 import { parseCSS, type ClassIndex } from "./css-parser";
 import type { WebflowPayload, WebflowNode, WebflowStyle } from "./webflow-converter";
 import { convertSectionToWebflow, convertHtmlCssToWebflow } from "./webflow-converter";
@@ -181,11 +181,7 @@ function checkAbort(signal?: AbortSignal): void {
 /**
  * Merge multiple section results into a single Webflow payload
  */
-function mergeResults(
-  sections: SectionResult[],
-  rootTokensCss: string,
-  fullJs: string
-): WebflowPayload {
+function mergeResults(sections: SectionResult[]): WebflowPayload {
   const allNodes: WebflowNode[] = [];
   const allStyles: WebflowStyle[] = [];
   const seenStyleIds = new Set<string>();
@@ -509,7 +505,7 @@ export async function* convertHtmlToWebflowStreaming(
   checkAbort(signal);
 
   // Merge all sections into final payload
-  const finalPayload = mergeResults(sectionResults, parseResult.rootTokens, parseResult.fullJs || js);
+  const finalPayload = mergeResults(sectionResults);
 
   // Run final validation
   const validationResult = createValidationResult(allIssues);

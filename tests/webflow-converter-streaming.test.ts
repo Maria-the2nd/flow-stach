@@ -5,7 +5,7 @@
  * incrementally with proper progress reporting and cancellation support.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   convertHtmlToWebflowStreaming,
   convertWithProgress,
@@ -531,10 +531,9 @@ describe("Streaming Webflow Converter", () => {
       `;
 
       const stream = convertHtmlToWebflowStreaming(singleSectionHtml, cssWithWarnings, "");
-      const { chunks, result } = await collectChunks(stream);
+      const { result } = await collectChunks(stream);
 
       // Should have warning chunks
-      const warningChunks = chunks.filter((c) => c.type === "warning");
       // May or may not have warnings depending on CSS parser behavior
       expect(result.validation).toBeDefined();
     });

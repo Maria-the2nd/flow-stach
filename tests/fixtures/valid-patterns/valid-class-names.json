@@ -1,0 +1,80 @@
+{
+  "name": "Valid Class Names",
+  "description": "Class names without reserved w- prefix should pass without warnings",
+  "category": "valid-patterns",
+  "severity": "info",
+  "payload": {
+    "type": "@webflow/XscpData",
+    "payload": {
+      "nodes": [
+        {
+          "_id": "node-1",
+          "tag": "div",
+          "classes": ["class-1", "class-2", "class-3"],
+          "children": [],
+          "type": "Block"
+        }
+      ],
+      "styles": [
+        {
+          "_id": "class-1",
+          "fake": false,
+          "type": "class",
+          "name": "button-primary",
+          "namespace": "",
+          "comb": "",
+          "styleLess": "background: blue; color: white;",
+          "variants": {},
+          "children": [],
+          "selector": null
+        },
+        {
+          "_id": "class-2",
+          "fake": false,
+          "type": "class",
+          "name": "nav-container",
+          "namespace": "",
+          "comb": "",
+          "styleLess": "display: flex;",
+          "variants": {},
+          "children": [],
+          "selector": null
+        },
+        {
+          "_id": "class-3",
+          "fake": false,
+          "type": "class",
+          "name": "hero-section",
+          "namespace": "",
+          "comb": "",
+          "styleLess": "min-height: 100vh;",
+          "variants": {},
+          "children": [],
+          "selector": null
+        }
+      ],
+      "assets": [],
+      "ix1": [],
+      "ix2": {
+        "interactions": [],
+        "events": [],
+        "actionLists": []
+      }
+    },
+    "meta": {
+      "unlinkedSymbolCount": 0,
+      "droppedLinks": 0,
+      "dynBindRemovedCount": 0,
+      "totalLinks": 0,
+      "pageCount": 1,
+      "inlineOnly": true,
+      "pasted": true,
+      "publishedToWebflow": false
+    }
+  },
+  "expectedResult": {
+    "shouldBlock": false,
+    "shouldSanitize": false,
+    "warnings": []
+  }
+}

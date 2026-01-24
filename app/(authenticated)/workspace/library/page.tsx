@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { LayoutTemplate, Search, ShoppingCart } from "lucide-react";
 import Link from 'next/link';
+import Image from "next/image";
 
 const MOCK_TEMPLATES = [
     {
@@ -52,10 +53,13 @@ export default function TemplatesPage() {
                 {MOCK_TEMPLATES.map((template) => (
                     <div key={template.id} className="group bg-white/90 backdrop-blur-xl rounded-[28px] border border-slate-200 overflow-hidden hover:shadow-2xl hover:border-slate-300 transition-all duration-500 flex flex-col h-full shadow-xl shadow-slate-200/50 relative">
                         <div className="aspect-video bg-slate-100 relative overflow-hidden">
-                            <img
+                            <Image
                                 src={template.image}
                                 alt={template.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                fill
+                                sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                                className="object-cover group-hover:scale-105 transition-transform duration-700"
+                                unoptimized
                             />
                             <div className="absolute top-4 right-4 bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-sm tracking-wider uppercase">
                                 {template.price}

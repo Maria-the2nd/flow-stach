@@ -11,6 +11,7 @@ import {
 } from "./webflow-sanitizer";
 import { prepareHTMLForWebflow } from "./validation/html-sanitizer";
 import type { WebflowPayload } from "./webflow-converter";
+import { chunkEmbed, type ChunkedEmbedResult } from "./embed-chunker";
 
 export const WEBFLOW_EMBED_CHAR_LIMIT = 50_000;
 export const WEBFLOW_EMBED_SOFT_LIMIT = 40_000;
@@ -41,6 +42,11 @@ export interface WebflowSafetyReport {
     html: number;
     errors: string[];
     warnings: string[];
+  };
+  embedChunking?: {
+    css?: ChunkedEmbedResult;
+    js?: ChunkedEmbedResult;
+    html?: ChunkedEmbedResult;
   };
   htmlSanitization: {
     sanitizedNodes: number;
@@ -345,12 +351,44 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
     ? sanitizeEmbedHtml(finalHtmlEmbed)
     : { html: "", changes: [], warnings: [] };
 
+  // Apply chunking to embeds exceeding soft limit
+  const cssChunking = finalCssEmbed ? chunkEmbed(finalCssEmbed, 'css', WEBFLOW_EMBED_SOFT_LIMIT) : undefined;
+  const jsChunking = finalJsEmbed ? chunkEmbed(finalJsEmbed, 'js', WEBFLOW_EMBED_SOFT_LIMIT) : undefined;
+  const htmlChunking = extraHtmlSanitization.html ? chunkEmbed(extraHtmlSanitization.html, 'html', WEBFLOW_EMBED_SOFT_LIMIT) : undefined;
+
+  // Evaluate ONLY first chunks for hard limit errors
   const embedSizeErrors: string[] = [];
   const embedSizeWarnings: string[] = [];
-  evaluateEmbedSize("CSS", finalCssEmbed, embedSizeErrors, embedSizeWarnings);
-  evaluateEmbedSize("JS", finalJsEmbed, embedSizeErrors, embedSizeWarnings);
-  if (finalHtmlEmbed) {
-    evaluateEmbedSize("HTML", extraHtmlSanitization.html, embedSizeErrors, embedSizeWarnings);
+
+  if (cssChunking) {
+    if (cssChunking.wasChunked) {
+      embedSizeWarnings.push(...cssChunking.instructions);
+      // Check if any chunk exceeds hard limit
+      const oversized = cssChunking.chunks.find(c => c.size > WEBFLOW_EMBED_CHAR_LIMIT);
+      if (oversized) {
+        embedSizeErrors.push(`CSS chunk ${oversized.index + 1} exceeds ${WEBFLOW_EMBED_CHAR_LIMIT} chars after chunking`);
+      }
+    }
+  }
+
+  if (jsChunking) {
+    if (jsChunking.wasChunked) {
+      embedSizeWarnings.push(...jsChunking.instructions);
+      const oversized = jsChunking.chunks.find(c => c.size > WEBFLOW_EMBED_CHAR_LIMIT);
+      if (oversized) {
+        embedSizeErrors.push(`JS chunk ${oversized.index + 1} exceeds ${WEBFLOW_EMBED_CHAR_LIMIT} chars after chunking`);
+      }
+    }
+  }
+
+  if (htmlChunking) {
+    if (htmlChunking.wasChunked) {
+      embedSizeWarnings.push(...htmlChunking.instructions);
+      const oversized = htmlChunking.chunks.find(c => c.size > WEBFLOW_EMBED_CHAR_LIMIT);
+      if (oversized) {
+        embedSizeErrors.push(`HTML chunk ${oversized.index + 1} exceeds ${WEBFLOW_EMBED_CHAR_LIMIT} chars after chunking`);
+      }
+    }
   }
 
   const finalPreflight = runPreflightValidation(payload, {
@@ -411,6 +449,11 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
       errors: [...embedSizeErrors, ...htmlEmbedSanitization.summary.errors],
       warnings: embedSizeWarnings,
     },
+    embedChunking: (cssChunking || jsChunking || htmlChunking) ? {
+      css: cssChunking,
+      js: jsChunking,
+      html: htmlChunking,
+    } : undefined,
     htmlSanitization: htmlEmbedSanitization.summary,
   };
 

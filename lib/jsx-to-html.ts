@@ -82,6 +82,9 @@ function removeJsxExpressions(jsx: string): string {
 
   // Remove event handlers but track them for JS generation
   html = html.replace(/\s(on[A-Z]\w+)=\{([^}]+)\}/g, (_match, _event, _handler) => {
+    void _match
+    void _event
+    void _handler
     // We'll handle these separately
     return ''
   })

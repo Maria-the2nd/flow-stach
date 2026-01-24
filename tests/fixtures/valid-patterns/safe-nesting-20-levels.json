@@ -1,0 +1,56 @@
+{
+  "name": "Safe Nesting - 20 Levels",
+  "description": "20 levels of DOM nesting is well within safe limits",
+  "category": "valid-patterns",
+  "severity": "info",
+  "payload": {
+    "type": "@webflow/XscpData",
+    "payload": {
+      "nodes": [
+        {"_id": "node-0", "tag": "div", "classes": [], "children": ["node-1"], "type": "Block"},
+        {"_id": "node-1", "tag": "div", "classes": [], "children": ["node-2"], "type": "Block"},
+        {"_id": "node-2", "tag": "div", "classes": [], "children": ["node-3"], "type": "Block"},
+        {"_id": "node-3", "tag": "div", "classes": [], "children": ["node-4"], "type": "Block"},
+        {"_id": "node-4", "tag": "div", "classes": [], "children": ["node-5"], "type": "Block"},
+        {"_id": "node-5", "tag": "div", "classes": [], "children": ["node-6"], "type": "Block"},
+        {"_id": "node-6", "tag": "div", "classes": [], "children": ["node-7"], "type": "Block"},
+        {"_id": "node-7", "tag": "div", "classes": [], "children": ["node-8"], "type": "Block"},
+        {"_id": "node-8", "tag": "div", "classes": [], "children": ["node-9"], "type": "Block"},
+        {"_id": "node-9", "tag": "div", "classes": [], "children": ["node-10"], "type": "Block"},
+        {"_id": "node-10", "tag": "div", "classes": [], "children": ["node-11"], "type": "Block"},
+        {"_id": "node-11", "tag": "div", "classes": [], "children": ["node-12"], "type": "Block"},
+        {"_id": "node-12", "tag": "div", "classes": [], "children": ["node-13"], "type": "Block"},
+        {"_id": "node-13", "tag": "div", "classes": [], "children": ["node-14"], "type": "Block"},
+        {"_id": "node-14", "tag": "div", "classes": [], "children": ["node-15"], "type": "Block"},
+        {"_id": "node-15", "tag": "div", "classes": [], "children": ["node-16"], "type": "Block"},
+        {"_id": "node-16", "tag": "div", "classes": [], "children": ["node-17"], "type": "Block"},
+        {"_id": "node-17", "tag": "div", "classes": [], "children": ["node-18"], "type": "Block"},
+        {"_id": "node-18", "tag": "div", "classes": [], "children": ["node-19"], "type": "Block"},
+        {"_id": "node-19", "tag": "div", "classes": [], "children": [], "type": "Block"}
+      ],
+      "styles": [],
+      "assets": [],
+      "ix1": [],
+      "ix2": {
+        "interactions": [],
+        "events": [],
+        "actionLists": []
+      }
+    },
+    "meta": {
+      "unlinkedSymbolCount": 0,
+      "droppedLinks": 0,
+      "dynBindRemovedCount": 0,
+      "totalLinks": 0,
+      "pageCount": 1,
+      "inlineOnly": true,
+      "pasted": true,
+      "publishedToWebflow": false
+    }
+  },
+  "expectedResult": {
+    "shouldBlock": false,
+    "shouldSanitize": false,
+    "warnings": []
+  }
+}

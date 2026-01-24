@@ -1,0 +1,73 @@
+{
+  "name": "Circular Style References",
+  "description": "Styles that reference each other in a circle should be detected and broken",
+  "category": "crash-patterns",
+  "severity": "critical",
+  "payload": {
+    "type": "@webflow/XscpData",
+    "payload": {
+      "nodes": [
+        {
+          "_id": "node-1",
+          "tag": "div",
+          "classes": ["class-1"],
+          "children": [],
+          "type": "Block"
+        }
+      ],
+      "styles": [
+        {
+          "_id": "class-1",
+          "fake": false,
+          "type": "class",
+          "name": "CircularA",
+          "namespace": "",
+          "comb": "class-2",
+          "styleLess": "color: red;",
+          "variants": {},
+          "children": ["class-2"],
+          "selector": null
+        },
+        {
+          "_id": "class-2",
+          "fake": false,
+          "type": "class",
+          "name": "CircularB",
+          "namespace": "",
+          "comb": "class-1",
+          "styleLess": "font-size: 16px;",
+          "variants": {},
+          "children": ["class-1"],
+          "selector": null
+        }
+      ],
+      "assets": [],
+      "ix1": [],
+      "ix2": {
+        "interactions": [],
+        "events": [],
+        "actionLists": []
+      }
+    },
+    "meta": {
+      "unlinkedSymbolCount": 0,
+      "droppedLinks": 0,
+      "dynBindRemovedCount": 0,
+      "totalLinks": 0,
+      "pageCount": 1,
+      "inlineOnly": true,
+      "pasted": true,
+      "publishedToWebflow": false
+    }
+  },
+  "expectedResult": {
+    "shouldBlock": false,
+    "shouldSanitize": true,
+    "sanitizationChanges": [
+      "Broke circular reference in style hierarchy: class-1 → class-2 → class-1"
+    ],
+    "warnings": [
+      "Circular style references detected and broken to prevent infinite loops"
+    ]
+  }
+}

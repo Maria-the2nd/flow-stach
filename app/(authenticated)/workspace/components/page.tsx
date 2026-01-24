@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Cuboid, Search, ShoppingCart, ExternalLink, Box } from "lucide-react";
 import Link from 'next/link';
+import Image from "next/image";
 
 const MOCK_COMPONENTS = [
     {
@@ -59,11 +60,14 @@ export default function ComponentsPage() {
             <div className="grid grid-cols-1 gap-6">
                 {MOCK_COMPONENTS.map((component) => (
                     <div key={component.id} className="group bg-white/90 backdrop-blur-xl rounded-3xl border border-slate-200 overflow-hidden hover:shadow-2xl hover:border-slate-300 transition-all duration-500 flex items-stretch shadow-xl shadow-slate-200/40">
-                        <div className="w-64 bg-slate-50 flex items-center justify-center border-r border-slate-100 overflow-hidden">
-                            <img
+                        <div className="w-64 bg-slate-50 flex items-center justify-center border-r border-slate-100 overflow-hidden relative">
+                            <Image
                                 src={component.image}
                                 alt={component.title}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                fill
+                                sizes="256px"
+                                className="object-cover group-hover:scale-110 transition-transform duration-700"
+                                unoptimized
                             />
                         </div>
                         <div className="flex-1 p-8 flex items-center justify-between">

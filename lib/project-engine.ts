@@ -1,14 +1,13 @@
-import { extractCleanHtml, extractJsHooks, extractCssForSection, getClassesUsed } from "./html-parser"
-import { extractTokens, type TokenExtraction } from "./token-extractor"
-import { parseCSS, type ClassIndex } from "./css-parser"
-import { componentizeHtml, type ComponentTree, type Component } from "./componentizer"
+import { extractCleanHtml, extractJsHooks } from "./html-parser"
+import { extractTokens } from "./token-extractor"
+import { parseCSS } from "./css-parser"
+import { componentizeHtml } from "./componentizer"
 import { buildCssTokenPayload, buildComponentPayload } from "./webflow-converter"
 import { normalizeHtmlCssForWebflow } from "./webflow-normalizer"
 import { literalizeCssForWebflow } from "./webflow-literalizer"
-import { diagnoseVisibilityIssues } from "./webflow-verifier"
 import { extractImages, type ImageAsset } from "./image-extractor"
 import { applyDeterministicComponentNames } from "./flowbridge-semantic"
-import { applySemanticPatchResponse, buildSemanticPatchRequest, type FlowbridgeSemanticPatchResponse, type FlowbridgeSemanticPatchMeta } from "./flowbridge-semantic"
+import { applySemanticPatchResponse, buildSemanticPatchRequest, type FlowbridgeSemanticPatchMeta } from "./flowbridge-semantic"
 import { ensureWebflowPasteSafety } from "./webflow-safety-gate"
 
 export type ProcessingStage = "parsing" | "extracting" | "componentizing" | "semantic" | "generating" | "complete" | "idle"
@@ -87,11 +86,6 @@ export async function processProjectImport(
         reportProgress("extracting", 30);
         const name = projectName || "Imported Project";
         const tokens = extractTokens(normalization.css, htmlInput, name);
-
-        const externalScriptComments = cleanResult.externalScripts.length > 0
-            ? cleanResult.externalScripts.map(url => `// External Library: ${url}`).join('\n') + '\n\n'
-            : '';
-        const fullScriptsJs = externalScriptComments + cleanResult.extractedScripts;
 
         const tokensJson = JSON.stringify({
             name: tokens.name,

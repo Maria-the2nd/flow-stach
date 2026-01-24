@@ -7,26 +7,17 @@ import { parseCSS, ClassIndex } from "./css-parser";
 import { NormalizationResult, parseHtmlString, ParsedElement } from "./webflow-normalizer";
 import { WebflowPayload } from "./webflow-converter";
 import {
-  runPreflightValidation,
   validateUUIDs,
   validateNodeReferences,
   detectCircularReferences,
   validateStyles,
   validateEmbedSize,
   validateNodeStructure,
-  type PreflightResult,
-  type UUIDValidation,
-  type OrphanValidation,
-  type CircularValidation,
-  type StyleValidation,
 } from "./preflight-validator";
 import {
-  ValidationSeverity,
   ValidationIssue,
   error,
   warning,
-  info,
-  fromLegacyStatus,
   createValidationResult,
   type ValidationResult,
 } from "./validation-types";

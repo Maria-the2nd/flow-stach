@@ -8,6 +8,7 @@ import { detectEmbedRequiredCSS } from "@/lib/validation/css-feature-detector";
 import { validateDesignTokens } from "@/lib/validation/design-token-validator";
 import { validateCSSEmbed, validateJSEmbed, validateLibraryImports } from "@/lib/validation/embed-validator";
 import { detectLibraries } from "@/lib/js-library-detector";
+import { detectExternalResources } from "@/lib/external-resource-detector";
 import { ensureWebflowPasteSafety } from "@/lib/webflow-safety-gate";
 
 // Debug mode - set WEBFLOW_CONVERT_DEBUG=true for verbose logging
@@ -757,6 +758,15 @@ export async function POST(request: Request) {
     scriptCount: libraryDetection.scripts.length,
   });
 
+  // Validate library imports
+  const libraryValidation = validateLibraryImports({
+    scripts: libraryDetection.scripts,
+    styles: libraryDetection.styles,
+  });
+
+  // Detect external resources
+  const externalResources = detectExternalResources(sanitizedHTML);
+
   console.info("[webflow-convert]", requestId, "css_parsed", {
     cssVars: cssVars.size,
     classStyles: classStyles.size,
@@ -1010,6 +1020,12 @@ export async function POST(request: Request) {
       webflowJson: webflowValidation,
       cssEmbed: cssEmbedValidation,
       jsEmbed: jsEmbedValidation,
+      libraryImports: libraryValidation,
+      externalResources: {
+        valid: !externalResources.hasErrors,
+        errors: externalResources.all.filter(r => r.severity === 'error').map(r => r.message),
+        warnings: externalResources.all.filter(r => r.severity === 'warning').map(r => r.message),
+      },
     },
 
     // === EXTRACTION METADATA ===

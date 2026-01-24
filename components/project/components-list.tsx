@@ -23,6 +23,8 @@ interface Component {
 interface Payload {
   webflowJson?: string;
   codePayload?: string;
+  cssEmbed?: string;
+  jsEmbed?: string;
 }
 
 interface ComponentsListProps {

@@ -22,7 +22,6 @@ import {
   validateJsHtmlReferences,
   detectExternalResources,
   type PreflightResult,
-  type CanvasValidation,
   type XRefValidation,
   type ExternalResourceResult,
 } from "./preflight-validator";
@@ -305,26 +304,6 @@ function convertValuePxToRem(value: string, basePx = 16): string {
 
   return converted.join(" ");
 }
-
-/**
- * Properties where 1px values should always be kept as px.
- * These typically represent thin borders/lines where sub-pixel rendering matters.
- */
-const BORDER_PROPERTIES = new Set([
-  "border",
-  "border-width",
-  "border-top-width",
-  "border-right-width",
-  "border-bottom-width",
-  "border-left-width",
-  "border-top",
-  "border-right",
-  "border-bottom",
-  "border-left",
-  "outline",
-  "outline-width",
-  "box-shadow",
-]);
 
 /**
  * Convert px values to rem in an inline style string.

@@ -8,6 +8,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Calendar, ArrowRight, Plus, Loader2, FolderOpen, Trash2, ImageIcon, Layers } from "lucide-react";
 import { toast } from "sonner";
+import Image from "next/image";
 
 function formatDate(timestamp: number): string {
     return new Date(timestamp).toLocaleDateString('en-US', {
@@ -265,10 +266,13 @@ export default function ProjectsPage() {
                                 <div className="!bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200 overflow-hidden hover:shadow-2xl hover:border-slate-300 transition-all duration-300 flex flex-col h-full shadow-xl shadow-slate-200/50">
                                     <div className="aspect-video bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden flex items-center justify-center">
                                         {project.thumbnailUrl ? (
-                                            <img
+                                            <Image
                                                 src={project.thumbnailUrl}
                                                 alt={project.name}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                fill
+                                                sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                unoptimized
                                             />
                                         ) : (
                                             <div className="text-6xl font-bold text-slate-200 group-hover:scale-110 transition-transform duration-500">

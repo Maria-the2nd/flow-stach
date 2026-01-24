@@ -4,12 +4,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, AlertCircle, FileText, Files, CheckCircle2, Loader2, UploadCloud } from "lucide-react";
 import Link from 'next/link';
 
 import { useState, useRef } from "react";
 import { Progress } from "@/components/ui/progress";
-import { AlertCircle, FileText, Files, CheckCircle2, Loader2 } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { processProjectImport } from "@/lib/project-engine";
@@ -31,11 +30,25 @@ export default function ImportPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileSelect = (file: File) => {
-        const validTypes = ['text/html', 'application/zip', 'application/x-zip-compressed'];
-        const isValidType = validTypes.includes(file.type) || file.name.endsWith('.html') || file.name.endsWith('.zip');
+        // Check for ZIP files first
+        if (file.type.includes('zip') || file.name.toLowerCase().endsWith('.zip')) {
+            toast.error('ZIP Import Not Supported', {
+                description: 'Please extract your ZIP file and upload individual HTML files.',
+                action: {
+                    label: 'Learn More',
+                    onClick: () => window.open('/docs/import-guide', '_blank'),
+                },
+            });
+            setSelectedFile(null);
+            setError(null);
+            return;
+        }
+
+        const validTypes = ['text/html'];
+        const isValidType = validTypes.includes(file.type) || file.name.endsWith('.html');
 
         if (!isValidType) {
-            setError('Please upload an HTML file or ZIP archive');
+            setError('Please upload an HTML file');
             setSelectedFile(null);
             return;
         }
@@ -89,7 +102,17 @@ export default function ImportPage() {
         }
 
         if (selectedFile.type.includes("zip") || selectedFile.name.toLowerCase().endsWith(".zip")) {
-            setError("ZIP archives are not supported yet. Please upload a single HTML file.");
+            toast.error('ZIP Import Not Supported', {
+                description: 'Please extract your ZIP file and upload individual HTML files.',
+                action: {
+                    label: 'Learn More',
+                    onClick: () => window.open('/docs/import-guide', '_blank'),
+                },
+            });
+            setSelectedFile(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
             return;
         }
 

@@ -1,0 +1,66 @@
+{
+  "name": "React Issue #137 - span+br crash pattern",
+  "description": "Text node containing span with <br> child causes Webflow Designer crash. Should be sanitized by removing br tags.",
+  "category": "crash-patterns",
+  "severity": "critical",
+  "payload": {
+    "type": "@webflow/XscpData",
+    "payload": {
+      "nodes": [
+        {
+          "_id": "node-1",
+          "tag": "div",
+          "classes": [],
+          "children": ["node-2"],
+          "type": "Block",
+          "data": {
+            "xattr": []
+          }
+        },
+        {
+          "_id": "node-2",
+          "tag": "span",
+          "classes": [],
+          "children": ["node-3"],
+          "type": "Span",
+          "data": {
+            "xattr": []
+          }
+        },
+        {
+          "_id": "node-3",
+          "text": true,
+          "v": "Text with <br> inside"
+        }
+      ],
+      "styles": [],
+      "assets": [],
+      "ix1": [],
+      "ix2": {
+        "interactions": [],
+        "events": [],
+        "actionLists": []
+      }
+    },
+    "meta": {
+      "unlinkedSymbolCount": 0,
+      "droppedLinks": 0,
+      "dynBindRemovedCount": 0,
+      "totalLinks": 0,
+      "pageCount": 1,
+      "inlineOnly": true,
+      "pasted": true,
+      "publishedToWebflow": false
+    }
+  },
+  "expectedResult": {
+    "shouldBlock": false,
+    "shouldSanitize": true,
+    "sanitizationChanges": [
+      "Removed <br> tags from text nodes (React #137 crash prevention)"
+    ],
+    "warnings": [
+      "Text nodes containing <br> tags were sanitized to prevent Webflow Designer crash"
+    ]
+  }
+}

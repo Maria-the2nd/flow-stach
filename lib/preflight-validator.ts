@@ -16,25 +16,20 @@ import { validateJsHtmlXRef, hasJsDomReferences, type XRefResult } from "./js-ht
 import {
   detectExternalResources,
   type ExternalResourceResult,
-  type ExternalResource,
 } from "./external-resource-detector";
 import {
   validateHTMLStructure,
   type HTMLValidationResult,
 } from "./html-validator";
 import {
-  ValidationSeverity,
   ValidationIssue,
   fatal,
   error,
   warning,
-  info,
   FatalIssueCodes,
   ErrorIssueCodes,
   WarningIssueCodes,
-  InfoIssueCodes,
   createValidationResult,
-  formatIssues,
   type ValidationResult,
 } from "./validation-types";
 

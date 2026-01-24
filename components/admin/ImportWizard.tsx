@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useUser } from "@clerk/nextjs"
 import { useMutation } from "convex/react"
 import { toast } from "sonner"
@@ -12,17 +13,14 @@ import {
   Alert01Icon,
   CheckmarkCircle01Icon,
   CodeIcon,
-  PaintBoardIcon,
   FileEditIcon,
   JavaScriptIcon,
   Layers01Icon,
-  Copy01Icon,
-  ArrowDown01Icon,
 } from "@hugeicons/core-free-icons"
 
 import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SafetyReportPanel } from "@/components/validation/SafetyReportPanel"
 import { Loader2 } from "lucide-react"
@@ -199,38 +197,6 @@ function generateSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
 }
 
-function CollapsibleSection({
-  title,
-  children,
-  defaultOpen = false,
-  className,
-  rightElement,
-}: {
-  title: React.ReactNode
-  children: React.ReactNode
-  defaultOpen?: boolean
-  className?: string
-  rightElement?: React.ReactNode
-}) {
-  const [isOpen, setIsOpen] = useState(defaultOpen)
-  return (
-    <div className={cn("border rounded-lg bg-card text-card-foreground shadow-sm", className)}>
-      <div className="flex items-center justify-between p-4">
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors"
-        >
-          {isOpen ? <HugeiconsIcon icon={ArrowDown01Icon} size={16} /> : <HugeiconsIcon icon={ArrowRight01Icon} size={16} />}
-          {title}
-        </button>
-        {rightElement}
-      </div>
-      {isOpen && <div className="p-4 border-t pt-0">{children}</div>}
-    </div>
-  )
-}
-
 function ProcessingTimeline({ status }: { status: ProcessingStatus }) {
   const steps: { id: ProcessingStatus; label: string }[] = [
     { id: "parsing", label: "Parsing HTML & CSS" },
@@ -287,19 +253,6 @@ function ProcessingTimeline({ status }: { status: ProcessingStatus }) {
           )
         })}
       </div>
-    </div>
-  )
-}
-
-function ArtifactViewer({ content, maxHeight = "400px" }: { content: string; maxHeight?: string }) {
-  return (
-    <div className="relative">
-      <pre
-        className={cn("bg-muted rounded-lg p-4 text-sm overflow-auto font-mono", "border border-border")}
-        style={{ maxHeight }}
-      >
-        <code>{content}</code>
-      </pre>
     </div>
   )
 }
@@ -871,7 +824,6 @@ export function ImportWizard() {
     setEstablishedClasses(new Set())
     setTokenExtraction(null)
     setImportResult(null)
-    setValidationWarnings([])
     setSkipEstablishedStyles(false)
     setLlmSummary(null)
   }, [])
@@ -1056,7 +1008,14 @@ export function ImportWizard() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {detectedImages.slice(0, 8).map((img, i) => (
                   <div key={i} className="aspect-square rounded-[24px] overflow-hidden bg-slate-50 border border-slate-100 group relative">
-                    <img src={img.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+                    <Image
+                      src={img.url}
+                      alt={`Detected visual ${i + 1}`}
+                      fill
+                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover group-hover:scale-110 transition-transform duration-700"
+                      unoptimized
+                    />
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Badge className="bg-white/90 text-black border-none rounded-full text-[8px]">{img.type.split('/')[1]}</Badge>
                     </div>

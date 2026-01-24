@@ -9,7 +9,7 @@ interface DesignTokensCardProps {
     colors: Array<{ name: string; value: string }>;
     typography: Array<{ name: string; value: string }>;
     spacing?: Array<{ name: string; value: string }>;
-  };
+  } | null;
 }
 
 export function DesignTokensCard({ tokens }: DesignTokensCardProps) {

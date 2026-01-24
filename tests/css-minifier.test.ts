@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { minifyCSS, minifyCSSWithStats, getMinificationStats, checkSizeLimit, MinificationStats } from "../lib/css-minifier";
+import { minifyCSS, minifyCSSWithStats, getMinificationStats, checkSizeLimit } from "../lib/css-minifier";
 
 describe("CSS Minifier", () => {
   describe("Basic minification", () => {

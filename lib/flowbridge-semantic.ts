@@ -1448,11 +1448,6 @@ export function updateJSClassReferences(
       return `className = ${quote}${renamed}${quote}`;
     });
 
-    // className concatenation: className + ' class-name'
-    const classNameConcatPattern = new RegExp(
-      `(['"\`])\\s*${escapedOriginal}\\s*\\1`,
-      'g'
-    );
     // Only replace if it looks like a class context
     updated = updated.replace(
       new RegExp(`(className|class|addClass|removeClass|hasClass)([^'"\`]*?)(['"\`])${escapedOriginal}\\3`, 'g'),
@@ -1588,12 +1583,8 @@ export function performFullClassRename(
   js: string,
   options: BEMClassRenamingOptions & { blockName: string }
 ): FullRenameResult {
-  // Extract all classes from HTML
-  const classes = extractClassNames(html);
-
   // Build element contexts (simplified - just class list per element)
   const elements: ElementContext[] = [];
-  const classPattern = /class="([^"]+)"/g;
   const tagPattern = /<(\w+)[^>]*class="([^"]+)"[^>]*>/g;
 
   let match;

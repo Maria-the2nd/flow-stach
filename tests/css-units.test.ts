@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { parseCSS, propertiesToStyleLess } from "../lib/css-parser";
+import { parseCSS } from "../lib/css-parser";
 import { convertHtmlCssToWebflow } from "../lib/webflow-converter";
 
 describe("CSS Unit Preservation", () => {

@@ -1,0 +1,74 @@
+{
+  "name": "Invalid Variant Keys",
+  "description": "Combo class variants with invalid keys (not 'main', 'tiny', 'small', 'medium', 'large') should be stripped",
+  "category": "crash-patterns",
+  "severity": "warning",
+  "payload": {
+    "type": "@webflow/XscpData",
+    "payload": {
+      "nodes": [
+        {
+          "_id": "node-1",
+          "tag": "div",
+          "classes": ["class-1"],
+          "children": [],
+          "type": "Block",
+          "data": {
+            "xattr": []
+          }
+        }
+      ],
+      "styles": [
+        {
+          "_id": "class-1",
+          "fake": false,
+          "type": "class",
+          "name": "Button",
+          "namespace": "",
+          "comb": "",
+          "styleLess": "",
+          "variants": {
+            "invalid-key": {
+              "styleLess": "color: red;"
+            },
+            "another-bad-key": {
+              "styleLess": "font-size: 20px;"
+            },
+            "medium": {
+              "styleLess": "padding: 10px;"
+            }
+          },
+          "children": [],
+          "selector": null
+        }
+      ],
+      "assets": [],
+      "ix1": [],
+      "ix2": {
+        "interactions": [],
+        "events": [],
+        "actionLists": []
+      }
+    },
+    "meta": {
+      "unlinkedSymbolCount": 0,
+      "droppedLinks": 0,
+      "dynBindRemovedCount": 0,
+      "totalLinks": 0,
+      "pageCount": 1,
+      "inlineOnly": true,
+      "pasted": true,
+      "publishedToWebflow": false
+    }
+  },
+  "expectedResult": {
+    "shouldBlock": false,
+    "shouldSanitize": true,
+    "sanitizationChanges": [
+      "Stripped invalid variant keys: invalid-key, another-bad-key"
+    ],
+    "warnings": [
+      "Invalid combo class variant keys removed (only 'main', 'tiny', 'small', 'medium', 'large' allowed)"
+    ]
+  }
+}

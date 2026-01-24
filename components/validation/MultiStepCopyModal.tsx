@@ -22,6 +22,8 @@ interface PayloadData {
     webflowJson: { valid: boolean; errors: string[]; warnings: string[] }
     cssEmbed: { valid: boolean; errors: string[]; warnings: string[] }
     jsEmbed: { valid: boolean; errors: string[]; warnings: string[] }
+    libraryImports?: { valid: boolean; errors: string[]; warnings: string[] }
+    externalResources?: { valid: boolean; errors: string[]; warnings: string[] }
   }
   detectedLibraries?: string[]
   /** Metadata about content that was extracted to embeds for safety */
@@ -236,6 +238,7 @@ export function MultiStepCopyModal({ open, onOpenChange, payload, assetTitle }: 
               <LibraryImportGuide
                 libraries={payload.libraryImports}
                 detectedNames={payload.detectedLibraries}
+                validation={payload.validationResults?.libraryImports}
               />
             </>
           )}

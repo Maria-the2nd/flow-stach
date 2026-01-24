@@ -1,0 +1,38 @@
+{
+  "name": "Embed Size - 60KB CSS (Hard Limit)",
+  "description": "CSS embed at 60KB exceeds hard limit and should be blocked or chunked",
+  "category": "crash-patterns",
+  "severity": "critical",
+  "payload": {
+    "type": "@webflow/XscpData",
+    "payload": {
+      "nodes": [],
+      "styles": [],
+      "assets": [],
+      "ix1": [],
+      "ix2": {
+        "interactions": [],
+        "events": [],
+        "actionLists": []
+      }
+    },
+    "embedCSS": "/* This would be 60KB of CSS content - padding to simulate size */\n.class-1 { color: red; }\n.class-2 { color: blue; }\n/* ... (imagine 60,000 characters of CSS here) ... */",
+    "meta": {
+      "unlinkedSymbolCount": 0,
+      "droppedLinks": 0,
+      "dynBindRemovedCount": 0,
+      "totalLinks": 0,
+      "pageCount": 1,
+      "inlineOnly": true,
+      "pasted": true,
+      "publishedToWebflow": false
+    }
+  },
+  "expectedResult": {
+    "shouldBlock": true,
+    "shouldSanitize": false,
+    "warnings": [
+      "CSS embed size (60000 chars) exceeds hard 50KB limit - automatic chunking required"
+    ]
+  }
+}

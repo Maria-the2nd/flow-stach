@@ -34,6 +34,13 @@ type DesignTokens = {
     typography: TokenValue[];
     spacing?: TokenValue[];
 };
+type FontChecklistStatus = "available" | "missing" | "unknown";
+type FontChecklistEntry = {
+    name: string;
+    status: FontChecklistStatus;
+    warning?: boolean;
+    installationGuide: string;
+};
 
 export function ProjectDetailsView({ id }: { id: string }) {
     // Fetch project data from Convex
@@ -277,7 +284,7 @@ function ProjectContent({
             components.forEach(({ payload }) => {
                 if (payload?.webflowJson) {
                     try {
-                        const parsed = JSON.parse(payload.webflowJson) as { placeholder?: boolean };
+                        const parsed = JSON.parse(payload.webflowJson) as WebflowPayload & { placeholder?: boolean };
                         if (parsed.placeholder) {
                             return;
                         }
@@ -343,6 +350,19 @@ function ProjectContent({
             return null;
         }
     }, [siteStructurePayload]);
+
+    const normalizedFonts = useMemo<FontChecklistEntry[] | undefined>(() => {
+        if (!project.fonts) return undefined;
+        return project.fonts.map((font) => ({
+            name: font.name,
+            status:
+                font.status === "available" || font.status === "missing"
+                    ? font.status
+                    : "unknown",
+            warning: font.warning,
+            installationGuide: font.installationGuide,
+        }));
+    }, [project.fonts]);
 
     const handleCopySiteStructure = async () => {
         try {
@@ -420,8 +440,8 @@ function ProjectContent({
 
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <TabsContent value="overview" className="space-y-6">
-                        <DesignTokensCard tokens={resolvedTokens} />
-                        <FontChecklistCard fonts={project.fonts} />
+                        <DesignTokensCard tokens={resolvedTokens ?? undefined} />
+                        <FontChecklistCard fonts={normalizedFonts} />
                     </TabsContent>
 
                     <TabsContent value="styleguide" className="space-y-6">

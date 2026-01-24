@@ -1,0 +1,72 @@
+{
+  "name": "Valid Variant Keys",
+  "description": "Combo class variants with all valid keys should pass without warnings",
+  "category": "valid-patterns",
+  "severity": "info",
+  "payload": {
+    "type": "@webflow/XscpData",
+    "payload": {
+      "nodes": [
+        {
+          "_id": "node-1",
+          "tag": "div",
+          "classes": ["class-1"],
+          "children": [],
+          "type": "Block"
+        }
+      ],
+      "styles": [
+        {
+          "_id": "class-1",
+          "fake": false,
+          "type": "class",
+          "name": "ResponsiveButton",
+          "namespace": "",
+          "comb": "",
+          "styleLess": "padding: 8px;",
+          "variants": {
+            "main": {
+              "styleLess": "padding: 8px;"
+            },
+            "tiny": {
+              "styleLess": "padding: 4px; font-size: 12px;"
+            },
+            "small": {
+              "styleLess": "padding: 6px; font-size: 14px;"
+            },
+            "medium": {
+              "styleLess": "padding: 10px; font-size: 16px;"
+            },
+            "large": {
+              "styleLess": "padding: 12px; font-size: 18px;"
+            }
+          },
+          "children": [],
+          "selector": null
+        }
+      ],
+      "assets": [],
+      "ix1": [],
+      "ix2": {
+        "interactions": [],
+        "events": [],
+        "actionLists": []
+      }
+    },
+    "meta": {
+      "unlinkedSymbolCount": 0,
+      "droppedLinks": 0,
+      "dynBindRemovedCount": 0,
+      "totalLinks": 0,
+      "pageCount": 1,
+      "inlineOnly": true,
+      "pasted": true,
+      "publishedToWebflow": false
+    }
+  },
+  "expectedResult": {
+    "shouldBlock": false,
+    "shouldSanitize": false,
+    "warnings": []
+  }
+}

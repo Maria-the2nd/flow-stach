@@ -11,6 +11,12 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "off",
     },
   },
+  {
+    files: ["flow-bridge-extension/**/*.{ts,tsx,js,jsx}", "Flow-Goodies-extension/**/*.{ts,tsx,js,jsx}"],
+    rules: {
+      "@next/next/no-img-element": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

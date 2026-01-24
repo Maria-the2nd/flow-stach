@@ -1,0 +1,38 @@
+{
+  "name": "Embed Size - 50KB CSS",
+  "description": "CSS embed at exactly 50KB should trigger soft limit warning but not block",
+  "category": "crash-patterns",
+  "severity": "warning",
+  "payload": {
+    "type": "@webflow/XscpData",
+    "payload": {
+      "nodes": [],
+      "styles": [],
+      "assets": [],
+      "ix1": [],
+      "ix2": {
+        "interactions": [],
+        "events": [],
+        "actionLists": []
+      }
+    },
+    "embedCSS": "/* This would be 50KB of CSS content - padding to simulate size */\n.class-1 { color: red; }\n.class-2 { color: blue; }\n/* ... (imagine 50,000 characters of CSS here) ... */",
+    "meta": {
+      "unlinkedSymbolCount": 0,
+      "droppedLinks": 0,
+      "dynBindRemovedCount": 0,
+      "totalLinks": 0,
+      "pageCount": 1,
+      "inlineOnly": true,
+      "pasted": true,
+      "publishedToWebflow": false
+    }
+  },
+  "expectedResult": {
+    "shouldBlock": false,
+    "shouldSanitize": false,
+    "warnings": [
+      "CSS embed size (50000 chars) exceeds recommended 40KB limit - consider chunking"
+    ]
+  }
+}

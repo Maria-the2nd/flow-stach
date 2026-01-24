@@ -1,0 +1,87 @@
+{
+  "name": "Duplicate UUIDs",
+  "description": "Duplicate _id values should be detected and regenerated to ensure uniqueness",
+  "category": "crash-patterns",
+  "severity": "critical",
+  "payload": {
+    "type": "@webflow/XscpData",
+    "payload": {
+      "nodes": [
+        {
+          "_id": "duplicate-id",
+          "tag": "div",
+          "classes": [],
+          "children": [],
+          "type": "Block"
+        },
+        {
+          "_id": "duplicate-id",
+          "tag": "span",
+          "classes": [],
+          "children": [],
+          "type": "Span"
+        },
+        {
+          "_id": "unique-id",
+          "tag": "p",
+          "classes": [],
+          "children": [],
+          "type": "Paragraph"
+        }
+      ],
+      "styles": [
+        {
+          "_id": "style-duplicate",
+          "fake": false,
+          "type": "class",
+          "name": "ClassA",
+          "namespace": "",
+          "comb": "",
+          "styleLess": "color: red;",
+          "variants": {},
+          "children": [],
+          "selector": null
+        },
+        {
+          "_id": "style-duplicate",
+          "fake": false,
+          "type": "class",
+          "name": "ClassB",
+          "namespace": "",
+          "comb": "",
+          "styleLess": "color: blue;",
+          "variants": {},
+          "children": [],
+          "selector": null
+        }
+      ],
+      "assets": [],
+      "ix1": [],
+      "ix2": {
+        "interactions": [],
+        "events": [],
+        "actionLists": []
+      }
+    },
+    "meta": {
+      "unlinkedSymbolCount": 0,
+      "droppedLinks": 0,
+      "dynBindRemovedCount": 0,
+      "totalLinks": 0,
+      "pageCount": 1,
+      "inlineOnly": true,
+      "pasted": true,
+      "publishedToWebflow": false
+    }
+  },
+  "expectedResult": {
+    "shouldBlock": false,
+    "shouldSanitize": true,
+    "sanitizationChanges": [
+      "Regenerated duplicate UUIDs: duplicate-id (2 instances), style-duplicate (2 instances)"
+    ],
+    "warnings": [
+      "Duplicate _id values detected and regenerated to ensure uniqueness"
+    ]
+  }
+}

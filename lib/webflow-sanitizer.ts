@@ -19,7 +19,6 @@ import {
   VALID_PSEUDO_STATES,
   RESERVED_CLASS_PREFIXES,
   RESERVED_CLASS_NAMES,
-  MAX_NODE_DEPTH,
 } from "./preflight-validator";
 
 // ============================================================================
@@ -733,7 +732,6 @@ export function removeOrphanedNodeReferences(payload: WebflowPayload): {
 
   result.payload.nodes = result.payload.nodes.map((node) => {
     if (node.children) {
-      const originalLength = node.children.length;
       node.children = node.children.filter((childId) => {
         const exists = nodeIds.has(childId);
         if (!exists) {
@@ -1212,7 +1210,6 @@ export function removeOrphanChildReferences(payload: WebflowPayload): {
   result.payload.nodes = result.payload.nodes.map(node => {
     if (!node.children || node.children.length === 0) return node;
 
-    const originalLength = node.children.length;
     node.children = node.children.filter(childId => {
       const exists = nodeIds.has(childId);
       if (!exists) {

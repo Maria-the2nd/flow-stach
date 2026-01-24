@@ -11,6 +11,8 @@
     "convex:dev": "convex dev",
     "convex:deploy": "convex deploy",
     "verify": "tsx lib/webflow-verifier.ts",
+    "test": "vitest",
+    "test:regression": "vitest tests/regression",
     "test:flowbridge": "tsx tests/flowbridge-semantic.test.ts"
   },
   "dependencies": {
@@ -43,7 +45,8 @@
     "eslint-config-next": "16.1.1",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0"
   },
   "ignoreScripts": [
     "sharp",

@@ -5,7 +5,6 @@ import { cn } from '@/lib/utils';
 import {
   CSSRoutingTrace,
   RoutedRule,
-  RoutingReason,
   RoutingFilter,
   RuleCategory,
 } from '@/lib/routing-types';
