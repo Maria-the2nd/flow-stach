@@ -9,6 +9,7 @@ import { extractImages, type ImageAsset } from "./image-extractor"
 import { applyDeterministicComponentNames } from "./flowbridge-semantic"
 import { applySemanticPatchResponse, buildSemanticPatchRequest, type FlowbridgeSemanticPatchMeta } from "./flowbridge-semantic"
 import { ensureWebflowPasteSafety } from "./webflow-safety-gate"
+import { renameClassesForProject, isBemRenamingEnabled, type ClassRenamingReport, type LlmClassContext } from "./bem-renamer"
 
 export type ProcessingStage = "parsing" | "extracting" | "componentizing" | "semantic" | "generating" | "complete" | "idle"
 
@@ -41,6 +42,8 @@ export interface EngineResult {
     fonts: DetectedFont[];
     images: ImageAsset[];
     llmSummary?: LlmSummary;
+    /** Report from BEM class renaming stage */
+    classRenamingReport?: ClassRenamingReport;
 }
 
 export type DetectedFont = {
@@ -100,21 +103,77 @@ export async function processProjectImport(
         const namingResult = applyDeterministicComponentNames(componentsTree);
         componentsTree = namingResult.componentTree;
 
+        // 3b. BEM CLASS RENAMING
+        let workingCss = normalization.css;
+        let workingJs = cleanResult.extractedScripts;
+        let classRenamingReport: ClassRenamingReport | undefined;
+        let llmClassContext: LlmClassContext | undefined;
+
+        // Get established classes (design tokens) for preservation
+        const preTokenPayload = buildCssTokenPayload(normalization.css, { namespace: tokens.namespace, includePreview: false });
+        const establishedClassesArray = Array.isArray(preTokenPayload.establishedClasses)
+            ? preTokenPayload.establishedClasses
+            : Array.from(preTokenPayload.establishedClasses);
+
+        if (isBemRenamingEnabled()) {
+            // Deterministic check for LLM usage (needed early to decide if we want LLM refinement)
+            const preLiteralCheck = literalizeCssForWebflow(normalization.css);
+            const hasGenericNamesCheck = componentsTree.components.some(c =>
+                /^(section|block|article|main content|sidebar|navigation|header|footer)\s*\d*$/i.test(c.name.trim())
+            );
+            const forceLlmCheck = process.env.NEXT_PUBLIC_FLOWBRIDGE_FORCE_LLM === "1";
+            const willInvokeLlm = forceLlmCheck || preLiteralCheck.remainingVarCount > 0 || hasGenericNamesCheck;
+
+            const renameResult = renameClassesForProject({
+                componentsTree,
+                css: normalization.css,
+                js: cleanResult.extractedScripts,
+                establishedClasses: establishedClassesArray,
+                options: {
+                    projectSlug: tokens.slug,
+                    enableLlmRefinement: willInvokeLlm,
+                    preserveClasses: [],
+                    updateJSReferences: true,
+                },
+            });
+
+            // Update working variables with renamed content
+            componentsTree = renameResult.updatedComponents;
+            workingCss = renameResult.updatedCss;
+            workingJs = renameResult.updatedJs;
+            classRenamingReport = renameResult.report;
+            llmClassContext = renameResult.llmContext;
+
+            console.log(`[project-engine] BEM class renaming: ${renameResult.report.summary.renamed} classes renamed, ${renameResult.report.summary.highRiskNeutralized} high-risk neutralized`);
+        }
+
         // 4. SEMANTIC PATCHING (AI)
         reportProgress("semantic", 70);
-        let finalCss = normalization.css;
+        let finalCss = workingCss;
         let llmMeta: FlowbridgeSemanticPatchMeta | null = null;
         const patchCounts = { renamedComponents: 0, htmlMutations: 0, cssMutations: 0 };
 
+        // Re-parse CSS with renamed classes
+        const renamedCssResult = parseCSS(workingCss);
+
         const semanticContext = buildSemanticPatchRequest(
-            normalization.html,
+            componentsTree.components.map(c => c.htmlContent).join(""),
             componentsTree,
-            cssResult.classIndex,
-            cssResult.cssVariables
+            renamedCssResult.classIndex,
+            renamedCssResult.cssVariables
         );
 
+        // Attach class rename context for LLM
+        if (llmClassContext) {
+            semanticContext.request.classRenameContext = {
+                proposedMapping: llmClassContext.proposedMapping,
+                highRiskDetected: llmClassContext.highRiskDetected,
+                ambiguousNames: llmClassContext.ambiguousNames,
+            };
+        }
+
         // Deterministic check for LLM usage
-        const preLiteral = literalizeCssForWebflow(normalization.css);
+        const preLiteral = literalizeCssForWebflow(workingCss);
         const hasGenericNames = componentsTree.components.some(c =>
             /^(section|block|article|main content|sidebar|navigation|header|footer)\s*\d*$/i.test(c.name.trim())
         );
@@ -207,10 +266,10 @@ export async function processProjectImport(
                 tokensCss: finalCssResult.tokensCss,
                 stylesCss: literalization.css,
                 classIndex: JSON.stringify(finalCssResult.classIndex),
-                cleanHtml: normalization.html,
-                scriptsJs: cleanResult.extractedScripts,
+                cleanHtml: componentsTree.components.map(c => c.htmlContent).join(""),
+                scriptsJs: workingJs,
                 externalScripts: cleanResult.externalScripts,
-                jsHooks: extractJsHooks(normalization.html)
+                jsHooks: extractJsHooks(componentsTree.components.map(c => c.htmlContent).join(""))
             },
             components: finalComponents,
             tokenWebflowJson,
@@ -220,7 +279,8 @@ export async function processProjectImport(
                 mode: llmMeta.mode,
                 model: llmMeta.model,
                 ...patchCounts
-            } : undefined
+            } : undefined,
+            classRenamingReport,
         };
 
     } catch (error) {

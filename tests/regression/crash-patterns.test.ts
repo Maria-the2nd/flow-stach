@@ -2,6 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { loadFixture, loadAllFixtures } from '../fixtures/fixture-loader';
 import { ensureWebflowPasteSafety } from '@/lib/webflow-safety-gate';
 
+type SanitizedPayload = {
+  payload: {
+    nodes: Array<{ _id?: string; text?: boolean; v?: string }>;
+    styles: Array<{ _id?: string; variants?: Record<string, unknown> }>;
+  };
+};
+
 describe('Crash Pattern Prevention', () => {
   describe('React Issue #137 - span+br crash', () => {
     it('should sanitize text nodes containing <br> tags', () => {
@@ -16,10 +23,10 @@ describe('Crash Pattern Prevention', () => {
 
       if (fixture.expectedResult.shouldSanitize) {
         // Verify <br> tags were removed from text nodes
-        const sanitizedPayload = result.sanitizationAppliedPayload;
+        const sanitizedPayload = result.sanitizationAppliedPayload as SanitizedPayload | undefined;
         if (sanitizedPayload && typeof sanitizedPayload === 'object') {
-          const textNodes = sanitizedPayload.payload.nodes.filter((n: any) => n.text);
-          textNodes.forEach((node: any) => {
+          const textNodes = sanitizedPayload.payload.nodes.filter((node) => node.text);
+          textNodes.forEach((node) => {
             expect(node.v).not.toContain('<br>');
           });
         }
@@ -39,12 +46,12 @@ describe('Crash Pattern Prevention', () => {
       expect(result.sanitizationApplied).toBe(fixture.expectedResult.shouldSanitize);
 
       if (fixture.expectedResult.shouldSanitize) {
-        const sanitizedPayload = result.sanitizationAppliedPayload;
+        const sanitizedPayload = result.sanitizationAppliedPayload as SanitizedPayload | undefined;
         if (sanitizedPayload && typeof sanitizedPayload === 'object') {
           const styles = sanitizedPayload.payload.styles;
           const validKeys = ['main', 'tiny', 'small', 'medium', 'large'];
 
-          styles.forEach((style: any) => {
+          styles.forEach((style) => {
             if (style.variants) {
               const variantKeys = Object.keys(style.variants);
               variantKeys.forEach((key) => {
@@ -190,8 +197,9 @@ describe('Crash Pattern Prevention', () => {
       expect(result.report.blocked).toBe(fixture.expectedResult.shouldBlock);
 
       if (result.sanitizationApplied && result.sanitizationAppliedPayload && typeof result.sanitizationAppliedPayload === 'object') {
-        const nodeIds = result.sanitizationAppliedPayload.payload.nodes.map((n: any) => n._id);
-        const styleIds = result.sanitizationAppliedPayload.payload.styles.map((s: any) => s._id);
+        const sanitizedPayload = result.sanitizationAppliedPayload as SanitizedPayload;
+        const nodeIds = sanitizedPayload.payload.nodes.map((node) => node._id);
+        const styleIds = sanitizedPayload.payload.styles.map((style) => style._id);
         const allIds = [...nodeIds, ...styleIds];
 
         // All IDs should be unique after sanitization

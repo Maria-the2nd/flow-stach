@@ -378,6 +378,11 @@ export const deleteProject = mutation({
         .collect()
 
       for (const asset of assets) {
+        // Delete asset thumbnail from storage if exists
+        if (asset.thumbnailStorageId) {
+          await ctx.storage.delete(asset.thumbnailStorageId)
+        }
+
         // Delete payload
         const payload = await ctx.db
           .query("payloads")
@@ -399,6 +404,11 @@ export const deleteProject = mutation({
         }
 
         await ctx.db.delete(asset._id)
+      }
+
+      // Delete template thumbnail from storage if exists
+      if (template.thumbnailStorageId) {
+        await ctx.storage.delete(template.thumbnailStorageId)
       }
 
       // Delete template

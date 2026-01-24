@@ -6,6 +6,74 @@
 import type { WebflowStyle } from "./webflow-converter";
 
 // ============================================
+// UUID GENERATION
+// ============================================
+
+/**
+ * Generate a proper UUID v4 for Webflow style IDs.
+ * Webflow requires UUIDs for all internal IDs.
+ */
+function generateUUID(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  // Fallback for environments without crypto.randomUUID
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+/**
+ * Maps class names to their Webflow style UUIDs.
+ * Used to ensure node.classes references match style._id values.
+ */
+export class StyleIdMap {
+  private nameToId: Map<string, string> = new Map();
+
+  /**
+   * Get the UUID for a class name, creating one if it doesn't exist.
+   */
+  getOrCreate(className: string): string {
+    let id = this.nameToId.get(className);
+    if (!id) {
+      id = generateUUID();
+      this.nameToId.set(className, id);
+    }
+    return id;
+  }
+
+  /**
+   * Get the UUID for a class name, or undefined if not registered.
+   */
+  get(className: string): string | undefined {
+    return this.nameToId.get(className);
+  }
+
+  /**
+   * Convert an array of class names to an array of style UUIDs.
+   */
+  classNamesToIds(classNames: string[]): string[] {
+    return classNames.map(name => this.getOrCreate(name));
+  }
+
+  /**
+   * Get all registered mappings.
+   */
+  getAll(): Map<string, string> {
+    return new Map(this.nameToId);
+  }
+
+  /**
+   * Get the number of registered classes.
+   */
+  size(): number {
+    return this.nameToId.size;
+  }
+}
+
+// ============================================
 // TYPES
 // ============================================
 
@@ -1889,18 +1957,30 @@ function sanitizeStyleLess(styleLess: string): string {
   return sanitized.join(" ");
 }
 
-export function classEntryToWebflowStyle(entry: ClassIndexEntry): WebflowStyle {
+/**
+ * Convert a ClassIndexEntry to a WebflowStyle.
+ * @param entry The class entry to convert
+ * @param styleId Optional pre-assigned UUID for this style (for matching node.classes)
+ */
+export function classEntryToWebflowStyle(entry: ClassIndexEntry, styleId?: string): WebflowStyle {
   const variants: Record<string, { styleLess: string }> = {};
 
-  // Pseudo-class variants (sanitize unsupported CSS functions)
+  // ============================================
+  // PSEUDO-CLASS VARIANTS
+  // Webflow valid keys: hover, focus, active, visited, focus-visible, focus-within, etc.
+  // ============================================
   if (entry.hoverStyles) variants["hover"] = { styleLess: sanitizeStyleLess(entry.hoverStyles) };
   if (entry.focusStyles) variants["focus"] = { styleLess: sanitizeStyleLess(entry.focusStyles) };
-  if (entry.activeStyles) variants["pressed"] = { styleLess: sanitizeStyleLess(entry.activeStyles) };
+  if (entry.activeStyles) variants["active"] = { styleLess: sanitizeStyleLess(entry.activeStyles) }; // NOT "pressed"!
   if (entry.visitedStyles) variants["visited"] = { styleLess: sanitizeStyleLess(entry.visitedStyles) };
 
-  // Max-width breakpoints (cascade DOWN from desktop)
+  // ============================================
+  // MAX-WIDTH BREAKPOINTS (cascade DOWN from desktop)
+  // Webflow valid keys: main, medium, small, tiny
+  // ============================================
+  // Note: "desktop" internal name maps to "main" in Webflow
   if (entry.mediaQueries.desktop) {
-    variants["desktop"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.desktop, entry.isLayoutContainer)) };
+    variants["main"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.desktop, entry.isLayoutContainer)) };
   }
   if (entry.mediaQueries.medium) {
     variants["medium"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.medium, entry.isLayoutContainer)) };
@@ -1912,19 +1992,25 @@ export function classEntryToWebflowStyle(entry: ClassIndexEntry): WebflowStyle {
     variants["tiny"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.tiny, entry.isLayoutContainer)) };
   }
 
-  // Min-width breakpoints (cascade UP from desktop)
+  // ============================================
+  // MIN-WIDTH BREAKPOINTS (cascade UP from desktop)
+  // Webflow valid keys: xl, xxl
+  // ============================================
   // Internal name -> Webflow variant key mapping:
-  // xlarge (>=1280px) -> "large"
-  // xxlarge (>=1440px) -> "xlarge"
-  // xxxlarge (>=1920px) -> "xxlarge"
+  // xlarge (>=1280px) -> "xl"
+  // xxlarge (>=1440px) -> "xxl"
+  // xxxlarge (>=1920px) -> merged into "xxl" (Webflow only has xxl as largest)
   if (entry.mediaQueries.xlarge) {
-    variants["large"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.xlarge, entry.isLayoutContainer)) };
+    variants["xl"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.xlarge, entry.isLayoutContainer)) };
   }
   if (entry.mediaQueries.xxlarge) {
-    variants["xlarge"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.xxlarge, entry.isLayoutContainer)) };
+    variants["xxl"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.xxlarge, entry.isLayoutContainer)) };
   }
   if (entry.mediaQueries.xxxlarge) {
-    variants["xxlarge"] = { styleLess: sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.xxxlarge, entry.isLayoutContainer)) };
+    // Webflow doesn't have a 1920px+ breakpoint, merge into xxl
+    const existing = variants["xxl"]?.styleLess || "";
+    const xxxlStyles = sanitizeStyleLess(normalizeGridStyleLess(entry.mediaQueries.xxxlarge, entry.isLayoutContainer));
+    variants["xxl"] = { styleLess: mergeStyleLess(existing, xxxlStyles) };
   }
 
   const baseStyles = sanitizeStyleLess(normalizeGridStyleLess(entry.baseStyles, entry.isLayoutContainer));
@@ -1938,7 +2024,7 @@ export function classEntryToWebflowStyle(entry: ClassIndexEntry): WebflowStyle {
   }
 
   return {
-    _id: entry.className,
+    _id: styleId || generateUUID(),  // Use provided UUID or generate new one
     fake: false,
     type: "class",
     name: entry.className,
@@ -2069,7 +2155,17 @@ function expandRepeatTemplate(template: string): string | null {
 
 // NOTE: styleLessToMap / mapToStyleLess are defined earlier in this module and are reused here.
 
-export function classIndexToWebflowStyles(classIndex: ClassIndex, filterClasses?: Set<string>): WebflowStyle[] {
+/**
+ * Convert all class entries in a ClassIndex to WebflowStyles.
+ * @param classIndex The class index to convert
+ * @param filterClasses Optional set of class names to include (others are skipped)
+ * @param styleIdMap Optional StyleIdMap for consistent UUID assignment across nodes and styles
+ */
+export function classIndexToWebflowStyles(
+  classIndex: ClassIndex,
+  filterClasses?: Set<string>,
+  styleIdMap?: StyleIdMap
+): WebflowStyle[] {
   const styles: WebflowStyle[] = [];
 
   for (const [className, entry] of Object.entries(classIndex.classes)) {
@@ -2077,7 +2173,9 @@ export function classIndexToWebflowStyles(classIndex: ClassIndex, filterClasses?
     if (!hasStyles(entry)) {
       continue;
     }
-    styles.push(classEntryToWebflowStyle(entry));
+    // Use styleIdMap to get consistent UUID if provided
+    const styleId = styleIdMap?.getOrCreate(className);
+    styles.push(classEntryToWebflowStyle(entry, styleId));
   }
 
   return styles;

@@ -1,0 +1,887 @@
+{
+  "type": "@webflow/XscpData",
+  "payload": {
+    "nodes": [
+      {
+        "_id": "31120a18-eb76-0177-0bf1-f504c2e7c9c8",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e51b"
+        ],
+        "children": [
+          "204fe094-fbe9-e130-79a2-bb5859415fb0",
+          "52e62e0f-6ef0-7236-2e0a-2d5b8511a463"
+        ],
+        "data": {
+          "text": false,
+          "tag": "div",
+          "devlink": {
+            "runtimeProps": {},
+            "slot": ""
+          },
+          "displayName": "",
+          "attr": {
+            "id": ""
+          },
+          "xattr": [],
+          "search": {
+            "exclude": false
+          },
+          "visibility": {
+            "conditions": []
+          }
+        }
+      },
+      {
+        "_id": "204fe094-fbe9-e130-79a2-bb5859415fb0",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e51d"
+        ],
+        "children": [
+          "0b563eff-9ef1-eed6-f491-ae554f097ee5"
+        ],
+        "data": {
+          "tag": "section",
+          "devlink": {
+            "runtimeProps": {},
+            "slot": ""
+          },
+          "displayName": "",
+          "attr": {
+            "id": ""
+          },
+          "xattr": [],
+          "search": {
+            "exclude": false
+          },
+          "visibility": {
+            "conditions": []
+          },
+          "grid": {
+            "type": "section"
+          }
+        }
+      },
+      {
+        "_id": "0b563eff-9ef1-eed6-f491-ae554f097ee5",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e51f"
+        ],
+        "children": [
+          "77e86b07-8540-78eb-6b6b-1e9da8c3162d",
+          "46e126e1-dba3-8bd7-a715-73eedf8acee2",
+          "ef898f08-f380-e171-598a-3bb690a440a1"
+        ],
+        "data": {
+          "text": false,
+          "tag": "div",
+          "devlink": {
+            "runtimeProps": {},
+            "slot": ""
+          },
+          "displayName": "",
+          "attr": {
+            "id": ""
+          },
+          "xattr": [],
+          "search": {
+            "exclude": false
+          },
+          "visibility": {
+            "conditions": []
+          }
+        }
+      },
+      {
+        "_id": "77e86b07-8540-78eb-6b6b-1e9da8c3162d",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e519"
+        ],
+        "children": [],
+        "data": {
+          "text": false,
+          "tag": "div",
+          "devlink": {
+            "runtimeProps": {},
+            "slot": ""
+          },
+          "displayName": "",
+          "attr": {
+            "id": ""
+          },
+          "xattr": [],
+          "search": {
+            "exclude": false
+          },
+          "visibility": {
+            "conditions": []
+          }
+        }
+      },
+      {
+        "_id": "46e126e1-dba3-8bd7-a715-73eedf8acee2",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e517"
+        ],
+        "children": [
+          "c30e98fa-245a-0f37-312d-1292ee8a0a03",
+          "0353ca68-eafe-58d4-e45e-bf172d2fa6da",
+          "04aafcfd-7b59-1a0c-c075-666c606bac89",
+          "fbd0fc4b-79f1-283c-f69f-c91f7e4381eb"
+        ],
+        "data": {
+          "text": false,
+          "tag": "div",
+          "devlink": {
+            "runtimeProps": {},
+            "slot": ""
+          },
+          "displayName": "",
+          "attr": {
+            "id": ""
+          },
+          "xattr": [
+            {
+              "name": "data-parallax-layers",
+              "value": ""
+            }
+          ],
+          "search": {
+            "exclude": false
+          },
+          "visibility": {
+            "conditions": []
+          }
+        }
+      },
+      {
+        "_id": "c30e98fa-245a-0f37-312d-1292ee8a0a03",
+        "type": "Image",
+        "tag": "img",
+        "classes": [
+          "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e51a"
+        ],
+        "children": [],
+        "data": {
+          "img": {
+            "id": "6769698bb30e84ee2142ad73"
+          },
+          "srcsetDisabled": true,
+          "attr": {
+            "width": "800",
+            "height": "auto",
+            "alt": "__wf_reserved_inherit",
+            "src": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "loading": "eager",
+            "id": ""
+          },
+          "sizes": [
+            {
+              "max": 10000,
+              "size": "100vw"
+            }
+          ],
+          "devlink": {
+            "runtimeProps": {},
+            "slot": ""
+          },
+          "displayName": "",
+          "xattr": [
+            {
+              "name": "data-parallax-layer",
+              "value": "1"
+            }
+          ],
+          "search": {
+            "exclude": false
+          },
+          "visibility": {
+            "conditions": []
+          }
+        }
+      },
+      {
+        "_id": "0353ca68-eafe-58d4-e45e-bf172d2fa6da",
+        "type": "Image",
+        "tag": "img",
+        "classes": [
+          "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e51a"
+        ],
+        "children": [],
+        "data": {
+          "img": {
+            "id": "6769698bb30e84ee2142ad5f"
+          },
+          "srcsetDisabled": true,
+          "attr": {
+            "width": "800",
+            "height": "auto",
+            "alt": "__wf_reserved_inherit",
+            "src": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "loading": "eager",
+            "id": ""
+          },
+          "sizes": [
+            {
+              "max": 10000,
+              "size": "100vw"
+            }
+          ],
+          "devlink": {
+            "runtimeProps": {},
+            "slot": ""
+          },
+          "displayName": "",
+          "xattr": [
+            {
+              "name": "data-parallax-layer",
+              "value": "2"
+            }
+          ],
+          "search": {
+            "exclude": false
+          },
+          "visibility": {
+            "conditions": []
+          }
+        }
+      },
+      {
+        "_id": "04aafcfd-7b59-1a0c-c075-666c606bac89",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e520"
+        ],
+        "children": [
+          "b38acb23-913c-5284-f958-9e9b167a1474"
+        ],
+        "data": {
+          "text": false,
+          "tag": "div",
+          "devlink": {
+            "runtimeProps": {},
+            "slot": ""
+          },
+          "displayName": "",
+          "attr": {
+            "id": ""
+          },
+          "xattr": [
+            {
+              "name": "data-parallax-layer",
+              "value": "3"
+            }
+          ],
+          "search": {
+            "exclude": false
+          },
+          "visibility": {
+            "conditions": []
+          }
+        }
+      },
+      {
+        "_id": "b38acb23-913c-5284-f958-9e9b167a1474",
+        "type": "Heading",
+        "tag": "h2",
+        "classes": [
+          "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e518"
+        ],
+        "children": [
+          "ebe52fb9-23c0-c8af-9373-e58407858ec8"
+        ],
+        "data": {
+          "tag": "h2",
+          "devlink": {
+            "runtimeProps": {},
+            "slot": ""
+          },
+          "displayName": "",
+          "attr": {
+            "id": ""
+          },
+          "xattr": [],
+          "search": {
+            "exclude": false
+          },
+          "visibility": {
+            "conditions": []
+          }
+        }
+      },
+      {
+        "_id": "ebe52fb9-23c0-c8af-9373-e58407858ec8",
+        "text": true,
+        "v": "Parallax"
+      },
+      {
+        "_id": "fbd0fc4b-79f1-283c-f69f-c91f7e4381eb",
+        "type": "Image",
+        "tag": "img",
+        "classes": [
+          "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e51a"
+        ],
+        "children": [],
+        "data": {
+          "img": {
+            "id": "6769698bb30e84ee2142ad69"
+          },
+          "srcsetDisabled": true,
+          "attr": {
+            "width": "800",
+            "height": "auto",
+            "alt": "__wf_reserved_inherit",
+            "src": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "loading": "eager",
+            "id": ""
+          },
+          "sizes": [
+            {
+              "max": 10000,
+              "size": "100vw"
+            }
+          ],
+          "devlink": {
+            "runtimeProps": {},
+            "slot": ""
+          },
+          "displayName": "",
+          "xattr": [
+            {
+              "name": "data-parallax-layer",
+              "value": "4"
+            }
+          ],
+          "search": {
+            "exclude": false
+          },
+          "visibility": {
+            "conditions": []
+          }
+        }
+      },
+      {
+        "_id": "ef898f08-f380-e171-598a-3bb690a440a1",
+        "type": "Block",
+        "tag": "div",
+        "classes": [
+          "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e51c"
+        ],
+        "children": [],
+        "data": {
+          "tag": "div",
+          "devlink": {
+            "runtimeProps": {},
+            "slot": ""
+          },
+          "displayName": "",
+          "attr": {
+            "id": ""
+          },
+          "xattr": [],
+          "search": {
+            "exclude": false
+          },
+          "visibility": {
+            "conditions": []
+          }
+        }
+      },
+      {
+        "_id": "52e62e0f-6ef0-7236-2e0a-2d5b8511a463",
+        "type": "Section",
+        "tag": "section",
+        "classes": [
+          "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e516"
+        ],
+        "children": [
+          "6ddd56a2-9bd8-d23b-1232-de869a65ef9d"
+        ],
+        "data": {
+          "tag": "section",
+          "devlink": {
+            "runtimeProps": {},
+            "slot": ""
+          },
+          "displayName": "",
+          "attr": {
+            "id": ""
+          },
+          "xattr": [],
+          "search": {
+            "exclude": false
+          },
+          "visibility": {
+            "conditions": []
+          },
+          "grid": {
+            "type": "section"
+          }
+        }
+      },
+      {
+        "_id": "6ddd56a2-9bd8-d23b-1232-de869a65ef9d",
+        "type": "DOM",
+        "tag": "div",
+        "classes": [
+          "58175f96-a1d0-7b72-aeaa-a2beda47ce04"
+        ],
+        "children": [
+          "eda9c145-9fb4-4d42-780b-9b6b9f792cfc"
+        ],
+        "data": {
+          "tag": "svg",
+          "attributes": [
+            {
+              "name": "xmlns",
+              "value": "http://www.w3.org/2000/svg"
+            },
+            {
+              "name": "width",
+              "value": "100%"
+            },
+            {
+              "name": "viewBox",
+              "value": "0 0 160 160"
+            },
+            {
+              "name": "fill",
+              "value": "none"
+            }
+          ]
+        }
+      },
+      {
+        "_id": "eda9c145-9fb4-4d42-780b-9b6b9f792cfc",
+        "type": "DOM",
+        "tag": "div",
+        "classes": [],
+        "children": [],
+        "data": {
+          "tag": "path",
+          "attributes": [
+            {
+              "name": "d",
+              "value": "M94.8284 53.8578C92.3086 56.3776 88 54.593 88 51.0294V0H72V59.9999C72 66.6273 66.6274 71.9999 60 71.9999H0V87.9999H51.0294C54.5931 87.9999 56.3777 92.3085 53.8579 94.8283L18.3431 130.343L29.6569 141.657L65.1717 106.142C67.684 103.63 71.9745 105.396 72 108.939V160L88.0001 160L88 99.9999C88 93.3725 93.3726 87.9999 100 87.9999H160V71.9999H108.939C105.407 71.9745 103.64 67.7091 106.12 65.1938L106.142 65.1716L141.657 29.6568L130.343 18.3432L94.8284 53.8578Z"
+            },
+            {
+              "name": "fill",
+              "value": "currentColor"
+            }
+          ]
+        }
+      }
+    ],
+    "styles": [
+      {
+        "_id": "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e519",
+        "fake": false,
+        "type": "class",
+        "name": "parallax__black-line-overflow",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: absolute; left: 0px; bottom: -1px; z-index: 20; width: 100%; height: 2px; background-color: black;",
+        "variants": {},
+        "children": [],
+        "createdBy": "590cdb22ed5bf253e056f0a7",
+        "origin": null,
+        "selector": null
+      },
+      {
+        "_id": "58175f96-a1d0-7b72-aeaa-a2beda47ce04",
+        "fake": false,
+        "type": "class",
+        "name": "osmo-icon-svg",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "width: 8em;",
+        "variants": {},
+        "children": [],
+        "createdBy": "590cdb22ed5bf253e056f0a7",
+        "origin": null,
+        "selector": null
+      },
+      {
+        "_id": "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e517",
+        "fake": false,
+        "type": "class",
+        "name": "parallax__layers",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: absolute; left: 0px; top: 0px; overflow: hidden; width: 100%; height: 100%; max-width: none; object-fit: cover;",
+        "variants": {},
+        "children": [],
+        "createdBy": "590cdb22ed5bf253e056f0a7",
+        "origin": null,
+        "selector": null
+      },
+      {
+        "_id": "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e51a",
+        "fake": false,
+        "type": "class",
+        "name": "parallax__layer-img",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: absolute; left: 0px; top: -17.5%; width: 100%; height: 117.5%; max-width: none; pointer-events: none; object-fit: cover;",
+        "variants": {},
+        "children": [],
+        "createdBy": "590cdb22ed5bf253e056f0a7",
+        "origin": null,
+        "selector": null
+      },
+      {
+        "_id": "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e516",
+        "fake": false,
+        "type": "class",
+        "name": "parallax__content",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: relative; display: flex; min-height: 100svh; padding-top: 10em; padding-right: 1em; padding-bottom: 10em; padding-left: 1em; justify-content: center; align-items: center;",
+        "variants": {},
+        "children": [],
+        "createdBy": "590cdb22ed5bf253e056f0a7",
+        "origin": null,
+        "selector": null
+      },
+      {
+        "_id": "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e51b",
+        "fake": false,
+        "type": "class",
+        "name": "parallax",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: relative; overflow: hidden; width: 100%;",
+        "variants": {},
+        "children": [],
+        "createdBy": "590cdb22ed5bf253e056f0a7",
+        "origin": null,
+        "selector": null
+      },
+      {
+        "_id": "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e51c",
+        "fake": false,
+        "type": "class",
+        "name": "parallax__fade",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: absolute; left: 0px; bottom: 0px; z-index: 30; width: 100%; height: 20%; max-width: none; background-image: linear-gradient(180deg, hsla(0, 0.00%, 0.00%, 0.00), black); object-fit: cover;",
+        "variants": {},
+        "children": [],
+        "createdBy": "590cdb22ed5bf253e056f0a7",
+        "origin": null,
+        "selector": null
+      },
+      {
+        "_id": "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e51f",
+        "fake": false,
+        "type": "class",
+        "name": "parallax__visuals",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: absolute; left: 0px; top: 0px; width: 100%; height: 120%; max-width: none; object-fit: cover;",
+        "variants": {},
+        "children": [],
+        "createdBy": "590cdb22ed5bf253e056f0a7",
+        "origin": null,
+        "selector": null
+      },
+      {
+        "_id": "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e520",
+        "fake": false,
+        "type": "class",
+        "name": "parallax__layer-title",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: absolute; left: 0px; top: 0px; display: flex; width: 100%; height: 100svh; justify-content: center; align-items: center;",
+        "variants": {},
+        "children": [],
+        "createdBy": "590cdb22ed5bf253e056f0a7",
+        "origin": null,
+        "selector": null
+      },
+      {
+        "_id": "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e518",
+        "fake": false,
+        "type": "class",
+        "name": "parallax__title",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: relative; margin-top: 0px; margin-right: 0.075em; margin-bottom: 0.1em; pointer-events: auto; font-family: PP Neue Corp Wide; font-size: 10em; line-height: 1; font-weight: 700; text-align: center; text-transform: none;",
+        "variants": {
+          "small": {
+            "styleLess": "margin-right: 0em; margin-left: 0em; font-size: 4.6em;"
+          }
+        },
+        "children": [],
+        "createdBy": "590cdb22ed5bf253e056f0a7",
+        "origin": null,
+        "selector": null
+      },
+      {
+        "_id": "e1293ca0-f9a9-2a0f-6cd4-c47a37b6e51d",
+        "fake": false,
+        "type": "class",
+        "name": "parallax__header",
+        "namespace": "",
+        "comb": "",
+        "styleLess": "position: relative; z-index: 2; display: flex; min-height: 100svh; padding-top: 10em; padding-right: 1em; padding-bottom: 10em; padding-left: 1em; justify-content: center; align-items: center;",
+        "variants": {},
+        "children": [],
+        "createdBy": "590cdb22ed5bf253e056f0a7",
+        "origin": null,
+        "selector": null
+      }
+    ],
+    "assets": [
+      {
+        "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+        "siteId": "6769690ba44a3f0c8a32ba7d",
+        "width": 2000,
+        "isHD": false,
+        "height": 1906,
+        "fileName": "6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+        "createdOn": "2024-12-23T13:45:48.220Z",
+        "origFileName": "osmo-parallax-layer-3.webp",
+        "fileHash": "6a71590db0187ba23f41d4efeabf6e17",
+        "translationLoading": false,
+        "variants": [
+          {
+            "size": 10366,
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "width": 500,
+            "fileName": "6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "origFileName": "osmo-parallax-layer-3.webp",
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "format": "webp",
+            "_id": "6717795ee09b462b2e8ec1db",
+            "quality": 100
+          },
+          {
+            "size": 22130,
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "width": 800,
+            "fileName": "6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "origFileName": "osmo-parallax-layer-3.webp",
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "format": "webp",
+            "_id": "6717795ee09b462b2e8ec1dc",
+            "quality": 100
+          },
+          {
+            "size": 35302,
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "width": 1080,
+            "fileName": "6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "origFileName": "osmo-parallax-layer-3.webp",
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "format": "webp",
+            "_id": "6717795ee09b462b2e8ec1dd",
+            "quality": 100
+          },
+          {
+            "size": 62642,
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "width": 1600,
+            "fileName": "6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "origFileName": "osmo-parallax-layer-3.webp",
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "format": "webp",
+            "_id": "6717795ee09b462b2e8ec1de",
+            "quality": 100
+          },
+          {
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "origFileName": "osmo-parallax-layer-3.webp",
+            "fileName": "6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+            "format": "webp",
+            "_id": "6769698bb30e84ee2142ad78",
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp"
+          }
+        ],
+        "mimeType": "image/webp",
+        "isFromWellKnownFolder": false,
+        "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+        "thumbUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad73_osmo-parallax-layer-3.webp",
+        "_id": "6769698bb30e84ee2142ad73",
+        "updatedOn": "2024-12-23T13:45:48.222Z",
+        "markedAsDeleted": false,
+        "fileSize": 83770,
+        "localizedSettings": {}
+      },
+      {
+        "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+        "siteId": "6769690ba44a3f0c8a32ba7d",
+        "width": 2000,
+        "isHD": false,
+        "height": 1906,
+        "fileName": "6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+        "createdOn": "2024-12-23T13:45:48.218Z",
+        "origFileName": "osmo-parallax-layer-2.webp",
+        "fileHash": "250979a80a5d3bf61b5efcfaf349de58",
+        "translationLoading": false,
+        "variants": [
+          {
+            "size": 9096,
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "width": 500,
+            "fileName": "6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "origFileName": "osmo-parallax-layer-2.webp",
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "format": "webp",
+            "_id": "67177962a173b61605ed34e2",
+            "quality": 100
+          },
+          {
+            "size": 19212,
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "width": 800,
+            "fileName": "6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "origFileName": "osmo-parallax-layer-2.webp",
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "format": "webp",
+            "_id": "67177962a173b61605ed34e3",
+            "quality": 100
+          },
+          {
+            "size": 28962,
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "width": 1080,
+            "fileName": "6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "origFileName": "osmo-parallax-layer-2.webp",
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "format": "webp",
+            "_id": "67177962a173b61605ed34e4",
+            "quality": 100
+          },
+          {
+            "size": 49192,
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "width": 1600,
+            "fileName": "6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "origFileName": "osmo-parallax-layer-2.webp",
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "format": "webp",
+            "_id": "67177962a173b61605ed34e5",
+            "quality": 100
+          },
+          {
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "origFileName": "osmo-parallax-layer-2.webp",
+            "fileName": "6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+            "format": "webp",
+            "_id": "6769698bb30e84ee2142ad64",
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp"
+          }
+        ],
+        "mimeType": "image/webp",
+        "isFromWellKnownFolder": false,
+        "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+        "thumbUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad5f_osmo-parallax-layer-2.webp",
+        "_id": "6769698bb30e84ee2142ad5f",
+        "updatedOn": "2024-12-23T13:45:48.222Z",
+        "markedAsDeleted": false,
+        "fileSize": 72608,
+        "localizedSettings": {}
+      },
+      {
+        "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+        "siteId": "6769690ba44a3f0c8a32ba7d",
+        "width": 2000,
+        "isHD": false,
+        "height": 1906,
+        "fileName": "6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+        "createdOn": "2024-12-23T13:45:48.219Z",
+        "origFileName": "osmo-parallax-layer-1.webp",
+        "fileHash": "555ac7b019c583c73f329a1ff6388af1",
+        "translationLoading": false,
+        "variants": [
+          {
+            "size": 4726,
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "width": 500,
+            "fileName": "6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "origFileName": "osmo-parallax-layer-1.webp",
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "format": "webp",
+            "_id": "67177960b7fdfb122ba352f6",
+            "quality": 100
+          },
+          {
+            "size": 9756,
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "width": 800,
+            "fileName": "6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "origFileName": "osmo-parallax-layer-1.webp",
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "format": "webp",
+            "_id": "67177960b7fdfb122ba352f7",
+            "quality": 100
+          },
+          {
+            "size": 14302,
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "width": 1080,
+            "fileName": "6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "origFileName": "osmo-parallax-layer-1.webp",
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "format": "webp",
+            "_id": "67177960b7fdfb122ba352f8",
+            "quality": 100
+          },
+          {
+            "size": 24790,
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "width": 1600,
+            "fileName": "6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "origFileName": "osmo-parallax-layer-1.webp",
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "format": "webp",
+            "_id": "67177960b7fdfb122ba352f9",
+            "quality": 100
+          },
+          {
+            "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "origFileName": "osmo-parallax-layer-1.webp",
+            "fileName": "6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+            "format": "webp",
+            "_id": "6769698bb30e84ee2142ad6e",
+            "cdnUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp"
+          }
+        ],
+        "mimeType": "image/webp",
+        "isFromWellKnownFolder": false,
+        "s3Url": "https://s3.amazonaws.com/webflow-prod-assets/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+        "thumbUrl": "https://cdn.prod.website-files.com/6769690ba44a3f0c8a32ba7d/6769698bb30e84ee2142ad69_osmo-parallax-layer-1.webp",
+        "_id": "6769698bb30e84ee2142ad69",
+        "updatedOn": "2024-12-23T13:45:48.222Z",
+        "markedAsDeleted": false,
+        "fileSize": 36226,
+        "localizedSettings": {}
+      }
+    ],
+    "ix1": [],
+    "ix2": {
+      "interactions": [],
+      "events": [],
+      "actionLists": []
+    }
+  },
+  "meta": {
+    "droppedLinks": 0,
+    "dynBindRemovedCount": 0,
+    "dynListBindRemovedCount": 0,
+    "paginationRemovedCount": 0,
+    "universalBindingsRemovedCount": 0,
+    "unlinkedSymbolCount": 0
+  }
+}

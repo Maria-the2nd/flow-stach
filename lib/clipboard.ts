@@ -31,6 +31,7 @@ function stripTransitions(styleLess: string): string {
 }
 
 type WebflowStyle = {
+  _id?: string;
   styleLess?: string;
   variants?: Record<string, { styleLess?: string }>;
   type?: string;
@@ -85,17 +86,17 @@ function normalizeWebflowJson(jsonString: string): string {
 
     const hasNodes = Array.isArray(payload.nodes) && payload.nodes.length > 0;
     if (!hasNodes && Array.isArray(payload.styles) && payload.styles.length > 0) {
-      const rootClass = payload.styles.find(
-        (style) => style?.type === "class" && typeof style.name === "string"
-      )?.name;
+      const rootStyle = payload.styles.find(
+        (style) => style?.type === "class" && typeof style._id === "string"
+      );
 
-      if (rootClass) {
+      if (rootStyle?._id) {
         payload.nodes = [
           {
             _id: "fp-token-root-node",
             type: "Block",
             tag: "div",
-            classes: [rootClass],
+            classes: [rootStyle._id],
             children: [],
             data: { tag: "div", text: false, xattr: [] },
           },

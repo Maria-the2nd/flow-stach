@@ -37,10 +37,13 @@ export default function ProjectsPage() {
     const generateUploadUrl = useMutation(api.projects.generateThumbnailUploadUrl);
     const updateThumbnail = useMutation(api.projects.updateThumbnail);
     const deleteProject = useMutation(api.projects.deleteProject);
+    const deleteAllProjects = useMutation(api.projects.deleteAllMyProjects);
 
     const [uploadingProjectId, setUploadingProjectId] = useState<string | null>(null);
     const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+    const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
+    const [isDeletingAll, setIsDeletingAll] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const currentProjectIdRef = useRef<string | null>(null);
 
@@ -126,6 +129,23 @@ export default function ProjectsPage() {
             toast.error("Failed to delete project");
         } finally {
             setDeletingProjectId(null);
+        }
+    };
+
+    const handleClearAll = async () => {
+        setIsDeletingAll(true);
+        setShowClearAllConfirm(false);
+
+        try {
+            const result = await deleteAllProjects();
+            toast.success(`Cleared all projects`, {
+                description: `Deleted ${result.deletedProjects} projects, ${result.deletedAssets} components, and ${result.deletedArtifacts} artifacts`
+            });
+        } catch (error) {
+            console.error("Clear all error:", error);
+            toast.error("Failed to clear all projects");
+        } finally {
+            setIsDeletingAll(false);
         }
     };
 
@@ -216,14 +236,74 @@ export default function ProjectsPage() {
                 </div>
             )}
 
+            {/* Clear all confirmation modal */}
+            {showClearAllConfirm && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+                        <h3 className="text-xl font-bold text-red-600 mb-2">Clear All Projects?</h3>
+                        <p className="text-slate-500 mb-4">
+                            This will permanently delete <strong>ALL {projects?.length} projects</strong>, their components, artifacts, and associated data.
+                        </p>
+                        <p className="text-red-600 font-bold text-sm mb-6">
+                            This action cannot be undone!
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowClearAllConfirm(false)}
+                                disabled={isDeletingAll}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                                onClick={handleClearAll}
+                                disabled={isDeletingAll}
+                            >
+                                {isDeletingAll ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Clearing...
+                                    </>
+                                ) : (
+                                    "Clear All Projects"
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Projects</h1>
-                <Link href="/workspace/import">
-                    <Button className="bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-lg shadow-blue-200/50">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Import Project
-                    </Button>
-                </Link>
+                <div className="flex gap-3">
+                    {projects && projects.length > 0 && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowClearAllConfirm(true)}
+                            disabled={isDeletingAll}
+                            className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold"
+                        >
+                            {isDeletingAll ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Clearing...
+                                </>
+                            ) : (
+                                <>
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Clear All
+                                </>
+                            )}
+                        </Button>
+                    )}
+                    <Link href="/workspace/import">
+                        <Button className="bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-lg shadow-blue-200/50">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Import Project
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

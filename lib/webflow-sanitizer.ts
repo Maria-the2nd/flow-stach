@@ -78,9 +78,15 @@ export function regenerateAllIds(payload: WebflowPayload): WebflowPayload {
   });
 
   // Update all node children references to use new IDs
+  // AND update node.classes to reference regenerated style IDs
   result.payload.nodes = result.payload.nodes.map((node) => {
     if (node.children && node.children.length > 0) {
       node.children = node.children.map((childId) => idMap.get(childId) || childId);
+    }
+    // CRITICAL: node.classes contains style UUIDs (style._id values), not class names
+    // We must remap them to the regenerated style IDs
+    if (node.classes && node.classes.length > 0) {
+      node.classes = node.classes.map((styleId) => idMap.get(styleId) || styleId);
     }
     return node;
   });
@@ -99,6 +105,8 @@ export function regenerateAllIds(payload: WebflowPayload): WebflowPayload {
 /**
  * Fix only duplicate UUIDs by regenerating them.
  * Preserves non-duplicate IDs for better traceability.
+ *
+ * IMPORTANT: When style IDs are regenerated, node.classes references are also updated.
  */
 export function fixDuplicateIds(payload: WebflowPayload): {
   payload: WebflowPayload;
@@ -110,7 +118,10 @@ export function fixDuplicateIds(payload: WebflowPayload): {
   // Track seen IDs
   const seenNodeIds = new Map<string, number>();
   const seenStyleIds = new Map<string, number>();
-  const idMap = new Map<string, string>();
+
+  // Maps for remapping references: oldId -> newId
+  const nodeIdMap = new Map<string, string>();
+  const styleIdMap = new Map<string, string>();
 
   // Fix duplicate node IDs
   result.payload.nodes = result.payload.nodes.map((node) => {
@@ -119,7 +130,7 @@ export function fixDuplicateIds(payload: WebflowPayload): {
 
     if (count > 1) {
       const newId = generateUUID();
-      idMap.set(`node:${node._id}:${count}`, newId);
+      nodeIdMap.set(node._id, newId);
       fixed.push(`Regenerated duplicate node ID: ${node._id} -> ${newId}`);
       return { ...node, _id: newId };
     }
@@ -133,11 +144,33 @@ export function fixDuplicateIds(payload: WebflowPayload): {
 
     if (count > 1) {
       const newId = generateUUID();
+      styleIdMap.set(style._id, newId);
       fixed.push(`Regenerated duplicate style ID: ${style._id} -> ${newId}`);
       return { ...style, _id: newId };
     }
     return style;
   });
+
+  // Update node.children references if any node IDs were changed
+  if (nodeIdMap.size > 0) {
+    result.payload.nodes = result.payload.nodes.map((node) => {
+      if (node.children && node.children.length > 0) {
+        node.children = node.children.map((childId) => nodeIdMap.get(childId) || childId);
+      }
+      return node;
+    });
+  }
+
+  // Update node.classes references if any style IDs were changed
+  // CRITICAL: node.classes contains style UUIDs (style._id values), not class names
+  if (styleIdMap.size > 0) {
+    result.payload.nodes = result.payload.nodes.map((node) => {
+      if (node.classes && node.classes.length > 0) {
+        node.classes = node.classes.map((styleId) => styleIdMap.get(styleId) || styleId);
+      }
+      return node;
+    });
+  }
 
   return { payload: result, fixed };
 }
@@ -746,6 +779,96 @@ export function removeOrphanedNodeReferences(payload: WebflowPayload): {
   return { payload: result, removed };
 }
 
+// ============================================================================
+// MULTIPLE ROOTS FIX
+// ============================================================================
+
+/**
+ * Wrap multiple root nodes in a single container.
+ * Webflow paste requires EXACTLY ONE root node.
+ * Multiple roots cause "Subtree reification resulted in more than one root!" error.
+ *
+ * @param payload - The Webflow payload to fix
+ * @returns Fixed payload with single root, and list of changes
+ */
+export function wrapMultipleRoots(payload: WebflowPayload): {
+  payload: WebflowPayload;
+  wrapped: boolean;
+  rootCount: number;
+  changes: string[];
+} {
+  const result = JSON.parse(JSON.stringify(payload)) as WebflowPayload;
+  const changes: string[] = [];
+
+  if (!Array.isArray(result.payload.nodes) || result.payload.nodes.length === 0) {
+    return { payload: result, wrapped: false, rootCount: 0, changes };
+  }
+
+  // Find root nodes (not a child of any other node, excluding text nodes)
+  const childIds = new Set<string>();
+  for (const node of result.payload.nodes) {
+    if (Array.isArray(node.children)) {
+      for (const childId of node.children) {
+        childIds.add(childId);
+      }
+    }
+  }
+
+  const rootNodes = result.payload.nodes.filter(
+    (n) => !n.text && !childIds.has(n._id)
+  );
+  const rootIds = rootNodes.map((n) => n._id);
+
+  // If we have exactly 1 root (or 0), no action needed
+  if (rootIds.length <= 1) {
+    return { payload: result, wrapped: false, rootCount: rootIds.length, changes };
+  }
+
+  // Multiple roots detected - wrap them in a container
+  const wrapperId = generateUUID();
+  const existingWrapperStyle = result.payload.styles.find(
+    (style) => style.name === "multi-root-wrapper"
+  );
+  const wrapperStyleId = existingWrapperStyle?._id ?? generateUUID();
+  const wrapperNode: WebflowNode = {
+    _id: wrapperId,
+    type: "Block",
+    tag: "div",
+    classes: [wrapperStyleId],
+    children: rootIds,
+    data: { tag: "div", text: false },
+  };
+
+  // Add the wrapper style if it doesn't exist
+  if (!existingWrapperStyle) {
+    result.payload.styles.push({
+      _id: wrapperStyleId,
+      fake: false,
+      type: "class",
+      name: "multi-root-wrapper",
+      namespace: "",
+      comb: "",
+      styleLess: "display: block; width: 100%;",
+      variants: {},
+      children: [],
+    });
+  }
+
+  // Add wrapper as first node (root should be first in array for Webflow)
+  result.payload.nodes.unshift(wrapperNode);
+
+  changes.push(
+    `Wrapped ${rootIds.length} root elements in a container (Webflow requires single root)`
+  );
+
+  return {
+    payload: result,
+    wrapped: true,
+    rootCount: rootIds.length,
+    changes,
+  };
+}
+
 /**
  * Sanitize invalid variant keys by removing them from styles.
  * Invalid keys cause [PersistentUIState] errors and crash Webflow Designer.
@@ -1347,6 +1470,18 @@ export function sanitizeWebflowPayload(
     embedContent.warnings.push(
       `Deeply nested content (>${SAFE_DEPTH_LIMIT} levels) was converted to HTML embeds. ` +
       `This preserves the visual structure while avoiding Webflow Designer crashes.`
+    );
+  }
+
+  // 2d. Wrap multiple roots in single container (CRITICAL - causes "Subtree reification" crash)
+  // Webflow paste requires EXACTLY ONE root node
+  const rootWrapResult = wrapMultipleRoots(current);
+  current = rootWrapResult.payload;
+  if (rootWrapResult.wrapped) {
+    changes.push(...rootWrapResult.changes);
+    embedContent.warnings.push(
+      `Your content had ${rootWrapResult.rootCount} root elements. ` +
+      `They were wrapped in a container div since Webflow requires a single root.`
     );
   }
 

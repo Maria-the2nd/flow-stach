@@ -11,6 +11,7 @@ import {
   parseCSS,
   classIndexToWebflowStyles,
   classEntryToWebflowStyle,
+  StyleIdMap,
 } from "./css-parser";
 import type { Component } from "./componentizer";
 import { normalizeHtmlCssForWebflow } from "./webflow-normalizer";
@@ -218,16 +219,39 @@ export interface WebflowPayload {
 // ID GENERATOR
 // ============================================
 
+/**
+ * Generate a proper UUID v4 for Webflow node/style IDs.
+ * Webflow uses UUIDs for all internal IDs.
+ */
+function generateUUID(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  // Fallback for environments without crypto.randomUUID
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 class IdGenerator {
   private counters: Map<string, number> = new Map();
   private prefix: string;
+  private useUUIDs: boolean;
 
-  constructor(prefix: string = "wf") {
+  constructor(prefix: string = "wf", useUUIDs: boolean = true) {
     this.prefix = prefix;
+    this.useUUIDs = useUUIDs;
   }
 
-  generate(baseName: string): string {
-    const key = baseName || "node";
+  generate(_baseName?: string): string {
+    // Always use proper UUIDs for Webflow compatibility
+    if (this.useUUIDs) {
+      return generateUUID();
+    }
+    // Legacy fallback (not recommended)
+    const key = _baseName || "node";
     const count = (this.counters.get(key) || 0) + 1;
     this.counters.set(key, count);
     return `${this.prefix}-${key}-${String(count).padStart(3, "0")}`;
@@ -237,6 +261,9 @@ class IdGenerator {
     this.counters.clear();
   }
 }
+
+// StyleIdMap is imported from css-parser.ts
+// It manages the mapping between class names and their Webflow style UUIDs
 
 function splitValues(str: string): string[] {
   const out: string[] = [];
@@ -677,13 +704,21 @@ function parseChildren(content: string): (ParsedElement | string)[] {
 // ============================================
 
 /**
- * Convert parsed HTML tree to Webflow nodes
+ * Convert parsed HTML tree to Webflow nodes.
+ * @param element The parsed HTML element tree
+ * @param idGen ID generator for node IDs
+ * @param collectedClasses Set to collect all used class names
+ * @param classIndex CSS class index for style lookup
+ * @param styleIdMap Map for converting class names to style UUIDs (for node.classes)
+ * @param inlineStyles Map for tracking inline styles
+ * @param spanClasses Set for tracking span element classes
  */
 function convertToWebflowNodes(
   element: ParsedElement,
   idGen: IdGenerator,
   collectedClasses: Set<string>,
   classIndex: ClassIndex,
+  styleIdMap: StyleIdMap,
   inlineStyles?: Map<string, string>,
   spanClasses?: Set<string>
 ): { nodes: WebflowNode[]; rootId: string; spanClasses: Set<string> } {
@@ -931,7 +966,7 @@ function convertToWebflowNodes(
         _id: wrapperId,
         type: "Block",
         tag: "div",
-        classes: el.classes,
+        classes: styleIdMap.classNamesToIds(el.classes),  // Convert class names to style UUIDs
         children: [embedId],
         data: { tag: "div", text: false, xattr: el.id ? [{ name: "id", value: el.id }] : [] },
       });
@@ -1047,11 +1082,13 @@ function convertToWebflowNodes(
     }
 
     // Build node
+    // IMPORTANT: node.classes must contain style UUIDs, not class names!
+    // This matches Webflow's internal format where classes references style._id values
     const node: WebflowNode = {
       _id: nodeId,
       type: nodeType,
       tag: normalizedTag,
-      classes: nodeClasses,
+      classes: styleIdMap.classNamesToIds(nodeClasses),  // Convert class names to style UUIDs
       children: childIds,
       data,
     };
@@ -1095,15 +1132,19 @@ function styleLessToMap(styleLess: string): Map<string, string> {
 
 
 /**
- * Convert ClassIndex to Webflow styles (using unified parser)
+ * Convert ClassIndex to Webflow styles (using unified parser).
+ * @param classIndex The class index to convert
+ * @param usedClasses Set of class names actually used in the HTML
+ * @param styleIdMap Optional StyleIdMap for consistent UUID assignment
  */
 function convertToWebflowStyles(
   classIndex: ClassIndex,
-  usedClasses: Set<string>
+  usedClasses: Set<string>,
+  styleIdMap?: StyleIdMap
 ): WebflowStyle[] {
-  const styles = classIndexToWebflowStyles(classIndex, usedClasses);
+  const styles = classIndexToWebflowStyles(classIndex, usedClasses, styleIdMap);
   const styleMap = new Map<string, WebflowStyle>();
-  
+
   // Convert array to map for easier manipulation
   for (const style of styles) {
     styleMap.set(style.name, style);
@@ -1826,10 +1867,15 @@ export function convertSectionToWebflow(
     classIndex = parsedResult.classIndex;
   }
 
-  // Convert HTML to nodes
-  const { nodes, spanClasses } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex, inlineStyles);
+  // Create a StyleIdMap for consistent UUID assignment
+  // This ensures node.classes UUIDs match style._id UUIDs
+  const styleIdMap = new StyleIdMap();
 
-  const styles = convertToWebflowStyles(classIndex, collectedClasses);
+  // Convert HTML to nodes (this registers classes in styleIdMap)
+  const { nodes, spanClasses } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex, styleIdMap, inlineStyles);
+
+  // Convert styles using the SAME styleIdMap to ensure UUIDs match
+  const styles = convertToWebflowStyles(classIndex, collectedClasses, styleIdMap);
 
   // Ensure span classes have display: inline to maintain inline text flow
   for (const style of styles) {
@@ -1839,14 +1885,42 @@ export function convertSectionToWebflow(
   }
 
   for (const [className, styleLess] of inlineStyles.entries()) {
+    // Use styleIdMap to get consistent UUID for inline styles
     styles.push({
-      _id: className,
+      _id: styleIdMap.getOrCreate(className),  // UUID must match node.classes references
       fake: false,
       type: "class",
       name: className,
       namespace: "",
       comb: "",
       styleLess,
+      variants: {},
+      children: [],
+    });
+  }
+
+  // Create placeholder styles for classes used in HTML but not in CSS
+  // This ensures all node.classes UUIDs have matching style._id values
+  const existingStyleNames = new Set(styles.map(s => s.name));
+  for (const className of collectedClasses) {
+    // Skip if we already have a style for this class
+    if (existingStyleNames.has(className)) {
+      continue;
+    }
+    // Skip reserved Webflow classes (w-*, wf-*)
+    if (className.startsWith('w-') || className.startsWith('wf-')) {
+      continue;
+    }
+    // Create placeholder style with empty styleLess
+    // The UUID must match what was assigned during node conversion
+    styles.push({
+      _id: styleIdMap.getOrCreate(className),
+      fake: false,
+      type: "class",
+      name: className,
+      namespace: "",
+      comb: "",
+      styleLess: "",  // Empty - actual styles may come from embed or don't exist
       variants: {},
       children: [],
     });
@@ -2256,6 +2330,9 @@ export function buildComponentPayload(
   const collectedClasses = new Set<string>();
   const inlineStyles = new Map<string, string>();
 
+  // Create StyleIdMap for consistent UUID assignment
+  const styleIdMap = new StyleIdMap();
+
   // Parse component HTML
   const parsed = parseHtmlString(component.htmlContent) ?? parseHtmlString(`<div>${component.htmlContent}</div>`);
   if (!parsed) {
@@ -2267,7 +2344,7 @@ export function buildComponentPayload(
     };
   }
 
-  const { nodes, spanClasses } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex, inlineStyles);
+  const { nodes, spanClasses } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex, styleIdMap, inlineStyles);
 
   // Build styles array based on options
   const componentStyles: WebflowStyle[] = [];
@@ -2288,7 +2365,9 @@ export function buildComponentPayload(
     // Check if class exists in our classIndex
     const entry = classIndex.classes[className];
     if (entry) {
-      componentStyles.push(classEntryToWebflowStyle(entry));
+      // Pass styleIdMap UUID to ensure style._id matches node.classes references
+      const styleId = styleIdMap.getOrCreate(className);
+      componentStyles.push(classEntryToWebflowStyle(entry, styleId));
     } else {
       // Class used in HTML but not defined in CSS
       missingClasses.push(className);
@@ -2301,7 +2380,7 @@ export function buildComponentPayload(
       continue;
     }
     componentStyles.push({
-      _id: className,
+      _id: styleIdMap.getOrCreate(className),  // UUID must match node.classes references
       fake: false,
       type: "class",
       name: className,

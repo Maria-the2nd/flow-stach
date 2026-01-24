@@ -102,7 +102,7 @@ describe("webflow safety gate", () => {
       _id: "node-1",
       type: "Block",
       tag: "div",
-      classes: ["w-nav"],
+      classes: ["style-1"],
       children: [],
     });
 
@@ -111,7 +111,7 @@ describe("webflow safety gate", () => {
     const renamedStyle = result.payload.payload.styles[0];
     expect(renamedStyle.name).toBe("custom-nav");
     const nodeClasses = result.payload.payload.nodes[0].classes || [];
-    expect(nodeClasses).toContain("custom-nav");
+    expect(nodeClasses).toContain("style-1");
   });
 
   it("converts overly deep structures into HtmlEmbed nodes", () => {
@@ -167,5 +167,31 @@ describe("webflow safety gate", () => {
     });
     expect(result.blocked).toBe(true);
     expect(result.report.embedSize.errors.some((issue) => issue.includes("CSS embed"))).toBe(true);
+  });
+
+  it("remaps class name references to style IDs when unambiguous", () => {
+    const payload = makePayload();
+    payload.payload.styles.push({
+      _id: "style-1",
+      fake: false,
+      type: "class",
+      name: "button-primary",
+      namespace: "",
+      comb: "button-primary",
+      styleLess: "background: blue;",
+      variants: {},
+      children: [],
+    });
+    payload.payload.nodes.push({
+      _id: "node-1",
+      type: "Block",
+      tag: "div",
+      classes: ["button-primary"],
+      children: [],
+    });
+
+    const result = ensureWebflowPasteSafety({ payload });
+    const nodeClasses = result.payload.payload.nodes[0].classes || [];
+    expect(nodeClasses).toContain("style-1");
   });
 });

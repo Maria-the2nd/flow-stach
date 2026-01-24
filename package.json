@@ -13,7 +13,7 @@
     "verify": "tsx lib/webflow-verifier.ts",
     "test": "vitest",
     "test:regression": "vitest tests/regression",
-    "test:flowbridge": "tsx tests/flowbridge-semantic.test.ts"
+    "test:flowbridge": "vitest tests/flowbridge-semantic.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",

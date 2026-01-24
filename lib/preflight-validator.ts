@@ -81,6 +81,7 @@ export const VALID_VARIANT_KEYS = new Set([
  */
 export const RESERVED_CLASS_PREFIXES = [
   'w-',       // Core Webflow classes (w-container, w-nav, etc.)
+  'wf-',      // Webflow internal classes (wf-body, wf-page, etc.)
 ];
 
 /**
@@ -527,15 +528,20 @@ export function validateStyles(
   const safeStyles = Array.isArray(styles) ? styles : [];
   const safeNodes = Array.isArray(nodes) ? nodes : [];
 
-  const styleMap = new Map<string, WebflowStyle>();
+  // Map style._id (UUID) to style - for validating node.classes references
+  const styleIdMap = new Map<string, WebflowStyle>();
+  // Map style.name to style - for error messages and name lookups
+  const styleNameMap = new Map<string, WebflowStyle>();
   const invalidStyles: Array<{ className: string; property: string; value: string; reason: string }> = [];
   const missingStyleRefs: string[] = [];
   const invalidVariantKeys: Array<{ className: string; variantKey: string }> = [];
   const reservedClassNames: string[] = [];
 
-  // Build style map and validate styleLess
+  // Build style maps and validate styleLess
+  // NOTE: In Webflow format, node.classes contains style UUIDs (style._id), not class names
   for (const style of safeStyles) {
-    styleMap.set(style.name, style);
+    styleIdMap.set(style._id, style);  // Key by _id for node.classes validation
+    styleNameMap.set(style.name, style);  // Key by name for lookups and error messages
 
     // CRITICAL: Check if user-generated style uses reserved w- prefix
     // This is different from node class references - these are STYLE DEFINITIONS
@@ -585,18 +591,20 @@ export function validateStyles(
   }
 
   // Check all node class references exist
+  // NOTE: node.classes contains style UUIDs (style._id), not class names
   for (const node of safeNodes) {
     if (Array.isArray(node.classes)) {
-      for (const classRef of node.classes) {
-        // Skip Webflow built-in classes ONLY for reference checks
-        // (nodes CAN reference built-in classes like w-layout-grid)
-        if (isReservedClassName(classRef)) {
-          // This is OK - nodes can USE Webflow classes
-          // We only block DEFINING new styles with reserved names
-          continue;
-        }
-        if (!styleMap.has(classRef)) {
-          missingStyleRefs.push(`Node ${node._id} references missing style: ${classRef}`);
+      for (const styleId of node.classes) {
+        // Look up the style by _id (UUID), not by name
+        const style = styleIdMap.get(styleId);
+        if (!style) {
+          // Check if it might be a reserved class name (for backward compatibility)
+          // This handles the case where the value is actually a class name, not UUID
+          if (isReservedClassName(styleId)) {
+            // This is OK - nodes can USE Webflow classes like w-layout-grid
+            continue;
+          }
+          missingStyleRefs.push(`Node ${node._id} references missing style ID: ${styleId}`);
         }
       }
     }
@@ -870,6 +878,55 @@ export function validateNodeDepth(nodes: WebflowNode[]): DepthValidation {
     isValid: deepNodes.length === 0,
     maxDepthFound,
     deepNodes,
+  };
+}
+
+// ============================================
+// SINGLE ROOT VALIDATION
+// ============================================
+
+/**
+ * Webflow paste requires EXACTLY ONE root node.
+ * Multiple roots cause "Subtree reification resulted in more than one root!" error.
+ */
+export interface RootValidation {
+  isValid: boolean;
+  rootIds: string[];
+  rootCount: number;
+}
+
+/**
+ * Validate that the payload has exactly one root node.
+ * A root node is a node that is not a child of any other node.
+ *
+ * @param nodes - Array of Webflow nodes to validate
+ * @returns RootValidation result
+ */
+export function validateSingleRoot(nodes: WebflowNode[]): RootValidation {
+  if (!Array.isArray(nodes) || nodes.length === 0) {
+    return { isValid: true, rootIds: [], rootCount: 0 };
+  }
+
+  // Collect all child IDs
+  const childIds = new Set<string>();
+  for (const node of nodes) {
+    if (Array.isArray(node.children)) {
+      for (const childId of node.children) {
+        childIds.add(childId);
+      }
+    }
+  }
+
+  // Find root nodes (not a child of any other node, excluding text nodes)
+  const rootIds = nodes
+    .filter(n => !n.text) // Exclude text nodes
+    .map(n => n._id)
+    .filter(id => !childIds.has(id));
+
+  return {
+    isValid: rootIds.length === 1,
+    rootIds,
+    rootCount: rootIds.length,
   };
 }
 
@@ -1509,6 +1566,9 @@ export function runPreflightValidation(
   const nodeStructure = validateNodeStructure(nodes);
   const depthValidation = validateNodeDepth(nodes);
 
+  // NEW: Single root validation (Webflow requires exactly one root)
+  const rootValidation = validateSingleRoot(nodes);
+
   // NEW: Ghost variant validation
   const ghostVariantValidation = validateGhostVariants(styles, nodes);
 
@@ -1793,6 +1853,19 @@ export function runPreflightValidation(
       ));
     }
     criticalFailures.push(`Excessive nesting: ${depthValidation.deepNodes.length} node(s) exceed ${MAX_NODE_DEPTH} levels - max depth found: ${depthValidation.maxDepthFound}`);
+  }
+
+  // FATAL: Multiple roots (causes "Subtree reification resulted in more than one root!" crash)
+  if (!rootValidation.isValid && rootValidation.rootCount > 1) {
+    issues.push(fatal(
+      FatalIssueCodes.MULTIPLE_ROOTS,
+      `Payload has ${rootValidation.rootCount} root elements (Webflow requires exactly 1)`,
+      {
+        context: `Root IDs: ${rootValidation.rootIds.slice(0, 3).join(', ')}${rootValidation.rootCount > 3 ? '...' : ''}`,
+        suggestion: 'The sanitizer will auto-wrap multiple roots in a container div'
+      }
+    ));
+    criticalFailures.push(`Multiple roots: ${rootValidation.rootCount} root element(s) found - Webflow requires exactly 1`);
   }
 
   // Include xref issues (ERROR and WARNING levels)

@@ -88,6 +88,8 @@ export const FatalIssueCodes = {
   INVALID_PAYLOAD: 'INVALID_PAYLOAD',
   /** Excessive nesting depth (>50 levels) causes Webflow Designer crash */
   EXCESSIVE_DEPTH: 'EXCESSIVE_DEPTH',
+  /** Multiple root nodes - Webflow paste requires exactly one root element */
+  MULTIPLE_ROOTS: 'MULTIPLE_ROOTS',
 } as const;
 
 // ============================================
@@ -474,4 +476,76 @@ export function fromLegacyStatus(status: 'PASS' | 'WARN' | 'FAIL'): ValidationSe
     case 'PASS': return null; // No issue
     default: return null;
   }
+}
+
+// ============================================
+// CLASS RENAMING REPORT
+// ============================================
+
+/**
+ * Report structure for BEM class renaming operations.
+ * Used by the BEM renamer stage to communicate results to UI.
+ */
+export interface ClassRenamingReport {
+  /** Overall status of the renaming operation */
+  status: "pass" | "warn";
+  /** Summary statistics */
+  summary: {
+    /** Total number of classes processed */
+    totalClasses: number;
+    /** Number of classes that were renamed */
+    renamed: number;
+    /** Number of classes preserved (design tokens, whitelist) */
+    preserved: number;
+    /** Number of high-risk generic names neutralized */
+    highRiskNeutralized: number;
+    /** Number of JS references updated */
+    jsReferencesUpdated: number;
+  };
+  /** Categorized rename details */
+  categories: {
+    /** Classes renamed with full BEM structure (block__element--modifier) */
+    bemRenamed: Array<{
+      original: string;
+      renamed: string;
+      block: string;
+    }>;
+    /** Classes namespaced as utilities */
+    utilityNamespaced: Array<{
+      original: string;
+      renamed: string;
+    }>;
+    /** Classes preserved without renaming */
+    preserved: Array<{
+      className: string;
+      reason: string;
+    }>;
+    /** High-risk generic names that were detected */
+    highRiskDetected: string[];
+  };
+  /** Warning messages */
+  warnings: string[];
+}
+
+/**
+ * Create an empty/default ClassRenamingReport
+ */
+export function createEmptyClassRenamingReport(): ClassRenamingReport {
+  return {
+    status: "pass",
+    summary: {
+      totalClasses: 0,
+      renamed: 0,
+      preserved: 0,
+      highRiskNeutralized: 0,
+      jsReferencesUpdated: 0,
+    },
+    categories: {
+      bemRenamed: [],
+      utilityNamespaced: [],
+      preserved: [],
+      highRiskDetected: [],
+    },
+    warnings: [],
+  };
 }

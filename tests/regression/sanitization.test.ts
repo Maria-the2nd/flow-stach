@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { loadAllFixtures } from '../fixtures/fixture-loader';
 import { ensureWebflowPasteSafety } from '@/lib/webflow-safety-gate';
 
+type FixtureStyle = {
+  variants?: Record<string, unknown>;
+};
+
 describe('Sanitization Logic', () => {
   describe('Valid Patterns', () => {
     it('should pass all valid patterns without modification', () => {
@@ -32,8 +36,8 @@ describe('Sanitization Logic', () => {
 
         // Verify all variant keys are preserved
         if (!result.sanitizationApplied) {
-          const originalStyles = fixture.payload.payload.styles;
-          originalStyles.forEach((style: any) => {
+          const originalStyles = fixture.payload.payload.styles as FixtureStyle[];
+          originalStyles.forEach((style) => {
             if (style.variants) {
               const originalKeys = Object.keys(style.variants);
               expect(originalKeys.length).toBeGreaterThan(0);

@@ -9,20 +9,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from 'next/link';
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { DesignTokensCard } from "@/components/project/design-tokens-card";
 import { FontChecklistCard } from "@/components/project/font-checklist-card";
 import { ComponentsList } from "@/components/project/components-list";
 import { ImagesGrid } from "@/components/project/images-grid";
 import { StyleGuideView } from "@/components/project/style-guide/style-guide-view";
 import { toast } from "sonner";
-import { copyWebflowJson } from "@/lib/clipboard";
+import { copyText, copyWebflowJson } from "@/lib/clipboard";
 import { regenerateAllIds } from "@/lib/webflow-sanitizer";
 import { extractEnhancedTokens, type EnhancedTokenExtraction } from "@/lib/token-extractor";
 import { generateStyleGuidePayload } from "@/lib/webflow-style-guide-generator";
 import type { WebflowPayload } from "@/lib/webflow-converter";
 import { ensureWebflowPasteSafety } from "@/lib/webflow-safety-gate";
-import { SafetyReportPanel } from "@/components/validation/SafetyReportPanel";
+import { SafetyReportPanel, ClassRenamingReportPanel } from "@/components/validation/SafetyReportPanel";
+import type { ClassRenamingReport } from "@/lib/validation-types";
 
 type ImportProject = Doc<"importProjects">;
 type ImportArtifact = Doc<"importArtifacts">;
@@ -76,7 +77,15 @@ export function ProjectDetailsView({ id }: { id: string }) {
     return <ProjectContent project={project} components={components} artifacts={artifacts} />;
 }
 
-function StyleGuideTab({ cssArtifact, project }: { cssArtifact?: ImportArtifact; project: ImportProject }) {
+function StyleGuideTab({
+    cssArtifact,
+    tokenWebflowJsonArtifact,
+    project,
+}: {
+    cssArtifact?: ImportArtifact;
+    tokenWebflowJsonArtifact?: ImportArtifact;
+    project: ImportProject;
+}) {
     // Extract enhanced tokens from CSS
     const enhancedTokens: EnhancedTokenExtraction | null = (() => {
         if (!cssArtifact?.content) return null;
@@ -100,10 +109,36 @@ function StyleGuideTab({ cssArtifact, project }: { cssArtifact?: ImportArtifact;
         }
 
         try {
-            const payload = generateStyleGuidePayload(enhancedTokens, {
-                namespace: enhancedTokens.namespace,
-                includeTitle: true,
-            });
+            let payload: WebflowPayload | null = null;
+            if (tokenWebflowJsonArtifact?.content) {
+                const tokenPayload = JSON.parse(tokenWebflowJsonArtifact.content) as WebflowPayload;
+                const guidePayload = generateStyleGuidePayload(enhancedTokens, {
+                    namespace: `${enhancedTokens.namespace}-sg`,
+                    includeTitle: true,
+                });
+                payload = {
+                    type: tokenPayload.type,
+                    payload: {
+                        nodes: [...guidePayload.payload.nodes],
+                        styles: [...tokenPayload.payload.styles, ...guidePayload.payload.styles],
+                        assets: [],
+                        ix1: [],
+                        ix2: { interactions: [], events: [], actionLists: [] },
+                    },
+                    meta: {
+                        ...tokenPayload.meta,
+                        hasEmbedCSS: false,
+                        hasEmbedJS: false,
+                        embedCSSSize: 0,
+                        embedJSSize: 0,
+                    },
+                };
+            } else {
+                payload = generateStyleGuidePayload(enhancedTokens, {
+                    namespace: `${enhancedTokens.namespace}-sg`,
+                    includeTitle: true,
+                });
+            }
 
             await copyWebflowJson(JSON.stringify(payload));
             toast.success("Style Guide (Design Tokens) copied to clipboard!", {
@@ -137,6 +172,9 @@ function ProjectContent({
     components: ComponentEntry[];
     artifacts: ImportArtifact[];
 }) {
+    const [expandedEmbeds, setExpandedEmbeds] = useState<Record<number, boolean>>({});
+    const [copiedEmbed, setCopiedEmbed] = useState<number | null>(null);
+
     // Extract all relevant artifacts
     const cssArtifact = artifacts.find((a) => a.type === "styles_css");
     const jsArtifact = artifacts.find((a) => a.type === "scripts_js");
@@ -145,6 +183,18 @@ function ProjectContent({
     const tokenWebflowJsonArtifact = artifacts.find((a) => a.type === "token_webflow_json");
     const jsHooksArtifact = artifacts.find((a) => a.type === "js_hooks");
     const externalScriptsArtifact = artifacts.find((a) => a.type === "external_scripts");
+    // Note: class_renaming_report is a newer artifact type that may not be in all projects
+    const classRenamingArtifact = artifacts.find((a) => (a.type as string) === "class_renaming_report");
+
+    // Parse class renaming report if available
+    const classRenamingReport: ClassRenamingReport | null = useMemo(() => {
+        if (!classRenamingArtifact?.content) return null;
+        try {
+            return JSON.parse(classRenamingArtifact.content) as ClassRenamingReport;
+        } catch {
+            return null;
+        }
+    }, [classRenamingArtifact?.content]);
 
     // Bug 4 Fix: Parse external libraries/dependencies
     const externalLibraries: Array<{ url: string; name: string; type: 'script' | 'style' }> = [];
@@ -262,8 +312,14 @@ function ProjectContent({
         try {
             const allNodes: WebflowPayload["payload"]["nodes"] = [];
             const allStyles: WebflowPayload["payload"]["styles"] = [];
-            const seenStyleNames = new Set<string>();
+
+            // Maps style NAME to canonical style ID (first seen wins)
+            const canonicalStyleIdByName = new Map<string, string>();
+            // Maps old style ID -> canonical style ID (for remapping node.classes)
+            const styleIdRemap = new Map<string, string>();
+            // Track token style names to exclude and map to canonical IDs
             const tokenStyleNames = new Set<string>();
+            const tokenStyleIdByName = new Map<string, string>();
 
             if (tokenWebflowJsonArtifact?.content) {
                 try {
@@ -273,7 +329,12 @@ function ProjectContent({
                     if (Array.isArray(tokenPayload.payload?.styles)) {
                         tokenPayload.payload.styles.forEach((style) => {
                             const styleName = style?.name || style?._id;
-                            if (styleName) tokenStyleNames.add(styleName);
+                            if (styleName) {
+                                tokenStyleNames.add(styleName);
+                                if (style?._id) {
+                                    tokenStyleIdByName.set(styleName, style._id);
+                                }
+                            }
                         });
                     }
                 } catch (e) {
@@ -288,20 +349,51 @@ function ProjectContent({
                         if (parsed.placeholder) {
                             return;
                         }
+                        // Regenerate IDs for this component to avoid conflicts
                         const regenerated = regenerateAllIds(parsed);
 
-                        if (regenerated.payload?.nodes) {
-                            allNodes.push(...regenerated.payload.nodes);
-                        }
-
+                        // Build style ID remap for this component
+                        // When we skip a style due to deduplication, we need to remap nodes to use the canonical ID
                         if (Array.isArray(regenerated.payload?.styles)) {
                             regenerated.payload.styles.forEach((style) => {
                                 const styleName = style?.name || style?._id;
-                                if (!styleName) return;
-                                if (tokenStyleNames.has(styleName)) return;
-                                if (seenStyleNames.has(styleName)) return;
-                                seenStyleNames.add(styleName);
-                                allStyles.push(style);
+                                const styleId = style?._id;
+                                if (!styleName || !styleId) return;
+
+                                // Skip token styles entirely
+                                if (tokenStyleNames.has(styleName)) {
+                                    const canonicalTokenId = tokenStyleIdByName.get(styleName);
+                                    if (canonicalTokenId) {
+                                        styleIdRemap.set(styleId, canonicalTokenId);
+                                    }
+                                    return;
+                                }
+
+                                // Check if we already have a canonical style for this name
+                                const existingCanonicalId = canonicalStyleIdByName.get(styleName);
+                                if (existingCanonicalId) {
+                                    // Duplicate style name - remap to canonical style ID
+                                    styleIdRemap.set(styleId, existingCanonicalId);
+                                } else {
+                                    // First style with this name
+                                    canonicalStyleIdByName.set(styleName, styleId);
+                                    allStyles.push(style);
+                                    styleIdRemap.set(styleId, styleId);
+                                }
+                            });
+                        }
+
+                        // Add nodes with remapped class references
+                        if (regenerated.payload?.nodes) {
+                            regenerated.payload.nodes.forEach((node) => {
+                                // Remap node.classes to use canonical style IDs
+                                if (Array.isArray(node.classes) && node.classes.length > 0) {
+                                    node.classes = node.classes.map((classId) => {
+                                        const remappedId = styleIdRemap.get(classId);
+                                        return remappedId || classId;
+                                    });
+                                }
+                                allNodes.push(node);
                             });
                         }
                     } catch (e) {
@@ -424,6 +516,11 @@ function ProjectContent({
                     <SafetyReportPanel report={siteSafetyReport} />
                 </div>
             )}
+            {classRenamingReport && (
+                <div className="mb-6">
+                    <ClassRenamingReportPanel report={classRenamingReport} />
+                </div>
+            )}
 
             <Tabs defaultValue="overview" className="w-full">
                 <TabsList className="w-full justify-start p-1 bg-slate-100/80 backdrop-blur rounded-[20px] h-auto inline-flex gap-1 mb-10 shadow-inner">
@@ -447,6 +544,7 @@ function ProjectContent({
                     <TabsContent value="styleguide" className="space-y-6">
                         <StyleGuideTab 
                             cssArtifact={cssArtifact}
+                            tokenWebflowJsonArtifact={tokenWebflowJsonArtifact}
                             project={project}
                         />
                     </TabsContent>
@@ -557,12 +655,11 @@ function ProjectContent({
                                                 variant="ghost"
                                                 size="sm"
                                                 className="text-blue-600 font-bold hover:bg-blue-50"
-                                                onClick={() => {
+                                                onClick={async () => {
                                                     const tag = lib.type === 'script'
                                                         ? `<script src="${lib.url}"></script>`
                                                         : `<link rel="stylesheet" href="${lib.url}">`;
-                                                    navigator.clipboard.writeText(tag);
-                                                    toast.success(`${lib.name} tag copied!`);
+                                                    await copyText(tag);
                                                 }}
                                             >
                                                 Copy Tag
@@ -590,26 +687,77 @@ function ProjectContent({
 
                             <div className="space-y-4">
                                 {embeds.length > 0 ? (
-                                    embeds.map((embed, idx) => (
-                                        <div key={idx} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <Badge className={embed.type === 'CSS' ? "bg-purple-50 text-purple-600 border-none font-bold uppercase text-[10px]" : "bg-yellow-50 text-yellow-700 border-none font-bold uppercase text-[10px]"}>
-                                                        {embed.type}
-                                                    </Badge>
-                                                    <span className="text-sm font-bold text-slate-700">{embed.label}</span>
+                                    embeds.map((embed, idx) => {
+                                        const isExpanded = !!expandedEmbeds[idx];
+                                        const shouldClamp = embed.content.length > 1200;
+
+                                        return (
+                                            <div key={idx} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge className={embed.type === 'CSS' ? "bg-purple-50 text-purple-600 border-none font-bold uppercase text-[10px]" : "bg-yellow-50 text-yellow-700 border-none font-bold uppercase text-[10px]"}>
+                                                            {embed.type}
+                                                        </Badge>
+                                                        <span className="text-sm font-bold text-slate-700">{embed.label}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {shouldClamp && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-slate-500 font-bold hover:bg-white"
+                                                                onClick={() => {
+                                                                    setExpandedEmbeds((prev) => ({
+                                                                        ...prev,
+                                                                        [idx]: !isExpanded,
+                                                                    }));
+                                                                }}
+                                                            >
+                                                                {isExpanded ? "Show Less" : "Show More"}
+                                                            </Button>
+                                                        )}
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className={copiedEmbed === idx ? "text-green-600 font-bold hover:bg-white" : "text-blue-600 font-bold hover:bg-white"}
+                                                            onClick={async (e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                console.log("Copy button clicked for:", embed.label);
+                                                                try {
+                                                                    if (!embed.content) {
+                                                                        toast.error("No content to copy");
+                                                                        console.error("Empty embed content for:", embed.label);
+                                                                        return;
+                                                                    }
+                                                                    console.log("Copying content length:", embed.content.length);
+                                                                    const result = await copyText(embed.content);
+                                                                    if (result.success) {
+                                                                        setCopiedEmbed(idx);
+                                                                        setTimeout(() => setCopiedEmbed(null), 2000);
+                                                                    } else {
+                                                                        console.error("Copy failed:", result.reason);
+                                                                        toast.error(`Copy failed: ${result.reason}`);
+                                                                    }
+                                                                } catch (error) {
+                                                                    console.error("Copy error:", error);
+                                                                    toast.error("Failed to copy code");
+                                                                }
+                                                            }}
+                                                        >
+                                                            {copiedEmbed === idx ? "Copied!" : "Copy Code"}
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                                <Button variant="ghost" size="sm" className="text-blue-600 font-bold hover:bg-white" onClick={() => {
-                                                    navigator.clipboard.writeText(embed.content);
-                                                    toast.success(`${embed.label} copied!`);
-                                                }}>Copy Code</Button>
+                                                <p className="text-xs text-slate-500">{embed.description}</p>
+                                                <pre
+                                                    className={`text-xs font-mono bg-white p-4 rounded-xl border border-slate-100 overflow-x-auto text-slate-600 overflow-y-auto ${isExpanded ? "max-h-[60vh]" : "max-h-64"}`}
+                                                >
+                                                    {embed.content}
+                                                </pre>
                                             </div>
-                                            <p className="text-xs text-slate-500">{embed.description}</p>
-                                            <pre className="text-xs font-mono bg-white p-4 rounded-xl border border-slate-100 overflow-x-auto text-slate-600 max-h-64 overflow-y-auto">
-                                                {embed.content.length > 1000 ? `${embed.content.substring(0, 1000)}...` : embed.content}
-                                            </pre>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 ) : (
                                     <div className="text-center py-12 text-slate-400 font-medium italic">
                                         No special embeds needed for this project.

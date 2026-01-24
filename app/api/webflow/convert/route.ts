@@ -10,6 +10,8 @@ import { validateCSSEmbed, validateJSEmbed, validateLibraryImports } from "@/lib
 import { detectLibraries } from "@/lib/js-library-detector";
 import { detectExternalResources } from "@/lib/external-resource-detector";
 import { ensureWebflowPasteSafety } from "@/lib/webflow-safety-gate";
+import { renameClassesForProject, isBemRenamingEnabled, type ClassRenamingReport } from "@/lib/bem-renamer";
+import { componentizeHtml } from "@/lib/componentizer";
 
 // Debug mode - set WEBFLOW_CONVERT_DEBUG=true for verbose logging
 const DEBUG = process.env.WEBFLOW_CONVERT_DEBUG === "true";
@@ -19,6 +21,10 @@ type ConvertRequest = {
   css: string;
   idPrefix?: string;
   sectionName?: string;
+  /** Optional project slug for BEM class renaming */
+  projectSlug?: string;
+  /** Whether to apply BEM class renaming (default: true if projectSlug provided) */
+  enableBemRenaming?: boolean;
 };
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -709,7 +715,8 @@ export async function POST(request: Request) {
   // STEP 1: HTML Sanitization
   // ============================================================================
   const htmlSanitization = prepareHTMLForWebflow(body.html);
-  const sanitizedHTML = htmlSanitization.sanitizedHTML;
+  let sanitizedHTML = htmlSanitization.sanitizedHTML;
+  let workingCSS = body.css;
 
   if (!htmlSanitization.validation.valid) {
     console.warn("[webflow-convert]", requestId, "html_validation_failed", {
@@ -724,10 +731,55 @@ export async function POST(request: Request) {
   }
 
   // ============================================================================
+  // STEP 1b: BEM Class Renaming (optional)
+  // ============================================================================
+  let classRenamingReport: ClassRenamingReport | undefined;
+  const shouldApplyBemRenaming = body.projectSlug &&
+    (body.enableBemRenaming !== false) &&
+    isBemRenamingEnabled();
+
+  if (shouldApplyBemRenaming && body.projectSlug) {
+    try {
+      // Create a minimal component tree from the HTML
+      const componentsTree = componentizeHtml(sanitizedHTML);
+
+      const renameResult = renameClassesForProject({
+        componentsTree,
+        css: body.css,
+        js: '', // API route doesn't have JS context
+        establishedClasses: [], // Could be passed in request if needed
+        options: {
+          projectSlug: body.projectSlug,
+          enableLlmRefinement: false,
+          updateJSReferences: false,
+        },
+      });
+
+      // Update working content with renamed classes
+      sanitizedHTML = renameResult.updatedComponents.components
+        .map(c => c.htmlContent)
+        .join('');
+      workingCSS = renameResult.updatedCss;
+      classRenamingReport = renameResult.report;
+
+      console.info("[webflow-convert]", requestId, "bem_renaming_applied", {
+        totalClasses: renameResult.report.summary.totalClasses,
+        renamed: renameResult.report.summary.renamed,
+        highRiskNeutralized: renameResult.report.summary.highRiskNeutralized,
+      });
+    } catch (e) {
+      console.warn("[webflow-convert]", requestId, "bem_renaming_failed", {
+        error: String(e),
+      });
+      // Continue without BEM renaming on error
+    }
+  }
+
+  // ============================================================================
   // STEP 2: CSS Feature Detection & Splitting
   // ============================================================================
-  const cssVars = extractCssVariables(body.css);
-  const cssDetection = detectEmbedRequiredCSS(body.css);
+  const cssVars = extractCssVariables(workingCSS);
+  const cssDetection = detectEmbedRequiredCSS(workingCSS);
 
   console.info("[webflow-convert]", requestId, "css_detection", {
     needsEmbed: cssDetection.needsEmbed,
@@ -736,7 +788,7 @@ export async function POST(request: Request) {
   });
 
   // Use native-compatible CSS for Webflow conversion
-  const cssForConversion = cssDetection.nativeCSS || body.css;
+  const cssForConversion = cssDetection.nativeCSS || workingCSS;
 
   // Parse CSS for logging
   const { classStyles, tagStyles } = parseCssRules(cssForConversion, cssVars);
@@ -1031,6 +1083,9 @@ export async function POST(request: Request) {
     // === EXTRACTION METADATA ===
     extractedToEmbed,
     safetyReport: safetyGate.report,
+
+    // === CLASS RENAMING ===
+    classRenamingReport: classRenamingReport || null,
 
     // === METADATA ===
     hasEmbeds: !!(finalCSSEmbed || finalJSEmbed),

@@ -2,6 +2,7 @@ import {
   runPreflightValidation,
   validateInteractionReferences,
   validateNodeDepth,
+  RESERVED_CLASS_PREFIXES,
 } from "./preflight-validator";
 import {
   sanitizeWebflowPayload,
@@ -10,8 +11,9 @@ import {
   SAFE_DEPTH_LIMIT,
 } from "./webflow-sanitizer";
 import { prepareHTMLForWebflow } from "./validation/html-sanitizer";
-import type { WebflowPayload } from "./webflow-converter";
+import type { WebflowPayload, WebflowNode } from "./webflow-converter";
 import { chunkEmbed, type ChunkedEmbedResult } from "./embed-chunker";
+import { extractClassNamesFromCSS } from "./css-embed-router";
 
 export const WEBFLOW_EMBED_CHAR_LIMIT = 50_000;
 export const WEBFLOW_EMBED_SOFT_LIMIT = 40_000;
@@ -216,14 +218,226 @@ function sanitizeHtmlEmbedsInPayload(
   return { payload: result, summary, maxHtmlSize };
 }
 
-function evaluateEmbedSize(label: string, content: string, errors: string[], warnings: string[]) {
-  if (!content) return;
-  const size = content.length;
-  if (size > WEBFLOW_EMBED_CHAR_LIMIT) {
-    errors.push(`${label} embed exceeds ${WEBFLOW_EMBED_CHAR_LIMIT} characters (${size.toLocaleString()})`);
-  } else if (size > WEBFLOW_EMBED_SOFT_LIMIT) {
-    warnings.push(`${label} embed is large (${size.toLocaleString()} chars)`);
+// ============================================================================
+// PLACEHOLDER STYLE CREATION FOR EMBED-ONLY CLASSES
+// ============================================================================
+
+/**
+ * Collect all style UUIDs referenced by nodes in the payload.
+ * NOTE: In Webflow's format, node.classes contains style UUIDs (style._id values),
+ * NOT class names. The class name is stored in style.name.
+ */
+function collectAllReferencedStyleIds(nodes: WebflowNode[]): Set<string> {
+  const referencedStyleIds = new Set<string>();
+
+  if (!Array.isArray(nodes)) {
+    return referencedStyleIds;
   }
+
+  for (const node of nodes) {
+    if (Array.isArray(node.classes)) {
+      for (const styleId of node.classes) {
+        if (typeof styleId === "string") {
+          referencedStyleIds.add(styleId);
+        }
+      }
+    }
+  }
+
+  return referencedStyleIds;
+}
+
+function repairStyleReferenceIds(payload: WebflowPayload): {
+  payload: WebflowPayload;
+  remapped: boolean;
+  remappedCount: number;
+  remappedNames: string[];
+  ambiguousNames: string[];
+  unknownRefs: string[];
+} {
+  if (!payload?.payload?.nodes || !payload?.payload?.styles) {
+    return {
+      payload,
+      remapped: false,
+      remappedCount: 0,
+      remappedNames: [],
+      ambiguousNames: [],
+      unknownRefs: [],
+    };
+  }
+
+  const styleIdSet = new Set<string>();
+  const styleNameToId = new Map<string, string>();
+  const duplicateNames = new Set<string>();
+
+  for (const style of payload.payload.styles) {
+    if (!style?._id || !style?.name) continue;
+    styleIdSet.add(style._id);
+    if (styleNameToId.has(style.name)) {
+      duplicateNames.add(style.name);
+    } else {
+      styleNameToId.set(style.name, style._id);
+    }
+  }
+
+  const remapNames = new Map<string, string>();
+  const ambiguousNames = new Set<string>();
+  const unknownRefs = new Set<string>();
+
+  for (const node of payload.payload.nodes) {
+    if (!Array.isArray(node.classes)) continue;
+    for (const classRef of node.classes) {
+      if (typeof classRef !== "string") continue;
+      if (styleIdSet.has(classRef) || isReservedClass(classRef)) continue;
+
+      const mapped = styleNameToId.get(classRef);
+      if (mapped) {
+        if (duplicateNames.has(classRef)) {
+          ambiguousNames.add(classRef);
+        } else {
+          remapNames.set(classRef, mapped);
+        }
+      } else {
+        unknownRefs.add(classRef);
+      }
+    }
+  }
+
+  if (remapNames.size === 0) {
+    return {
+      payload,
+      remapped: false,
+      remappedCount: 0,
+      remappedNames: [],
+      ambiguousNames: Array.from(ambiguousNames),
+      unknownRefs: Array.from(unknownRefs),
+    };
+  }
+
+  const result = JSON.parse(JSON.stringify(payload)) as WebflowPayload;
+  let remappedCount = 0;
+
+  result.payload.nodes = result.payload.nodes.map((node) => {
+    if (!Array.isArray(node.classes)) return node;
+    const nextClasses = node.classes.map((classRef) => {
+      if (typeof classRef !== "string") return classRef;
+      const mapped = remapNames.get(classRef);
+      if (mapped) {
+        remappedCount += 1;
+        return mapped;
+      }
+      return classRef;
+    });
+    return { ...node, classes: nextClasses };
+  });
+
+  return {
+    payload: result,
+    remapped: remappedCount > 0,
+    remappedCount,
+    remappedNames: Array.from(remapNames.keys()),
+    ambiguousNames: Array.from(ambiguousNames),
+    unknownRefs: Array.from(unknownRefs),
+  };
+}
+
+/**
+ * Check if a class name uses a reserved Webflow prefix.
+ */
+function isReservedClass(className: string): boolean {
+  for (const prefix of RESERVED_CLASS_PREFIXES) {
+    if (className.startsWith(prefix)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Verify that all style UUIDs referenced by nodes exist in the styles array.
+ *
+ * In Webflow's format:
+ * - node.classes contains style UUIDs (style._id values)
+ * - styles have _id (UUID) and name (class name)
+ *
+ * The converter should create all necessary styles upfront. This function
+ * verifies that relationship is intact and logs warnings for any issues.
+ *
+ * NOTE: This function no longer creates placeholder styles. The converter
+ * is responsible for creating all styles, including placeholders for classes
+ * that exist in HTML but have no CSS rules.
+ *
+ * @param payload - The Webflow payload to verify
+ * @param embedCSS - CSS that was routed to embed (used for categorization)
+ * @returns Verification result with any issues found
+ */
+function createPlaceholderStylesForMissingClasses(
+  payload: WebflowPayload,
+  embedCSS: string
+): {
+  fixedPayload: WebflowPayload;
+  addedPlaceholders: string[];
+  embedOnlyClasses: string[];
+  noStyleClasses: string[];
+  missingStyleRefs: string[];
+} {
+  if (!payload?.payload?.nodes || !payload?.payload?.styles) {
+    return {
+      fixedPayload: payload,
+      addedPlaceholders: [],
+      embedOnlyClasses: [],
+      noStyleClasses: [],
+      missingStyleRefs: [],
+    };
+  }
+
+  // Extract class names from embed CSS (if provided)
+  const embedClasses = embedCSS ? extractClassNamesFromCSS(embedCSS) : new Set<string>();
+
+  // Get existing style IDs (UUIDs) and build ID-to-name mapping
+  const existingStyleIds = new Set<string>();
+  const styleIdToName = new Map<string, string>();
+  for (const style of payload.payload.styles) {
+    existingStyleIds.add(style._id);
+    styleIdToName.set(style._id, style.name);
+  }
+
+  // Get style UUIDs referenced by nodes
+  const referencedStyleIds = collectAllReferencedStyleIds(payload.payload.nodes);
+
+  // Find any style UUIDs that don't have matching styles
+  // This should NOT happen if the converter is working correctly
+  const missingStyleRefs: string[] = [];
+  const embedOnlyClasses: string[] = [];
+  const noStyleClasses: string[] = [];
+
+  for (const styleId of referencedStyleIds) {
+    if (!existingStyleIds.has(styleId)) {
+      missingStyleRefs.push(styleId);
+    }
+  }
+
+  // For backward compatibility, categorize existing styles by their embed status
+  for (const style of payload.payload.styles) {
+    if (style.styleLess === '' || !style.styleLess) {
+      // Empty styleLess - style was a placeholder
+      if (embedClasses.has(style.name)) {
+        embedOnlyClasses.push(style.name);
+      } else {
+        noStyleClasses.push(style.name);
+      }
+    }
+  }
+
+  // We no longer create placeholder styles here - the converter handles this
+  // Just return the payload as-is with categorization info
+  return {
+    fixedPayload: payload,
+    addedPlaceholders: [],  // No longer adding placeholders here
+    embedOnlyClasses,
+    noStyleClasses,
+    missingStyleRefs,
+  };
 }
 
 function parsePayload(payload: WebflowPayload | string): WebflowPayload | null {
@@ -303,6 +517,32 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
   }
 
   let payload = parsedPayload;
+  const styleRefRepair = repairStyleReferenceIds(payload);
+  payload = styleRefRepair.payload;
+
+  const styleRefFixes: string[] = [];
+  const styleRefWarnings: string[] = [];
+  const previewList = (items: string[]) => {
+    const preview = items.slice(0, 5).join(", ");
+    const moreCount = items.length > 5 ? items.length - 5 : 0;
+    return `${preview}${moreCount > 0 ? `, ... +${moreCount} more` : ""}`;
+  };
+
+  if (styleRefRepair.remapped) {
+    styleRefFixes.push(
+      `Remapped ${styleRefRepair.remappedCount} class reference(s) from style names to IDs`
+    );
+  }
+  if (styleRefRepair.ambiguousNames.length > 0) {
+    styleRefWarnings.push(
+      `Found ${styleRefRepair.ambiguousNames.length} ambiguous class name reference(s) that match multiple styles: ${previewList(styleRefRepair.ambiguousNames)}`
+    );
+  }
+  if (styleRefRepair.unknownRefs.length > 0) {
+    styleRefWarnings.push(
+      `Found ${styleRefRepair.unknownRefs.length} class reference(s) that do not match style IDs or style names: ${previewList(styleRefRepair.unknownRefs)}`
+    );
+  }
   const baseCssEmbed = mergeEmbedBlocks(input.cssEmbed, payload.embedCSS);
   const baseJsEmbed = mergeEmbedBlocks(input.jsEmbed, payload.embedJS);
   const baseHtmlEmbed = mergeEmbedBlocks(input.htmlEmbed);
@@ -321,8 +561,8 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
     payloadLikelyNeedsSanitization(payload) ||
     exceedsSafeDepth;
 
-  let sanitizationApplied = false;
-  let sanitizationChanges: string[] = [];
+  let sanitizationApplied = styleRefRepair.remapped;
+  let sanitizationChanges: string[] = [...styleRefFixes];
   let extractedEmbed: EmbedContent | undefined;
 
   if (shouldSanitize) {
@@ -335,8 +575,8 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
       brokenInteractionIndexes,
     });
     payload = sanitization.payload;
-    sanitizationApplied = sanitization.hadIssues;
-    sanitizationChanges = sanitization.changes;
+    sanitizationApplied = sanitizationApplied || sanitization.hadIssues;
+    sanitizationChanges = [...sanitizationChanges, ...sanitization.changes];
     extractedEmbed = sanitization.embedContent;
   }
 
@@ -350,6 +590,58 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
   const extraHtmlSanitization = finalHtmlEmbed
     ? sanitizeEmbedHtml(finalHtmlEmbed)
     : { html: "", changes: [], warnings: [] };
+
+  // ============================================================================
+  // AUTO-FIX: Create placeholder styles for all missing classes
+  // ============================================================================
+  // Classes referenced by nodes but missing from the styles array will cause
+  // "missing style" warnings. This can happen because:
+  // 1. Their CSS was routed to embed (complex selectors, pseudo-elements)
+  // 2. They have no CSS at all (semantic/structural markers)
+  // 3. The CSS parser didn't recognize their rules
+  //
+  // We create empty placeholder styles so Webflow recognizes the class.
+  // Actual styling comes from the CSS embed or doesn't exist.
+  const {
+    fixedPayload: payloadWithPlaceholders,
+    addedPlaceholders,
+    embedOnlyClasses,
+    noStyleClasses,
+    missingStyleRefs,
+  } = createPlaceholderStylesForMissingClasses(payload, finalCssEmbed);
+  payload = payloadWithPlaceholders;
+
+  // Track auto-fix for placeholder styles with detailed categorization
+  const placeholderAutoFixes: string[] = [];
+  if (addedPlaceholders.length > 0) {
+    const classListPreview = addedPlaceholders.slice(0, 5).join(", ");
+    const moreCount = addedPlaceholders.length > 5 ? addedPlaceholders.length - 5 : 0;
+    const moreText = moreCount > 0 ? `, ... +${moreCount} more` : "";
+
+    placeholderAutoFixes.push(
+      `Created ${addedPlaceholders.length} placeholder style(s) for missing classes: ${classListPreview}${moreText}`
+    );
+
+    // Add detail about where styles come from
+    if (embedOnlyClasses.length > 0) {
+      placeholderAutoFixes.push(
+        `  → ${embedOnlyClasses.length} class(es) have styles in CSS embed`
+      );
+    }
+    if (noStyleClasses.length > 0) {
+      placeholderAutoFixes.push(
+        `  → ${noStyleClasses.length} class(es) have no CSS rules (structural/semantic only)`
+      );
+    }
+  }
+  if (missingStyleRefs.length > 0) {
+    const preview = missingStyleRefs.slice(0, 5).join(", ");
+    const moreCount = missingStyleRefs.length > 5 ? missingStyleRefs.length - 5 : 0;
+    const moreText = moreCount > 0 ? `, ... +${moreCount} more` : "";
+    styleRefWarnings.push(
+      `Found ${missingStyleRefs.length} style reference(s) in nodes that are not in styles: ${preview}${moreText}`
+    );
+  }
 
   // Apply chunking to embeds exceeding soft limit
   const cssChunking = finalCssEmbed ? chunkEmbed(finalCssEmbed, 'css', WEBFLOW_EMBED_SOFT_LIMIT) : undefined;
@@ -412,12 +704,14 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
     ...embedSizeWarnings,
     ...(extractedEmbed?.warnings || []),
     ...extraHtmlSanitization.warnings,
+    ...styleRefWarnings,
   ];
 
   const autoFixes = [
     ...sanitizationChanges,
     ...htmlEmbedSanitization.summary.changes,
     ...extraHtmlSanitization.changes.map((change) => `Embed HTML: ${change}`),
+    ...placeholderAutoFixes,
   ];
 
   const blocked = fatalIssues.length > 0 || !finalPreflight.canProceed;

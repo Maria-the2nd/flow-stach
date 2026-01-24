@@ -34,6 +34,19 @@ export interface FlowbridgeSemanticPatchRequest {
     componentId: string;
     html: string;
   }>;
+  /** Class rename context for LLM semantic refinement */
+  classRenameContext?: {
+    /** Proposed class mappings from deterministic renamer */
+    proposedMapping: Array<{
+      original: string;
+      proposed: string;
+      reason: string;
+    }>;
+    /** High-risk classes that were renamed */
+    highRiskDetected: string[];
+    /** Ambiguous names where LLM could suggest better alternatives */
+    ambiguousNames: string[];
+  };
 }
 
 export interface FlowbridgeSemanticPatchResponse {
@@ -51,6 +64,15 @@ export interface FlowbridgeSemanticPatchResponse {
     css: string;
   }>;
   notes: string[];
+  /** LLM suggestions for class name improvements (optional) */
+  classNameSuggestions?: Array<{
+    /** Original class name */
+    original: string;
+    /** Suggested better name */
+    suggested: string;
+    /** Rationale for the suggestion */
+    rationale: string;
+  }>;
 }
 
 export interface FlowbridgeSemanticPatchMeta {
@@ -184,6 +206,19 @@ export const FLOWBRIDGE_LLM_SCHEMA = {
     notes: {
       type: "array",
       items: { type: "string" },
+    },
+    classNameSuggestions: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["original", "suggested", "rationale"],
+        properties: {
+          original: { type: "string" },
+          suggested: { type: "string" },
+          rationale: { type: "string" },
+        },
+      },
     },
   },
 } as const;
@@ -365,9 +400,9 @@ export function validateSemanticPatchResponse(
 
   const root = value as Record<string, unknown>;
   const requiredKeys = ["componentRenames", "htmlPatches", "cssPatches", "notes"];
-  const rootKeys = new Set(requiredKeys);
+  const allowedKeys = new Set([...requiredKeys, "classNameSuggestions"]);
   Object.keys(root).forEach((key) => {
-    if (!rootKeys.has(key)) errors.push(`Unexpected key: ${key}`);
+    if (!allowedKeys.has(key)) errors.push(`Unexpected key: ${key}`);
   });
   for (const key of requiredKeys) {
     if (!(key in root)) errors.push(`Missing key: ${key}`);
@@ -448,6 +483,26 @@ export function validateSemanticPatchResponse(
         errors.push(`notes[${index}] must be string`);
       }
     });
+  }
+
+  // Validate optional classNameSuggestions
+  const classNameSuggestions = root.classNameSuggestions;
+  if (classNameSuggestions !== undefined) {
+    if (!Array.isArray(classNameSuggestions)) {
+      errors.push("classNameSuggestions must be array");
+    } else {
+      classNameSuggestions.forEach((item, index) => {
+        if (!isPlainObject(item)) {
+          errors.push(`classNameSuggestions[${index}] must be object`);
+          return;
+        }
+        const entry = item as Record<string, unknown>;
+        checkExactKeys(entry, ["original", "suggested", "rationale"], `classNameSuggestions[${index}]`);
+        checkString(entry.original, `classNameSuggestions[${index}].original`);
+        checkString(entry.suggested, `classNameSuggestions[${index}].suggested`);
+        checkString(entry.rationale, `classNameSuggestions[${index}].rationale`);
+      });
+    }
   }
 
   return { ok: errors.length === 0, errors };

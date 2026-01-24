@@ -1259,3 +1259,100 @@ export function mergeEmbedCSS(...embedCSSSources: string[]): string {
 
   return nonEmpty.join('\n\n');
 }
+
+// ============================================
+// CLASS NAME EXTRACTION
+// ============================================
+
+/**
+ * Extract all CSS class names from a CSS string.
+ *
+ * This is used by the Safety Gate to identify classes that exist in embed CSS
+ * but don't have native Webflow styles. Placeholder styles can then be created
+ * to prevent "missing style" warnings.
+ *
+ * Handles:
+ * - Simple selectors: `.btn { ... }` → "btn"
+ * - Combo selectors: `.btn.primary { ... }` → "btn", "primary"
+ * - Pseudo-classes: `.btn:hover { ... }` → "btn"
+ * - Pseudo-elements: `.card::before { ... }` → "card"
+ * - Descendant selectors: `.container .card { ... }` → "container", "card"
+ * - Multiple selectors: `.a, .b { ... }` → "a", "b"
+ * - Media queries: Classes inside @media blocks
+ *
+ * Excludes:
+ * - ID selectors: `#header` (not classes)
+ * - Tag selectors: `div`, `body` (not classes)
+ * - Attribute selectors: `[data-active]`
+ * - Webflow reserved classes: `w-*`, `wf-*`
+ *
+ * @param css - CSS string to extract class names from
+ * @returns Set of unique class names found in the CSS
+ *
+ * @example
+ * extractClassNamesFromCSS('.btn { color: red; } .card::before { content: ""; }')
+ * // Returns: Set { "btn", "card" }
+ */
+export function extractClassNamesFromCSS(css: string): Set<string> {
+  const classNames = new Set<string>();
+
+  if (!css || typeof css !== 'string') {
+    return classNames;
+  }
+
+  // Match CSS class selectors: .className
+  // This regex captures class names that:
+  // - Start with a dot
+  // - Followed by a letter, underscore, or hyphen (valid CSS class start)
+  // - Followed by any word characters or hyphens
+  const classRegex = /\.([a-zA-Z_-][a-zA-Z0-9_-]*)/g;
+
+  let match;
+  while ((match = classRegex.exec(css)) !== null) {
+    const className = match[1];
+
+    // Skip Webflow reserved class prefixes
+    if (className.startsWith('w-') || className.startsWith('wf-')) {
+      continue;
+    }
+
+    // Skip if it looks like a CSS escape sequence or invalid
+    if (className.includes('\\')) {
+      continue;
+    }
+
+    classNames.add(className);
+  }
+
+  return classNames;
+}
+
+/**
+ * Get class names from embed CSS that are NOT in the native styles.
+ *
+ * This identifies classes that:
+ * 1. Are referenced in HTML nodes (via classes array)
+ * 2. Have CSS rules in the embed (complex selectors, pseudo-elements, etc.)
+ * 3. Don't have native Webflow style entries
+ *
+ * These classes need placeholder styles to prevent Webflow validation errors.
+ *
+ * @param embedCSS - CSS that was routed to embed
+ * @param existingStyleNames - Set of style names already in the payload
+ * @returns Set of class names that exist in embed but not in styles
+ */
+export function getEmbedOnlyClassNames(
+  embedCSS: string,
+  existingStyleNames: Set<string>
+): Set<string> {
+  const embedClasses = extractClassNamesFromCSS(embedCSS);
+  const embedOnly = new Set<string>();
+
+  for (const className of embedClasses) {
+    if (!existingStyleNames.has(className)) {
+      embedOnly.add(className);
+    }
+  }
+
+  return embedOnly;
+}
