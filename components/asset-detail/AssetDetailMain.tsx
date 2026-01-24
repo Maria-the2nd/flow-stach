@@ -17,39 +17,10 @@ import { cn } from "@/lib/utils";
 import { extractJsHooks } from "@/lib/html-parser";
 import { parseTokenManifest } from "@/lib/token-extractor";
 import { useFavorites } from "@/components/favorites/FavoritesProvider";
+import { formatDate, isPlaceholderPayload, parseCodePayload } from "@/lib/payload-utils";
 
 type Asset = Doc<"assets">;
 type Payload = Doc<"payloads">;
-
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function isPlaceholderPayload(json: string | undefined): boolean {
-  if (!json) return true;
-  try {
-    const parsed = JSON.parse(json) as {
-      placeholder?: boolean;
-      type?: string;
-      payload?: { nodes?: unknown; styles?: unknown };
-    };
-    if (parsed?.placeholder === true) return true;
-    if (parsed?.type !== "@webflow/XscpData") return true;
-    if (!parsed.payload) return true;
-
-    const hasNodes =
-      Array.isArray(parsed.payload.nodes) && parsed.payload.nodes.length > 0;
-    const hasStyles =
-      Array.isArray(parsed.payload.styles) && parsed.payload.styles.length > 0;
-    return !(hasNodes || hasStyles);
-  } catch {
-    return true;
-  }
-}
 
 interface AssetDetailMainProps {
   asset: Asset;
@@ -60,47 +31,6 @@ interface CodeTabPanelProps {
   label: string;
   description: string;
   code: string;
-}
-
-// Parse code payload to extract HTML, CSS, and JS sections
-function parseCodePayload(codePayload: string | undefined): { html: string; css: string; js: string } {
-  if (!codePayload) return { html: "", css: "", js: "" };
-
-  // Try to extract sections from comment blocks
-  const sections = { html: "", css: "", js: "" };
-
-  // Look for CSS section (between /* CSS */ or <style> markers)
-  const cssMatch = codePayload.match(/\/\*\s*CSS\s*\*\/\s*([\s\S]*?)(?=\/\*\s*(?:HTML|JS|JavaScript)\s*\*\/|$)/i) ||
-    codePayload.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-  if (cssMatch) sections.css = cssMatch[1].trim();
-
-  // Look for HTML section
-  const htmlMatch = codePayload.match(/\/\*\s*HTML\s*\*\/\s*([\s\S]*?)(?=\/\*\s*(?:CSS|JS|JavaScript)\s*\*\/|$)/i);
-  if (htmlMatch) sections.html = htmlMatch[1].trim();
-
-  // Look for JS section
-  const jsMatch = codePayload.match(/\/\*\s*(?:JS|JavaScript)\s*\*\/\s*([\s\S]*?)(?=\/\*\s*(?:HTML|CSS)\s*\*\/|$)/i);
-  if (jsMatch) sections.js = jsMatch[1].trim();
-
-  // If no structured sections, try to intelligently split
-  if (!sections.html && !sections.css && !sections.js) {
-    // Check if it looks like CSS
-    if (codePayload.includes("{") && codePayload.includes("}") &&
-      (codePayload.includes(":") || codePayload.includes("@"))) {
-      sections.css = codePayload;
-    }
-    // Check if it looks like JS
-    else if (codePayload.includes("function") || codePayload.includes("const ") ||
-      codePayload.includes("document.") || codePayload.includes("=>")) {
-      sections.js = codePayload;
-    }
-    // Default to HTML
-    else {
-      sections.html = codePayload;
-    }
-  }
-
-  return sections;
 }
 
 function CodeTabPanel({ label, description, code }: CodeTabPanelProps) {

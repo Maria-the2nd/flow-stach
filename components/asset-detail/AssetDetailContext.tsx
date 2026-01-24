@@ -15,31 +15,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatDate, isPlaceholderPayload } from "@/lib/payload-utils";
 
 type Asset = Doc<"assets">;
 type Payload = Doc<"payloads">;
-
-function isPlaceholderPayload(json: string | undefined): boolean {
-  if (!json) return true;
-  try {
-    const parsed = JSON.parse(json) as {
-      placeholder?: boolean;
-      type?: string;
-      payload?: { nodes?: unknown; styles?: unknown };
-    };
-    if (parsed?.placeholder === true) return true;
-    if (parsed?.type !== "@webflow/XscpData") return true;
-    if (!parsed.payload) return true;
-
-    const hasNodes =
-      Array.isArray(parsed.payload.nodes) && parsed.payload.nodes.length > 0;
-    const hasStyles =
-      Array.isArray(parsed.payload.styles) && parsed.payload.styles.length > 0;
-    return !(hasNodes || hasStyles);
-  } catch {
-    return true;
-  }
-}
 
 interface AssetDetailContextProps {
   asset: Asset;
@@ -50,14 +29,6 @@ interface AssetActionsProps {
   asset: Asset;
   payload: Payload | null;
   layout?: "vertical" | "inline";
-}
-
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 export function AssetActions({ asset, payload, layout = "vertical" }: AssetActionsProps) {

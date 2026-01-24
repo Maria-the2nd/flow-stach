@@ -30,7 +30,7 @@ import {
  * Safe depth limit for Webflow - anything deeper gets flattened.
  * We use a conservative limit below MAX_NODE_DEPTH to give buffer.
  */
-const SAFE_DEPTH_LIMIT = 30;
+export const SAFE_DEPTH_LIMIT = 30;
 
 // ============================================================================
 // UUID GENERATION

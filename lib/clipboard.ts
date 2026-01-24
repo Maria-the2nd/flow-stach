@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import { runPreflightValidation, type PreflightResult } from "./preflight-validator";
-import { sanitizeWebflowPayload, type SanitizationResult } from "./webflow-sanitizer";
+import { ensureWebflowPasteSafety } from "./webflow-safety-gate";
 import type { WebflowPayload } from "./webflow-converter";
 
 export type CopyResult = { success: true } | { success: false; reason: string };
@@ -261,9 +261,11 @@ function copyFallback(jsonString: string): Promise<CopyResult> {
 function validateAndSanitizePayload(jsonString: string): {
   safeJson: string | null;
   validation: PreflightResult | null;
-  sanitization: SanitizationResult | null;
+  sanitizationApplied: boolean;
+  sanitizationChanges: string[];
   blocked: boolean;
   blockReason?: string;
+  warnings: string[];
 } {
   let payload: WebflowPayload;
 
@@ -273,7 +275,9 @@ function validateAndSanitizePayload(jsonString: string): {
     return {
       safeJson: null,
       validation: null,
-      sanitization: null,
+      sanitizationApplied: false,
+      sanitizationChanges: [],
+      warnings: [],
       blocked: true,
       blockReason: "Invalid JSON - cannot parse payload",
     };
@@ -284,7 +288,9 @@ function validateAndSanitizePayload(jsonString: string): {
     return {
       safeJson: null,
       validation: null,
-      sanitization: null,
+      sanitizationApplied: false,
+      sanitizationChanges: [],
+      warnings: [],
       blocked: true,
       blockReason: "Placeholder payload - no Webflow JSON available",
     };
@@ -295,71 +301,34 @@ function validateAndSanitizePayload(jsonString: string): {
     return {
       safeJson: null,
       validation: null,
-      sanitization: null,
+      sanitizationApplied: false,
+      sanitizationChanges: [],
+      warnings: [],
       blocked: true,
       blockReason: "Invalid Webflow payload structure",
     };
   }
 
-  // Run preflight validation
-  const validation = runPreflightValidation(payload);
+  const safetyResult = ensureWebflowPasteSafety({ payload });
 
-  // If validation passes without critical issues, return as-is
-  if (validation.canProceed && validation.isValid) {
-    return {
-      safeJson: jsonString,
-      validation,
-      sanitization: null,
-      blocked: false,
-    };
-  }
-
-  // If validation fails with blocking issues, try to sanitize
-  if (!validation.canProceed) {
-    console.warn("[clipboard] Validation failed, attempting sanitization:", validation.summary);
-
-    const sanitization = sanitizeWebflowPayload(payload);
-
-    // Re-validate after sanitization
-    const revalidation = runPreflightValidation(sanitization.payload);
-
-    if (revalidation.canProceed) {
-      console.info("[clipboard] Sanitization fixed issues:", sanitization.changes);
-      return {
-        safeJson: JSON.stringify(sanitization.payload),
-        validation: revalidation,
-        sanitization,
-        blocked: false,
-      };
-    }
-
-    // Sanitization didn't fix all issues - BLOCK the copy
-    console.error("[clipboard] Sanitization failed to fix all issues:", revalidation.summary);
+  if (safetyResult.blocked) {
     return {
       safeJson: null,
-      validation: revalidation,
-      sanitization,
+      validation: safetyResult.preflight,
+      sanitizationApplied: safetyResult.sanitizationApplied,
+      sanitizationChanges: safetyResult.sanitizationChanges,
+      warnings: safetyResult.report.warnings,
       blocked: true,
-      blockReason: "Payload has critical issues that cannot be auto-fixed",
-    };
-  }
-
-  // Validation has warnings but can proceed - sanitize anyway to be safe
-  const sanitization = sanitizeWebflowPayload(payload);
-  if (sanitization.hadIssues) {
-    console.info("[clipboard] Applied sanitization fixes:", sanitization.changes);
-    return {
-      safeJson: JSON.stringify(sanitization.payload),
-      validation,
-      sanitization,
-      blocked: false,
+      blockReason: safetyResult.blockReason || "Payload has critical issues that cannot be auto-fixed",
     };
   }
 
   return {
-    safeJson: jsonString,
-    validation,
-    sanitization: null,
+    safeJson: safetyResult.webflowJson,
+    validation: safetyResult.preflight,
+    sanitizationApplied: safetyResult.sanitizationApplied,
+    sanitizationChanges: safetyResult.sanitizationChanges,
+    warnings: safetyResult.report.warnings,
     blocked: false,
   };
 }
@@ -390,7 +359,15 @@ export async function copyWebflowJson(jsonString: string | undefined): Promise<V
   }
 
   // CRITICAL: Validate and sanitize before copy
-  const { safeJson, validation, sanitization, blocked, blockReason } = validateAndSanitizePayload(normalized);
+  const {
+    safeJson,
+    validation,
+    sanitizationApplied,
+    sanitizationChanges,
+    blocked,
+    blockReason,
+    warnings: safetyWarnings,
+  } = validateAndSanitizePayload(normalized);
 
   if (blocked) {
     const errorMsg = blockReason || "Validation failed";
@@ -418,9 +395,9 @@ export async function copyWebflowJson(jsonString: string | undefined): Promise<V
     // Show success with any warnings
     const warnings: string[] = [];
 
-    if (sanitization?.hadIssues) {
-      warnings.push(`Auto-fixed ${sanitization.changes.length} issue(s)`);
-      console.info("[clipboard] Sanitization applied:", sanitization.changes);
+    if (sanitizationApplied) {
+      warnings.push(`Auto-fixed ${sanitizationChanges.length} issue(s)`);
+      console.info("[clipboard] Sanitization applied:", sanitizationChanges);
     }
 
     const validationWarnings =
@@ -431,18 +408,22 @@ export async function copyWebflowJson(jsonString: string | undefined): Promise<V
       console.warn("[clipboard] Validation warnings:", validationWarnings);
     }
 
+    if (safetyWarnings.length > 0) {
+      warnings.push(...safetyWarnings.slice(0, 2));
+    }
+
     if (warnings.length > 0) {
       toast.warning(`Copied with fixes: ${warnings.join(", ")}`);
     }
 
-    return { success: true, warnings, sanitized: sanitization?.hadIssues };
+    return { success: true, warnings, sanitized: sanitizationApplied };
   }
 
   // Fall back to extension if installed
   if (isExtensionInstalled()) {
     const result = await copyViaExtension(payloadToCopy);
     if (result.success) {
-      return { success: true, sanitized: sanitization?.hadIssues };
+      return { success: true, sanitized: sanitizationApplied };
     }
     return result;
   }
@@ -450,14 +431,10 @@ export async function copyWebflowJson(jsonString: string | undefined): Promise<V
   // Last resort: document-based copy
   const fallbackResult = await copyFallback(payloadToCopy);
   if (fallbackResult.success) {
-    return { success: true, sanitized: sanitization?.hadIssues };
+    return { success: true, sanitized: sanitizationApplied };
   }
   return fallbackResult;
 }
-
-// Aliases for consistency with import page
-export const copyToWebflowClipboard = copyWebflowJson;
-export const copyCodeToClipboard = copyText;
 
 /**
  * Validate a Webflow payload without copying.

@@ -3,8 +3,10 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { CopyButton } from "./CopyButton"
+import { SafetyReportPanel } from "./SafetyReportPanel"
 import { LibraryImportGuide } from "./LibraryImportGuide"
 import { copyWebflowJson, copyText } from "@/lib/clipboard"
+import type { WebflowSafetyReport } from "@/lib/webflow-safety-gate"
 
 interface PayloadData {
   designTokens?: string | null
@@ -28,6 +30,8 @@ interface PayloadData {
     hasJSExtracted: boolean
     warnings: string[]
   }
+  /** Safety gate report */
+  safetyReport?: WebflowSafetyReport
 }
 
 interface MultiStepCopyModalProps {
@@ -81,6 +85,9 @@ export function MultiStepCopyModal({ open, onOpenChange, payload, assetTitle }: 
         </DialogHeader>
 
         <div className="space-y-6">
+          {payload.safetyReport && (
+            <SafetyReportPanel report={payload.safetyReport} />
+          )}
           {/* Extraction Warnings Banner */}
           {hasExtractionWarnings && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">

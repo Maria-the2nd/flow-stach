@@ -43,7 +43,7 @@ import { extractTokens, extractEnhancedTokens, extractFontFamilies, extractGoogl
 import { parseCSS, type ClassIndex } from "@/lib/css-parser"
 import { componentizeHtml, type ComponentTree, type Component } from "@/lib/componentizer"
 import { buildCssTokenPayload, buildComponentPayload, validateForWebflowPaste } from "@/lib/webflow-converter"
-import { copyToWebflowClipboard } from "@/lib/clipboard"
+import { copyWebflowJson } from "@/lib/clipboard"
 import { normalizeHtmlCssForWebflow } from "@/lib/webflow-normalizer"
 import { literalizeCssForWebflow } from "@/lib/webflow-literalizer"
 import { diagnoseVisibilityIssues } from "@/lib/webflow-verifier"
@@ -993,7 +993,7 @@ export function ImportWizard() {
     }
     try {
       const payload = JSON.parse(tokenWebflowJson)
-      const result = await copyToWebflowClipboard(payload)
+      const result = await copyWebflowJson(payload)
       if (result.success) {
         setTokensPasted(true)
         toast.success("Token styles copied! Paste in Webflow Designer.")
@@ -1017,7 +1017,7 @@ export function ImportWizard() {
         const result = buildComponentPayload(component, artifacts.classIndex, establishedClasses, {
           skipEstablishedStyles: forceIncludeEstablishedStyles ? false : skipEstablishedStyles,
         })
-        const copyResult = await copyToWebflowClipboard(JSON.stringify(result.webflowPayload))
+        const copyResult = await copyWebflowJson(JSON.stringify(result.webflowPayload))
         if (copyResult.success) {
           toast.success(`${component.name} copied! Paste in Webflow Designer.`)
         } else {

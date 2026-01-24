@@ -129,7 +129,7 @@ function TypefaceCard({ title, family }: { title: string; family: string }) {
 
 function HeadingStyleCard({ heading }: { heading: HeadingStyle }) {
   const { level, desktop, mobile } = heading;
-  const HeadingTag = `h${level}` as keyof JSX.IntrinsicElements;
+  const HeadingTag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 
   return (
     <div className="space-y-3 pb-6 border-b border-slate-100 last:border-0">

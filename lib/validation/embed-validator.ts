@@ -20,7 +20,7 @@ const SIZE_LIMITS = {
   CSS_SOFT: 10 * 1024, // 10KB - warn
   CSS_HARD: 50 * 1024, // 50KB - error
   JS_SOFT: 20 * 1024, // 20KB - warn
-  JS_HARD: 100 * 1024, // 100KB - error
+  JS_HARD: 50 * 1024, // 50KB - error
 };
 
 /**
@@ -207,7 +207,7 @@ export function validateJSEmbed(js: string): EmbedValidationResult {
 
   // Check size limits
   if (size > SIZE_LIMITS.JS_HARD) {
-    errors.push(`JavaScript is ${sizeFormatted} - exceeds Webflow limit (~100KB)`);
+    errors.push(`JavaScript is ${sizeFormatted} - exceeds Webflow limit (~50KB)`);
   } else if (size > SIZE_LIMITS.JS_SOFT) {
     warnings.push(`JavaScript is ${sizeFormatted} - consider optimizing (soft limit: 20KB)`);
   }

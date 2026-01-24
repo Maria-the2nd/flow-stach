@@ -646,16 +646,16 @@ export function validateEmbedSize(
   const jsSize = jsEmbed?.length || 0;
 
   // Check global embeds
-  if (cssSize > 100000) {
-    errors.push(`CSS embed exceeds 100KB (${Math.round(cssSize / 1024)}KB) - may fail to paste`);
-  } else if (cssSize > 10000) {
-    warnings.push(`CSS embed exceeds 10KB (${Math.round(cssSize / 1024)}KB) - consider optimization`);
+  if (cssSize > 50000) {
+    errors.push(`CSS embed exceeds 50KB (${Math.round(cssSize / 1024)}KB) - exceeds Webflow limit`);
+  } else if (cssSize > 40000) {
+    warnings.push(`CSS embed is large (${Math.round(cssSize / 1024)}KB) - consider splitting`);
   }
 
-  if (jsSize > 100000) {
-    errors.push(`JS embed exceeds 100KB (${Math.round(jsSize / 1024)}KB) - may fail to paste`);
-  } else if (jsSize > 10000) {
-    warnings.push(`JS embed exceeds 10KB (${Math.round(jsSize / 1024)}KB) - consider optimization`);
+  if (jsSize > 50000) {
+    errors.push(`JS embed exceeds 50KB (${Math.round(jsSize / 1024)}KB) - exceeds Webflow limit`);
+  } else if (jsSize > 40000) {
+    warnings.push(`JS embed is large (${Math.round(jsSize / 1024)}KB) - consider splitting`);
   }
 
   // Check HtmlEmbed nodes
@@ -664,9 +664,9 @@ export function validateEmbedSize(
       const embedContent = node.data?.embed?.meta?.html || node.v || "";
       const embedSize = embedContent.length;
 
-      if (embedSize > 100000) {
-        errors.push(`HtmlEmbed node ${node._id} exceeds 100KB (${Math.round(embedSize / 1024)}KB)`);
-      } else if (embedSize > 10000) {
+      if (embedSize > 50000) {
+        errors.push(`HtmlEmbed node ${node._id} exceeds 50KB (${Math.round(embedSize / 1024)}KB)`);
+      } else if (embedSize > 40000) {
         warnings.push(`HtmlEmbed node ${node._id} is large (${Math.round(embedSize / 1024)}KB)`);
       }
     }

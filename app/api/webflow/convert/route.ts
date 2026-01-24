@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import { isValidWebflowPayload, type WebflowPayload } from "@/lib/webflow-converter";
 import {
-  runPreflightValidation,
   formatPreflightResult,
-  validateInteractionReferences,
 } from "@/lib/preflight-validator";
-import { sanitizeWebflowPayload, type EmbedContent } from "@/lib/webflow-sanitizer";
 import { prepareHTMLForWebflow } from "@/lib/validation/html-sanitizer";
-import { detectEmbedRequiredCSS, validateEmbedSize } from "@/lib/validation/css-feature-detector";
+import { detectEmbedRequiredCSS } from "@/lib/validation/css-feature-detector";
 import { validateDesignTokens } from "@/lib/validation/design-token-validator";
 import { validateCSSEmbed, validateJSEmbed, validateLibraryImports } from "@/lib/validation/embed-validator";
 import { detectLibraries } from "@/lib/js-library-detector";
+import { ensureWebflowPasteSafety } from "@/lib/webflow-safety-gate";
 
 // Debug mode - set WEBFLOW_CONVERT_DEBUG=true for verbose logging
 const DEBUG = process.env.WEBFLOW_CONVERT_DEBUG === "true";
@@ -907,78 +905,36 @@ export async function POST(request: Request) {
     );
   }
 
-  // CRITICAL: Run preflight validation to prevent Designer corruption
-  const preflightResult = runPreflightValidation(payload);
-  let finalPayload = payload;
-  let sanitizationApplied = false;
-  const validationWarnings: string[] = [];
-  let extractedEmbedContent: EmbedContent | undefined;
+  // CRITICAL: Run safety gate (preflight + sanitization + embed HTML checks)
+  const safetyGate = ensureWebflowPasteSafety({
+    payload,
+    cssEmbed: cssDetection.embedCSS,
+    jsEmbed: combinedJS,
+  });
 
-  // Detect broken interaction indexes for embed extraction
-  const interactionValidation = validateInteractionReferences(payload);
-  const brokenInteractionIndexes = interactionValidation.orphanTargets
-    .filter(t => t.interactionIndex >= 0)
-    .map(t => t.interactionIndex);
-
-  if (!preflightResult.canProceed) {
-    // Validation failed with blocking issues - attempt sanitization
-    console.warn("[webflow-convert]", requestId, "validation_failed", {
-      summary: preflightResult.summary,
-      errors: preflightResult.issues.filter(i => i.severity === "fatal" || i.severity === "error").length,
+  if (safetyGate.blocked) {
+    console.error("[webflow-convert]", requestId, "safety_gate_blocked", {
+      reason: safetyGate.blockReason,
+      summary: safetyGate.preflight.summary,
     });
-
-    const sanitizationResult = sanitizeWebflowPayload(payload, {
-      brokenInteractionIndexes,
-    });
-    finalPayload = sanitizationResult.payload;
-    sanitizationApplied = sanitizationResult.hadIssues;
-    extractedEmbedContent = sanitizationResult.embedContent;
-
-    if (sanitizationResult.hadIssues) {
-      console.info("[webflow-convert]", requestId, "sanitization_applied", {
-        changes: sanitizationResult.changes,
-        hasEmbedContent: !!sanitizationResult.embedContent,
-      });
-      validationWarnings.push(...sanitizationResult.changes);
-    }
-
-    // Re-validate after sanitization
-    const revalidation = runPreflightValidation(finalPayload);
-    if (!revalidation.canProceed) {
-      console.error("[webflow-convert]", requestId, "sanitization_failed", {
-        summary: revalidation.summary,
-      });
-      return NextResponse.json(
-        {
-          error: "Conversion produced invalid Webflow JSON that could not be auto-fixed",
-          details: formatPreflightResult(revalidation),
-          requestId,
-        },
-        { status: 422 }
-      );
-    }
-  } else if (!preflightResult.isValid) {
-    // Has warnings but can proceed - still sanitize to be safe
-    const sanitizationResult = sanitizeWebflowPayload(payload, {
-      brokenInteractionIndexes,
-    });
-    if (sanitizationResult.hadIssues) {
-      finalPayload = sanitizationResult.payload;
-      sanitizationApplied = true;
-      extractedEmbedContent = sanitizationResult.embedContent;
-      validationWarnings.push(...sanitizationResult.changes);
-      console.info("[webflow-convert]", requestId, "sanitization_applied_for_warnings", {
-        changes: sanitizationResult.changes,
-        hasEmbedContent: !!sanitizationResult.embedContent,
-      });
-    }
-
-    // Add validation warnings to response
-    const preflightWarnings = preflightResult.issues.filter(
-      (issue) => issue.severity === "warning"
+    return NextResponse.json(
+      {
+        error: "Conversion produced invalid Webflow JSON that could not be auto-fixed",
+        details: formatPreflightResult(safetyGate.preflight),
+        safetyReport: safetyGate.report,
+        requestId,
+      },
+      { status: 422 }
     );
-    preflightWarnings.forEach((issue) => validationWarnings.push(issue.message));
   }
+
+  const finalPayload = safetyGate.payload;
+  const sanitizationApplied = safetyGate.sanitizationApplied;
+  const validationWarnings = Array.from(new Set([
+    ...safetyGate.report.warnings,
+    ...safetyGate.sanitizationChanges,
+  ]));
+  const extractedEmbedContent = safetyGate.embedContent;
 
   // ============================================================================
   // STEP 5: Validate Each Output
@@ -990,13 +946,13 @@ export async function POST(request: Request) {
     : { valid: true, errors: [], warnings: [] };
 
   // Validate CSS embed
-  const cssEmbedValidation = cssDetection.embedCSS
-    ? validateCSSEmbed(cssDetection.embedCSS)
+  const cssEmbedValidation = extractedEmbedContent?.css
+    ? validateCSSEmbed(extractedEmbedContent.css)
     : { valid: true, errors: [], warnings: [], size: 0, sizeFormatted: '0B' };
 
   // Validate JS embed
-  const jsEmbedValidation = combinedJS
-    ? validateJSEmbed(combinedJS)
+  const jsEmbedValidation = extractedEmbedContent?.js
+    ? validateJSEmbed(extractedEmbedContent.js)
     : { valid: true, errors: [], warnings: [], size: 0, sizeFormatted: '0B' };
 
   // Validate library imports
@@ -1009,12 +965,18 @@ export async function POST(request: Request) {
 
   // Webflow JSON validation (already done above)
   const webflowValidation = {
-    valid: preflightResult.isValid,
-    errors: preflightResult.issues
+    valid: safetyGate.preflight.isValid,
+    errors: safetyGate.preflight.issues
       .filter((i) => i.severity === 'fatal' || i.severity === 'error')
       .map((i) => i.message),
     warnings: validationWarnings,
   };
+
+  // ============================================================================
+  // Merge extracted embed content with detected CSS/JS embeds
+  // ============================================================================
+  const finalCSSEmbed = extractedEmbedContent?.css || null;
+  const finalJSEmbed = extractedEmbedContent?.js || null;
 
   console.info("[webflow-convert]", requestId, "success", {
     nodes: finalPayload.payload.nodes.length,
@@ -1022,23 +984,10 @@ export async function POST(request: Request) {
     sanitized: sanitizationApplied,
     warnings: validationWarnings.length,
     hasDesignTokens: !!designTokensJSON,
-    hasCSSEmbed: !!cssDetection.embedCSS,
-    hasJSEmbed: !!combinedJS,
+    hasCSSEmbed: !!finalCSSEmbed,
+    hasJSEmbed: !!finalJSEmbed,
     hasLibraries: libraryDetection.scripts.length > 0,
   });
-
-  // ============================================================================
-  // Merge extracted embed content with detected CSS/JS embeds
-  // ============================================================================
-  const finalCSSEmbed = [
-    cssDetection.embedCSS,
-    extractedEmbedContent?.css,
-  ].filter(Boolean).join('\n\n') || null;
-
-  const finalJSEmbed = [
-    combinedJS,
-    extractedEmbedContent?.js,
-  ].filter(Boolean).join('\n\n') || null;
 
   // Determine if content was extracted to embeds
   const extractedToEmbed = extractedEmbedContent ? {
@@ -1073,6 +1022,7 @@ export async function POST(request: Request) {
 
     // === EXTRACTION METADATA ===
     extractedToEmbed,
+    safetyReport: safetyGate.report,
 
     // === METADATA ===
     hasEmbeds: !!(finalCSSEmbed || finalJSEmbed),

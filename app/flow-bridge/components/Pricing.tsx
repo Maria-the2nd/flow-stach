@@ -12,7 +12,7 @@ export default function Pricing() {
                     </p>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                    <Link href="/assets" className="fb-btn fb-btn-primary">
+                    <Link href="/sign-up" className="fb-btn fb-btn-primary">
                         Get Started Free
                     </Link>
                 </div>

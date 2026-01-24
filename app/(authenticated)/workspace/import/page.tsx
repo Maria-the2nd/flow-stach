@@ -91,6 +91,11 @@ export default function ImportPage() {
             return;
         }
 
+        if (selectedFile.type.includes("zip") || selectedFile.name.toLowerCase().endsWith(".zip")) {
+            setError("ZIP archives are not supported yet. Please upload a single HTML file.");
+            return;
+        }
+
         if (!projectName.trim()) {
             setError('Please enter a project name');
             return;

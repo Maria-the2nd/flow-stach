@@ -1060,13 +1060,13 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
   const embedSizeBytes = new TextEncoder().encode(embedCSS).length;
   const totalEmbedRules = Array.from(embedRulesByBreakpoint.values()).reduce((sum, arr) => sum + arr.length, 0);
 
-  if (embedSizeBytes > 100 * 1024) {
+  if (embedSizeBytes > 50 * 1024) {
     warnings.push({
       type: 'size_error',
-      reason: `Embed CSS exceeds 100KB limit (${Math.round(embedSizeBytes / 1024)}KB). Consider splitting into multiple embeds.`,
+      reason: `Embed CSS exceeds 50KB limit (${Math.round(embedSizeBytes / 1024)}KB). Consider splitting into multiple embeds.`,
       severity: 'error',
     });
-  } else if (embedSizeBytes > 10 * 1024) {
+  } else if (embedSizeBytes > 40 * 1024) {
     warnings.push({
       type: 'size_warning',
       reason: `Embed CSS is large (${Math.round(embedSizeBytes / 1024)}KB). May impact page performance.`,

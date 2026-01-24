@@ -2,7 +2,7 @@
  * CSS Minifier
  *
  * Minifies CSS to reduce size for Webflow embed blocks.
- * Webflow has character limits on embed blocks (~10KB soft limit).
+ * Webflow has character limits on embed blocks (~50KB hard limit).
  */
 
 // ============================================
@@ -154,8 +154,8 @@ export function checkSizeLimit(css: string): {
   warning?: string;
 } {
   const size = new TextEncoder().encode(css).length;
-  const SOFT_LIMIT = 10 * 1024; // 10KB
-  const HARD_LIMIT = 100 * 1024; // 100KB
+  const SOFT_LIMIT = 40 * 1024; // 40KB
+  const HARD_LIMIT = 50 * 1024; // 50KB
 
   const result = {
     size,
@@ -166,14 +166,14 @@ export function checkSizeLimit(css: string): {
   if (result.exceedsHardLimit) {
     return {
       ...result,
-      warning: `CSS exceeds 100KB hard limit (${Math.round(size / 1024)}KB). Consider splitting into multiple embeds.`,
+      warning: `CSS exceeds 50KB hard limit (${Math.round(size / 1024)}KB). Consider splitting into multiple embeds.`,
     };
   }
 
   if (result.exceedsSoftLimit) {
     return {
       ...result,
-      warning: `CSS exceeds 10KB soft limit (${Math.round(size / 1024)}KB). May impact page performance.`,
+      warning: `CSS exceeds 40KB soft limit (${Math.round(size / 1024)}KB). May impact page performance.`,
     };
   }
 

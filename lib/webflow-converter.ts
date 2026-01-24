@@ -1345,11 +1345,11 @@ function validatePayloadIntegrity(
       if (!node.data?.embed?.meta?.html && !node.v) {
         warnings.push(`HtmlEmbed node ${node._id} missing embed content`);
       }
-      // Check for size limit (10KB is safe, 100KB is problematic)
+      // Check for size limit (50KB is Webflow hard limit)
       const embedContent = node.data?.embed?.meta?.html || node.v || "";
-      if (embedContent.length > 100000) {
-        errors.push(`HtmlEmbed node ${node._id} exceeds 100KB limit (${Math.round(embedContent.length / 1024)}KB)`);
-      } else if (embedContent.length > 10000) {
+      if (embedContent.length > 50000) {
+        errors.push(`HtmlEmbed node ${node._id} exceeds 50KB limit (${Math.round(embedContent.length / 1024)}KB)`);
+      } else if (embedContent.length > 40000) {
         warnings.push(`HtmlEmbed node ${node._id} is large (${Math.round(embedContent.length / 1024)}KB) - may cause issues`);
       }
     }

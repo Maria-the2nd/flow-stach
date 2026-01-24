@@ -2,13 +2,14 @@ import { extractCleanHtml, extractJsHooks, extractCssForSection, getClassesUsed 
 import { extractTokens, type TokenExtraction } from "./token-extractor"
 import { parseCSS, type ClassIndex } from "./css-parser"
 import { componentizeHtml, type ComponentTree, type Component } from "./componentizer"
-import { buildCssTokenPayload, buildComponentPayload, validateForWebflowPaste } from "./webflow-converter"
+import { buildCssTokenPayload, buildComponentPayload } from "./webflow-converter"
 import { normalizeHtmlCssForWebflow } from "./webflow-normalizer"
 import { literalizeCssForWebflow } from "./webflow-literalizer"
 import { diagnoseVisibilityIssues } from "./webflow-verifier"
 import { extractImages, type ImageAsset } from "./image-extractor"
 import { applyDeterministicComponentNames } from "./flowbridge-semantic"
 import { applySemanticPatchResponse, buildSemanticPatchRequest, type FlowbridgeSemanticPatchResponse, type FlowbridgeSemanticPatchMeta } from "./flowbridge-semantic"
+import { ensureWebflowPasteSafety } from "./webflow-safety-gate"
 
 export type ProcessingStage = "parsing" | "extracting" | "componentizing" | "semantic" | "generating" | "complete" | "idle"
 
@@ -150,6 +151,10 @@ export async function processProjectImport(
         const literalization = literalizeCssForWebflow(finalCss);
         const finalCssResult = parseCSS(literalization.css);
         const tokenPayloadResult = buildCssTokenPayload(literalization.css, { namespace: tokens.namespace, includePreview: true });
+        const tokenSafety = ensureWebflowPasteSafety({ payload: tokenPayloadResult.webflowPayload });
+        const tokenWebflowJson = tokenSafety.blocked
+            ? JSON.stringify({ placeholder: true })
+            : tokenSafety.webflowJson;
 
         const images = extractImages(normalization.html, literalization.css);
         const googleFontsUrl = tokens?.fonts?.googleFonts || "";
@@ -166,6 +171,7 @@ export async function processProjectImport(
             const payload = buildComponentPayload(c, finalCssResult.classIndex, tokenPayloadResult.establishedClasses, {
                 skipEstablishedStyles: false
             });
+            const safety = ensureWebflowPasteSafety({ payload: payload.webflowPayload });
             return {
                 id: c.id,
                 name: c.name,
@@ -175,7 +181,7 @@ export async function processProjectImport(
                 htmlContent: c.htmlContent,
                 classesUsed: c.classesUsed,
                 jsHooks: c.jsHooks,
-                webflowJson: JSON.stringify(payload.webflowPayload),
+                webflowJson: safety.blocked ? JSON.stringify({ placeholder: true }) : safety.webflowJson,
                 codePayload: c.htmlContent
             };
         });
@@ -196,7 +202,7 @@ export async function processProjectImport(
                 jsHooks: extractJsHooks(normalization.html)
             },
             components: finalComponents,
-            tokenWebflowJson: JSON.stringify(tokenPayloadResult.webflowPayload),
+            tokenWebflowJson,
             fonts: mappedFonts,
             images,
             llmSummary: llmMeta ? {
