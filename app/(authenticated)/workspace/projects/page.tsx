@@ -6,7 +6,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { Calendar, ArrowRight, Plus, Loader2, FolderOpen, Trash2, ImageIcon, Layers } from "lucide-react";
+import { Calendar, ArrowRight, Plus, Loader2, FolderOpen, Trash2, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 
@@ -369,17 +369,13 @@ export default function ProjectsPage() {
                                             {project.name}
                                         </h3>
                                         <p className="text-slate-500 text-sm mb-6 flex-grow leading-relaxed">
-                                            {project.classCount ? `${project.classCount} classes extracted` : 'HTML project ready for Webflow'}
+                                            {project.classCount ? `${project.classCount} classes` : 'Ready for Webflow'}
                                         </p>
 
                                         <div className="space-y-2 mb-6 text-xs text-slate-400 font-medium">
                                             <div className="flex items-center gap-2">
                                                 <Calendar className="w-3.5 h-3.5" />
                                                 Imported on {formatDate(project._creationTime)}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Layers className="w-3.5 h-3.5" />
-                                                {project.componentCount || 0} Extracted Components
                                             </div>
                                         </div>
 

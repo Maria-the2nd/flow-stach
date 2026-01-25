@@ -2359,6 +2359,20 @@ export function buildCssTokenPayload(
   const wrapperId = `${namespace}-style-wrapper`;
   const wrapperChildren: string[] = [];
 
+  // Create "delete-me" style with display:none for the wrapper
+  const deleteStyleId = `${namespace}-delete-me-style`;
+  styles.push({
+    _id: deleteStyleId,
+    fake: false,
+    type: "class",
+    name: "delete-me",
+    namespace: "",
+    comb: "",
+    styleLess: "display: none;",
+    variants: {},
+    children: [],
+  });
+
   if (includePreview) {
     // Create instruction text (only shown when includePreview is true)
     const instructionTextId = `${namespace}-style-instruction-text`;
@@ -2386,11 +2400,12 @@ export function buildCssTokenPayload(
   wrapperChildren.push(...classNodeIds);
 
   // Create wrapper containing instruction (if preview) + all class nodes
+  // Named "delete-me" with display:none so it's hidden and easy to identify
   nodes.push({
     _id: wrapperId,
     type: "Block",
     tag: "div",
-    classes: [],
+    classes: [deleteStyleId],
     children: wrapperChildren,
     data: { tag: "div", text: false },
   });

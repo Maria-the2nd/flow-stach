@@ -10,16 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from 'next/link';
 import { useMemo, useState } from "react";
-import { DesignTokensCard } from "@/components/project/design-tokens-card";
+import { SiteDescriptionCard } from "@/components/project/site-description-card";
 import { FontChecklistCard } from "@/components/project/font-checklist-card";
-import { ComponentsList } from "@/components/project/components-list";
 import { ImagesGrid } from "@/components/project/images-grid";
-import { StyleGuideView } from "@/components/project/style-guide/style-guide-view";
 import { toast } from "sonner";
 import { copyText, copyWebflowJson } from "@/lib/clipboard";
 import { regenerateAllIds } from "@/lib/webflow-sanitizer";
-import { extractEnhancedTokens, type EnhancedTokenExtraction } from "@/lib/token-extractor";
-import { generateStyleGuidePayload } from "@/lib/webflow-style-guide-generator";
 import type { WebflowPayload } from "@/lib/webflow-converter";
 import { ensureWebflowPasteSafety } from "@/lib/webflow-safety-gate";
 import { SafetyReportPanel, ClassRenamingReportPanel } from "@/components/validation/SafetyReportPanel";
@@ -29,12 +25,6 @@ type ImportProject = Doc<"importProjects">;
 type ImportArtifact = Doc<"importArtifacts">;
 type AssetPayload = Doc<"payloads"> | null;
 type ComponentEntry = { component: Doc<"assets">; payload: AssetPayload };
-type TokenValue = { name: string; value: string };
-type DesignTokens = {
-    colors: TokenValue[];
-    typography: TokenValue[];
-    spacing?: TokenValue[];
-};
 type FontChecklistStatus = "available" | "missing" | "unknown";
 type FontChecklistEntry = {
     name: string;
@@ -77,107 +67,6 @@ export function ProjectDetailsView({ id }: { id: string }) {
     return <ProjectContent project={project} components={components} artifacts={artifacts} />;
 }
 
-function StyleGuideTab({
-    cssArtifact,
-    tokenWebflowJsonArtifact,
-    project,
-}: {
-    cssArtifact?: ImportArtifact;
-    tokenWebflowJsonArtifact?: ImportArtifact;
-    project: ImportProject;
-}) {
-    // Extract enhanced tokens from CSS
-    const enhancedTokens: EnhancedTokenExtraction | null = (() => {
-        if (!cssArtifact?.content) return null;
-
-        try {
-            return extractEnhancedTokens(
-                cssArtifact.content,
-                undefined, // no HTML needed for token extraction
-                project.name || "Design System"
-            );
-        } catch (error) {
-            console.error("Failed to extract enhanced tokens:", error);
-            return null;
-        }
-    })();
-
-    const handleCopyStyleGuidePayload = async () => {
-        if (!enhancedTokens) {
-            toast.error("No Style Guide (Design Tokens) data available");
-            return;
-        }
-
-        try {
-            let payload: WebflowPayload | null = null;
-            if (tokenWebflowJsonArtifact?.content) {
-                const tokenPayload = JSON.parse(tokenWebflowJsonArtifact.content) as WebflowPayload;
-                const guidePayload = generateStyleGuidePayload(enhancedTokens, {
-                    namespace: `${enhancedTokens.namespace}-sg`,
-                    includeTitle: true,
-                });
-
-                const wfBodyStyleId = tokenPayload.payload.styles.find((style) => style.name === "wf-body")?._id;
-                if (wfBodyStyleId) {
-                    const childIds = new Set<string>();
-                    guidePayload.payload.nodes.forEach((node) => {
-                        if (Array.isArray(node.children)) {
-                            node.children.forEach((id) => childIds.add(id));
-                        }
-                    });
-                    const rootNode = guidePayload.payload.nodes.find((node) => !node.text && !childIds.has(node._id));
-                    if (rootNode) {
-                        rootNode.classes = Array.from(new Set([...(rootNode.classes || []), wfBodyStyleId]));
-                    }
-                }
-
-                payload = {
-                    type: tokenPayload.type,
-                    payload: {
-                        nodes: [...guidePayload.payload.nodes],
-                        styles: [...tokenPayload.payload.styles, ...guidePayload.payload.styles],
-                        assets: [],
-                        ix1: [],
-                        ix2: { interactions: [], events: [], actionLists: [] },
-                    },
-                    meta: {
-                        ...tokenPayload.meta,
-                        hasEmbedCSS: false,
-                        hasEmbedJS: false,
-                        embedCSSSize: 0,
-                        embedJSSize: 0,
-                    },
-                };
-            } else {
-                payload = generateStyleGuidePayload(enhancedTokens, {
-                    namespace: `${enhancedTokens.namespace}-sg`,
-                    includeTitle: true,
-                });
-            }
-
-            await copyWebflowJson(JSON.stringify(payload));
-            toast.success("Style Guide (Design Tokens) copied to clipboard!", {
-                description: "Paste into Webflow to create your Style Guide (Design Tokens) page",
-            });
-        } catch (error) {
-            toast.error("Failed to generate Style Guide (Design Tokens)");
-            console.error(error);
-        }
-    };
-
-    if (!enhancedTokens) {
-        return (
-            <div className="text-center py-12">
-                <p className="text-slate-500 font-medium">
-                    No Style Guide (Design Tokens) data found in this project
-                </p>
-            </div>
-        );
-    }
-
-    return <StyleGuideView tokens={enhancedTokens} onCopyWebflowPayload={handleCopyStyleGuidePayload} />;
-}
-
 function ProjectContent({
     project,
     components,
@@ -193,8 +82,6 @@ function ProjectContent({
     // Extract all relevant artifacts
     const cssArtifact = artifacts.find((a) => a.type === "styles_css");
     const jsArtifact = artifacts.find((a) => a.type === "scripts_js");
-    const tokensJsonArtifact = artifacts.find((a) => a.type === "tokens_json");
-    const tokensCssArtifact = artifacts.find((a) => a.type === "tokens_css");
     const tokenWebflowJsonArtifact = artifacts.find((a) => a.type === "token_webflow_json");
     const jsHooksArtifact = artifacts.find((a) => a.type === "js_hooks");
     const externalScriptsArtifact = artifacts.find((a) => a.type === "external_scripts");
@@ -248,18 +135,8 @@ function ProjectContent({
         }
     }
 
-    // Bug 3 Fix: Build comprehensive embeds array with all extracted content
+    // Build comprehensive embeds array with all extracted content
     const embeds: Array<{ type: string; label: string; content: string; description: string }> = [];
-
-    // CSS Tokens (variables)
-    if (tokensCssArtifact?.content) {
-        embeds.push({
-            type: 'CSS',
-            label: 'CSS Variables',
-            content: `<style>\n${tokensCssArtifact.content}\n</style>`,
-            description: 'Style Guide (Design Tokens) CSS variables. Add to page <head> or embed element.'
-        });
-    }
 
     // Full CSS Styles
     if (cssArtifact?.content) {
@@ -297,31 +174,6 @@ function ProjectContent({
             console.error("Failed to parse js_hooks:", e);
         }
     }
-
-    // Bug 1 Fix: Resolve design tokens from project OR artifact fallback
-    const resolvedTokens: DesignTokens | null = (() => {
-        // First, try project.designTokens
-        if (project.designTokens &&
-            (project.designTokens.colors?.length > 0 || project.designTokens.typography?.length > 0)) {
-            return project.designTokens as DesignTokens;
-        }
-        // Fallback: parse from tokens_json artifact
-        if (tokensJsonArtifact?.content) {
-            try {
-                const parsed = JSON.parse(tokensJsonArtifact.content) as Partial<DesignTokens>;
-                if (parsed.colors?.length || parsed.typography?.length) {
-                    return {
-                        colors: parsed.colors || [],
-                        typography: parsed.typography || [],
-                        spacing: parsed.spacing || [],
-                    };
-                }
-            } catch (e) {
-                console.error("Failed to parse tokens_json artifact:", e);
-            }
-        }
-        return null;
-    })();
 
     const siteStructurePayload = useMemo<WebflowPayload | null>(() => {
         try {
@@ -549,7 +401,6 @@ function ProjectContent({
 
     const tabItems = [
         { label: "Overview", value: "overview" },
-        { label: "Style Guide (Design Tokens)", value: "styleguide" },
         { label: "Site", value: "site" },
         { label: "Images", value: "images" },
         { label: "Embeds", value: "embeds" },
@@ -568,16 +419,8 @@ function ProjectContent({
                         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight truncate">{project.name}</h1>
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm font-medium text-slate-500 mt-1">
                             <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px] text-slate-600 font-bold uppercase tracking-wider whitespace-nowrap">
-                                {project.componentCount || 0} Extracted Components
+                                {project.componentCount || 0} Components
                             </span>
-                            {project.hasTokens && (
-                                <>
-                                    <span className="hidden sm:inline">•</span>
-                                    <span className="bg-blue-100 px-2 py-0.5 rounded text-[10px] text-blue-700 font-bold uppercase tracking-wider whitespace-nowrap">
-                                        Style Guide Ready
-                                    </span>
-                                </>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -592,16 +435,7 @@ function ProjectContent({
                     </Button>
                 </div>
             </div>
-            {siteSafetyReport && (
-                <div className="mb-6">
-                    <SafetyReportPanel report={siteSafetyReport} />
-                </div>
-            )}
-            {classRenamingReport && (
-                <div className="mb-6">
-                    <ClassRenamingReportPanel report={classRenamingReport} />
-                </div>
-            )}
+
 
             <Tabs defaultValue="overview" className="w-full">
                 <div className="overflow-x-auto -mx-2 px-2 mb-10 scrollbar-hide">
@@ -620,65 +454,52 @@ function ProjectContent({
 
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <TabsContent value="overview" className="space-y-6">
-                        <DesignTokensCard tokens={resolvedTokens ?? undefined} />
+                        <SiteDescriptionCard projectId={project._id} description={project.description} />
                         <FontChecklistCard fonts={normalizedFonts} />
-                    </TabsContent>
-
-                    <TabsContent value="styleguide" className="space-y-6">
-                        <StyleGuideTab
-                            cssArtifact={cssArtifact}
-                            tokenWebflowJsonArtifact={tokenWebflowJsonArtifact}
-                            project={project}
-                        />
+                        {siteSafetyReport && (
+                            <SafetyReportPanel
+                                report={siteSafetyReport}
+                                onCopy={async () => {
+                                    // Format the safety report as readable text
+                                    const lines: string[] = [
+                                        `Safety Report: ${siteSafetyReport.status.toUpperCase()}`,
+                                        `---`,
+                                    ];
+                                    if (siteSafetyReport.fatalIssues.length > 0) {
+                                        lines.push(`FATAL ISSUES (${siteSafetyReport.fatalIssues.length}):`);
+                                        siteSafetyReport.fatalIssues.forEach(issue => lines.push(`  • ${issue}`));
+                                    }
+                                    if (siteSafetyReport.autoFixes.length > 0) {
+                                        lines.push(`AUTO-FIXES APPLIED (${siteSafetyReport.autoFixes.length}):`);
+                                        siteSafetyReport.autoFixes.forEach(fix => lines.push(`  • ${fix}`));
+                                    }
+                                    if (siteSafetyReport.warnings.length > 0) {
+                                        lines.push(`WARNINGS (${siteSafetyReport.warnings.length}):`);
+                                        siteSafetyReport.warnings.forEach(warn => lines.push(`  • ${warn}`));
+                                    }
+                                    await copyText(lines.join('\n'));
+                                    toast.success("Safety report copied to clipboard");
+                                }}
+                            />
+                        )}
+                        {classRenamingReport && (
+                            <div className="mt-4">
+                                <ClassRenamingReportPanel report={classRenamingReport} />
+                            </div>
+                        )}
                     </TabsContent>
 
                     <TabsContent value="site" className="space-y-10">
-                        {/* Section 1: Style Guide (Design Tokens) */}
-                        {resolvedTokens && (
-                            <div className="bg-white/80 backdrop-blur-xl rounded-[32px] border border-slate-200 p-8 shadow-xl shadow-slate-200/50">
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-3">
-                                            <h3 className="text-2xl font-bold text-slate-900">1. Style Guide (Design Tokens)</h3>
-                                            <Badge className="bg-blue-100 text-blue-700 border-none font-bold text-[10px] uppercase">Paste First</Badge>
-                                        </div>
-                                        <p className="text-slate-500 font-medium max-w-xl">
-                                            CSS variables and styles as a hidden DIV. Paste this FIRST into your Webflow page body, then delete the DIV element.
-                                        </p>
-                                    </div>
-                                    <Button
-                                        onClick={async () => {
-                                            try {
-                                                const cssVars: string[] = [];
-                                                resolvedTokens.colors?.forEach((c) => cssVars.push(`--${c.name}: ${c.value}`));
-                                                resolvedTokens.typography?.forEach((t) => cssVars.push(`--${t.name}: ${t.value}`));
-                                                resolvedTokens.spacing?.forEach((s) => cssVars.push(`--${s.name}: ${s.value}`));
-                                                const hiddenDiv = `<div style="${cssVars.join('; ')}; display: none;" data-flow-tokens="true"></div>`;
-                                                await navigator.clipboard.writeText(hiddenDiv);
-                                                toast.success("Style Guide (Design Tokens) copied!", { description: "Paste into Webflow body, then delete the DIV." });
-                                            } catch {
-                                                toast.error("Failed to copy Style Guide (Design Tokens)");
-                                            }
-                                        }}
-                                        className="bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-200/50 font-bold px-10 h-14 rounded-2xl transition-all text-lg shrink-0"
-                                    >
-                                        Copy Style Guide (Design Tokens)
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Section 2: Site Structure Payload */}
+                        {/* Site Structure Payload */}
                         <div className="bg-white/80 backdrop-blur-xl rounded-[32px] border border-slate-200 p-8 shadow-xl shadow-slate-200/50">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-3">
-                                        <h3 className="text-2xl font-bold text-slate-900">2. Site Structure Payload</h3>
+                                        <h3 className="text-2xl font-bold text-slate-900">Site Structure Payload</h3>
                                         <Badge className="bg-green-100 text-green-700 border-none font-bold text-[10px] uppercase">Structure + Base Styles</Badge>
                                     </div>
                                     <p className="text-slate-500 font-medium max-w-xl">
                                         Copy the full site layout structure with base layout styles only.
-                                        Styles covered by the Style Guide (Design Tokens) or Embeds are excluded.
                                         Best for rebuilding the page structure in Webflow.
                                     </p>
                                 </div>
@@ -690,15 +511,6 @@ function ProjectContent({
                                     Copy Site Structure (Base Styles)
                                 </Button>
                             </div>
-                        </div>
-
-                        {/* Section 3: Extracted Components */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 px-2">
-                                <h3 className="text-xl font-bold text-slate-900">3. Extracted Components</h3>
-                                <Badge className="bg-slate-100 text-slate-600 border-none font-bold text-[10px] uppercase">{components.length} items</Badge>
-                            </div>
-                            <ComponentsList components={components} />
                         </div>
                     </TabsContent>
 

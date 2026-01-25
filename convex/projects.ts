@@ -329,6 +329,37 @@ export const deleteThumbnail = mutation({
 })
 
 /**
+ * Update project description
+ * Only the owner can update their project description
+ */
+export const updateDescription = mutation({
+  args: {
+    projectId: v.id("importProjects"),
+    description: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireAuth(ctx)
+
+    const project = await ctx.db.get(args.projectId)
+    if (!project) {
+      throw new ConvexError("Project not found")
+    }
+
+    // Verify ownership
+    if (!project.userId || project.userId !== user.clerkId) {
+      throw new ConvexError("Not authorized")
+    }
+
+    await ctx.db.patch(args.projectId, {
+      description: args.description,
+      updatedAt: Date.now(),
+    })
+
+    return { success: true }
+  },
+})
+
+/**
  * Delete a project and all its associated data
  * Only the owner can delete their project
  */

@@ -1,12 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Copy, Check } from "lucide-react"
 import type { WebflowSafetyReport } from "@/lib/webflow-safety-gate"
 import type { ClassRenamingReport } from "@/lib/validation-types"
 
 interface SafetyReportPanelProps {
   report: WebflowSafetyReport
+  /** Optional callback to copy the safety report as formatted text */
+  onCopy?: () => Promise<void>
 }
 
 interface ClassRenamingReportPanelProps {
@@ -101,7 +103,8 @@ function WarningCategory({ items, title, hint }: WarningCategoryProps) {
   )
 }
 
-export function SafetyReportPanel({ report }: SafetyReportPanelProps) {
+export function SafetyReportPanel({ report, onCopy }: SafetyReportPanelProps) {
+  const [isCopied, setIsCopied] = useState(false)
   const isBlocked = report.status === "block"
   const isWarn = report.status === "warn"
 
@@ -114,6 +117,17 @@ export function SafetyReportPanel({ report }: SafetyReportPanelProps) {
   // Categorize warnings for better UX
   const categorizedWarnings = categorizeWarnings(report.warnings)
   const categorizedAutoFixes = categorizeAutoFixes(report.autoFixes)
+
+  const handleCopy = async () => {
+    if (!onCopy) return
+    try {
+      await onCopy()
+      setIsCopied(true)
+      setTimeout(() => setIsCopied(false), 2000)
+    } catch (e) {
+      console.error("Failed to copy safety report:", e)
+    }
+  }
 
   return (
     <div className={`rounded-lg border p-4 ${tone}`}>
@@ -130,9 +144,30 @@ export function SafetyReportPanel({ report }: SafetyReportPanelProps) {
                 : "Export is safe to paste in Webflow."}
           </p>
         </div>
-        <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
-          {report.status}
-        </span>
+        <div className="flex items-center gap-2">
+          {onCopy && (
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/60 hover:bg-white/90 border border-current/20 text-[10px] font-bold uppercase tracking-wide transition-all"
+              title="Copy safety report"
+            >
+              {isCopied ? (
+                <>
+                  <Check className="w-3 h-3" />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3 h-3" />
+                  Copy
+                </>
+              )}
+            </button>
+          )}
+          <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
+            {report.status}
+          </span>
+        </div>
       </div>
 
       <ExpandableList items={report.fatalIssues} title="Blocked Issues" />

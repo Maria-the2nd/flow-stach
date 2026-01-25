@@ -117,6 +117,8 @@ export default defineSchema({
     componentCount: v.optional(v.number()),
     classCount: v.optional(v.number()),
     hasTokens: v.optional(v.boolean()),
+    // Site description (user-editable)
+    description: v.optional(v.string()),
 
     // Font detection results
     fonts: v.optional(v.array(v.object({
