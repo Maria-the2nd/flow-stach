@@ -133,9 +133,9 @@ export function ComponentsList({ components }: ComponentsListProps) {
           <Card key={component._id} className="!bg-white/80 backdrop-blur-xl border-slate-200 shadow-xl shadow-slate-200/50 rounded-[24px] overflow-hidden hover:border-blue-200 transition-all">
             <CardContent className="p-8">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <h4 className="font-bold text-xl text-slate-900">{component.title}</h4>
+                <div className="flex-1 space-y-3 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <h4 className="font-bold text-lg sm:text-xl text-slate-900 break-words">{component.title}</h4>
                     {getReliabilityBadge(component.pasteReliability)}
                   </div>
 
@@ -143,32 +143,34 @@ export function ComponentsList({ components }: ComponentsListProps) {
                     <p className="text-sm text-slate-500 leading-relaxed font-medium">{component.description}</p>
                   )}
 
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-bold text-[10px] uppercase">{component.category}</Badge>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-bold text-[10px] uppercase whitespace-nowrap">{component.category}</Badge>
                     {component.capabilityNotes && (
-                      <p className="text-xs text-slate-400 font-medium italic">{component.capabilityNotes}</p>
+                      <p className="text-xs text-slate-400 font-medium italic break-words">{component.capabilityNotes}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 min-w-[180px]">
+                <div className="flex flex-row sm:flex-col gap-3 w-full sm:w-auto sm:min-w-[180px]">
                   <Button
                     onClick={() => handleCopyComponent(component, payload)}
                     disabled={!payload?.webflowJson || component.pasteReliability === "none"}
-                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200/40 font-bold h-12 rounded-xl"
+                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200/40 font-bold h-12 rounded-xl flex-1 sm:flex-none"
                   >
                     <Copy className="w-4 h-4 mr-2" />
-                    Copy to Webflow
+                    <span className="hidden sm:inline">Copy to Webflow</span>
+                    <span className="sm:hidden">Copy</span>
                   </Button>
 
                   {payload?.codePayload && (
                     <Button
                       onClick={() => handleCopyCode(component, payload)}
                       variant="outline"
-                      className="border-slate-200 text-slate-600 hover:bg-slate-50 font-bold h-12 rounded-xl"
+                      className="border-slate-200 text-slate-600 hover:bg-slate-50 font-bold h-12 rounded-xl flex-1 sm:flex-none"
                     >
                       <Copy className="w-4 h-4 mr-2" />
-                      View Code
+                      <span className="hidden sm:inline">View Code</span>
+                      <span className="sm:hidden">Code</span>
                     </Button>
                   )}
                 </div>

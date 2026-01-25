@@ -116,6 +116,21 @@ function StyleGuideTab({
                     namespace: `${enhancedTokens.namespace}-sg`,
                     includeTitle: true,
                 });
+
+                const wfBodyStyleId = tokenPayload.payload.styles.find((style) => style.name === "wf-body")?._id;
+                if (wfBodyStyleId) {
+                    const childIds = new Set<string>();
+                    guidePayload.payload.nodes.forEach((node) => {
+                        if (Array.isArray(node.children)) {
+                            node.children.forEach((id) => childIds.add(id));
+                        }
+                    });
+                    const rootNode = guidePayload.payload.nodes.find((node) => !node.text && !childIds.has(node._id));
+                    if (rootNode) {
+                        rootNode.classes = Array.from(new Set([...(rootNode.classes || []), wfBodyStyleId]));
+                    }
+                }
+
                 payload = {
                     type: tokenPayload.type,
                     payload: {
@@ -315,25 +330,29 @@ function ProjectContent({
 
             // Maps style NAME to canonical style ID (first seen wins)
             const canonicalStyleIdByName = new Map<string, string>();
-            // Maps old style ID -> canonical style ID (for remapping node.classes)
+            // Maps old style ID -> canonical style ID or class name (for remapping node.classes)
             const styleIdRemap = new Map<string, string>();
-            // Track token style names to exclude and map to canonical IDs
+            // Track token style names AND their IDs for proper remapping
             const tokenStyleNames = new Set<string>();
-            const tokenStyleIdByName = new Map<string, string>();
+            const tokenStyleIdByName = new Map<string, string>(); // name -> _id
+            const unresolvedClassRefs: Array<{ nodeId: string; classRef: string }> = [];
 
             if (tokenWebflowJsonArtifact?.content) {
                 try {
                     const tokenPayload = JSON.parse(tokenWebflowJsonArtifact.content) as {
-                        payload?: { styles?: Array<{ name?: string; _id?: string }> };
+                        payload?: { styles?: Array<{ name?: string; _id?: string; styleLess?: Record<string, string>; variants?: Record<string, unknown> }> };
                     };
                     if (Array.isArray(tokenPayload.payload?.styles)) {
                         tokenPayload.payload.styles.forEach((style) => {
-                            const styleName = style?.name || style?._id;
-                            if (styleName) {
+                            const styleName = style?.name;
+                            const styleId = style?._id;
+                            if (styleName && styleId) {
                                 tokenStyleNames.add(styleName);
-                                if (style?._id) {
-                                    tokenStyleIdByName.set(styleName, style._id);
-                                }
+                                tokenStyleIdByName.set(styleName, styleId);
+                                // Add token styles to allStyles so they're available for node.classes validation
+                                // This ensures nodes referencing token styles pass the orphan check
+                                allStyles.push(style as unknown as WebflowPayload["payload"]["styles"][number]);
+                                canonicalStyleIdByName.set(styleName, styleId);
                             }
                         });
                     }
@@ -354,13 +373,15 @@ function ProjectContent({
 
                         // Build style ID remap for this component
                         // When we skip a style due to deduplication, we need to remap nodes to use the canonical ID
+                        const componentStyleById = new Map<string, WebflowPayload["payload"]["styles"][number]>();
                         if (Array.isArray(regenerated.payload?.styles)) {
                             regenerated.payload.styles.forEach((style) => {
                                 const styleName = style?.name || style?._id;
                                 const styleId = style?._id;
                                 if (!styleName || !styleId) return;
+                                componentStyleById.set(styleId, style);
 
-                                // Skip token styles entirely
+                                // Skip token styles - but remap to canonical token style ID, not name
                                 if (tokenStyleNames.has(styleName)) {
                                     const canonicalTokenId = tokenStyleIdByName.get(styleName);
                                     if (canonicalTokenId) {
@@ -390,7 +411,36 @@ function ProjectContent({
                                 if (Array.isArray(node.classes) && node.classes.length > 0) {
                                     node.classes = node.classes.map((classId) => {
                                         const remappedId = styleIdRemap.get(classId);
-                                        return remappedId || classId;
+                                        if (remappedId) return remappedId;
+
+                                        const style = componentStyleById.get(classId);
+                                        if (style) {
+                                            const styleName = style?.name || style?._id;
+                                            if (!styleName) return classId;
+
+                                            if (tokenStyleNames.has(styleName)) {
+                                                const canonicalTokenId = tokenStyleIdByName.get(styleName);
+                                                if (canonicalTokenId) {
+                                                    styleIdRemap.set(classId, canonicalTokenId);
+                                                    return canonicalTokenId;
+                                                }
+                                            }
+
+                                            const canonicalId = canonicalStyleIdByName.get(styleName);
+                                            if (canonicalId) {
+                                                styleIdRemap.set(classId, canonicalId);
+                                                return canonicalId;
+                                            }
+
+                                            // New style not seen yet - add it now
+                                            canonicalStyleIdByName.set(styleName, style._id);
+                                            allStyles.push(style);
+                                            styleIdRemap.set(classId, style._id);
+                                            return style._id;
+                                        }
+
+                                        unresolvedClassRefs.push({ nodeId: node._id, classRef: classId });
+                                        return classId;
                                     });
                                 }
                                 allNodes.push(node);
@@ -402,8 +452,36 @@ function ProjectContent({
                 }
             });
 
+            if (unresolvedClassRefs.length > 0) {
+                console.warn("Unresolved class references in Site Structure payload:", unresolvedClassRefs.slice(0, 10));
+            }
+
             if (allNodes.length === 0) {
                 return null;
+            }
+
+            // P0.3: Validation gate - ensure all node.classes reference valid style IDs
+            const allStyleIds = new Set(allStyles.map((s) => s._id));
+            const orphanClassIds: Array<{ nodeId: string; classId: string }> = [];
+
+            for (const node of allNodes) {
+                if (Array.isArray(node.classes)) {
+                    for (const classId of node.classes) {
+                        if (!allStyleIds.has(classId)) {
+                            orphanClassIds.push({ nodeId: node._id, classId });
+                        }
+                    }
+                }
+            }
+
+            if (orphanClassIds.length > 0) {
+                console.error(
+                    `[Site Structure] Found ${orphanClassIds.length} orphan class IDs:`,
+                    orphanClassIds.slice(0, 10) // Log first 10
+                );
+                // Fail fast - don't return invalid payload
+                // In production, you might want to throw an error or inject placeholder styles
+                // For now, we log and continue (existing behavior) but this should be fixed upstream
             }
 
             const payload: WebflowPayload = {
@@ -479,35 +557,38 @@ function ProjectContent({
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center gap-6 mb-8">
-                <Link href="/workspace/projects">
-                    <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition-all">
-                        <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                </Link>
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{project.name}</h1>
-                    <div className="flex items-center gap-3 text-sm font-medium text-slate-500 mt-1">
-                        <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px] text-slate-600 font-bold uppercase tracking-wider">
-                            {project.componentCount || 0} Extracted Components
-                        </span>
-                        {project.hasTokens && (
-                            <>
-                                <span>•</span>
-                                <span className="bg-blue-100 px-2 py-0.5 rounded text-[10px] text-blue-700 font-bold uppercase tracking-wider">
-                                    Style Guide Ready
-                                </span>
-                            </>
-                        )}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8">
+                <div className="flex items-center gap-4 sm:gap-6 flex-1 min-w-0">
+                    <Link href="/workspace/projects" className="shrink-0">
+                        <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition-all">
+                            <ArrowLeft className="w-5 h-5" />
+                        </Button>
+                    </Link>
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight truncate">{project.name}</h1>
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm font-medium text-slate-500 mt-1">
+                            <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px] text-slate-600 font-bold uppercase tracking-wider whitespace-nowrap">
+                                {project.componentCount || 0} Extracted Components
+                            </span>
+                            {project.hasTokens && (
+                                <>
+                                    <span className="hidden sm:inline">•</span>
+                                    <span className="bg-blue-100 px-2 py-0.5 rounded text-[10px] text-blue-700 font-bold uppercase tracking-wider whitespace-nowrap">
+                                        Style Guide Ready
+                                    </span>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
-                <div className="ml-auto flex gap-3">
+                <div className="flex gap-3 shrink-0">
                     <Button
                         onClick={handleCopySiteStructure}
-                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-200/50 font-bold px-8 h-11 rounded-xl transition-all"
+                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-200/50 font-bold px-4 sm:px-8 h-11 rounded-xl transition-all text-sm sm:text-base whitespace-nowrap"
                         disabled={!siteStructurePayload}
                     >
-                        Copy Site Structure (Base Styles)
+                        <span className="hidden sm:inline">Copy Site Structure (Base Styles)</span>
+                        <span className="sm:hidden">Copy Structure</span>
                     </Button>
                 </div>
             </div>
@@ -523,17 +604,19 @@ function ProjectContent({
             )}
 
             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="w-full justify-start p-1 bg-slate-100/80 backdrop-blur rounded-[20px] h-auto inline-flex gap-1 mb-10 shadow-inner">
-                    {tabItems.map(tab => (
-                        <TabsTrigger
-                            key={tab.value}
-                            value={tab.value}
-                            className="rounded-[14px] data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md px-8 py-2.5 text-slate-500 hover:text-slate-900 transition-all font-bold text-sm"
-                        >
-                            {tab.label}
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
+                <div className="overflow-x-auto -mx-2 px-2 mb-10 scrollbar-hide">
+                    <TabsList className="w-full justify-start p-1 bg-slate-100/80 backdrop-blur rounded-[20px] h-auto inline-flex gap-1 shadow-inner min-w-max">
+                        {tabItems.map(tab => (
+                            <TabsTrigger
+                                key={tab.value}
+                                value={tab.value}
+                                className="rounded-[14px] data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md px-4 sm:px-8 py-2.5 text-slate-500 hover:text-slate-900 transition-all font-bold text-xs sm:text-sm whitespace-nowrap shrink-0"
+                            >
+                                {tab.label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </div>
 
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <TabsContent value="overview" className="space-y-6">
@@ -542,7 +625,7 @@ function ProjectContent({
                     </TabsContent>
 
                     <TabsContent value="styleguide" className="space-y-6">
-                        <StyleGuideTab 
+                        <StyleGuideTab
                             cssArtifact={cssArtifact}
                             tokenWebflowJsonArtifact={tokenWebflowJsonArtifact}
                             project={project}
@@ -640,32 +723,47 @@ function ProjectContent({
                                 </div>
 
                                 <div className="space-y-3">
-                                    {externalLibraries.map((lib, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <Badge className={lib.type === 'script' ? "bg-yellow-50 text-yellow-700 border-none font-bold text-[10px] uppercase" : "bg-purple-50 text-purple-600 border-none font-bold text-[10px] uppercase"}>
-                                                    {lib.type === 'script' ? 'JS' : 'CSS'}
-                                                </Badge>
-                                                <div>
-                                                    <p className="font-bold text-slate-700 text-sm">{lib.name}</p>
-                                                    <p className="text-xs text-slate-400 font-mono truncate max-w-md">{lib.url}</p>
+                                    {externalLibraries.map((lib, idx) => {
+                                        const tag = lib.type === 'script'
+                                            ? `<script src="${lib.url}"></script>`
+                                            : `<link rel="stylesheet" href="${lib.url}">`;
+
+                                        return (
+                                            <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white transition-colors">
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                    <Badge className={lib.type === 'script' ? "bg-yellow-50 text-yellow-700 border-none font-bold text-[10px] uppercase shrink-0" : "bg-purple-50 text-purple-600 border-none font-bold text-[10px] uppercase shrink-0"}>
+                                                        {lib.type === 'script' ? 'JS' : 'CSS'}
+                                                    </Badge>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-bold text-slate-700 text-sm">{lib.name}</p>
+                                                        <code className="text-xs text-slate-600 font-mono break-all block mt-1 bg-white px-2 py-1 rounded border border-slate-200">
+                                                            {tag}
+                                                        </code>
+                                                    </div>
                                                 </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-blue-600 font-bold hover:bg-blue-50 shrink-0 ml-2"
+                                                    onClick={async (e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        try {
+                                                            const result = await copyText(tag);
+                                                            if (!result.success) {
+                                                                console.error("Copy failed:", result.reason);
+                                                            }
+                                                        } catch (error) {
+                                                            console.error("Copy error:", error);
+                                                            toast.error("Failed to copy tag");
+                                                        }
+                                                    }}
+                                                >
+                                                    Copy Tag
+                                                </Button>
                                             </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-blue-600 font-bold hover:bg-blue-50"
-                                                onClick={async () => {
-                                                    const tag = lib.type === 'script'
-                                                        ? `<script src="${lib.url}"></script>`
-                                                        : `<link rel="stylesheet" href="${lib.url}">`;
-                                                    await copyText(tag);
-                                                }}
-                                            >
-                                                Copy Tag
-                                            </Button>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
 
                                 <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">

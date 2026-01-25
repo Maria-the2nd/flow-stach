@@ -325,10 +325,11 @@ export function componentizeHtml(cleanHtml: string, options: ComponentizeOptions
   if (bodyMatch) {
     bodyContent = bodyMatch[1].trim();
   }
-  const unwrapped = unwrapWfBody(bodyContent);
-  if (unwrapped !== bodyContent) {
-    bodyContent = unwrapped;
+  const bodyWrapper = unwrapWfBody(bodyContent);
+  if (bodyWrapper.html !== bodyContent) {
+    bodyContent = bodyWrapper.html;
   }
+  const bodyWrapperClasses = bodyWrapper.bodyClasses;
 
   const semanticElements = findTopLevelElements(bodyContent, [
     "nav",
@@ -369,7 +370,7 @@ export function componentizeHtml(cleanHtml: string, options: ComponentizeOptions
         if (hasComponentClass) {
           const component = createComponent(
             child.tagName, child.html, child.className, child.classNames, order++, ensureUniqueId,
-            child.id, child.firstHeading
+            child.id, child.firstHeading, bodyWrapperClasses
           );
           console.log(`[componentizer] Extracted from <main>: ${component.name} (type: ${component.type})`);
           components.push(component);
@@ -379,7 +380,7 @@ export function componentizeHtml(cleanHtml: string, options: ComponentizeOptions
       continue;
     }
 
-    const component = createComponent(tagName, html, className, element.classNames, order++, ensureUniqueId, elementId, firstHeading);
+    const component = createComponent(tagName, html, className, element.classNames, order++, ensureUniqueId, elementId, firstHeading, bodyWrapperClasses);
     console.log(`[componentizer] Extracted component: ${component.name} (type: ${component.type}, tag: ${tagName}, class: ${className})`);
     components.push(component);
     rootOrder.push(component.id);
@@ -387,7 +388,7 @@ export function componentizeHtml(cleanHtml: string, options: ComponentizeOptions
 
   if (components.length === 0 && bodyContent.trim()) {
     warnings.push("No semantic sections detected. Treating entire content as single component.");
-    const component = createComponent("div", bodyContent, "page-content", ["page-content"], 1, ensureUniqueId);
+    const component = createComponent("div", bodyContent, "page-content", ["page-content"], 1, ensureUniqueId, undefined, undefined, bodyWrapperClasses);
     component.type = "wrapper";
     components.push(component);
     rootOrder.push(component.id);
@@ -399,10 +400,14 @@ export function componentizeHtml(cleanHtml: string, options: ComponentizeOptions
   return { components, rootOrder, repeatedPatterns, warnings };
 }
 
-function unwrapWfBody(html: string): string {
+function unwrapWfBody(html: string): { html: string; bodyClasses: string[] } {
   const match = html.match(/^<div[^>]*class="[^"]*wf-body[^"]*"[^>]*>([\s\S]*)<\/div>\s*$/i);
-  if (!match) return html;
-  return match[1].trim();
+  if (!match) {
+    return { html, bodyClasses: [] };
+  }
+  const wrapperMatch = match[0].match(/^<div[^>]*class="([^"]*)"[^>]*>/i);
+  const bodyClasses = wrapperMatch?.[1]?.split(/\s+/).filter(Boolean) ?? [];
+  return { html: match[1].trim(), bodyClasses };
 }
 
 function createComponent(
@@ -413,7 +418,8 @@ function createComponent(
   order: number,
   ensureUniqueId: (baseId: string) => string,
   elementId?: string,
-  firstHeading?: string
+  firstHeading?: string,
+  extraRootClasses: string[] = []
 ): Component {
   const name = generateComponentName(tagName, className, order, elementId, firstHeading);
   const id = ensureUniqueId(generateId(name, order));
@@ -425,15 +431,52 @@ function createComponent(
     order,
   });
 
+  const htmlWithRootClasses = injectRootClasses(html, extraRootClasses);
+
   return {
     id, name, type, tagName, primaryClass: className,
-    htmlContent: html.trim(),
-    classesUsed: extractClassNames(html),
+    htmlContent: htmlWithRootClasses.trim(),
+    classesUsed: extractClassNames(htmlWithRootClasses),
     assetsUsed: extractImageUrls(html),
-    jsHooks: extractJsHooksFromHtml(html),
+    jsHooks: extractJsHooksFromHtml(htmlWithRootClasses),
     children: [],
     order,
   };
+}
+
+function injectRootClasses(html: string, extraClasses: string[]): string {
+  if (!extraClasses.length) return html;
+
+  const openTagMatch = html.match(/^<(\w+)([^>]*)>/);
+  if (!openTagMatch) return html;
+
+  const fullOpenTag = openTagMatch[0];
+  const attrs = openTagMatch[2];
+  const existingClassMatch = attrs.match(/\sclass=["']([^"']*)["']/);
+  const existingClasses = existingClassMatch
+    ? existingClassMatch[1].split(/\s+/).filter(Boolean)
+    : [];
+
+  const classSet = new Set(existingClasses);
+  let didAdd = false;
+  for (const cls of extraClasses) {
+    if (!cls || classSet.has(cls)) continue;
+    classSet.add(cls);
+    didAdd = true;
+  }
+
+  if (!didAdd) return html;
+
+  const combined = Array.from(classSet).join(" ");
+  let nextOpenTag = fullOpenTag;
+
+  if (existingClassMatch) {
+    nextOpenTag = fullOpenTag.replace(existingClassMatch[0], ` class="${combined}"`);
+  } else {
+    nextOpenTag = fullOpenTag.replace(/^<(\w+)/, `<$1 class="${combined}"`);
+  }
+
+  return html.replace(fullOpenTag, nextOpenTag);
 }
 
 // ============================================

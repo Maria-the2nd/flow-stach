@@ -12,7 +12,8 @@
       "Bash(bun add:*)",
       "Bash(node -e:*)",
       "Bash(grep:*)",
-      "Bash(npx convex:*)"
+      "Bash(npx convex:*)",
+      "Bash(ls:*)"
     ]
   }
 }

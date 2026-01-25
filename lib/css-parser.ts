@@ -177,6 +177,8 @@ export interface ElementTypography {
  */
 export type ElementTypographyMap = Record<string, ElementTypography>;
 
+type ElementBaseStylesMap = Record<string, string>;
+
 /**
  * Mapping from element selectors to Webflow class names.
  * This is the canonical mapping used throughout the converter.
@@ -615,7 +617,28 @@ function expandBorderShorthand(value: string): Record<string, string> {
     };
   }
 
-  const parts = trimmed.split(/\s+/).filter(Boolean);
+  // Split by whitespace, but preserve parenthesized content (rgba, hsl, etc.)
+  const parts: string[] = [];
+  let current = "";
+  let parenDepth = 0;
+  
+  for (const char of trimmed) {
+    if (char === "(") parenDepth++;
+    else if (char === ")") parenDepth--;
+    
+    if (char === " " && parenDepth === 0) {
+      if (current.trim()) {
+        parts.push(current.trim());
+        current = "";
+      }
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) {
+    parts.push(current.trim());
+  }
+
   if (parts.length === 0) return {};
 
   const borderStyles = new Set([
@@ -641,7 +664,7 @@ function expandBorderShorthand(value: string): Record<string, string> {
       continue;
     }
 
-    // Otherwise, treat as color
+    // Otherwise, treat as color (may be rgba/hsl with spaces preserved)
     if (!color) color = part;
   }
 
@@ -1253,8 +1276,9 @@ export function parseCSS(css: string): ParsedCssResult {
   const cleanCss = css.replace(/:root\s*\{[^}]+\}/g, "").trim();
 
   // ============================================
-  // STEP 1: Extract element typography and spacing FIRST
+  // STEP 1: Extract element base styles, typography, and spacing FIRST
   // ============================================
+  const elementBaseStyles = extractElementBaseStyles(cleanCss, variables, warnings);
   const elementTypography = extractElementTypography(cleanCss, variables, warnings);
   const elementSpacing = extractElementSpacing(cleanCss, variables, warnings);
 
@@ -1397,8 +1421,9 @@ export function parseCSS(css: string): ParsedCssResult {
   const nonStandardMediaCss = nonStandardMediaBlocks.length > 0 ? nonStandardMediaBlocks.join("\n\n") : undefined;
 
   // ============================================
-  // STEP 2: Merge element typography and spacing into class styles
+  // STEP 2: Merge element base styles, typography, and spacing into class styles
   // ============================================
+  mergeElementBaseStylesIntoClasses(elementBaseStyles, classes, warnings);
   mergeElementTypographyIntoClasses(elementTypography, classes, warnings);
   mergeElementSpacingIntoClasses(elementSpacing, classes, warnings);
 
@@ -1429,6 +1454,64 @@ export function parseCSS(css: string): ParsedCssResult {
     cssVariables: variables,
     elementTypography,
   };
+}
+
+/**
+ * Extract base styles from element selectors.
+ * Currently only applies to body to preserve background, spacing, etc.
+ */
+function extractElementBaseStyles(
+  css: string,
+  variables: Map<string, string>,
+  warnings: CssWarning[]
+): ElementBaseStylesMap {
+  const result: ElementBaseStylesMap = {};
+  const elementSelectors = Object.keys(ELEMENT_TO_CLASS_MAP);
+
+  const ruleRegex = /([^{}@]+)\{([^{}]+)\}/g;
+  let match;
+
+  while ((match = ruleRegex.exec(css)) !== null) {
+    const selectorPart = match[1].trim();
+    const propertiesStr = match[2].trim();
+    const selectors = selectorPart.split(",").map((s) => s.trim());
+
+    for (const selector of selectors) {
+      const normalizedSelector = selector.toLowerCase();
+      
+      // Only process pure element selectors (no classes, no descendants)
+      // Support body and html (both map to wf-body for base styles)
+      if (
+        (normalizedSelector !== "body" && normalizedSelector !== "html") ||
+        selector.includes(".") ||
+        selector.includes(" ")
+      ) {
+        continue;
+      }
+
+      // Map html to body for base styles (both should apply to wf-body)
+      const targetElement = normalizedSelector === "html" ? "body" : normalizedSelector;
+      
+      if (!elementSelectors.includes(targetElement)) continue;
+
+      const properties = parseProperties(propertiesStr, variables, warnings);
+      const styleLess = propertiesToStyleLess(properties);
+      if (!styleLess) continue;
+
+      // Merge html and body styles into the same result (both map to wf-body)
+      if (!result[targetElement]) {
+        result[targetElement] = styleLess;
+      } else {
+        result[targetElement] = mergeStyleLess(
+          result[targetElement],
+          styleLess,
+          "override"
+        );
+      }
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -1585,6 +1668,44 @@ function mergeElementTypographyIntoClasses(
       classes[className].baseStyles = mergeTypographyIntoStyles(
         classes[className].baseStyles,
         typographyStyles
+      );
+    }
+  }
+}
+
+/**
+ * Merge element base styles into corresponding class entries.
+ * Used for body background, padding, etc.
+ */
+function mergeElementBaseStylesIntoClasses(
+  elementBaseStyles: ElementBaseStylesMap,
+  classes: Record<string, ClassIndexEntry>,
+  _warnings: CssWarning[]
+): void {
+  void _warnings;
+  for (const [element, styleLess] of Object.entries(elementBaseStyles)) {
+    const className = ELEMENT_TO_CLASS_MAP[element];
+    if (!className || !styleLess) continue;
+
+    if (!classes[className]) {
+      classes[className] = {
+        className,
+        selectors: [`.${className}`],
+        baseStyles: styleLess,
+        mediaQueries: {},
+        isComboClass: false,
+        children: [],
+        parentClasses: [],
+        isLayoutContainer: false,
+      };
+      console.log(
+        `[css-parser] Created .${className} from ${element} selector with base styles: ${styleLess}`
+      );
+    } else {
+      classes[className].baseStyles = mergeStyleLess(
+        classes[className].baseStyles,
+        styleLess,
+        "override"
       );
     }
   }

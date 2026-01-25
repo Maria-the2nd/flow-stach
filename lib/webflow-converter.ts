@@ -44,6 +44,8 @@ export interface WebflowNode {
   data?: {
     tag?: string;
     text?: boolean;
+    /** Display name shown in Webflow Navigator (instead of generic "Div Block") */
+    displayName?: string;
     xattr?: Array<{ name: string; value: string }>;
     link?: { mode: string; url: string; target?: string };
     attr?: { src?: string; alt?: string; loading?: string };
@@ -785,6 +787,105 @@ function convertToWebflowNodes(
   };
 
   /**
+   * Generate a meaningful display name for Webflow Navigator based on element context.
+   * This prevents generic "Div Block" names and makes the Navigator tree more readable.
+   *
+   * Priority:
+   * 1. First class name (e.g., "feature-card" -> "Feature Card")
+   * 2. Semantic tag name (e.g., "nav" -> "Navigation", "header" -> "Header")
+   * 3. Tag name for specific elements (e.g., "p" -> "Paragraph", "a" -> "Link")
+   * 4. Generic fallback (e.g., "div" -> "Div Block")
+   */
+  function generateDisplayName(
+    tag: string,
+    classes: string[],
+    nodeType: WebflowNode["type"]
+  ): string | undefined {
+    // If we have a class, use the first one and convert to readable format
+    if (classes.length > 0) {
+      const firstClass = classes[0];
+      
+      // Skip Webflow system classes
+      if (firstClass.startsWith("w-") || firstClass === "wf-body") {
+        // Try next class if available
+        if (classes.length > 1) {
+          const secondClass = classes[1];
+          return formatClassNameToDisplay(secondClass);
+        }
+        // If only system classes, fall through to tag-based naming
+      } else {
+        // Convert kebab-case or BEM to Title Case
+        // e.g., "feature-card" -> "Feature Card"
+        // e.g., "feature-card__title" -> "Feature Card Title"
+        return formatClassNameToDisplay(firstClass);
+      }
+    }
+
+    // Semantic tag names get special treatment
+    const semanticTagNames: Record<string, string> = {
+      nav: "Navigation",
+      header: "Header",
+      footer: "Footer",
+      main: "Main Content",
+      aside: "Sidebar",
+      section: "Section",
+      article: "Article",
+      figure: "Figure",
+      figcaption: "Caption",
+    };
+
+    if (semanticTagNames[tag]) {
+      return semanticTagNames[tag];
+    }
+
+    // For Block types with div tag, provide a generic but meaningful name
+    // This ensures we never show "Div Block" if we can help it
+    if (nodeType === "Block" && tag === "div") {
+      // Use a generic name that's better than "Div Block"
+      return "Container";
+    }
+
+    // For other node types, let Webflow handle the default naming
+    return undefined;
+  }
+
+  /**
+   * Format a class name (kebab-case or BEM) to a readable display name.
+   * Handles BEM notation by splitting on __ and converting each part.
+   */
+  function formatClassNameToDisplay(className: string): string {
+    // Handle BEM notation: block__element--modifier
+    // Split on __ first to separate block from element
+    const bemParts = className.split("__");
+    
+    if (bemParts.length > 1) {
+      // BEM format: convert each part separately
+      const block = formatWordsToTitleCase(bemParts[0]);
+      const element = formatWordsToTitleCase(bemParts[1]?.split("--")[0] || "");
+      return element ? `${block} ${element}` : block;
+    }
+    
+    // Regular kebab-case or snake_case
+    return formatWordsToTitleCase(className);
+  }
+
+  /**
+   * Convert a string with separators (-, _, or spaces) to Title Case.
+   */
+  function formatWordsToTitleCase(str: string): string {
+    return str
+      .split(/[-_\s]+/)
+      .filter(Boolean)
+      .map((word) => {
+        // Handle empty strings
+        if (!word) return "";
+        // Capitalize first letter, lowercase rest
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join(" ");
+  }
+
+  /**
    * Serialize a ParsedElement (especially SVG) back to HTML string
    */
   function serializeElementToHtml(el: ParsedElement): string {
@@ -962,13 +1063,38 @@ function convertToWebflowNodes(
         return embedId;
       }
 
+      // Generate display name for SVG wrapper
+      let wrapperDisplayName: string | undefined;
+      if (el.classes.length > 0) {
+        const firstClass = el.classes[0];
+        // Convert kebab-case to Title Case
+        wrapperDisplayName = firstClass
+          .split(/[-_]+/)
+          .filter(Boolean)
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+      } else if (el.id) {
+        wrapperDisplayName = el.id
+          .split(/[-_]+/)
+          .filter(Boolean)
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+      } else {
+        wrapperDisplayName = "SVG Container";
+      }
+      
       nodes.push({
         _id: wrapperId,
         type: "Block",
         tag: "div",
         classes: styleIdMap.classNamesToIds(el.classes),  // Convert class names to style UUIDs
         children: [embedId],
-        data: { tag: "div", text: false, xattr: el.id ? [{ name: "id", value: el.id }] : [] },
+        data: { 
+          tag: "div", 
+          text: false, 
+          xattr: el.id ? [{ name: "id", value: el.id }] : [],
+          displayName: wrapperDisplayName,
+        },
       });
       return wrapperId;
     }
@@ -1057,6 +1183,9 @@ function convertToWebflowNodes(
 
     let data: WebflowNode["data"] | undefined;
 
+    // Generate display name for Webflow Navigator
+    const displayName = generateDisplayName(normalizedTag, baseClasses, nodeType);
+
     if (nodeType === "Link") {
       data = {
         link: {
@@ -1064,6 +1193,7 @@ function convertToWebflowNodes(
           url: el.attributes.href || "#",
           target: el.attributes.target,
         },
+        displayName,
       };
     } else if (nodeType === "Image") {
       data = {
@@ -1072,12 +1202,14 @@ function convertToWebflowNodes(
           alt: el.attributes.alt || "",
           loading: el.attributes.loading,
         },
+        displayName,
       };
     } else {
       data = {
         tag: normalizedTag,
         text: false,
         xattr,
+        displayName,
       };
     }
 
@@ -1267,9 +1399,11 @@ function validatePayloadIntegrity(
   }
 
   // 5. Check for undefined class references
+  // NOTE: node.classes should contain style UUIDs (style._id), not class names
   for (const node of nodes) {
     for (const cls of node.classes || []) {
-      if (!styleNames.has(cls) && cls !== "w-layout-grid") {
+      // Check if it matches a style name OR a style _id (UUID)
+      if (!styleNames.has(cls) && !styleIds.has(cls) && cls !== "w-layout-grid") {
         warnings.push(`Node references undefined class: ${cls}`);
       }
     }
@@ -2139,8 +2273,11 @@ export function buildCssTokenPayload(
   // Parse CSS using the new deterministic parser
   const { classIndex } = parseCSS(css);
 
-  // Convert all classes to Webflow styles
-  const styles = classIndexToWebflowStyles(classIndex);
+  // Create StyleIdMap to ensure consistent UUIDs between styles and node.classes
+  const styleIdMap = new StyleIdMap();
+
+  // Convert all classes to Webflow styles (using styleIdMap for consistent UUIDs)
+  const styles = classIndexToWebflowStyles(classIndex, undefined, styleIdMap);
 
   // Apply sanitization to all styles
   for (const style of styles) {
@@ -2178,12 +2315,24 @@ export function buildCssTokenPayload(
 
     while (current && !seen.has(current)) {
       seen.add(current);
-      chain.unshift(current);
+      // Get UUID from styleIdMap (not the class name!)
+      const styleId = styleIdMap.get(current);
+      if (styleId) {
+        chain.unshift(styleId);
+      }
       const entry: ClassIndexEntry | undefined = classIndex.classes[current];
       current = entry?.parentClass;
     }
 
-    return chain.length > 0 ? chain : [className];
+    // If no chain was built, use the UUID for the className itself
+    if (chain.length === 0) {
+      const styleId = styleIdMap.get(className);
+      if (styleId) {
+        return [styleId];
+      }
+    }
+
+    return chain;
   };
 
   // Create a node for each class so Webflow actually creates the class
@@ -2204,11 +2353,16 @@ export function buildCssTokenPayload(
     classIdx++;
   }
 
+  // CRITICAL: Webflow requires exactly ONE root node.
+  // Always wrap class nodes in a container, regardless of includePreview.
+  // The wrapper prevents "Subtree reification resulted in more than one root!" errors.
+  const wrapperId = `${namespace}-style-wrapper`;
+  const wrapperChildren: string[] = [];
+
   if (includePreview) {
-    // Create instruction text
+    // Create instruction text (only shown when includePreview is true)
     const instructionTextId = `${namespace}-style-instruction-text`;
     const instructionId = `${namespace}-style-instruction`;
-    const wrapperId = `${namespace}-style-wrapper`;
 
     nodes.push({
       _id: instructionTextId,
@@ -2225,16 +2379,21 @@ export function buildCssTokenPayload(
       data: { tag: "div", text: false },
     });
 
-    // Wrapper contains instruction + all class nodes
-    nodes.push({
-      _id: wrapperId,
-      type: "Block",
-      tag: "div",
-      classes: [],
-      children: [instructionId, ...classNodeIds],
-      data: { tag: "div", text: false },
-    });
+    wrapperChildren.push(instructionId);
   }
+
+  // Add all class nodes as children of the wrapper
+  wrapperChildren.push(...classNodeIds);
+
+  // Create wrapper containing instruction (if preview) + all class nodes
+  nodes.push({
+    _id: wrapperId,
+    type: "Block",
+    tag: "div",
+    classes: [],
+    children: wrapperChildren,
+    data: { tag: "div", text: false },
+  });
 
   // Validate payload integrity (legacy validation)
   const integrityWarnings = validatePayloadIntegrity(nodes, styles);

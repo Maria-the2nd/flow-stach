@@ -560,7 +560,7 @@ function generateColorsSection(
     sectionHeadingClass: string;
     sectionTitleWrapClass: string;
   },
-  addStyle: (name: string, styleLess: string) => string,
+  addStyle: (name: string, styleLess: string, options?: { rawName?: boolean }) => string,
   tokenMap: Map<string, string>
 ): string {
   const sectionChildren: string[] = [];
@@ -661,7 +661,7 @@ function generateTypographySection(
     typeSampleClass: string;
     sectionTitleWrapClass: string;
   },
-  addStyle: (name: string, styleLess: string) => string
+  addStyle: (name: string, styleLess: string, options?: { rawName?: boolean }) => string
 ): string {
   const sectionChildren: string[] = [];
   sectionChildren.push(
@@ -717,7 +717,7 @@ function generateSpacingSection(
     sectionHeadingClass: string;
     sectionTitleWrapClass: string;
   },
-  addStyle: (name: string, styleLess: string) => string,
+  addStyle: (name: string, styleLess: string, options?: { rawName?: boolean }) => string,
   tokenMap: Map<string, string>
 ): string {
   const sectionChildren: string[] = [];
@@ -822,7 +822,7 @@ function generateRadiusSection(
     sectionHeadingClass: string;
     sectionTitleWrapClass: string;
   },
-  addStyle: (name: string, styleLess: string) => string
+  addStyle: (name: string, styleLess: string, options?: { rawName?: boolean }) => string
 ): string {
   const sectionChildren: string[] = [];
   sectionChildren.push(
@@ -923,7 +923,7 @@ function generateShadowsSection(
     sectionHeadingClass: string;
     sectionTitleWrapClass: string;
   },
-  addStyle: (name: string, styleLess: string) => string
+  addStyle: (name: string, styleLess: string, options?: { rawName?: boolean }) => string
 ): string {
   const sectionChildren: string[] = [];
   sectionChildren.push(

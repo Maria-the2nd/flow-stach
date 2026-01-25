@@ -546,6 +546,72 @@ function normalizeHtmlWithDomParser(
     return { html, requiredTypographyClasses, hasBtnClass };
   }
 
+  // Auto-assign BEM classes to classless divs (prevents "Div Block" in Webflow Navigator)
+  let assignedCount = 0;
+  const usedClassNames = new Set<string>();
+
+  // Track all existing class names
+  wrapper.querySelectorAll("[class]").forEach((el) => {
+    Array.from(el.classList).forEach((cls) => usedClassNames.add(cls));
+  });
+
+  /**
+   * Generate a unique BEM class name for a classless div based on parent context.
+   */
+  function generateBemClassNameDOM(parent: Element | null): string {
+    if (!parent || parent.classList.length === 0) {
+      return generateUniqueClassNameDOM("auto-wrapper");
+    }
+
+    const parentBlock = parent.classList[0];
+    const elementSuffixes = ["content", "wrapper", "inner", "container"];
+
+    for (const suffix of elementSuffixes) {
+      const className = `${parentBlock}__${suffix}`;
+      if (!usedClassNames.has(className)) {
+        usedClassNames.add(className);
+        return className;
+      }
+    }
+
+    return generateUniqueClassNameDOM(`${parentBlock}__content`);
+  }
+
+  function generateUniqueClassNameDOM(baseName: string): string {
+    if (!usedClassNames.has(baseName)) {
+      usedClassNames.add(baseName);
+      return baseName;
+    }
+
+    for (let i = 1; i < 100; i++) {
+      const className = `${baseName}-${i}`;
+      if (!usedClassNames.has(className)) {
+        usedClassNames.add(className);
+        return className;
+      }
+    }
+
+    const fallback = `${baseName}-${Date.now()}`;
+    usedClassNames.add(fallback);
+    return fallback;
+  }
+
+  // Find and assign classes to classless divs
+  wrapper.querySelectorAll("div:not([class])").forEach((el) => {
+    const div = el as HTMLElement;
+    const parent = div.parentElement;
+    const bemClass = generateBemClassNameDOM(parent);
+    div.classList.add(bemClass);
+    assignedCount++;
+    warnings.push(
+      `Auto-assigned class "${bemClass}" to classless div (parent: ${parent?.classList[0] || "root"})`
+    );
+  });
+
+  if (assignedCount > 0) {
+    warnings.push(`Auto-assigned ${assignedCount} BEM class(es) to classless div elements`);
+  }
+
   let bodyTarget: HTMLElement | null = wrapper;
   const elementChildren = Array.from(wrapper.children);
   if (context.needsBodyWrapper && elementChildren.length === 1 && elementChildren[0].classList.contains("wf-body")) {
@@ -640,6 +706,12 @@ export function normalizeHtmlWithFallback(
   if (!parsed) {
     warnings.push("Failed to parse HTML for normalization.");
     return { html, requiredTypographyClasses, hasBtnClass };
+  }
+
+  // Auto-assign BEM classes to classless divs (prevents "Div Block" in Webflow Navigator)
+  const assignedCount = assignClassesToClasslessDivs(parsed, warnings);
+  if (assignedCount > 0) {
+    warnings.push(`Auto-assigned ${assignedCount} BEM class(es) to classless div elements`);
   }
 
   let bodyTarget: ParsedElement | null = parsed;
@@ -745,6 +817,127 @@ export function walkElements(root: ParsedElement, onElement: (element: ParsedEle
     if (typeof child === "string") continue;
     walkElements(child, onElement);
   }
+}
+
+/**
+ * Auto-assign BEM classes to classless div elements based on parent context.
+ * This prevents "Div Block" names in Webflow Navigator by giving all divs meaningful class names.
+ *
+ * Strategy:
+ * - If parent has class `feature-card`, classless child div gets `feature-card__content`
+ * - If parent has class `hero`, classless child div gets `hero__content`
+ * - Generic fallback: `{parent-block}__wrapper`
+ *
+ * @param root The parsed HTML tree
+ * @param warnings Array to collect warnings
+ * @returns Number of classes assigned
+ */
+export function assignClassesToClasslessDivs(
+  root: ParsedElement,
+  warnings: string[]
+): number {
+  let assignedCount = 0;
+  const usedClassNames = new Set<string>();
+
+  // Track all existing class names to avoid collisions
+  walkElements(root, (element) => {
+    element.classes.forEach((cls) => usedClassNames.add(cls));
+  });
+
+  /**
+   * Generate a unique BEM class name for a classless div based on parent context.
+   */
+  function generateBemClassName(
+    parent: ParsedElement | null,
+    siblingIndex: number
+  ): string {
+    // No parent context - use generic name
+    if (!parent || parent.classes.length === 0) {
+      return generateUniqueClassName("auto-wrapper", siblingIndex);
+    }
+
+    // Use parent's first class as BEM block
+    const parentBlock = parent.classes[0];
+
+    // Common BEM element patterns
+    const elementSuffixes = ["content", "wrapper", "inner", "container"];
+
+    // Try each suffix until we find an unused one
+    for (const suffix of elementSuffixes) {
+      const className = `${parentBlock}__${suffix}`;
+      if (!usedClassNames.has(className)) {
+        usedClassNames.add(className);
+        return className;
+      }
+    }
+
+    // All common suffixes taken - add numbered suffix
+    return generateUniqueClassName(`${parentBlock}__content`, siblingIndex);
+  }
+
+  /**
+   * Generate a unique class name by appending a number if needed.
+   */
+  function generateUniqueClassName(baseName: string, startIndex: number): string {
+    if (!usedClassNames.has(baseName)) {
+      usedClassNames.add(baseName);
+      return baseName;
+    }
+
+    // Try numbered variants
+    for (let i = startIndex + 1; i < startIndex + 100; i++) {
+      const className = `${baseName}-${i}`;
+      if (!usedClassNames.has(className)) {
+        usedClassNames.add(className);
+        return className;
+      }
+    }
+
+    // Fallback with timestamp if somehow all 100 variants are taken
+    const fallback = `${baseName}-${Date.now()}`;
+    usedClassNames.add(fallback);
+    return fallback;
+  }
+
+  /**
+   * Recursively process elements and assign classes to classless divs.
+   */
+  function processWithParent(
+    element: ParsedElement,
+    parent: ParsedElement | null
+  ): void {
+    // If this is a classless div, assign a BEM class
+    if (element.tag === "div" && element.classes.length === 0) {
+      let siblingIndex = 0;
+      if (parent) {
+        // Find this element's position among sibling divs
+        siblingIndex = parent.children.filter(
+          (child): child is ParsedElement =>
+            typeof child !== "string" && child.tag === "div"
+        ).indexOf(element);
+      }
+
+      const bemClass = generateBemClassName(parent, siblingIndex);
+      element.classes.push(bemClass);
+      assignedCount++;
+
+      warnings.push(
+        `Auto-assigned class "${bemClass}" to classless div (parent: ${parent?.classes[0] || "root"})`
+      );
+    }
+
+    // Recurse to children with current element as parent
+    for (const child of element.children) {
+      if (typeof child !== "string") {
+        processWithParent(child, element);
+      }
+    }
+  }
+
+  // Start processing from root
+  processWithParent(root, null);
+
+  return assignedCount;
 }
 
 export function parseHtmlString(html: string): ParsedElement | null {

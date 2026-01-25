@@ -160,6 +160,8 @@ export const WarningIssueCodes = {
   INVALID_STYLE: 'INVALID_STYLE',
   /** Missing style reference */
   MISSING_STYLE_REF: 'MISSING_STYLE_REF',
+  /** Reserved Webflow class name (w-*) used - conflicts with webflow.js */
+  RESERVED_CLASS_NAME: 'RESERVED_CLASS_NAME',
   /** Protocol-relative URL upgraded to HTTPS */
   PROTOCOL_RELATIVE_URL: 'PROTOCOL_RELATIVE_URL',
   /** Data URI detected - requires conversion */

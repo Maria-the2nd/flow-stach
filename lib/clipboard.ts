@@ -112,7 +112,32 @@ function normalizeWebflowJson(jsonString: string): string {
 }
 
 /**
+ * Check if clipboard API is available and has permissions
+ */
+async function checkClipboardPermissions(): Promise<boolean> {
+  if (!navigator.clipboard) {
+    return false;
+  }
+
+  try {
+    // Try to read clipboard to check permissions (some browsers require this)
+    await navigator.clipboard.readText();
+    return true;
+  } catch (error: unknown) {
+    // Permission denied or clipboard API not available
+    const err = error as { name?: string };
+    if (err.name === "NotAllowedError" || err.name === "SecurityError") {
+      console.warn("[clipboard] Clipboard permission denied");
+      return false;
+    }
+    // Other errors might still allow write access
+    return true;
+  }
+}
+
+/**
  * Copy plain text to clipboard using navigator.clipboard.writeText
+ * Falls back to execCommand if Clipboard API fails
  */
 export async function copyText(text: string): Promise<CopyResult> {
   if (!text || text === "TODO") {
@@ -120,14 +145,63 @@ export async function copyText(text: string): Promise<CopyResult> {
     return { success: false, reason: "payload_not_ready" };
   }
 
+  // Try modern Clipboard API first
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard");
+      return { success: true };
+    } catch (error: unknown) {
+      const err = error as { name?: string; message?: string };
+      console.warn("[clipboard] Clipboard API failed, trying fallback:", err.name || err.message);
+      
+      // If permission denied, try fallback
+      if (err.name === "NotAllowedError" || err.name === "SecurityError") {
+        return await copyTextFallback(text);
+      }
+      
+      // For other errors, still try fallback
+      return await copyTextFallback(text);
+    }
+  }
+
+  // Fallback to execCommand
+  return await copyTextFallback(text);
+}
+
+/**
+ * Fallback copy method using execCommand
+ */
+async function copyTextFallback(text: string): Promise<CopyResult> {
   try {
-    await navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
-    return { success: true };
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    textarea.style.top = "0";
+    textarea.style.opacity = "0";
+    textarea.setAttribute("readonly", "");
+    textarea.setAttribute("aria-hidden", "true");
+    document.body.appendChild(textarea);
+    
+    // Select and copy
+    textarea.select();
+    textarea.setSelectionRange(0, text.length);
+    
+    const success = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    
+    if (success) {
+      toast.success("Copied to clipboard");
+      return { success: true };
+    } else {
+      toast.error("Copy failed. Please check browser permissions.");
+      return { success: false, reason: "execCommand_failed" };
+    }
   } catch (error) {
-    console.error("[clipboard] copyText failed:", error);
-    toast.error("Failed to copy to clipboard");
-    return { success: false, reason: "clipboard_write_failed" };
+    console.error("[clipboard] Fallback copy failed:", error);
+    toast.error("Failed to copy. Please check browser permissions or try a different browser.");
+    return { success: false, reason: "fallback_failed" };
   }
 }
 

@@ -46,6 +46,7 @@ export const VALID_BREAKPOINTS = new Set([
   'medium',   // Tablet landscape (991px)
   'small',    // Tablet portrait (767px)
   'tiny',     // Mobile landscape (479px)
+  'large',    // Large viewport (992px+), between main and xl
   'xl',       // Large desktop (1280px)
   'xxl',      // Extra large desktop (1440px+)
 ]);
@@ -591,20 +592,21 @@ export function validateStyles(
   }
 
   // Check all node class references exist
-  // NOTE: node.classes contains style UUIDs (style._id), not class names
+  // NOTE: node.classes can contain either class NAMES (style.name) or UUIDs (style._id)
+  // depending on which payload builder was used (buildCssTokenPayload uses names, buildComponentPayload uses UUIDs)
   for (const node of safeNodes) {
     if (Array.isArray(node.classes)) {
-      for (const styleId of node.classes) {
-        // Look up the style by _id (UUID), not by name
-        const style = styleIdMap.get(styleId);
-        if (!style) {
-          // Check if it might be a reserved class name (for backward compatibility)
-          // This handles the case where the value is actually a class name, not UUID
-          if (isReservedClassName(styleId)) {
+      for (const classRef of node.classes) {
+        // Try to look up by name first, then by UUID
+        const styleByName = styleNameMap.get(classRef);
+        const styleById = styleIdMap.get(classRef);
+        if (!styleByName && !styleById) {
+          // Check if it's a reserved class name (Webflow built-in)
+          if (isReservedClassName(classRef)) {
             // This is OK - nodes can USE Webflow classes like w-layout-grid
             continue;
           }
-          missingStyleRefs.push(`Node ${node._id} references missing style ID: ${styleId}`);
+          missingStyleRefs.push(`Node ${node._id} references missing class: ${classRef}`);
         }
       }
     }
@@ -1752,11 +1754,11 @@ export function runPreflightValidation(
     criticalFailures.push(`Invalid variant keys: ${styleValidation.invalidVariantKeys.length} invalid key(s) - will cause [PersistentUIState] crash`);
   }
 
-  // ERROR: Reserved Webflow class names (conflicts with webflow.js)
+  // WARNING: Reserved Webflow class names (conflicts with webflow.js)
   if (styleValidation.reservedClassNames.length > 0) {
     for (const className of styleValidation.reservedClassNames) {
-      issues.push(error(
-        ErrorIssueCodes.RESERVED_CLASS_NAME,
+      issues.push(warning(
+        WarningIssueCodes.RESERVED_CLASS_NAME,
         `Style "${className}" uses reserved Webflow class name`,
         {
           context: className,
@@ -1764,7 +1766,6 @@ export function runPreflightValidation(
         }
       ));
     }
-    criticalFailures.push(`Reserved class names: ${styleValidation.reservedClassNames.slice(0, 3).join(', ')}${styleValidation.reservedClassNames.length > 3 ? '...' : ''}`);
   }
 
   // ERROR: Ghost variant keys (references non-existent nodes)

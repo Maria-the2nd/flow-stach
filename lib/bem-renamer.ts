@@ -21,6 +21,24 @@ import {
   updateJSClassReferences,
   type ElementContext,
 } from "./flowbridge-semantic";
+import { RESERVED_CLASS_NAMES, RESERVED_CLASS_PREFIXES } from "./preflight-validator";
+
+const MAX_BEM_LENGTH = 40;
+const MAX_BLOCK_LENGTH = 16;
+const MAX_PART_LENGTH = 20;
+const ROLE_TOKENS = ["hero", "stats", "features", "card", "grid", "container"];
+const BLOCK_STOP_WORDS = new Set([
+  "test",
+  "all",
+  "outputs",
+  "output",
+  "project",
+  "site",
+  "page",
+  "demo",
+  "sample",
+  "example",
+]);
 
 // ============================================
 // TYPES
@@ -303,7 +321,7 @@ function generateProjectClassRenames(params: {
   const usedBemNames = new Set<string>();
 
   // Sanitize project slug for use as BEM block
-  const projectBlock = sanitizeBlockName(options.projectSlug);
+  const projectBlock = sanitizeProjectBlock(options.projectSlug);
 
   // Process each class
   for (const [className, usage] of classUsage) {
@@ -315,7 +333,10 @@ function generateProjectClassRenames(params: {
     }
 
     // Skip if already starts with our namespace
-    if (className.startsWith(`${projectBlock}-`)) {
+    if (
+      className.startsWith(`${projectBlock}__`) ||
+      className.startsWith(`${projectBlock}-`)
+    ) {
       mapping.set(className, className);
       preserved.push({ className, reason: "Already namespaced" });
       continue;
@@ -408,21 +429,19 @@ function generateBemName(params: {
   // Parse existing class name for hints
   const existingParts = parseToBEMParts(className);
 
-  // Shared classes become namespaced utilities (avoid cross-component collisions)
+  // Shared classes become BEM utilities (avoid cross-component collisions)
   if (isShared) {
-    const utilityBase = sanitizeBlockName(className) || "utility";
-    let utilityName = `${projectBlock}-u-${utilityBase}`;
-    let counter = 2;
-    const baseName = utilityName;
-    while (usedBemNames.has(utilityName)) {
-      utilityName = `${baseName}-${counter}`;
-      counter++;
-    }
+    const utilityToken = selectRoleToken(className, existingParts.element, context) || "utility";
+    const element = `utility-${utilityToken}`;
+    const bemName = ensureUniqueBemName(
+      enforceMaxBemLength(formatBEM(projectBlock, element), MAX_BEM_LENGTH),
+      usedBemNames
+    );
 
     return {
-      bemName: utilityName,
-      reason: "Shared class namespaced as utility",
-      isAmbiguous: isHighRisk || utilityBase === "utility",
+      bemName,
+      reason: "Shared class namespaced as BEM utility",
+      isAmbiguous: isHighRisk || utilityToken === "utility",
     };
   }
 
@@ -434,32 +453,44 @@ function generateBemName(params: {
   // Determine block name
   let block = projectBlock;
 
-  // Determine element name
+  // Determine element name (strict BEM: always include element)
   let element = inferred.element || existingParts.element;
 
   // If the class name itself looks like a block (not generic), use it as element
   if (!element && existingParts.block && !isHighRisk) {
-    element = sanitizeBlockName(existingParts.block);
+    element = sanitizeBemPart(existingParts.block);
   }
 
   // High-risk generic names get forced into element slot to avoid collisions
   if (!element && isHighRisk) {
-    element = sanitizeBlockName(className) || "element";
+    element = sanitizeBemPart(className) || "element";
+  }
+
+  // Use role token if still ambiguous or not in our allowed set
+  const roleToken = selectRoleToken(className, element, context);
+  if (!element || !ROLE_TOKENS.includes(element)) {
+    element = roleToken || element || "container";
   }
 
   // Determine modifier
   const modifier = inferred.modifier || existingParts.modifier;
 
-  // Generate BEM name
-  let bemName = formatBEM(block, element, modifier);
-
-  // Ensure uniqueness
-  let counter = 2;
-  const baseName = bemName;
-  while (usedBemNames.has(bemName)) {
-    bemName = `${baseName}-${counter}`;
-    counter++;
+  // Sanitize parts + enforce maximum length
+  let normalizedElement = sanitizeBemPart(element, MAX_PART_LENGTH);
+  if (isReservedClassName(normalizedElement)) {
+    normalizedElement = `x-${normalizedElement}`;
   }
+  let normalizedModifier = modifier ? sanitizeBemPart(modifier, MAX_PART_LENGTH) : undefined;
+  if (normalizedModifier && isReservedClassName(normalizedModifier)) {
+    normalizedModifier = `x-${normalizedModifier}`;
+  }
+  let bemName = enforceMaxBemLength(
+    formatBEM(block, normalizedElement, normalizedModifier),
+    MAX_BEM_LENGTH
+  );
+
+  // Ensure uniqueness (keep within max length)
+  bemName = ensureUniqueBemName(bemName, usedBemNames);
 
   // Determine if ambiguous (would benefit from LLM naming)
   const isAmbiguous =
@@ -487,13 +518,122 @@ function generateBemName(params: {
 /**
  * Sanitize a string for use as BEM block/element name
  */
-function sanitizeBlockName(name: string): string {
-  return name
+function sanitizeBemPart(name: string, maxLength = MAX_PART_LENGTH): string {
+  const sanitized = name
     .toLowerCase()
-    .replace(/([a-z])([A-Z])/g, "$1-$2") // camelCase to kebab
-    .replace(/[^a-z0-9-]/g, "-") // Replace invalid chars
-    .replace(/-+/g, "-") // Collapse multiple dashes
-    .replace(/^-|-$/g, ""); // Trim leading/trailing dashes
+    .replace(/([a-z])([A-Z])/g, "$1-$2")
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  if (!sanitized) return "";
+  if (sanitized.length <= maxLength) return sanitized;
+  return sanitized.slice(0, maxLength).replace(/-+$/g, "");
+}
+
+function sanitizeProjectBlock(projectSlug: string): string {
+  const base = sanitizeBemPart(projectSlug, 80);
+  const tokens = base.split("-").filter((token) => token && !BLOCK_STOP_WORDS.has(token));
+  let candidate = tokens.slice(0, 3).join("-");
+
+  if (!candidate) {
+    candidate = "block";
+  }
+
+  if (candidate.length > MAX_BLOCK_LENGTH) {
+    candidate = tokens.slice(0, 2).join("-") || candidate;
+  }
+
+  if (candidate.length > MAX_BLOCK_LENGTH) {
+    candidate = tokens.map((t) => t[0]).join("");
+  }
+
+  if (candidate.length > MAX_BLOCK_LENGTH) {
+    candidate = candidate.slice(0, MAX_BLOCK_LENGTH).replace(/-+$/g, "");
+  }
+
+  if (!candidate || isReservedClassName(candidate)) {
+    candidate = `x-${candidate || "block"}`;
+  }
+
+  return candidate;
+}
+
+function selectRoleToken(
+  className: string,
+  elementHint?: string,
+  context?: ElementContext
+): string | undefined {
+  const classLower = className.toLowerCase();
+  for (const token of ROLE_TOKENS) {
+    if (classLower.includes(token)) return token;
+  }
+
+  if (elementHint) {
+    const elementLower = elementHint.toLowerCase();
+    for (const token of ROLE_TOKENS) {
+      if (elementLower.includes(token)) return token;
+    }
+  }
+
+  const tag = context?.tagName?.toLowerCase();
+  if (tag === "section") return "container";
+  if (tag === "div") return "container";
+  if (tag === "ul" || tag === "ol") return "grid";
+
+  return undefined;
+}
+
+function enforceMaxBemLength(bemName: string, maxLength: number): string {
+  if (bemName.length <= maxLength) return bemName;
+
+  const parsed = parseToBEMParts(bemName);
+  const block = sanitizeBemPart(parsed.block || "block", MAX_BLOCK_LENGTH);
+  let element = sanitizeBemPart(parsed.element || "container", MAX_PART_LENGTH);
+  let modifier = parsed.modifier ? sanitizeBemPart(parsed.modifier, MAX_PART_LENGTH) : undefined;
+
+  let rebuilt = formatBEM(block, element, modifier);
+  if (rebuilt.length <= maxLength) return rebuilt;
+
+  if (modifier) {
+    modifier = sanitizeBemPart(modifier, 10);
+    rebuilt = formatBEM(block, element, modifier);
+    if (rebuilt.length <= maxLength) return rebuilt;
+  }
+
+  element = sanitizeBemPart(element, 12);
+  rebuilt = formatBEM(block, element, modifier);
+  if (rebuilt.length <= maxLength) return rebuilt;
+
+  const remaining = Math.max(maxLength - block.length - 2, 8);
+  element = sanitizeBemPart(element, remaining);
+  rebuilt = formatBEM(block, element, modifier);
+
+  return rebuilt.length <= maxLength ? rebuilt : rebuilt.slice(0, maxLength).replace(/-+$/g, "");
+}
+
+function ensureUniqueBemName(baseName: string, usedBemNames: Set<string>): string {
+  if (!usedBemNames.has(baseName)) {
+    return baseName;
+  }
+
+  let counter = 2;
+  let candidate = baseName;
+  while (usedBemNames.has(candidate)) {
+    const suffix = `-${counter}`;
+    const trimmed = baseName.length + suffix.length > MAX_BEM_LENGTH
+      ? baseName.slice(0, MAX_BEM_LENGTH - suffix.length).replace(/-+$/g, "")
+      : baseName;
+    candidate = `${trimmed}${suffix}`;
+    counter++;
+  }
+
+  return candidate;
+}
+
+function isReservedClassName(name: string): boolean {
+  if (RESERVED_CLASS_NAMES.has(name)) return true;
+  return RESERVED_CLASS_PREFIXES.some((prefix) => name.startsWith(prefix));
 }
 
 // ============================================

@@ -836,7 +836,11 @@ export function wrapMultipleRoots(payload: WebflowPayload): {
     tag: "div",
     classes: [wrapperStyleId],
     children: rootIds,
-    data: { tag: "div", text: false },
+    data: { 
+      tag: "div", 
+      text: false,
+      displayName: "Content Wrapper (Delete after pasting)",
+    },
   };
 
   // Add the wrapper style if it doesn't exist
@@ -910,7 +914,6 @@ export function sanitizeReservedClassNames(payload: WebflowPayload): {
 } {
   const result = JSON.parse(JSON.stringify(payload)) as WebflowPayload;
   const renamed: string[] = [];
-  const nameMap = new Map<string, string>();
 
   result.payload.styles = result.payload.styles.map((style) => {
     // Check if style name uses reserved prefix
@@ -921,23 +924,37 @@ export function sanitizeReservedClassNames(payload: WebflowPayload): {
       // Rename by adding "custom-" prefix to avoid conflict
       const newName = `custom-${style.name.replace(/^w-/, '')}`;
       renamed.push(`Renamed reserved class: ${style.name} -> ${newName}`);
-      nameMap.set(style.name, newName);
       return { ...style, name: newName };
     }
     return style;
   });
 
-  // Update node class references
-  if (nameMap.size > 0) {
-    result.payload.nodes = result.payload.nodes.map((node) => {
-      if (node.classes && node.classes.length > 0) {
-        node.classes = node.classes.map((className) => nameMap.get(className) || className);
-      }
-      return node;
-    });
-  }
-
   return { payload: result, renamed };
+}
+
+/**
+ * Sanitize text nodes that include <br> tags (React #137 crash prevention).
+ */
+export function sanitizeTextNodeLineBreaks(payload: WebflowPayload): {
+  payload: WebflowPayload;
+  removedCount: number;
+} {
+  const result = JSON.parse(JSON.stringify(payload)) as WebflowPayload;
+  let removedCount = 0;
+
+  result.payload.nodes = result.payload.nodes.map((node) => {
+    if (!node.text || typeof node.v !== "string") return node;
+    if (!/<br\s*\/?>/i.test(node.v)) return node;
+
+    const sanitized = node.v.replace(/<br\s*\/?>/gi, "\n");
+    if (sanitized !== node.v) {
+      removedCount += 1;
+      return { ...node, v: sanitized };
+    }
+    return node;
+  });
+
+  return { payload: result, removedCount };
 }
 
 // ============================================================================
@@ -1227,8 +1244,8 @@ export function extractInvalidCSSToEmbed(payload: WebflowPayload): {
           styleCSS.push(`  ${match}`);
         }
 
-        // Remove from styleLess
-        styleLess = styleLess.replace(pattern, '/* [extracted to embed] */');
+        // Remove from styleLess (Webflow styleLess doesn't support comments)
+        styleLess = styleLess.replace(pattern, '');
       }
     }
 
@@ -1251,7 +1268,7 @@ export function extractInvalidCSSToEmbed(payload: WebflowPayload): {
               variantStyleCSS.push(`  ${match}`);
             }
 
-            variantCSS = variantCSS.replace(pattern, '/* [extracted to embed] */');
+            variantCSS = variantCSS.replace(pattern, '');
           }
         }
 
@@ -1308,6 +1325,7 @@ function getBreakpointMediaQuery(breakpoint: string): string {
     case 'medium': return '@media (max-width: 991px)';
     case 'small': return '@media (max-width: 767px)';
     case 'tiny': return '@media (max-width: 479px)';
+    case 'large': return '@media (min-width: 992px)';
     case 'xl': return '@media (min-width: 1280px)';
     case 'xxl': return '@media (min-width: 1440px)';
     default: return '';
@@ -1434,6 +1452,8 @@ export function sanitizeWebflowPayload(
   options: {
     /** Indexes of interactions that have broken references */
     brokenInteractionIndexes?: number[];
+    /** Skip wrapping multiple roots (for component exports where multi-root is intentional) */
+    skipMultiRootWrapper?: boolean;
   } = {}
 ): SanitizationResult {
   const changes: string[] = [];
@@ -1475,13 +1495,26 @@ export function sanitizeWebflowPayload(
 
   // 2d. Wrap multiple roots in single container (CRITICAL - causes "Subtree reification" crash)
   // Webflow paste requires EXACTLY ONE root node
-  const rootWrapResult = wrapMultipleRoots(current);
-  current = rootWrapResult.payload;
-  if (rootWrapResult.wrapped) {
-    changes.push(...rootWrapResult.changes);
+  // Skip for component exports if skipMultiRootWrapper is true
+  if (!options.skipMultiRootWrapper) {
+    const rootWrapResult = wrapMultipleRoots(current);
+    current = rootWrapResult.payload;
+    if (rootWrapResult.wrapped) {
+      changes.push(...rootWrapResult.changes);
+      embedContent.warnings.push(
+        `Your content had ${rootWrapResult.rootCount} root elements. ` +
+        `They were wrapped in a container div since Webflow requires a single root.`
+      );
+    }
+  }
+
+  // 2e. Strip <br> tags from text nodes (React #137 crash prevention)
+  const brResult = sanitizeTextNodeLineBreaks(current);
+  current = brResult.payload;
+  if (brResult.removedCount > 0) {
+    changes.push("Removed <br> tags from text nodes (React #137 crash prevention)");
     embedContent.warnings.push(
-      `Your content had ${rootWrapResult.rootCount} root elements. ` +
-      `They were wrapped in a container div since Webflow requires a single root.`
+      "Text nodes containing <br> tags were sanitized to prevent Webflow Designer crash."
     );
   }
 
@@ -1608,6 +1641,44 @@ export function payloadLikelyNeedsSanitization(payload: WebflowPayload): boolean
     if (style.name.includes(":")) {
       const baseName = style.name.split(":")[0];
       if (!baseClasses.has(baseName)) return true;
+    }
+  }
+
+  // Check for text nodes containing <br> (React #137 crash pattern)
+  for (const node of payload.payload.nodes) {
+    if (node.text && typeof node.v === "string" && /<br\s*\/?>/i.test(node.v)) {
+      return true;
+    }
+  }
+
+  // Check for circular style references
+  const styleMap = new Map<string, WebflowStyle>();
+  for (const style of payload.payload.styles) {
+    if (style?._id) {
+      styleMap.set(style._id, style);
+    }
+  }
+
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const hasCycle = (styleId: string): boolean => {
+    if (visiting.has(styleId)) return true;
+    if (visited.has(styleId)) return false;
+    visiting.add(styleId);
+    const style = styleMap.get(styleId);
+    if (style?.children) {
+      for (const childId of style.children) {
+        if (hasCycle(childId)) return true;
+      }
+    }
+    visiting.delete(styleId);
+    visited.add(styleId);
+    return false;
+  };
+
+  for (const styleId of styleMap.keys()) {
+    if (hasCycle(styleId)) {
+      return true;
     }
   }
 

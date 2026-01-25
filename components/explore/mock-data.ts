@@ -51,13 +51,15 @@ export const PUBLIC_TOOLS = [
         id: 'tool-1',
         name: 'HTML to Webflow',
         description: 'Convert raw HTML/CSS into proper Webflow structures.',
-        icon: 'code'
+        icon: 'code',
+        source: 'html'
     },
     {
         id: 'tool-2',
-        name: 'Code to Components',
-        description: 'Extract React components from arbitrary code snippets.',
-        icon: 'boxes'
+        name: 'CodePen → Webflow',
+        description: 'Import a CodePen (HTML + CSS + JS + external libs) into Webflow-ready output.',
+        icon: 'codepen',
+        source: 'codepen'
     }
 ];
 

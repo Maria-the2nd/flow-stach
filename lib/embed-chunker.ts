@@ -394,7 +394,7 @@ export function chunkEmbed(
   }));
 
   const instructions = [
-    `${type.toUpperCase()} embed split into ${chunks.length} parts (${originalSize.toLocaleString()} chars total)`,
+    `${type.toUpperCase()} embed chunked into ${chunks.length} parts (${originalSize.toLocaleString()} chars total)`,
     `Copy each part to separate Webflow custom code blocks:`,
     ...chunks.map(
       (chunk, idx) => `  Part ${idx + 1}/${chunks.length}: ${chunk.size.toLocaleString()} chars`

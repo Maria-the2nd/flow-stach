@@ -10,6 +10,7 @@ import {
   type EmbedContent,
   SAFE_DEPTH_LIMIT,
 } from "./webflow-sanitizer";
+import { sanitizeReservedClassNames } from "./webflow-sanitizer";
 import { prepareHTMLForWebflow } from "./validation/html-sanitizer";
 import type { WebflowPayload, WebflowNode } from "./webflow-converter";
 import { chunkEmbed, type ChunkedEmbedResult } from "./embed-chunker";
@@ -237,7 +238,7 @@ function collectAllReferencedStyleIds(nodes: WebflowNode[]): Set<string> {
   for (const node of nodes) {
     if (Array.isArray(node.classes)) {
       for (const styleId of node.classes) {
-        if (typeof styleId === "string") {
+        if (typeof styleId === "string" && isLikelyStyleId(styleId)) {
           referencedStyleIds.add(styleId);
         }
       }
@@ -297,7 +298,7 @@ function repairStyleReferenceIds(payload: WebflowPayload): {
         } else {
           remapNames.set(classRef, mapped);
         }
-      } else {
+      } else if (isLikelyStyleId(classRef)) {
         unknownRefs.add(classRef);
       }
     }
@@ -339,6 +340,10 @@ function repairStyleReferenceIds(payload: WebflowPayload): {
     ambiguousNames: Array.from(ambiguousNames),
     unknownRefs: Array.from(unknownRefs),
   };
+}
+
+function isLikelyStyleId(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
 /**
@@ -520,8 +525,13 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
   const styleRefRepair = repairStyleReferenceIds(payload);
   payload = styleRefRepair.payload;
 
+  const reservedRename = sanitizeReservedClassNames(payload);
+  payload = reservedRename.payload;
+
   const styleRefFixes: string[] = [];
   const styleRefWarnings: string[] = [];
+  const reservedRenameFixes: string[] = [];
+  const reservedRenameWarnings: string[] = [];
   const previewList = (items: string[]) => {
     const preview = items.slice(0, 5).join(", ");
     const moreCount = items.length > 5 ? items.length - 5 : 0;
@@ -543,6 +553,12 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
       `Found ${styleRefRepair.unknownRefs.length} class reference(s) that do not match style IDs or style names: ${previewList(styleRefRepair.unknownRefs)}`
     );
   }
+  if (reservedRename.renamed.length > 0) {
+    reservedRenameFixes.push(...reservedRename.renamed);
+    reservedRenameWarnings.push(
+      `Renamed ${reservedRename.renamed.length} reserved class name(s) to avoid Webflow conflicts.`
+    );
+  }
   const baseCssEmbed = mergeEmbedBlocks(input.cssEmbed, payload.embedCSS);
   const baseJsEmbed = mergeEmbedBlocks(input.jsEmbed, payload.embedJS);
   const baseHtmlEmbed = mergeEmbedBlocks(input.htmlEmbed);
@@ -561,8 +577,8 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
     payloadLikelyNeedsSanitization(payload) ||
     exceedsSafeDepth;
 
-  let sanitizationApplied = styleRefRepair.remapped;
-  let sanitizationChanges: string[] = [...styleRefFixes];
+  let sanitizationApplied = styleRefRepair.remapped || reservedRename.renamed.length > 0;
+  let sanitizationChanges: string[] = [...styleRefFixes, ...reservedRenameFixes];
   let extractedEmbed: EmbedContent | undefined;
 
   if (shouldSanitize) {
@@ -690,21 +706,30 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
 
   const fatalIssues = [
     ...finalPreflight.issues
-      .filter((issue) => issue.severity === "fatal" || issue.severity === "error")
+      .filter((issue) => issue.severity === "fatal")
       .map((issue) => issue.message),
     ...htmlEmbedSanitization.summary.errors,
     ...embedSizeErrors,
   ];
 
+  const sanitizationWarnings: string[] = [];
+  if (sanitizationApplied && sanitizationChanges.length > 0) {
+    sanitizationWarnings.push(
+      "Sanitization applied to fix unsafe content before paste."
+    );
+  }
+
   const warnings = [
     ...finalPreflight.issues
-      .filter((issue) => issue.severity === "warning")
+      .filter((issue) => issue.severity === "warning" || issue.severity === "error")
       .map((issue) => issue.message),
     ...htmlEmbedSanitization.summary.warnings,
     ...embedSizeWarnings,
     ...(extractedEmbed?.warnings || []),
     ...extraHtmlSanitization.warnings,
     ...styleRefWarnings,
+    ...reservedRenameWarnings,
+    ...sanitizationWarnings,
   ];
 
   const autoFixes = [

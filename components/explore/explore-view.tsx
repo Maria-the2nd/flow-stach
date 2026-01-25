@@ -6,7 +6,7 @@ import { PUBLIC_TEMPLATES, PUBLIC_COMPONENTS, PUBLIC_TOOLS } from "./mock-data";
 import { Button } from "@/components/ui/button";
 import Link from 'next/link';
 import Image from "next/image";
-import { Layers, Box, Wrench, ArrowRight } from "lucide-react";
+import { Layers, Box, Wrench, ArrowRight, CodepenIcon } from "lucide-react";
 
 export function ExploreView() {
     const [activeTab, setActiveTab] = useState<'templates' | 'components' | 'tools'>('templates');
@@ -50,7 +50,7 @@ export function ExploreView() {
                 {activeTab === 'templates' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {PUBLIC_TEMPLATES.map((item) => (
-                            <div key={item.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-2xl hover:border-slate-300 transition-all duration-300 flex flex-col h-full">
+                            <div key={item.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden premium-card-hover flex flex-col h-full">
                                 <div className="aspect-video bg-slate-50 relative overflow-hidden">
                                     <Image
                                         src={item.image}
@@ -68,7 +68,7 @@ export function ExploreView() {
                                     <h3 className="text-lg font-bold text-slate-900 mb-2 leading-tight group-hover:text-blue-600 transition-colors">{item.name}</h3>
                                     <p className="text-slate-500 text-sm mb-6 flex-grow leading-relaxed">{item.description}</p>
                                     <Link href="/workspace/projects" className="mt-auto">
-                                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white group-hover:shadow-lg shadow-blue-200/50 transition-all h-11 font-bold">
+                                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-200/50 premium-hover transition-all h-11 font-bold">
                                             Add to Workspace <ArrowRight className="w-4 h-4 ml-2" />
                                         </Button>
                                     </Link>
@@ -81,7 +81,7 @@ export function ExploreView() {
                 {activeTab === 'components' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {PUBLIC_COMPONENTS.map((item) => (
-                            <div key={item.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-2xl hover:border-slate-300 transition-all duration-300 flex flex-col h-full">
+                            <div key={item.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden premium-card-hover flex flex-col h-full">
                                 <div className="aspect-video bg-slate-50 relative overflow-hidden">
                                     <Image
                                         src={item.image}
@@ -99,7 +99,7 @@ export function ExploreView() {
                                     <h3 className="text-lg font-bold text-slate-900 mb-2 leading-tight group-hover:text-blue-600 transition-colors">{item.name}</h3>
                                     <p className="text-slate-500 text-sm mb-6 flex-grow leading-relaxed">{item.description}</p>
                                     <Link href="/workspace/projects" className="mt-auto">
-                                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white group-hover:shadow-lg shadow-blue-200/50 transition-all h-11 font-bold">
+                                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-200/50 premium-hover transition-all h-11 font-bold">
                                             Add to Workspace <ArrowRight className="w-4 h-4 ml-2" />
                                         </Button>
                                     </Link>
@@ -112,14 +112,18 @@ export function ExploreView() {
                 {activeTab === 'tools' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                         {PUBLIC_TOOLS.map((item) => (
-                            <div key={item.id} className="group bg-white rounded-2xl border border-slate-200 p-8 hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col items-center text-center">
+                            <div key={item.id} className="group bg-white rounded-2xl border border-slate-200 p-8 premium-card-hover flex flex-col items-center text-center">
                                 <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                                    <Wrench className="w-8 h-8" />
+                                    {item.icon === 'code' ? (
+                                        <Wrench className="w-8 h-8" />
+                                    ) : (
+                                        <CodepenIcon className="w-8 h-8" />
+                                    )}
                                 </div>
                                 <h3 className="text-2xl font-bold text-slate-900 mb-3">{item.name}</h3>
                                 <p className="text-slate-500 mb-8">{item.description}</p>
-                                <Link href="/workspace/projects">
-                                    <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-200/50 font-bold">
+                                <Link href={`/workspace/import?source=${item.source}`} className="w-full">
+                                    <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-200/50 premium-hover font-bold px-12">
                                         Use Tool <ArrowRight className="w-4 h-4 ml-2" />
                                     </Button>
                                 </Link>

@@ -189,7 +189,7 @@ export default function ProjectsPage() {
                         Import your first HTML project to get started with Webflow conversion.
                     </p>
                     <Link href="/workspace/import">
-                        <Button className="bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-lg shadow-blue-200/50 px-8">
+                        <Button className="bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-lg shadow-blue-200/50 px-8 premium-hover">
                             <Plus className="w-4 h-4 mr-2" />
                             Import Project
                         </Button>
@@ -343,7 +343,7 @@ export default function ProjectsPage() {
                             </div>
 
                             <Link href={`/workspace/projects/${project._id}`} className="block">
-                                <div className="!bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200 overflow-hidden hover:shadow-2xl hover:border-slate-300 transition-all duration-300 flex flex-col h-full shadow-xl shadow-slate-200/50">
+                                <div className="!bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200 overflow-hidden premium-card-hover flex flex-col h-full shadow-xl shadow-slate-200/50">
                                     <div className="aspect-video bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden flex items-center justify-center">
                                         {project.thumbnailUrl ? (
                                             <Image
