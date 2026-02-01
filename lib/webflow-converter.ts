@@ -407,10 +407,27 @@ function mapToStyleLess(map: Map<string, string>): string {
 }
 
 function applyResponsiveGridFixes(styles: Map<string, WebflowStyle>): void {
+  // Check if any styles have grid span values (e.g., grid-column-end: span 2)
+  // If so, skip automatic column reduction to preserve bento grid layouts
+  const hasSpanValues = Array.from(styles.values()).some(style => {
+    const allStyles = [
+      style.styleLess || "",
+      style.variants.small?.styleLess || "",
+      style.variants.medium?.styleLess || "",
+      style.variants.large?.styleLess || "",
+      style.variants.tiny?.styleLess || "",
+    ].join(" ");
+    return /grid-(column|row)(-end)?:\s*span/i.test(allStyles);
+  });
+
+  if (hasSpanValues) {
+    console.log("[grid-fix] Detected grid span values, preserving bento layout (skipping column reduction)");
+  }
+
   for (const style of styles.values()) {
     const base = parseStyleLessMap(style.styleLess);
     const display = (base.get("display") || "").toLowerCase();
-    
+
     // Only target grid containers
     if (!display.includes("grid")) continue;
 
@@ -424,6 +441,9 @@ function applyResponsiveGridFixes(styles: Map<string, WebflowStyle>): void {
     }
 
     // Fix 2: Responsive grid column adjustment for better mobile experience
+    // SKIP if bento grid detected (span values present)
+    if (hasSpanValues) continue;
+
     // Reduce columns on smaller breakpoints for grids with repeat(n, 1fr) patterns
     const gridTemplateColumns = base.get("grid-template-columns");
     if (gridTemplateColumns) {
@@ -1006,6 +1026,162 @@ function convertToWebflowNodes(
 
   function processElement(el: ParsedElement): string {
     if (dropTags.has(el.tag)) return "";
+
+    // ============================================
+    // VOID ELEMENT HANDLING
+    // ============================================
+    // HTML5 void elements CANNOT have children. If we create Block nodes
+    // with children: [] for these, it can cause React error #137:
+    // "X is a void element tag and must neither have children nor use dangerouslySetInnerHTML"
+    //
+    // Handle each void element appropriately:
+    // - br: text node with newline
+    // - hr: styled div divider
+    // - wbr: text node with zero-width space (word break opportunity)
+    // - area: convert to link if href, otherwise drop
+    // - col: drop (table column formatting, not supported in Webflow)
+    // - embed: convert to HtmlEmbed if src, otherwise drop
+    // - param: drop (deprecated object parameter)
+    // - source: drop outside video/audio context
+    // - track: drop outside video context
+    //
+    // img, input, meta, link, base are handled elsewhere (Image type or dropTags)
+
+    const tagLower = el.tag.toLowerCase();
+
+    // CRITICAL: Handle <br> elements - void elements that cannot have children
+    // Convert to a text node with newline character
+    if (tagLower === "br") {
+      const brId = idGen.generate("br");
+      nodes.push({
+        _id: brId,
+        text: true,
+        v: "\n",
+      });
+      return brId;
+    }
+
+    // Handle <hr> elements - convert to a styled div block
+    if (tagLower === "hr") {
+      const hrId = idGen.generate("hr");
+      nodes.push({
+        _id: hrId,
+        type: "Block",
+        tag: "div",
+        classes: styleIdMap.classNamesToIds(["hr-divider"]),
+        children: [],
+        data: {
+          tag: "div",
+          text: false,
+          displayName: "Divider",
+        },
+      });
+      collectedClasses.add("hr-divider");
+      return hrId;
+    }
+
+    // Handle <wbr> (Word Break Opportunity) - convert to zero-width space
+    if (tagLower === "wbr") {
+      const wbrId = idGen.generate("wbr");
+      nodes.push({
+        _id: wbrId,
+        text: true,
+        v: "\u200B", // Zero-width space
+      });
+      return wbrId;
+    }
+
+    // Handle <area> (image map area) - convert to link if has href, otherwise drop
+    if (tagLower === "area") {
+      const href = el.attributes.href;
+      if (href) {
+        const areaId = idGen.generate("area");
+        const displayName = el.attributes.alt || "Area Link";
+        nodes.push({
+          _id: areaId,
+          type: "Link",
+          tag: "a",
+          classes: [],
+          children: [],
+          data: {
+            link: {
+              mode: "external",
+              url: href,
+              target: el.attributes.target || "",
+            },
+            displayName,
+          },
+        });
+        return areaId;
+      }
+      // No href, drop the area
+      return "";
+    }
+
+    // Handle <col> (table column) - drop, Webflow doesn't support table column styling
+    if (tagLower === "col") {
+      return "";
+    }
+
+    // Handle <embed> (external plugin) - convert to HtmlEmbed if valid src
+    if (tagLower === "embed") {
+      const src = el.attributes.src;
+      if (src) {
+        const embedId = idGen.generate("embed");
+        // Build embed HTML
+        const attrs: string[] = [];
+        for (const [key, value] of Object.entries(el.attributes)) {
+          if (value) attrs.push(`${key}="${value}"`);
+        }
+        const embedHtml = `<embed ${attrs.join(" ")} />`;
+
+        nodes.push({
+          _id: embedId,
+          type: "HtmlEmbed",
+          tag: "div",
+          children: [],
+          v: embedHtml,
+          data: {
+            tag: "div",
+            text: false,
+            embed: {
+              type: "html",
+              meta: {
+                html: embedHtml,
+                div: false,
+                iframe: false,
+                script: false,
+                compilable: false,
+              },
+            },
+            displayName: "Embed",
+          },
+        });
+        return embedId;
+      }
+      // No src, drop
+      return "";
+    }
+
+    // Handle <param> (object parameter) - deprecated, drop
+    if (tagLower === "param") {
+      return "";
+    }
+
+    // Handle <source> (media source) - drop when orphaned (outside video/audio)
+    // Note: When inside video/audio, the parent handles it
+    if (tagLower === "source") {
+      // Source elements should be processed by their parent video/audio
+      // If we get here, it's orphaned - drop it
+      return "";
+    }
+
+    // Handle <track> (text track for video) - drop when orphaned
+    if (tagLower === "track") {
+      // Track elements should be processed by their parent video
+      // If we get here, it's orphaned - drop it
+      return "";
+    }
 
     // If this is an SVG element, convert to HtmlEmbed to preserve inline SVG behavior
     if (el.tag === "svg" || el.tag === "SVG") {
@@ -1903,12 +2079,20 @@ export function convertSectionToWebflow(
   // We must route FIRST to capture embed-worthy CSS before it's removed.
   const cssRouting = routeCSS(css);
   const nativeCSS = cssRouting.native;
-  const embedCSSRaw = cssRouting.embed;
+  let embedCSSRaw = cssRouting.embed;
 
   // Now normalize only the NATIVE CSS
   const normalized = normalizeHtmlCssForWebflow(html, nativeCSS);
   if (normalized.warnings.length > 0) {
     console.warn("[webflow-normalizer]", normalized.warnings.join(" | "));
+  }
+
+  // Add body background to embed CSS if extracted (full-viewport coverage)
+  if (normalized.bodyBackgroundEmbed) {
+    embedCSSRaw = embedCSSRaw
+      ? `${normalized.bodyBackgroundEmbed}\n\n${embedCSSRaw}`
+      : normalized.bodyBackgroundEmbed;
+    console.log("[webflow-converter] Added body background to embed CSS for full-viewport coverage");
   }
 
   // Wrap embed CSS in <style> tags if present
@@ -2543,8 +2727,25 @@ export function buildComponentPayload(
       const styleId = styleIdMap.getOrCreate(className);
       componentStyles.push(classEntryToWebflowStyle(entry, styleId));
     } else {
-      // Class used in HTML but not defined in CSS
+      // Class used in HTML but not defined in CSS (e.g., auto-assigned BEM classes)
+      // Create a placeholder style with the original class name to prevent
+      // the safety gate from renaming it to placeholder-{uuid}
       missingClasses.push(className);
+
+      // Skip Webflow reserved classes
+      if (!className.startsWith('w-') && !className.startsWith('wf-')) {
+        componentStyles.push({
+          _id: styleIdMap.getOrCreate(className),
+          fake: false,
+          type: "class",
+          name: className,
+          namespace: "",
+          comb: "",
+          styleLess: "",  // Empty - class has no CSS definition
+          variants: {},
+          children: [],
+        });
+      }
     }
   }
 

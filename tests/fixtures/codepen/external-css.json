@@ -1,0 +1,17 @@
+{
+  "name": "external-css",
+  "description": "Pen with external CSS (Slater + Google Fonts)",
+  "jsonp": "__CP_JSONP__23456({\"html\":\"<section class=\\\"hero\\\">Hello</section>\",\"css\":\".hero{min-height:50vh;}\",\"js\":\"console.log(\\\"ready\\\");\",\"css_external\":\"https://assets.codepen.io/12345/slater.css https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap\",\"js_external\":\"\",\"title\":\"Slater Hero\",\"author_name\":\"Test User\"});",
+  "expectedInput": {
+    "projectName": "Slater Hero",
+    "htmlText": "<section class=\"hero\">Hello</section>",
+    "cssText": ".hero{min-height:50vh;}",
+    "jsText": "console.log(\"ready\");",
+    "cssUrls": [
+      "https://assets.codepen.io/12345/slater.css",
+      "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+    ],
+    "jsUrls": [],
+    "provenance": "codepen"
+  }
+}

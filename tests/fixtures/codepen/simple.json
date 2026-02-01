@@ -1,0 +1,14 @@
+{
+  "name": "simple",
+  "description": "Simple pen output",
+  "jsonp": "__CP_JSONP__12345({\"html\":\"<div class=\\\"button\\\">Click</div>\",\"css\":\".button{padding:10px;}\",\"js\":\"\",\"css_external\":\"\",\"js_external\":\"\",\"title\":\"Simple Button\",\"author_name\":\"Test User\"});",
+  "expectedInput": {
+    "projectName": "Simple Button",
+    "htmlText": "<div class=\"button\">Click</div>",
+    "cssText": ".button{padding:10px;}",
+    "jsText": "",
+    "cssUrls": [],
+    "jsUrls": [],
+    "provenance": "codepen"
+  }
+}

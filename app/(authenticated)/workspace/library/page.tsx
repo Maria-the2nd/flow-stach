@@ -29,30 +29,30 @@ export default function TemplatesPage() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Templates Library</h1>
-                    <p className="text-slate-500 mt-1">Manage your purchased premium templates.</p>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Templates Library</h1>
+                    <p className="text-muted-foreground mt-1">Manage your purchased premium templates.</p>
                 </div>
                 <Link href="/explore">
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200/50 font-bold px-6 h-11 rounded-xl transition-all">
+                    <Button className="bg-primary hover:opacity-90 text-primary-foreground shadow-lg shadow-primary/20 font-bold px-6 h-11 rounded-xl transition-all btn-premium">
                         <ShoppingCart className="w-4 h-4 mr-2" />
                         Explore Store
                     </Button>
                 </Link>
             </div>
 
-            <div className="flex items-center gap-4 bg-white/50 backdrop-blur border border-slate-200 rounded-2xl p-4 shadow-sm">
-                <Search className="w-5 h-5 text-slate-400 ml-2" />
+            <div className="flex items-center gap-4 bg-accent/20 backdrop-blur border border-border/50 rounded-2xl p-4 shadow-sm">
+                <Search className="w-5 h-5 text-muted-foreground ml-2" />
                 <input
                     type="text"
                     placeholder="Search your library..."
-                    className="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-slate-400"
+                    className="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-muted-foreground/60 text-foreground"
                 />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {MOCK_TEMPLATES.map((template) => (
-                    <div key={template.id} className="group bg-white/90 backdrop-blur-xl rounded-[28px] border border-slate-200 overflow-hidden hover:shadow-2xl hover:border-slate-300 transition-all duration-500 flex flex-col h-full shadow-xl shadow-slate-200/50 relative">
-                        <div className="aspect-video bg-slate-100 relative overflow-hidden">
+                    <div key={template.id} className="group bg-card/80 backdrop-blur-xl rounded-[28px] border border-white/20 ring-1 ring-white/10 overflow-hidden hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/20 transition-all duration-500 flex flex-col h-full shadow-xl shadow-primary/5 relative">
+                        <div className="aspect-video bg-accent/30 relative overflow-hidden">
                             <Image
                                 src={template.image}
                                 alt={template.name}
@@ -67,14 +67,14 @@ export default function TemplatesPage() {
                         </div>
                         <div className="p-7 flex flex-col flex-grow">
                             <div className="flex justify-between items-start mb-2">
-                                <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-tight">{template.name}</h3>
+                                <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors leading-tight">{template.name}</h3>
                             </div>
-                            <p className="text-slate-500 text-sm mb-6 flex-grow leading-relaxed">
+                            <p className="text-muted-foreground text-sm mb-6 flex-grow leading-relaxed">
                                 {template.description}
                             </p>
-                            <div className="pt-5 border-t border-slate-100 flex items-center justify-between mt-auto">
-                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{template.author}</span>
-                                <Button className="bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-200/50 font-bold px-6 h-10 rounded-xl transition-all text-xs">
+                            <div className="pt-5 border-t border-border/50 flex items-center justify-between mt-auto">
+                                <span className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest">{template.author}</span>
+                                <Button className="bg-primary hover:opacity-90 text-primary-foreground shadow-xl shadow-primary/20 font-bold px-6 h-10 rounded-xl transition-all text-xs btn-premium">
                                     Use Template
                                 </Button>
                             </div>
@@ -83,12 +83,16 @@ export default function TemplatesPage() {
                 ))}
 
                 {/* Marketplace Upsell */}
-                <Link href="/explore" className="group border-2 border-dashed border-slate-200 rounded-[28px] flex flex-col items-center justify-center p-10 text-center !bg-white/40 backdrop-blur hover:!bg-white hover:border-blue-300 hover:shadow-2xl transition-all cursor-pointer shadow-lg shadow-slate-200/30">
-                    <div className="w-16 h-16 rounded-3xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform">
-                        <LayoutTemplate className="w-8 h-8 text-blue-500" />
+                <Link href="/explore" className="group relative border-2 border-dashed border-white/10 rounded-[32px] flex flex-col items-center justify-center p-12 text-center bg-white/[0.02] backdrop-blur-xl hover:bg-white/[0.05] hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 cursor-pointer shadow-xl shadow-primary/5 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    <div className="w-20 h-20 rounded-[24px] bg-primary/10 border border-primary/20 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-2xl shadow-primary/10">
+                        <LayoutTemplate className="w-10 h-10 text-primary" />
                     </div>
-                    <h3 className="font-bold text-slate-900 text-lg">Purchase Templates</h3>
-                    <p className="text-sm text-slate-500 mt-2 max-w-xs leading-relaxed">Find high-conversion layouts designed by experts in our marketplace.</p>
+                    <h3 className="font-black text-foreground text-2xl tracking-tight mb-3">Purchase Templates</h3>
+                    <p className="text-sm text-muted-foreground max-w-xs leading-relaxed font-medium">Find high-conversion layouts designed by experts in our marketplace.</p>
+                    <div className="mt-8 px-8 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.2em] text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500">
+                        Explore Store
+                    </div>
                 </Link>
             </div>
         </div>

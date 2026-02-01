@@ -58,7 +58,7 @@ function AdminSeedContent() {
           </CardHeader>
           <CardContent>
             <Button variant="outline" asChild className="w-full">
-              <Link href="/assets">
+              <Link href="/workspace/projects">
                 Return to Assets
                 <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 h-4 w-4" />
               </Link>

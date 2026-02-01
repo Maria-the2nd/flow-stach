@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, ChevronUp, Copy, Check } from "lucide-react"
+import { ChevronDown, ChevronUp, Copy, Check, Wand2, Loader2 } from "lucide-react"
 import type { WebflowSafetyReport } from "@/lib/webflow-safety-gate"
 import type { ClassRenamingReport } from "@/lib/validation-types"
 
@@ -9,6 +9,10 @@ interface SafetyReportPanelProps {
   report: WebflowSafetyReport
   /** Optional callback to copy the safety report as formatted text */
   onCopy?: () => Promise<void>
+  /** Optional callback to attempt fixing remaining issues */
+  onAttemptFix?: () => Promise<{ fixed: number; remaining: number }>
+  /** Whether a fix is currently in progress */
+  isFixing?: boolean
 }
 
 interface ClassRenamingReportPanelProps {
@@ -103,16 +107,17 @@ function WarningCategory({ items, title, hint }: WarningCategoryProps) {
   )
 }
 
-export function SafetyReportPanel({ report, onCopy }: SafetyReportPanelProps) {
+export function SafetyReportPanel({ report, onCopy, onAttemptFix, isFixing }: SafetyReportPanelProps) {
   const [isCopied, setIsCopied] = useState(false)
+  const [fixResult, setFixResult] = useState<{ fixed: number; remaining: number } | null>(null)
   const isBlocked = report.status === "block"
   const isWarn = report.status === "warn"
 
   const tone = isBlocked
-    ? "border-red-200 bg-red-50 text-red-900"
+    ? "border-destructive/20 bg-destructive/5 text-foreground"
     : isWarn
-      ? "border-amber-200 bg-amber-50 text-amber-900"
-      : "border-emerald-200 bg-emerald-50 text-emerald-900"
+      ? "border-amber-500/20 bg-amber-500/5 text-foreground"
+      : "border-emerald-500/20 bg-emerald-500/5 text-foreground"
 
   // Categorize warnings for better UX
   const categorizedWarnings = categorizeWarnings(report.warnings)
@@ -128,6 +133,21 @@ export function SafetyReportPanel({ report, onCopy }: SafetyReportPanelProps) {
       console.error("Failed to copy safety report:", e)
     }
   }
+
+  const handleAttemptFix = async () => {
+    if (!onAttemptFix) return
+    try {
+      const result = await onAttemptFix()
+      setFixResult(result)
+      // Clear result after 5 seconds
+      setTimeout(() => setFixResult(null), 5000)
+    } catch (e) {
+      console.error("Failed to attempt fix:", e)
+    }
+  }
+
+  // Show fix button if there are warnings or blocked issues and a fix handler is provided
+  const showFixButton = onAttemptFix && (report.warnings.length > 0 || report.fatalIssues.length > 0)
 
   return (
     <div className={`rounded-lg border p-4 ${tone}`}>
@@ -145,6 +165,26 @@ export function SafetyReportPanel({ report, onCopy }: SafetyReportPanelProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {showFixButton && (
+            <button
+              onClick={handleAttemptFix}
+              disabled={isFixing}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary hover:opacity-90 text-primary-foreground border border-primary/20 text-[10px] font-bold uppercase tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Attempt to auto-fix remaining issues"
+            >
+              {isFixing ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Fixing...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-3 h-3" />
+                  Try Fix
+                </>
+              )}
+            </button>
+          )}
           {onCopy && (
             <button
               onClick={handleCopy}
@@ -164,26 +204,35 @@ export function SafetyReportPanel({ report, onCopy }: SafetyReportPanelProps) {
               )}
             </button>
           )}
-          <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
+          <span className="text-[10px] uppercase tracking-[0.2em] font-black opacity-60">
             {report.status}
           </span>
         </div>
       </div>
 
+      {/* Fix result feedback */}
+      {fixResult && (
+        <div className="mt-3 p-2 rounded bg-primary/10 border border-primary/20 text-primary text-xs">
+          <span className="font-semibold">Fix attempted:</span> {fixResult.fixed} issue(s) fixed, {fixResult.remaining} remaining.
+          {fixResult.remaining > 0 && " Some issues may require manual intervention in Webflow."}
+        </div>
+      )}
+
       <ExpandableList items={report.fatalIssues} title="Blocked Issues" />
 
       {/* Placeholder styles auto-fix - highlight this as it eliminates missing style warnings */}
       {categorizedAutoFixes.placeholderStyles.length > 0 && (
-        <div className="mt-3 p-2 rounded bg-emerald-100/50 border border-emerald-200">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800 mb-1">
+        <div className="mt-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+          <p className="text-[10px] font-black uppercase tracking-wider text-emerald-500 mb-1.5 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             Auto-Fixed: Placeholder Styles Created ({categorizedAutoFixes.placeholderClassNames.length})
           </p>
-          <p className="text-xs text-emerald-700 mb-2">
+          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
             Empty placeholder styles were auto-created for classes referenced in your HTML.
             This prevents &quot;missing style&quot; warnings in Webflow.
           </p>
           {(categorizedAutoFixes.embedOnlyCount > 0 || categorizedAutoFixes.noStyleCount > 0) && (
-            <div className="text-[10px] text-emerald-600 mb-2 space-y-0.5">
+            <div className="text-[10px] text-muted-foreground/60 mb-3 space-y-1">
               {categorizedAutoFixes.embedOnlyCount > 0 && (
                 <p>• {categorizedAutoFixes.embedOnlyCount} class(es) have styles in the CSS embed</p>
               )}
@@ -193,7 +242,7 @@ export function SafetyReportPanel({ report, onCopy }: SafetyReportPanelProps) {
             </div>
           )}
           {categorizedAutoFixes.placeholderClassNames.length > 0 && (
-            <p className="text-xs font-mono text-emerald-800 break-words">
+            <p className="text-xs font-mono text-emerald-500/80 break-words bg-emerald-500/5 p-2 rounded-lg border border-emerald-500/5">
               {categorizedAutoFixes.placeholderClassNames.join(', ')}
             </p>
           )}
@@ -349,42 +398,42 @@ export function ClassRenamingReportPanel({ report }: ClassRenamingReportPanelPro
   const hasHighRisk = report.summary.highRiskNeutralized > 0
 
   return (
-    <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200 p-6 shadow-lg shadow-slate-200/30">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-card/80 backdrop-blur-xl rounded-2xl border border-border p-6 shadow-xl shadow-background/50">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-bold text-slate-900">Class Renaming</h3>
-          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${statusBadgeClass}`}>
+          <h3 className="text-lg font-black text-foreground uppercase tracking-tight">Class Renaming</h3>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${statusBadgeClass}`}>
             {report.status}
           </span>
         </div>
-        <div className="flex items-center gap-4 text-sm text-slate-500">
+        <div className="flex items-center gap-4 text-[10px] font-black uppercase text-muted-foreground/60 tracking-widest">
           <span>{report.summary.totalClasses} classes</span>
           {hasRenames && (
-            <span className="text-blue-600">{report.summary.renamed} renamed</span>
+            <span className="text-primary">{report.summary.renamed} renamed</span>
           )}
           {hasHighRisk && (
-            <span className="text-amber-600">{report.summary.highRiskNeutralized} high-risk</span>
+            <span className="text-amber-500">{report.summary.highRiskNeutralized} high-risk</span>
           )}
         </div>
       </div>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div className="bg-slate-50 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-slate-900">{report.summary.totalClasses}</div>
-          <div className="text-xs text-slate-500 font-medium">Total Classes</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-accent/30 rounded-2xl p-4 text-center border border-border/50">
+          <div className="text-2xl font-black text-foreground">{report.summary.totalClasses}</div>
+          <div className="text-[10px] text-muted-foreground/60 font-black uppercase tracking-widest mt-1">Total</div>
         </div>
-        <div className="bg-blue-50 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-blue-600">{report.summary.renamed}</div>
-          <div className="text-xs text-slate-500 font-medium">Renamed</div>
+        <div className="bg-primary/10 rounded-2xl p-4 text-center border border-primary/20">
+          <div className="text-2xl font-black text-primary">{report.summary.renamed}</div>
+          <div className="text-[10px] text-primary/60 font-black uppercase tracking-widest mt-1">Renamed</div>
         </div>
-        <div className="bg-amber-50 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-amber-600">{report.summary.highRiskNeutralized}</div>
-          <div className="text-xs text-slate-500 font-medium">High-Risk</div>
+        <div className="bg-amber-500/10 rounded-2xl p-4 text-center border border-amber-500/20">
+          <div className="text-2xl font-black text-amber-500">{report.summary.highRiskNeutralized}</div>
+          <div className="text-[10px] text-amber-500/60 font-black uppercase tracking-widest mt-1">High-Risk</div>
         </div>
-        <div className="bg-slate-50 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-slate-600">{report.summary.preserved}</div>
-          <div className="text-xs text-slate-500 font-medium">Preserved</div>
+        <div className="bg-accent/30 rounded-2xl p-4 text-center border border-border/50">
+          <div className="text-2xl font-black text-muted-foreground">{report.summary.preserved}</div>
+          <div className="text-[10px] text-muted-foreground/60 font-black uppercase tracking-widest mt-1">Preserved</div>
         </div>
       </div>
 
@@ -423,7 +472,7 @@ export function ClassRenamingReportPanel({ report }: ClassRenamingReportPanelPro
           }))}
           isExpanded={expandedSections["bem"]}
           onToggle={() => toggleSection("bem")}
-          badgeClass="bg-blue-100 text-blue-700"
+          badgeClass="bg-primary/10 text-primary"
         />
       )}
 
@@ -489,17 +538,17 @@ function CollapsibleClassList({ title, items, isExpanded, onToggle, badgeClass }
           </span>
         )}
       </button>
-      <div className="mt-2 space-y-1">
+      <div className="mt-2 space-y-1.5">
         {displayItems.map((item, i) => (
-          <div key={i} className="flex items-center justify-between text-xs px-2 py-1.5 bg-slate-50 rounded-lg">
-            <code className="font-mono text-slate-700">{item.label}</code>
-            <span className="text-slate-400 text-[10px]">{item.description}</span>
+          <div key={i} className="flex items-center justify-between text-xs px-3 py-2 bg-accent/20 rounded-xl border border-border/30">
+            <code className="font-mono text-foreground font-medium">{item.label}</code>
+            <span className="text-muted-foreground/60 text-[10px] font-bold uppercase">{item.description}</span>
           </div>
         ))}
         {!isExpanded && hasMore && (
           <button
             onClick={onToggle}
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+            className="text-xs text-primary hover:opacity-80 font-medium"
           >
             Show {items.length - displayLimit} more...
           </button>

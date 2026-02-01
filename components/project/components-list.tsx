@@ -37,10 +37,10 @@ interface ComponentsListProps {
 export function ComponentsList({ components }: ComponentsListProps) {
   if (!components || components.length === 0) {
     return (
-      <Card className="!bg-white/80 backdrop-blur-xl border-slate-200 shadow-xl shadow-slate-200/50 rounded-[24px]">
+      <Card className="bg-card/50 backdrop-blur-xl border-border shadow-xl shadow-background/50 rounded-[24px]">
         <CardHeader>
-          <CardTitle>Extracted Components</CardTitle>
-          <CardDescription>No extracted components available in this project.</CardDescription>
+          <CardTitle className="text-foreground">Extracted Components</CardTitle>
+          <CardDescription className="text-muted-foreground">No extracted components available in this project.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -97,7 +97,7 @@ export function ComponentsList({ components }: ComponentsListProps) {
         );
       case "none":
         return (
-          <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-bold text-[10px]">
+          <Badge variant="secondary" className="bg-accent text-muted-foreground border-none font-bold text-[10px]">
             CODE ONLY
           </Badge>
         );
@@ -108,9 +108,9 @@ export function ComponentsList({ components }: ComponentsListProps) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50/50 border border-blue-100/50 p-6 rounded-[24px]">
-        <h3 className="text-xl font-bold text-slate-900 mb-1">Extracted Components</h3>
-        <p className="text-sm text-slate-500 font-medium">
+      <div className="bg-primary/5 border border-primary/10 p-6 rounded-[24px]">
+        <h3 className="text-xl font-bold text-foreground mb-1">Extracted Components</h3>
+        <p className="text-sm text-muted-foreground font-medium">
           Step 3: Copy components one by one and paste them into Webflow.
           Make sure you&apos;ve installed the Style Guide (Design Tokens) and fonts first.
         </p>
@@ -130,69 +130,70 @@ export function ComponentsList({ components }: ComponentsListProps) {
           })();
 
           return (
-          <Card key={component._id} className="!bg-white/80 backdrop-blur-xl border-slate-200 shadow-xl shadow-slate-200/50 rounded-[24px] overflow-hidden hover:border-blue-200 transition-all">
-            <CardContent className="p-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex-1 space-y-3 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <h4 className="font-bold text-lg sm:text-xl text-slate-900 break-words">{component.title}</h4>
-                    {getReliabilityBadge(component.pasteReliability)}
+            <Card key={component._id} className="bg-card backdrop-blur-xl border-border shadow-xl shadow-background/50 rounded-[24px] overflow-hidden hover:border-primary/30 transition-all">
+              <CardContent className="p-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="flex-1 space-y-3 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                      <h4 className="font-bold text-lg sm:text-xl text-foreground break-words">{component.title}</h4>
+                      {getReliabilityBadge(component.pasteReliability)}
+                    </div>
+
+                    {component.description && (
+                      <p className="text-sm text-muted-foreground leading-relaxed font-medium">{component.description}</p>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                      <Badge variant="secondary" className="bg-accent text-muted-foreground border-none font-bold text-[10px] uppercase whitespace-nowrap">{component.category}</Badge>
+                      {component.capabilityNotes && (
+                        <p className="text-xs text-muted-foreground/60 font-medium italic break-words">{component.capabilityNotes}</p>
+                      )}
+                    </div>
                   </div>
 
-                  {component.description && (
-                    <p className="text-sm text-slate-500 leading-relaxed font-medium">{component.description}</p>
-                  )}
+                  <div className="flex flex-row sm:flex-col gap-3 w-full sm:w-auto sm:min-w-[180px]">
+                    <Button
+                      onClick={() => handleCopyComponent(component, payload)}
+                      disabled={!payload?.webflowJson || component.pasteReliability === "none"}
+                      className="bg-primary hover:opacity-90 text-primary-foreground shadow-lg shadow-primary/20 font-bold h-12 rounded-xl flex-1 sm:flex-none"
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      <span className="hidden sm:inline">Copy to Webflow</span>
+                      <span className="sm:hidden">Copy</span>
+                    </Button>
 
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-bold text-[10px] uppercase whitespace-nowrap">{component.category}</Badge>
-                    {component.capabilityNotes && (
-                      <p className="text-xs text-slate-400 font-medium italic break-words">{component.capabilityNotes}</p>
+                    {payload?.codePayload && (
+                      <Button
+                        onClick={() => handleCopyCode(component, payload)}
+                        variant="outline"
+                        className="border-border text-foreground hover:bg-accent font-bold h-12 rounded-xl flex-1 sm:flex-none"
+                      >
+                        <Copy className="w-4 h-4 mr-2" />
+                        <span className="hidden sm:inline">View Code</span>
+                        <span className="sm:hidden">Code</span>
+                      </Button>
                     )}
                   </div>
                 </div>
-
-                <div className="flex flex-row sm:flex-col gap-3 w-full sm:w-auto sm:min-w-[180px]">
-                  <Button
-                    onClick={() => handleCopyComponent(component, payload)}
-                    disabled={!payload?.webflowJson || component.pasteReliability === "none"}
-                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200/40 font-bold h-12 rounded-xl flex-1 sm:flex-none"
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Copy to Webflow</span>
-                    <span className="sm:hidden">Copy</span>
-                  </Button>
-
-                  {payload?.codePayload && (
-                    <Button
-                      onClick={() => handleCopyCode(component, payload)}
-                      variant="outline"
-                      className="border-slate-200 text-slate-600 hover:bg-slate-50 font-bold h-12 rounded-xl flex-1 sm:flex-none"
-                    >
-                      <Copy className="w-4 h-4 mr-2" />
-                      <span className="hidden sm:inline">View Code</span>
-                      <span className="sm:hidden">Code</span>
-                    </Button>
-                  )}
-                </div>
-              </div>
-              {safetyReport && (
-                <details className="mt-5 rounded-xl border border-slate-200 bg-white/70 p-3 text-sm">
-                  <summary className="cursor-pointer font-semibold text-slate-700">
-                    Safety Report
-                  </summary>
-                  <div className="mt-3">
-                    <SafetyReportPanel report={safetyReport} />
-                  </div>
-                </details>
-              )}
-            </CardContent>
-          </Card>
-        )})}
+                {safetyReport && (
+                  <details className="mt-5 rounded-xl border border-border/50 bg-accent/20 p-3 text-sm">
+                    <summary className="cursor-pointer font-semibold text-muted-foreground/80">
+                      Safety Report
+                    </summary>
+                    <div className="mt-3">
+                      <SafetyReportPanel report={safetyReport} />
+                    </div>
+                  </details>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {/* Summary */}
-      <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100/50">
-        <p className="text-sm text-blue-900 font-medium">
+      <div className="p-5 bg-primary/5 rounded-2xl border border-primary/10">
+        <p className="text-sm text-primary font-medium">
           <strong className="font-bold">Total Extracted Components:</strong> {components.length}
           {" | "}
           <strong className="font-bold">Ready to Paste:</strong>{" "}

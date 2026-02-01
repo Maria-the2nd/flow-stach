@@ -144,7 +144,7 @@ export default function ExtensionPage() {
         {/* CTA */}
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Button asChild>
-            <Link href="/assets">
+            <Link href="/workspace/projects">
               Browse Components
               <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 h-4 w-4" />
             </Link>

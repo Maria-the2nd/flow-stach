@@ -100,7 +100,7 @@ export const USER_COMPONENTS = [
         id: 'uc-1',
         name: 'Newsletter Signup',
         source: 'Imported',
-        sourceColor: 'bg-blue-100 text-blue-800'
+        sourceColor: 'bg-primary/10 text-primary'
     },
     {
         id: 'uc-2',

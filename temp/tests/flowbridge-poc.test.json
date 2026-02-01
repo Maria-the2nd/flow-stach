@@ -1,0 +1,11 @@
+{
+  "name": "FlowBridge Proof of Concept",
+  "entryType": "single_html",
+  "paths": {
+    "html": "flowbridge-poc.html"
+  },
+  "expectations": {
+    "maxDiffRatio": 0.05
+  },
+  "tags": ["poc", "flowbridge"]
+}

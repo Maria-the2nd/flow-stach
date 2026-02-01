@@ -1,16 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flow Bridge — Turn AI websites into Webflow components. Instantly.</title>
-    <meta name="description" content="AI generates HTML/CSS/JS fast. Editing it is misery. Flow Bridge turns that output into clean, reusable components you paste into Webflow.">
-    
+    <meta name="description"
+        content="AI generates HTML/CSS/JS fast. Editing it is misery. Flow Bridge turns that output into clean, reusable components you paste into Webflow.">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <style>
         /* ========================================
            DESIGN TOKENS
@@ -28,11 +32,11 @@
             --accent-dark: #15803d;
             --accent-light: #22c55e;
             --accent-subtle: #dcfce7;
-            
+
             /* Typography */
             --font-mono: 'DM Mono', 'JetBrains Mono', monospace;
             --font-sans: 'Inter', system-ui, sans-serif;
-            
+
             /* Spacing */
             --space-xs: 0.25rem;
             --space-sm: 0.5rem;
@@ -43,12 +47,12 @@
             --space-3xl: 4rem;
             --space-4xl: 5rem;
             --space-5xl: 6rem;
-            
+
             /* Layout */
             --container-max: 1200px;
             --content-max: 65ch;
             --radius: 4px;
-            
+
             /* Transitions */
             --transition: 200ms ease;
         }
@@ -56,7 +60,9 @@
         /* ========================================
            RESET & BASE
            ======================================== */
-        *, *::before, *::after {
+        *,
+        *::before,
+        *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
@@ -103,7 +109,9 @@
         }
 
         /* Headings */
-        h1, h2, h3 {
+        h1,
+        h2,
+        h3 {
             font-family: var(--font-sans);
             color: var(--text-primary);
             line-height: 1.2;
@@ -801,11 +809,15 @@
 
         /* Reduced Motion */
         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
+
+            *,
+            *::before,
+            *::after {
                 animation-duration: 0.01ms !important;
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.01ms !important;
             }
+
             html {
                 scroll-behavior: auto;
             }
@@ -874,8 +886,52 @@
             opacity: 1;
             transform: translateY(0);
         }
+
+        /* Split Text Reveal */
+        .split-parent {
+            overflow: hidden;
+        }
+
+        .split-child {
+            display: inline-block;
+            transform: translateY(110%);
+            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .split-child.active {
+            transform: translateY(0%);
+        }
+
+        /* Typewriter */
+        .typewriter-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 0.9em;
+            background-color: var(--accent);
+            margin-left: 2px;
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+
+            from,
+            to {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .typing-text {
+            color: var(--accent);
+            font-weight: 700;
+        }
     </style>
 </head>
+
 <body>
 
     <!-- Navigation -->
@@ -896,8 +952,11 @@
 
     <!-- Hero -->
     <section class="hero">
-        <h1>Turn AI websites into Webflow components. Instantly.</h1>
-        <p class="hero-subtitle">AI can spit out HTML/CSS/JS in seconds. Editing that output? Pure suffering. Flow Bridge converts any AI-generated site into clean, reusable components you can paste into Webflow and polish like you actually know what you're doing.</p>
+        <h1 class="split-text">Turn AI websites into Webflow components. <span class="typing-text"
+                id="typewriter"></span><span class="typewriter-cursor"></span></h1>
+        <p class="hero-subtitle">AI can spit out HTML/CSS/JS in seconds. Editing that output? Pure suffering. Flow
+            Bridge converts any AI-generated site into clean, reusable components you can paste into Webflow and polish
+            like you actually know what you're doing.</p>
         <div class="hero-actions">
             <a href="#" class="btn btn-primary btn-lg">Try the Import</a>
             <a href="#demo" class="btn btn-secondary btn-lg">Watch a 60s demo</a>
@@ -913,7 +972,7 @@
                 <h2>AI generates. Editing sucks.</h2>
                 <p>Right now you're stuck choosing between two bad options:</p>
             </div>
-            
+
             <div class="problem-grid fade-in">
                 <div class="problem-card">
                     <h3>😤 Stay in AI editors</h3>
@@ -932,7 +991,7 @@
                     </ul>
                 </div>
             </div>
-            
+
             <p class="problem-closer fade-in">Flow Bridge is the missing link.</p>
         </div>
     </section>
@@ -945,25 +1004,28 @@
                 <h2>From AI output → Webflow canvas</h2>
                 <p>Three steps. No PhD required.</p>
             </div>
-            
+
             <div class="steps-grid">
                 <div class="step-card fade-in">
                     <span class="step-number">01 — Paste</span>
                     <h3>Drop in your AI code</h3>
-                    <p>Grab the HTML/CSS/JS from Cursor, v0, Bolt, or literally any AI that outputs web code. Paste it into Flow Bridge.</p>
+                    <p>Grab the HTML/CSS/JS from Cursor, v0, Bolt, or literally any AI that outputs web code. Paste it
+                        into Flow Bridge.</p>
                 </div>
                 <div class="step-card fade-in">
                     <span class="step-number">02 — Componentize</span>
                     <h3>We do the surgery</h3>
-                    <p>Our parser identifies layout patterns—navs, heroes, sections, footers—and breaks them into clean, reusable blocks. No spaghetti.</p>
+                    <p>Our parser identifies layout patterns—navs, heroes, sections, footers—and breaks them into clean,
+                        reusable blocks. No spaghetti.</p>
                 </div>
                 <div class="step-card fade-in">
                     <span class="step-number">03 — Export to Webflow</span>
                     <h3>Copy. Paste. Done.</h3>
-                    <p>One click exports Webflow-native JSON. Paste it straight into the Designer. Now you're editing with actual tools, not praying.</p>
+                    <p>One click exports Webflow-native JSON. Paste it straight into the Designer. Now you're editing
+                        with actual tools, not praying.</p>
                 </div>
             </div>
-            
+
             <div class="text-center" style="margin-top: var(--space-2xl);">
                 <a href="#demo" class="btn btn-secondary">See an example import →</a>
             </div>
@@ -978,25 +1040,28 @@
                 <h2>Designer control, without losing AI speed</h2>
                 <p>Everything you need to stop compromising.</p>
             </div>
-            
+
             <div class="card-grid">
                 <div class="card fade-in">
                     <div class="card-icon">📥</div>
                     <h3>Import any AI site</h3>
-                    <p>Paste output from Cursor, v0, Bolt, Claude Artifacts, or that sketchy new tool your friend swears by. If it outputs HTML/CSS/JS, we'll eat it.</p>
+                    <p>Paste output from Cursor, v0, Bolt, Claude Artifacts, or that sketchy new tool your friend swears
+                        by. If it outputs HTML/CSS/JS, we'll eat it.</p>
                 </div>
                 <div class="card fade-in">
                     <div class="card-icon">🧩</div>
                     <h3>Smart component breakdown</h3>
-                    <p>We split pages into clean blocks you'll actually reuse. Not a giant blob of divs. Real components with real names.</p>
+                    <p>We split pages into clean blocks you'll actually reuse. Not a giant blob of divs. Real components
+                        with real names.</p>
                 </div>
                 <div class="card fade-in">
                     <div class="card-icon">⚡</div>
                     <h3>One-click Webflow export</h3>
-                    <p>Clipboard-ready for the Designer. No weird rituals. No manual JSON hacking. No "well, it mostly works."</p>
+                    <p>Clipboard-ready for the Designer. No weird rituals. No manual JSON hacking. No "well, it mostly
+                        works."</p>
                 </div>
             </div>
-            
+
             <div class="feature-oneliner fade-in">
                 <p>You get the 80% instantly—then win the last 20% with taste.</p>
             </div>
@@ -1010,17 +1075,21 @@
                 <span class="section-label">Who it's for</span>
                 <h2>Two markets. One tool.</h2>
             </div>
-            
+
             <div class="audience-grid">
                 <div class="audience-card fade-in">
                     <span class="audience-label">For AI users</span>
                     <h3>Founders. Marketers. Creators.</h3>
-                    <p>You discovered AI can generate a landing page in 30 seconds. Amazing. Then you tried to change the button color and wanted to throw your laptop. Flow Bridge lets you bring that AI output into a real design tool where changing a button color takes—radical concept—one click.</p>
+                    <p>You discovered AI can generate a landing page in 30 seconds. Amazing. Then you tried to change
+                        the button color and wanted to throw your laptop. Flow Bridge lets you bring that AI output into
+                        a real design tool where changing a button color takes—radical concept—one click.</p>
                 </div>
                 <div class="audience-card fade-in">
                     <span class="audience-label">For Webflow designers</span>
                     <h3>Agencies. Freelancers. Speed demons.</h3>
-                    <p>You love Webflow's precision but you're watching AI users ship sites while you're still perfecting padding. Use AI for velocity, Flow Bridge for the handoff, Webflow for the craft. Your secret weapon. Don't tell anyone.</p>
+                    <p>You love Webflow's precision but you're watching AI users ship sites while you're still
+                        perfecting padding. Use AI for velocity, Flow Bridge for the handoff, Webflow for the craft.
+                        Your secret weapon. Don't tell anyone.</p>
                 </div>
             </div>
         </div>
@@ -1038,9 +1107,10 @@
             <div class="section-header">
                 <span class="section-label">See it in action</span>
                 <h2>Watch an AI site become editable components</h2>
-                <p>See how Flow Bridge breaks down a messy AI page into a tidy Webflow-ready component set. It's oddly satisfying.</p>
+                <p>See how Flow Bridge breaks down a messy AI page into a tidy Webflow-ready component set. It's oddly
+                    satisfying.</p>
             </div>
-            
+
             <div class="demo-container fade-in">
                 <div class="demo-placeholder">
                     <div class="demo-placeholder-icon">▶</div>
@@ -1059,7 +1129,7 @@
                 <h2>Start free. Upgrade when it clicks.</h2>
                 <p>No credit card. No "free trial that's actually just 7 days." Actually free.</p>
             </div>
-            
+
             <div class="pricing-grid">
                 <div class="pricing-card fade-in">
                     <div class="pricing-name">Free</div>
@@ -1104,7 +1174,9 @@
                 <div class="academy-content fade-in">
                     <span class="section-label">The Academy</span>
                     <h2>Learn the craft: AI → award-worthy</h2>
-                    <p>Flow Bridge gives you speed. The Academy teaches you how to turn "AI slop" into work you're proud to put your name on. Webflow polish, responsive finesse, micro-interactions, the good stuff. Taught by people who've actually shipped sites that won awards, not just talked about it.</p>
+                    <p>Flow Bridge gives you speed. The Academy teaches you how to turn "AI slop" into work you're proud
+                        to put your name on. Webflow polish, responsive finesse, micro-interactions, the good stuff.
+                        Taught by people who've actually shipped sites that won awards, not just talked about it.</p>
                     <a href="#" class="btn btn-primary">Explore the Academy →</a>
                 </div>
                 <div class="academy-visual fade-in">
@@ -1128,27 +1200,34 @@
                 <span class="section-label">FAQ</span>
                 <h2>Questions you're probably asking</h2>
             </div>
-            
+
             <div class="faq-list">
                 <div class="faq-item fade-in">
                     <div class="faq-question">Do I need to code?</div>
-                    <p class="faq-answer">No. You can if you want to, but Flow Bridge handles the translation. If you can copy and paste, you're qualified.</p>
+                    <p class="faq-answer">No. You can if you want to, but Flow Bridge handles the translation. If you
+                        can copy and paste, you're qualified.</p>
                 </div>
                 <div class="faq-item fade-in">
                     <div class="faq-question">Does this replace Webflow?</div>
-                    <p class="faq-answer">God no. This feeds Webflow. Webflow is the editing superpower—we just get your AI-generated stuff into it without the pain.</p>
+                    <p class="faq-answer">God no. This feeds Webflow. Webflow is the editing superpower—we just get your
+                        AI-generated stuff into it without the pain.</p>
                 </div>
                 <div class="faq-item fade-in">
                     <div class="faq-question">What AI tools do you support?</div>
-                    <p class="faq-answer">Anything that outputs HTML/CSS/JS. Cursor, v0, Bolt, Claude Artifacts, ChatGPT, that random tool you found on Product Hunt at 2am. If it makes web code, we'll convert it.</p>
+                    <p class="faq-answer">Anything that outputs HTML/CSS/JS. Cursor, v0, Bolt, Claude Artifacts,
+                        ChatGPT, that random tool you found on Product Hunt at 2am. If it makes web code, we'll convert
+                        it.</p>
                 </div>
                 <div class="faq-item fade-in">
                     <div class="faq-question">Will it be perfect every time?</div>
-                    <p class="faq-answer">No. It'll be editable every time. That's the point. AI outputs are messy. Flow Bridge makes them workable. You make them great.</p>
+                    <p class="faq-answer">No. It'll be editable every time. That's the point. AI outputs are messy. Flow
+                        Bridge makes them workable. You make them great.</p>
                 </div>
                 <div class="faq-item fade-in">
                     <div class="faq-question">What about custom code and animations?</div>
-                    <p class="faq-answer">We preserve JavaScript where possible and flag complex interactions that might need manual attention. The goal is "mostly works immediately, fully works with light touch-ups."</p>
+                    <p class="faq-answer">We preserve JavaScript where possible and flag complex interactions that might
+                        need manual attention. The goal is "mostly works immediately, fully works with light touch-ups."
+                    </p>
                 </div>
             </div>
         </div>
@@ -1177,7 +1256,66 @@
 
     <!-- Scroll Animation Script -->
     <script>
-        // Simple scroll-triggered fade-in
+        // --- Split Text Logic ---
+        function initSplitText() {
+            const splitElements = document.querySelectorAll('.split-text');
+            splitElements.forEach(el => {
+                const text = el.innerText;
+                const words = text.split(' ');
+                el.innerHTML = '';
+
+                words.forEach(word => {
+                    if (word.length === 0) return;
+
+                    const wordSpan = document.createElement('span');
+                    wordSpan.className = 'split-parent';
+                    wordSpan.style.display = 'inline-block';
+                    wordSpan.style.marginRight = '0.25em';
+
+                    const childSpan = document.createElement('span');
+                    childSpan.className = 'split-child';
+                    childSpan.innerText = word;
+
+                    wordSpan.appendChild(childSpan);
+                    el.appendChild(wordSpan);
+                });
+            });
+        }
+
+        // --- Typewriter Logic ---
+        const typewriterEl = document.getElementById('typewriter');
+        const wordsToType = ["Instantly.", "Cleanly.", "Professionally.", "Easily."];
+        let wordIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        let typeSpeed = 100;
+
+        function type() {
+            const currentWord = wordsToType[wordIndex];
+
+            if (isDeleting) {
+                typewriterEl.textContent = currentWord.substring(0, charIndex - 1);
+                charIndex--;
+                typeSpeed = 50;
+            } else {
+                typewriterEl.textContent = currentWord.substring(0, charIndex + 1);
+                charIndex++;
+                typeSpeed = 150;
+            }
+
+            if (!isDeleting && charIndex === currentWord.length) {
+                isDeleting = true;
+                typeSpeed = 2000; // Pause at end
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                wordIndex = (wordIndex + 1) % wordsToType.length;
+                typeSpeed = 500;
+            }
+
+            setTimeout(type, typeSpeed);
+        }
+
+        // --- Intersection Observer ---
         const observerOptions = {
             root: null,
             rootMargin: '0px 0px -50px 0px',
@@ -1188,20 +1326,50 @@
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('visible');
+
+                    // Trigger split text children
+                    if (entry.target.classList.contains('split-text')) {
+                        const children = entry.target.querySelectorAll('.split-child');
+                        children.forEach((child, index) => {
+                            setTimeout(() => {
+                                child.classList.add('active');
+                            }, index * 100);
+                        });
+                    }
+
+                    // Trigger standard fade-ins
+                    if (entry.target.classList.contains('fade-in')) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
                 }
             });
         }, observerOptions);
 
-        document.querySelectorAll('.fade-in').forEach(el => {
-            observer.observe(el);
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', () => {
+            // Setup split text elements
+            // We do this before observing
+            const headers = document.querySelectorAll('h2, .hero h1');
+            headers.forEach(h => h.classList.add('split-text'));
+
+            initSplitText();
+
+            // Re-select because elements were replaced
+            document.querySelectorAll('.split-text, .fade-in').forEach(el => {
+                observer.observe(el);
+            });
+
+            // Start typewriter
+            setTimeout(type, 1000);
         });
 
         // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
+            anchor.addEventListener('click', function (e) {
                 const href = this.getAttribute('href');
                 if (href === '#') return;
-                
+
                 e.preventDefault();
                 const target = document.querySelector(href);
                 if (target) {
@@ -1215,4 +1383,5 @@
     </script>
 
 </body>
+
 </html>

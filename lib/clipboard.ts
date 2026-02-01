@@ -219,6 +219,11 @@ function isExtensionInstalled(): boolean {
  * Webflow Designer recognizes application/json MIME type.
  */
 async function copyWithClipboardApi(jsonString: string): Promise<CopyResult> {
+  // Check if ClipboardItem is available
+  if (typeof ClipboardItem === 'undefined') {
+    return { success: false, reason: "clipboard_api_unavailable" };
+  }
+
   try {
     // Create blobs for both MIME types
     const jsonBlob = new Blob([jsonString], { type: "application/json" });

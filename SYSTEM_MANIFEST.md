@@ -32,7 +32,7 @@ This manifest is aligned with `AUTHORITATIVE_CURRENT_STATE.md` and reflects the 
 Flow Bridge is a web application for people who want access to high-quality templates, components, and tools that accelerate design and development in the age of AI. The system bridges fast AI outputs and precise refinement by providing reusable assets and tools that bring work into Webflow for fine-tuning.
 
 It serves two user-facing purposes:
-1) **HTML to Webflow Tool** — Imports a single HTML bundle, extracts tokens/components/artifacts, and provides Webflow-copyable payloads.
+1) **HTML to Webflow Tool** — Imports a single HTML file and converts it to a Webflow-pasteable payload. The output is a single hidden `<div>` (class: `delete-me`, display: none) containing all styles. After pasting, delete this wrapper div.
 2) **Marketplace Catalog** — Templates, components, and tools (currently mock/static data in the UI).
 
 ---
@@ -46,11 +46,10 @@ It serves two user-facing purposes:
 ### Workspace (Authenticated User)
 - `/workspace/projects` — Imported projects list
   - `/workspace/projects/[id]` — Project detail view with tabs:
-    - `Overview` — Token summary and font checklist
-    - `Style Guide (Design Tokens)` — Visual tokens + Webflow copy
-    - `Site` — Site Structure Payload + Extracted Components
+    - `Overview` — Summary and font checklist
+    - `Site` — Webflow payload copy (single hidden div with all styles)
     - `Images` — Extracted images
-    - `Embeds` — Extracted CSS/JS and external libraries
+    - `Embeds` — CSS/JS embeds and external libraries
 - `/workspace/library` — Owned templates (mock UI)
 - `/workspace/components` — Owned components (mock UI)
 - `/workspace/import` — HTML import tool
@@ -109,17 +108,18 @@ It serves two user-facing purposes:
 - **Styling**: Tailwind CSS + Framer Motion
 - **Typography**: Plus Jakarta Sans (sans), Antonio (display), Geist Mono (mono)
 
-### Style Guide (Design Tokens)
-- Extracted via `lib/token-extractor.ts` → `extractEnhancedTokens()`
-- UI in `components/project/style-guide/`
-- Webflow payload generator in `lib/webflow-style-guide-generator.ts`
+### HTML to Webflow Conversion
+- Converter in `lib/webflow-converter.ts`
+- Produces a single hidden `<div>` (class: `delete-me`) containing all style classes
+- User pastes into Webflow, then deletes the wrapper div
 
 ---
 
 ## 7. Deprecations (Current)
-- “Flow Stach” → **Flow Bridge**
-- “Design Tokens” vs “Style Guide” → **Style Guide (Design Tokens)** only
-- “Full Site Package” → **Site Structure Payload**
+- "Flow Stach" → **Flow Bridge**
+- "Design Tokens" / "Style Guide" / "Token asset" → **Deprecated** (single-file import only, no separate token system)
+- "Full Site Package" / "Site Structure Payload" / "Three-Output System" → **Deprecated** (now single hidden div output)
+- "Components" tab → **Deprecated** (no component extraction, single file only)
 - `/assets` as primary entry → Redirects to `/workspace/projects`
 - Multi-file import → Not supported (single-file only)
 

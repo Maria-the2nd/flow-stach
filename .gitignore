@@ -13,6 +13,9 @@ node_modules
 # testing
 coverage
 
+# audit harness output
+temp/tests/_out/
+
 # next.js
 .next/
 out/

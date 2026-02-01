@@ -8,6 +8,8 @@
 import { describe, it, expect } from "vitest";
 import { parseCSS } from "../lib/css-parser";
 import { convertHtmlCssToWebflow } from "../lib/webflow-converter";
+import { routeCSS } from "../lib/css-embed-router";
+import { literalizeCssForWebflow } from "../lib/webflow-literalizer";
 
 describe("Critical Bug Fixes", () => {
   describe("Bug 1: clamp() function conversion", () => {
@@ -131,15 +133,199 @@ describe("Critical Bug Fixes", () => {
       expect(heroStyle?.styleLess).not.toContain("clamp(");
       expect(heroStyle?.styleLess).toContain("110px");
 
-      // Check that descendant selectors were handled
+      // BEM COMBO CLASS APPROACH:
+      // .hero h1 creates MODIFIER class (hero-h1) with context-specific styles
+      // Base class (heading-h1) has typography from element selector
+      // HTML gets BOTH: <h1 class="hero-h1 heading-h1">
       const h1Style = result.payload.styles.find(s => s.name === "heading-h1");
       expect(h1Style).toBeDefined();
-      expect(h1Style?.styleLess).not.toContain("clamp(");
-      expect(h1Style?.styleLess).toContain("margin-bottom: 24px");
+      // heading-h1 has base typography, not the margin from descendant selector
 
+      // Modifier class has the context-specific styles
+      const heroH1Style = result.payload.styles.find(s => s.name === "hero-h1");
+      expect(heroH1Style).toBeDefined();
+      expect(heroH1Style?.styleLess).not.toContain("clamp(");
+      expect(heroH1Style?.styleLess).toContain("margin-bottom: 24px");
+
+      // .hero p creates MODIFIER class (hero-p)
+      // Base class (text-body) has typography
+      // HTML gets BOTH: <p class="hero-p text-body">
       const pStyle = result.payload.styles.find(s => s.name === "text-body");
       expect(pStyle).toBeDefined();
-      expect(pStyle?.styleLess).not.toContain("max(");
+
+      const heroPStyle = result.payload.styles.find(s => s.name === "hero-p");
+      expect(heroPStyle).toBeDefined();
+      expect(heroPStyle?.styleLess).not.toContain("max(");
+    });
+  });
+
+  describe("Bug 3: :nth-child() handling", () => {
+    it("routes :nth-child() selectors to embed CSS", () => {
+      const css = `
+        :root {
+          --cyan: #00ffff;
+          --pink: #ff00ff;
+          --yellow: #ffff00;
+        }
+        .step-card {
+          padding: 20px;
+        }
+        .step-card:nth-child(1) {
+          background: var(--cyan);
+        }
+        .step-card:nth-child(2) {
+          background: var(--pink);
+        }
+        .step-card:nth-child(3) {
+          background: var(--yellow);
+        }
+      `;
+
+      const result = routeCSS(css);
+
+      // :nth-child() rules should be routed to embed
+      expect(result.embed).toContain(".step-card:nth-child(1)");
+      expect(result.embed).toContain(".step-card:nth-child(2)");
+      expect(result.embed).toContain(".step-card:nth-child(3)");
+
+      // :root should also be in embed
+      expect(result.embed).toContain(":root");
+      expect(result.embed).toContain("--cyan");
+
+      // Native CSS should have the base .step-card styles
+      expect(result.native).toContain(".step-card");
+      expect(result.native).toContain("padding");
+
+      // Native CSS should NOT have :nth-child() rules
+      expect(result.native).not.toContain(":nth-child");
+    });
+
+    it("resolves CSS variables in embed CSS after literalization", () => {
+      const css = `
+        :root {
+          --cyan: #00ffff;
+        }
+        .step-card:nth-child(1) {
+          background: var(--cyan);
+        }
+      `;
+
+      // First literalize to resolve variables
+      const literalized = literalizeCssForWebflow(css);
+
+      // Check that variables are resolved
+      expect(literalized.css).toContain("#00ffff");
+
+      // Then route the literalized CSS
+      const result = routeCSS(literalized.css);
+
+      // The embed should have the resolved color value
+      expect(result.embed).toContain(".step-card:nth-child(1)");
+      expect(result.embed).toContain("#00ffff");
+    });
+
+    it("full pipeline: :nth-child() with CSS variable resolution", () => {
+      const css = `
+        :root {
+          --cyan: #00ffff;
+          --pink: #ff00ff;
+        }
+        .step-card {
+          padding: 20px;
+          border-radius: 8px;
+        }
+        .step-card:nth-child(1) {
+          background: var(--cyan);
+        }
+        .step-card:nth-child(2) {
+          background: var(--pink);
+        }
+      `;
+
+      // 1. Literalize to resolve CSS variables
+      const literalized = literalizeCssForWebflow(css);
+      expect(literalized.remainingVarCount).toBe(0);
+
+      // 2. Route to separate native vs embed
+      const routed = routeCSS(literalized.css);
+
+      // Native should have base .step-card styles only
+      expect(routed.native).toContain("padding");
+      expect(routed.native).toContain("border-radius");
+      expect(routed.native).not.toContain(":nth-child");
+
+      // Embed should have :nth-child rules with resolved colors
+      expect(routed.embed).toContain(".step-card:nth-child(1)");
+      expect(routed.embed).toContain("#00ffff");
+      expect(routed.embed).toContain(".step-card:nth-child(2)");
+      expect(routed.embed).toContain("#ff00ff");
+
+      // Check routing stats
+      expect(routed.stats.embedRules).toBeGreaterThan(0);
+    });
+  });
+
+  describe("Bug 4: Inline style handling", () => {
+    it("converts inline styles to Webflow classes", () => {
+      const html = `
+        <div class="container">
+          <div style="text-align: center; margin-top: 32px;">
+            <a href="#" class="btn">Click me</a>
+          </div>
+        </div>
+      `;
+      const css = `
+        .container {
+          padding: 20px;
+        }
+        .btn {
+          background: blue;
+          color: white;
+        }
+      `;
+
+      const result = convertHtmlCssToWebflow(html, css);
+
+      // Should have inline style class created
+      const inlineStyle = result.payload.styles.find(s => s.name.startsWith("inline-"));
+      expect(inlineStyle).toBeDefined();
+      expect(inlineStyle?.styleLess).toContain("text-align: center");
+      expect(inlineStyle?.styleLess).toContain("margin-top");
+
+      // Verify the inline style ID is referenced by a node
+      // In Webflow JSON, node.classes are UUIDs that reference style._id
+      const inlineStyleId = inlineStyle?._id;
+      const wrapperNode = result.payload.nodes.find(n =>
+        n.classes?.includes(inlineStyleId as string)
+      );
+      expect(wrapperNode).toBeDefined();
+    });
+
+    it("preserves text-align center for button centering", () => {
+      const html = `
+        <div style="text-align: center; margin-top: 2rem;">
+          <button class="cta-btn">See Example</button>
+        </div>
+      `;
+      const css = `
+        .cta-btn {
+          display: inline-block;
+          padding: 16px 32px;
+          background: #4F46E5;
+        }
+      `;
+
+      const result = convertHtmlCssToWebflow(html, css);
+
+      // Check inline style was converted
+      const inlineStyle = result.payload.styles.find(s => s.name.startsWith("inline-"));
+      expect(inlineStyle).toBeDefined();
+      expect(inlineStyle?.styleLess).toContain("text-align: center");
+
+      // Button should have display: inline-block to respond to text-align
+      const btnStyle = result.payload.styles.find(s => s.name === "cta-btn");
+      expect(btnStyle).toBeDefined();
+      expect(btnStyle?.styleLess).toContain("display: inline-block");
     });
   });
 });

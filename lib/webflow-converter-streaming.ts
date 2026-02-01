@@ -185,17 +185,34 @@ function mergeResults(sections: SectionResult[]): WebflowPayload {
   const allNodes: WebflowNode[] = [];
   const allStyles: WebflowStyle[] = [];
   const seenStyleIds = new Set<string>();
+  const seenStyleNames = new Map<string, string>();
 
   // Collect nodes and dedupe styles
   for (const section of sections) {
-    allNodes.push(...section.nodes);
+    const idRemap = new Map<string, string>();
 
     for (const style of section.styles) {
+      const existingId = seenStyleNames.get(style.name);
+      if (existingId && existingId !== style._id) {
+        idRemap.set(style._id, existingId);
+        continue;
+      }
+      seenStyleNames.set(style.name, style._id);
       if (!seenStyleIds.has(style._id)) {
         seenStyleIds.add(style._id);
         allStyles.push(style);
       }
     }
+
+    if (idRemap.size > 0) {
+      for (const node of section.nodes) {
+        if (Array.isArray(node.classes) && node.classes.length > 0) {
+          node.classes = node.classes.map((cls) => idRemap.get(cls) ?? cls);
+        }
+      }
+    }
+
+    allNodes.push(...section.nodes);
   }
 
   return {

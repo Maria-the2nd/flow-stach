@@ -1,0 +1,11 @@
+{
+  "name": "Flow Bridge Bento Layout",
+  "entryType": "single_html",
+  "paths": {
+    "html": "flow-bridge-bento.html"
+  },
+  "expectations": {
+    "maxDiffRatio": 0.05
+  },
+  "tags": ["bento", "grid"]
+}

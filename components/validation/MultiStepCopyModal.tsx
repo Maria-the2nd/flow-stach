@@ -212,7 +212,7 @@ export function MultiStepCopyModal({ open, onOpenChange, payload, assetTitle }: 
               <Separator />
               <div className="space-y-3">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs font-mono bg-blue-500 text-white px-2 py-1 rounded">
+                  <span className="text-xs font-mono bg-primary text-primary-foreground px-2 py-1 rounded">
                     STEP {hasDesignTokens && hasCSSEmbed ? "4" : hasDesignTokens || hasCSSEmbed ? "3" : "2"}
                   </span>
                   <h3 className="font-semibold">JavaScript Embed (Required for Interactions)</h3>

@@ -57,11 +57,11 @@ When you paste HTML/CSS into Webflow, you face several challenges:
 
 ### The Solution
 
-Flow Bridge uses a **multi-step conversion approach** that:
+Flow Bridge converts a **single HTML file** into a Webflow-pasteable payload:
 
-1. **Extracts Design Tokens** → Creates reusable styles in Webflow (Style Guide)
-2. **Generates Clean Structure** → Provides editable HTML that references those styles
-3. **Separates Incompatible Code** → Puts complex CSS/JS in Custom Code embeds
+1. **Single Hidden Div Output** → A `<div>` with class `delete-me` (display: none) containing all styles
+2. **Paste & Delete** → Copy to Webflow, paste, then delete the hidden wrapper div
+3. **CSS/JS Embeds** → Complex CSS/JS that can't be native go to the Embeds tab
 
 **Result:** You can import AI-generated HTML and **edit it in Webflow's UI** as if you built it natively.
 
@@ -69,34 +69,28 @@ Flow Bridge uses a **multi-step conversion approach** that:
 
 ## Architecture Philosophy
 
-### Why Split Into Multiple Outputs?
+### Simplified Single-Output Model
 
-Flow Bridge doesn't just paste HTML into Webflow. It splits the import into three distinct outputs:
+Flow Bridge converts HTML into a **single Webflow-pasteable payload**:
 
-#### 1. **Style Guide (Design Tokens)**
-- **What:** Visual design system (colors, typography, spacing, radius, shadows)
-- **Why:** Webflow needs reusable styles defined first
-- **How:** Copied to Webflow, creates style classes that persist
-- **When:** Always copied FIRST
+#### 1. **Main Payload (Hidden Div)**
+- **What:** A hidden `<div>` (class: `delete-me`, display: none) containing all styles
+- **Why:** Webflow requires a single root node; the hidden wrapper establishes all class styles
+- **How:** Copy to Webflow clipboard, paste into canvas, delete the wrapper div
+- **When:** Single copy-paste operation
 
-#### 2. **Site Structure Payload**
-- **What:** HTML structure with base layout styles (flex, grid, positioning)
-- **Why:** Provides semantic, editable structure that references the Style Guide
-- **How:** Copied after Style Guide, inherits token-based styles
-- **When:** Copied SECOND (or use individual components)
-
-#### 3. **Custom Code Embeds**
-- **What:** CSS/JS that can't fit in Webflow's editor (animations, WebGL, complex selectors)
+#### 2. **CSS/JS Embeds (Optional)**
+- **What:** CSS/JS that can't be native Webflow styles (animations, pseudo-elements, complex selectors)
 - **Why:** Webflow has style limitations; this is the escape hatch
-- **How:** Pasted into Webflow's Custom Code panel or page settings
-- **When:** Copied LAST
+- **How:** Copy from Embeds tab, paste into Webflow's Custom Code panel
+- **When:** Only if your HTML uses advanced CSS/JS features
 
-### The Workflow Logic
+### The Workflow
 
 ```
-1. Style Guide → Creates reusable styles in Webflow
-2. Site Structure → References those styles, fully editable in UI
-3. Custom Code → Handles edge cases and advanced features
+1. Copy main payload → Paste into Webflow canvas
+2. Delete the "delete-me" wrapper div
+3. (Optional) Copy embeds → Paste into Custom Code panel
 ```
 
 This ensures the imported HTML is **not just static code**, but **editable Webflow structure**.
@@ -113,49 +107,30 @@ This ensures the imported HTML is **not just static code**, but **editable Webfl
 - Extract CSS, scripts, external libraries
 - Generate user-owned import project
 
-#### 2. Design Token Extraction
-- Automatically detect CSS custom properties (`--variable-name`)
-- Categorize into: Colors, Typography, Spacing, Radius, Shadows
-- Display in visual Style Guide UI (Relume-style)
-- Generate Webflow-compatible JSON payload
+#### 2. Webflow Payload Generation
+- Converts HTML structure to Webflow nodes
+- Converts CSS classes to Webflow styles
+- Creates a single hidden `<div>` (class: `delete-me`) as the root container
+- All styles are established via this hidden wrapper
 
-#### 3. Component Extraction
-- Split HTML into semantic sections
-- Generate Webflow JSON for each component
-- Store as reusable assets linked to the project
-- Enable individual component copy
-
-#### 4. Style Guide Export
-- Visual token display (color swatches, typography samples, etc.)
-- Individual token copy (click to copy hex values)
-- Category copy (copy all colors as CSS)
-- **Webflow Export** (one-click full style guide paste into Webflow)
-- Self-contained inline styles (won't conflict with project CSS)
-
-#### 5. Site Structure Payload
-- Full-page layout with base styles only (flex, grid, positioning)
-- Excludes colors/typography (already in Style Guide)
-- Excludes complex CSS (goes to Custom Code)
-- Copy-to-Webflow via clipboard
-
-#### 6. Custom Code Embeds
+#### 3. Custom Code Embeds
 - Extract external script URLs (Google Fonts, GSAP, etc.)
 - Store inline JavaScript
 - Provide CSS embeds for incompatible styles
 - Copy-ready format for Webflow's Custom Code panel
 
-#### 7. User Authentication & Ownership
+#### 4. User Authentication & Ownership
 - Clerk-based authentication
 - User-scoped projects (`userId` ownership)
 - Private workspace for managing imports
 
-#### 8. Clipboard System
+#### 5. Clipboard System
 - Webflow-compatible JSON copy
 - Chrome extension integration (optional)
 - Preflight validation & sanitization
 - Fallback copy methods
 
-#### 9. BEM Class Renaming
+#### 6. BEM Class Renaming
 - Automatic namespacing of all classes with project slug
 - High-risk generic names neutralized (container, hero, section, etc.)
 - Design token classes preserved (never renamed)
@@ -248,9 +223,9 @@ This ensures the imported HTML is **not just static code**, but **editable Webfl
    - **Embeds Tab:** CSS/JS code, external libraries
 
 4. **Copy to Webflow**
-   - **Step 1:** Click "Copy Style Guide to Webflow" → Paste in Webflow (creates styles)
-   - **Step 2:** Copy Embeds (CSS/JS) → Paste in Webflow Custom Code
-   - **Step 3:** Copy Site Structure or individual components → Paste in Webflow canvas
+   - **Step 1:** Click "Copy to Webflow" → Paste in Webflow canvas
+   - **Step 2:** Delete the hidden `delete-me` wrapper div
+   - **Step 3:** (Optional) Copy Embeds (CSS/JS) → Paste in Webflow Custom Code
 
 5. **Edit in Webflow**
    - Structure is now editable in Webflow's UI
@@ -261,16 +236,16 @@ This ensures the imported HTML is **not just static code**, but **editable Webfl
 
 1. Sign in → `/workspace/projects`
 2. See list of imported projects with thumbnails
-3. Open project → Copy Style Guide → Embeds → Components
+3. Open project → Copy to Webflow → Delete wrapper → (optional) Copy Embeds
 4. Paste into Webflow as needed
 
-### Workflow 3: Style Guide Documentation
+### Workflow 3: Design System Import
 
 1. Import design system HTML
-2. Navigate to Style Guide tab
-3. Click "Copy Style Guide to Webflow"
-4. Paste into new Webflow page
-5. Share with team as visual reference
+2. Navigate to Site tab
+3. Click "Copy to Webflow"
+4. Paste into new Webflow page, delete wrapper
+5. Edit styles in Webflow as needed
 
 ---
 
@@ -476,67 +451,36 @@ User
 
 ---
 
-## The Three-Output System
+## The Output System
 
-### Output 1: Style Guide (Design Tokens)
-
-**What It Contains:**
-- Colors (CSS variables → Webflow color styles)
-- Typography (font families, sizes, weights)
-- Spacing (margins, padding, gaps)
-- Border Radius (corner rounding)
-- Shadows (elevation effects)
-- UI Component Examples (buttons, cards, inputs)
-
-**How It Works:**
-- Generates Webflow JSON with style definitions
-- Uses 100% self-contained inline styles
-- Won't conflict with project CSS
-- Creates reusable style classes in Webflow
-
-**When to Use:**
-- **Always copy FIRST** (before components)
-- Creates foundation styles that components reference
-
-**File Location:**
-- `components/project/style-guide/StyleGuideView.tsx`
-- `lib/webflow-style-guide-generator.ts`
-
-### Output 2: Site Structure Payload
+### Main Output: Webflow Payload (Hidden Div)
 
 **What It Contains:**
-- Full HTML structure
-- Base layout styles ONLY:
-  - `display` (flex, grid, block)
-  - `position` (relative, absolute)
-  - `flex` properties (justify, align, direction)
-  - `grid` properties (template, gap)
-  - `width`, `height`, `padding`, `margin`
-- **Excludes:** Colors, typography, shadows (already in Style Guide)
-- **Excludes:** Complex CSS (goes to Custom Code)
+- A hidden `<div>` with class `delete-me` (display: none)
+- All CSS classes converted to Webflow styles
+- Full HTML structure as Webflow nodes
 
 **How It Works:**
-- References Style Guide classes
-- Generates semantic Webflow structure
-- Editable in Webflow's visual UI
+- Single copy-paste operation
+- The hidden wrapper establishes all styles in Webflow
+- After pasting, delete the wrapper div to reveal clean structure
+- All styles remain in Webflow's style panel
 
 **When to Use:**
-- Copy AFTER Style Guide
-- Use for full-page imports
-- Alternative: Copy individual components instead
+- Single-step import of any HTML file
+- Styles become editable in Webflow's visual UI
 
 **File Location:**
-- Generated on-demand in project detail view
 - `lib/webflow-converter.ts`
 
-### Output 3: Custom Code Embeds
+### Optional: CSS/JS Embeds
 
 **What It Contains:**
-- **CSS Embeds:** Styles that can't fit in Webflow's editor
+- **CSS Embeds:** Styles that can't be native Webflow
   - Complex selectors (`:nth-child`, `:has()`)
   - Animations (`@keyframes`, `transform`)
   - Pseudo-elements (`:before`, `:after`)
-  - Media queries (responsive overrides)
+  - CSS variables (`:root`)
 - **JavaScript Embeds:** Inline scripts
   - DOM manipulation
   - Event listeners
@@ -544,16 +488,14 @@ User
 - **External Libraries:** Script URLs
   - Google Fonts
   - GSAP, Three.js, etc.
-  - Analytics scripts
 
 **How It Works:**
+- Copy from the Embeds tab
 - Paste into Webflow's Custom Code panel
-- Or add to Page Settings → Custom Code
-- Or add external libraries to Project Settings
 
 **When to Use:**
-- Copy LAST (after Style Guide + Structure)
-- Handles edge cases Webflow can't support natively
+- Only if your HTML uses advanced CSS/JS features
+- Most simple HTML imports won't need embeds
 
 **File Location:**
 - `components/project/EmbedsTab.tsx`

@@ -1,24 +1,28 @@
 
 "use client";
 import Link from 'next/link';
+import { FlowPartyLogo } from './FlowPartyLogo';
 import { usePathname } from 'next/navigation';
 import { User } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 
 export function UserNav() {
     const pathname = usePathname();
 
     const navItems = [
         { label: 'Workspace', href: '/workspace/projects', activePrefix: '/workspace' },
-        { label: 'Import', href: '/workspace/import', activePrefix: '/workspace/import' },
         { label: 'Explore', href: '/explore', activePrefix: 'NONE' },
     ];
 
     return (
-        <nav className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6 sticky top-0 z-40 shadow-sm">
-            <div className="flex items-center gap-8">
-                <Link href="/workspace/projects" className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm">B</div>
-                    <span className="font-bold text-slate-900 text-lg tracking-tight">FLOW BRIDGE</span>
+        <nav className="h-16 border-b border-border/50 bg-card/60 backdrop-blur-xl flex items-center justify-between px-6 sticky top-0 z-40 shadow-lg shadow-background/50">
+            <div className="flex items-center gap-6">
+                <Link href="/" className="flex items-center px-2">
+                    <FlowPartyLogo
+                        className="text-primary dark:text-white"
+                        width={130}
+                        height={30}
+                    />
                 </Link>
                 <div className="flex items-center gap-1">
                     {navItems.map(item => {
@@ -27,9 +31,9 @@ export function UserNav() {
                             <Link
                                 key={item.label}
                                 href={item.href}
-                                className={`text-sm font-medium transition-all px-3 py-1.5 rounded-md ${active
-                                    ? 'text-slate-900 bg-slate-100'
-                                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                                className={`text-sm font-black transition-all px-4 py-2 rounded-xl uppercase tracking-widest text-[10px] ${active
+                                    ? 'text-primary bg-primary/10 shadow-sm ring-1 ring-primary/20'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                                     }`}
                             >
                                 {item.label}
@@ -38,10 +42,11 @@ export function UserNav() {
                     })}
                 </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 px-2">
+                <ThemeToggle />
                 <Link href="/account">
-                    <div className={`flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${pathname.startsWith('/account') ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}>
-                        <User className="w-4 h-4" />
+                    <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all ${pathname.startsWith('/account') ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'}`}>
+                        <User className="w-3.5 h-3.5" />
                         <span>Account</span>
                     </div>
                 </Link>

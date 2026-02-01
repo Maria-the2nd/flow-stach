@@ -410,6 +410,7 @@ export const importProject = mutation({
       name: v.string(),
       source: v.string(),
       url: v.optional(v.string()),
+      weights: v.optional(v.array(v.number())),  // [400, 500, 700] for Webflow installation
       status: v.string(),
       warning: v.optional(v.boolean()),
       installationGuide: v.string(),
@@ -593,6 +594,45 @@ export const importProject = mutation({
       .withIndex("by_slug", (q) => q.eq("slug", templateSlug))
       .unique()
 
+    // 3a. CRITICAL: Clean up ALL existing assets for this template before creating new ones
+    // This ensures no stale data remains from previous imports
+    if (existingTemplate) {
+      const existingAssets = await ctx.db
+        .query("assets")
+        .withIndex("by_template", (q) => q.eq("templateId", existingTemplate._id))
+        .collect()
+
+      for (const asset of existingAssets) {
+        // Delete asset's payload
+        const payload = await ctx.db
+          .query("payloads")
+          .withIndex("by_asset_id", (q) => q.eq("assetId", asset._id))
+          .first()
+        if (payload) {
+          await ctx.db.delete(payload._id)
+        }
+
+        // Delete asset's favorites
+        const favorites = await ctx.db
+          .query("favorites")
+          .withIndex("by_asset", (q) => q.eq("assetId", asset._id))
+          .collect()
+        for (const fav of favorites) {
+          await ctx.db.delete(fav._id)
+        }
+
+        // Delete asset thumbnail from storage
+        if (asset.thumbnailStorageId) {
+          await ctx.storage.delete(asset.thumbnailStorageId)
+        }
+
+        // Delete the asset
+        await ctx.db.delete(asset._id)
+      }
+
+      results.validationWarnings.push(`Cleaned up ${existingAssets.length} existing assets before re-import`)
+    }
+
     const templateId = existingTemplate
       ? existingTemplate._id
       : await ctx.db.insert("templates", {
@@ -602,45 +642,43 @@ export const importProject = mutation({
         updatedAt: now,
       })
 
+    // 4. Create token asset (always fresh - delete existing first)
     if (args.tokenWebflowJson) {
       const tokenSlug = `${args.projectSlug}-tokens`
+
+      // Delete existing token asset and its payload (ensures fresh data)
       const existingTokenAsset = await ctx.db
         .query("assets")
         .withIndex("by_slug", (q) => q.eq("slug", tokenSlug))
         .unique()
 
       if (existingTokenAsset) {
-        await ctx.db.patch(existingTokenAsset._id, {
-          title: `${args.projectName} - Tokens`,
-          status: "published",
-          pasteReliability: "full",
-          capabilityNotes: "CSS styles as Webflow classes. Paste FIRST before components.",
-          updatedAt: now,
-        })
-
+        // Delete payload first
         const existingPayload = await ctx.db
           .query("payloads")
           .withIndex("by_asset_id", (q) => q.eq("assetId", existingTokenAsset._id))
-          .unique()
-
+          .first()
         if (existingPayload) {
-          // CRITICAL: Validate and sanitize webflowJson before storing
-          const tokenJsonResult = safeWebflowJson(args.tokenWebflowJson);
-          if (tokenJsonResult.warnings.length > 0) {
-            results.validationWarnings.push(`Token payload: ${tokenJsonResult.warnings.join(", ")}`);
-          }
-
-          await ctx.db.patch(existingPayload._id, {
-            webflowJson: tokenJsonResult.json,
-            codePayload: args.artifacts.tokensJson
-              ? `/* TOKEN MANIFEST */\n${args.artifacts.tokensJson}`
-              : `/* CSS */\n${args.artifacts.stylesCss}`,
-            updatedAt: now,
-          })
-          results.payloadsUpdated++
+          await ctx.db.delete(existingPayload._id)
         }
-        results.assetsUpdated++
-      } else {
+        // Delete favorites
+        const favorites = await ctx.db
+          .query("favorites")
+          .withIndex("by_asset", (q) => q.eq("assetId", existingTokenAsset._id))
+          .collect()
+        for (const fav of favorites) {
+          await ctx.db.delete(fav._id)
+        }
+        // Delete thumbnail
+        if (existingTokenAsset.thumbnailStorageId) {
+          await ctx.storage.delete(existingTokenAsset.thumbnailStorageId)
+        }
+        // Delete the asset
+        await ctx.db.delete(existingTokenAsset._id)
+      }
+
+      // Create fresh token asset
+      {
         const tokenAssetId = await ctx.db.insert("assets", {
           slug: tokenSlug,
           title: `${args.projectName} - Tokens`,
@@ -679,13 +717,39 @@ export const importProject = mutation({
       }
     }
 
-    // 5. Create component assets
+    // 5. Create component assets (always fresh - delete existing first)
     for (const component of args.components) {
       try {
+        // Delete any existing asset with this slug (ensures fresh data)
         const existingAsset = await ctx.db
           .query("assets")
           .withIndex("by_slug", (q) => q.eq("slug", component.slug))
           .unique()
+
+        if (existingAsset) {
+          // Delete payload first
+          const existingPayload = await ctx.db
+            .query("payloads")
+            .withIndex("by_asset_id", (q) => q.eq("assetId", existingAsset._id))
+            .first()
+          if (existingPayload) {
+            await ctx.db.delete(existingPayload._id)
+          }
+          // Delete favorites
+          const favorites = await ctx.db
+            .query("favorites")
+            .withIndex("by_asset", (q) => q.eq("assetId", existingAsset._id))
+            .collect()
+          for (const fav of favorites) {
+            await ctx.db.delete(fav._id)
+          }
+          // Delete thumbnail
+          if (existingAsset.thumbnailStorageId) {
+            await ctx.storage.delete(existingAsset.thumbnailStorageId)
+          }
+          // Delete the asset
+          await ctx.db.delete(existingAsset._id)
+        }
 
         const hasWebflowJson = !!component.webflowJson
         const pasteReliability = hasWebflowJson ? "full" : "partial"
@@ -693,45 +757,23 @@ export const importProject = mutation({
           ? "Webflow JSON ready. Paste AFTER tokens."
           : "Component ready. Some styles may need manual adjustment."
 
-        let assetId: Id<"assets">
-
-        if (existingAsset) {
-          await ctx.db.patch(existingAsset._id, {
-            title: component.name,
-            category: component.category,
-            tags: component.tags,
-            templateId,
-            status: "published",
-            pasteReliability,
-            capabilityNotes,
-            updatedAt: now,
-          })
-          assetId = existingAsset._id
-          results.assetsUpdated++
-        } else {
-          assetId = await ctx.db.insert("assets", {
-            slug: component.slug,
-            title: component.name,
-            category: component.category,
-            description: `${component.name} component`,
-            tags: component.tags,
-            templateId,
-            isNew: true,
-            status: "published",
-            pasteReliability,
-            capabilityNotes,
-            supportsCodeCopy: true,
-            createdAt: now,
-            updatedAt: now,
-          })
-          results.assetsCreated++
-        }
-
-        // Create/update payload
-        const existingPayload = await ctx.db
-          .query("payloads")
-          .withIndex("by_asset_id", (q) => q.eq("assetId", assetId))
-          .unique()
+        // Always create fresh asset
+        const assetId = await ctx.db.insert("assets", {
+          slug: component.slug,
+          title: component.name,
+          category: component.category,
+          description: `${component.name} component`,
+          tags: component.tags,
+          templateId,
+          isNew: true,
+          status: "published",
+          pasteReliability,
+          capabilityNotes,
+          supportsCodeCopy: true,
+          createdAt: now,
+          updatedAt: now,
+        })
+        results.assetsCreated++
 
         const tokenDep = args.tokenWebflowJson ? [`${args.projectSlug}-tokens`] : []
 
@@ -741,25 +783,16 @@ export const importProject = mutation({
           results.validationWarnings.push(`${component.name}: ${componentJsonResult.warnings.join(", ")}`);
         }
 
-        if (existingPayload) {
-          await ctx.db.patch(existingPayload._id, {
-            webflowJson: componentJsonResult.json,
-            codePayload: component.codePayload,
-            dependencies: tokenDep,
-            updatedAt: now,
-          })
-          results.payloadsUpdated++
-        } else {
-          await ctx.db.insert("payloads", {
-            assetId,
-            webflowJson: componentJsonResult.json,
-            codePayload: component.codePayload,
-            dependencies: tokenDep,
-            createdAt: now,
-            updatedAt: now,
-          })
-          results.payloadsCreated++
-        }
+        // Always create fresh payload
+        await ctx.db.insert("payloads", {
+          assetId,
+          webflowJson: componentJsonResult.json,
+          codePayload: component.codePayload,
+          dependencies: tokenDep,
+          createdAt: now,
+          updatedAt: now,
+        })
+        results.payloadsCreated++
       } catch (error) {
         results.errors.push(`Failed to create ${component.name}: ${error}`)
       }

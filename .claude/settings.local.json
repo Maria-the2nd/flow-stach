@@ -13,7 +13,26 @@
       "Bash(node -e:*)",
       "Bash(grep:*)",
       "Bash(npx convex:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: simplify HTML to Webflow pipeline\n\n- Remove Style Guide \\(Design Tokens\\) feature from UI\n- Remove Extracted Components list from Site tab\n- Keep only Site Structure Payload for Webflow conversion\n- Add editable site description field to Overview tab\n- Update project cards to remove component count display\n- Add \"delete-me\" wrapper with display:none for style-seeding\n\nBREAKING: Style Guide tab and components extraction UI removed.\nSite Structure functionality preserved.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git merge:*)",
+      "Bash(bun run test:*)",
+      "Bash(npx tsx:*)",
+      "Bash(bun test:*)",
+      "Bash(bun run:*)",
+      "WebFetch(domain:webflow.com)",
+      "Bash(npx vitest:*)",
+      "Bash(tree:*)",
+      "Bash(git init:*)",
+      "Bash(git config:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(for:*)",
+      "Bash(done)"
     ]
   }
 }

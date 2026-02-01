@@ -45,6 +45,7 @@ export function literalizeCssForWebflow(
   }));
 
   const literalCss = serializeCss(baseRules, mediaBlocks);
+
   const remainingVarCount = (literalCss.match(/var\(\s*--/g) || []).length;
   if (remainingVarCount > 0) {
     warnings.push(`Remaining CSS variables in final CSS: ${remainingVarCount}`);

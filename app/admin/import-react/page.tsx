@@ -59,7 +59,7 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm',
               index < currentIndex && 'bg-green-500/20 text-green-400',
-              index === currentIndex && 'bg-blue-500/20 text-blue-400',
+              index === currentIndex && 'bg-primary/20 text-primary',
               index > currentIndex && 'bg-neutral-800 text-neutral-500'
             )}
           >
@@ -280,7 +280,7 @@ export default function Hero() {
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
                 mainCode.trim()
-                  ? 'bg-blue-600 hover:bg-blue-500'
+                  ? 'bg-primary hover:opacity-90'
                   : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
               )}
             >
@@ -416,7 +416,7 @@ export default function Hero() {
 
               <button
                 onClick={handleConvert}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium"
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:opacity-90 rounded-lg text-sm font-medium"
               >
                 Convert to HTML
                 <HugeiconsIcon icon={ArrowRight01Icon} size={16} />

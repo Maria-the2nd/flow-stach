@@ -33,6 +33,15 @@ export class StyleIdMap {
   private nameToId: Map<string, string> = new Map();
 
   /**
+   * Check if a class name is a reserved Webflow system class.
+   * Reserved classes (w-*, wf-*) are handled internally by Webflow
+   * and should NOT get custom UUIDs in our styles array.
+   */
+  private isReservedClass(className: string): boolean {
+    return className.startsWith('w-') || className.startsWith('wf-');
+  }
+
+  /**
    * Get the UUID for a class name, creating one if it doesn't exist.
    */
   getOrCreate(className: string): string {
@@ -53,9 +62,18 @@ export class StyleIdMap {
 
   /**
    * Convert an array of class names to an array of style UUIDs.
+   *
+   * IMPORTANT: Reserved Webflow classes (w-*, wf-*) are filtered out.
+   * These are system classes that Webflow handles internally and should
+   * NOT appear in node.classes as UUIDs - they're referenced by name only.
+   *
+   * Without this filter, we'd create orphan UUIDs (UUIDs with no matching
+   * style._id), which causes Webflow paste to fail.
    */
   classNamesToIds(classNames: string[]): string[] {
-    return classNames.map(name => this.getOrCreate(name));
+    return classNames
+      .filter(name => !this.isReservedClass(name))
+      .map(name => this.getOrCreate(name));
   }
 
   /**
@@ -139,10 +157,13 @@ export interface CssWarning {
     | "variable_unresolved"
     | "breakpoint_unmapped"
     | "breakpoint_rounded"
-    | "breakpoint_embedded";
+    | "breakpoint_embedded"
+    | "stripped_property";
   message: string;
   selector?: string;
   property?: string;
+  value?: string;
+  reason?: "STRIP_PROPERTIES" | "unsupported" | "sanitized";
   severity?: "info" | "warning" | "error";
 }
 
@@ -153,6 +174,8 @@ export interface ParsedCssResult {
   cssVariables: Map<string, string>;
   /** Typography styles extracted from element selectors (body, h1-h6, p, a) */
   elementTypography: ElementTypographyMap;
+  /** @keyframes blocks extracted for embed CSS (Webflow doesn't support native keyframes) */
+  keyframes: string;
 }
 
 /**
@@ -194,6 +217,11 @@ export const ELEMENT_TO_CLASS_MAP: Record<string, string> = {
   h6: "heading-h6",
   p: "text-body",
   a: "link",
+  // List elements (BEM combo class support)
+  ul: "list-ul",
+  ol: "list-ol",
+  li: "list-item",
+  blockquote: "blockquote",
   // Structural elements (for spacing preservation)
   section: "wf-section",
   nav: "wf-nav",
@@ -278,6 +306,7 @@ const WEBFLOW_SUPPORTED_PROPERTIES = new Set([
   "opacity", "box-shadow", "filter", "backdrop-filter", "mix-blend-mode",
   "overflow", "overflow-x", "overflow-y",
   "transform", "transform-origin",
+  "transition", "transition-property", "transition-duration", "transition-timing-function", "transition-delay",
   "visibility", "cursor", "pointer-events", "user-select",
   "list-style", "list-style-type", "list-style-position",
   "object-fit", "object-position",
@@ -285,7 +314,6 @@ const WEBFLOW_SUPPORTED_PROPERTIES = new Set([
 ]);
 
 const STRIP_PROPERTIES = new Set([
-  "transition", "transition-property", "transition-duration", "transition-timing-function", "transition-delay",
   "animation", "animation-name", "animation-duration", "animation-timing-function",
   "-webkit-transition", "-webkit-animation", "-moz-transition", "-moz-animation",
   "-webkit-font-smoothing", "-moz-osx-font-smoothing",
@@ -699,7 +727,120 @@ function expandBorderShorthand(value: string): Record<string, string> {
   return result;
 }
 
-function parseProperties(propertiesStr: string, variables: Map<string, string>, warnings: CssWarning[]): Record<string, string> {
+/**
+ * Expand transition shorthand into explicit properties.
+ * Handles: transition: [property] [duration] [timing-function] [delay]
+ *
+ * Examples:
+ * - "all 200ms ease" -> { property: "all", duration: "200ms", timing-function: "ease" }
+ * - "transform 0.3s ease-in-out 50ms" -> all 4 properties
+ *
+ * Replaces "all" with "transform, opacity" (Webflow-safe default).
+ */
+function expandTransitionShorthand(value: string): Record<string, string> {
+  const trimmed = value.trim().replace(/\s+/g, " ");
+  if (!trimmed || trimmed === "none") {
+    return {
+      "transition-property": "none",
+      "transition-duration": "0s",
+      "transition-timing-function": "ease",
+      "transition-delay": "0s",
+    };
+  }
+
+  // Parse comma-separated transitions (e.g., "opacity 0.3s, transform 0.5s")
+  // For now, we'll take the first one as Webflow typically handles single transitions
+  // IMPORTANT: Don't split on commas inside parentheses (cubic-bezier, steps, etc.)
+  const transitions: string[] = [];
+  let current = "";
+  let parenDepth = 0;
+  for (const char of trimmed) {
+    if (char === "(") parenDepth++;
+    else if (char === ")") parenDepth--;
+    if (char === "," && parenDepth === 0) {
+      if (current.trim()) transitions.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) transitions.push(current.trim());
+
+  const firstTransition = transitions[0] || trimmed;
+
+  // Split by space, but respect parentheses (don't split inside cubic-bezier(), steps())
+  const parts: string[] = [];
+  let partCurrent = "";
+  let partParenDepth = 0;
+  for (const char of firstTransition) {
+    if (char === "(") partParenDepth++;
+    else if (char === ")") partParenDepth--;
+    if (char === " " && partParenDepth === 0) {
+      if (partCurrent.trim()) parts.push(partCurrent.trim());
+      partCurrent = "";
+    } else {
+      partCurrent += char;
+    }
+  }
+  if (partCurrent.trim()) parts.push(partCurrent.trim());
+
+  if (parts.length === 0) return {};
+
+  // Common timing functions
+  const timingFunctions = new Set([
+    "linear", "ease", "ease-in", "ease-out", "ease-in-out",
+    "step-start", "step-end", "steps", "cubic-bezier"
+  ]);
+
+  let property: string | undefined;
+  let duration: string | undefined;
+  let timingFunction: string | undefined;
+  let delay: string | undefined;
+
+  // Parse parts
+  for (const part of parts) {
+    // Check if it's a duration or delay (has time unit: s, ms)
+    if (/^\d+(\.\d+)?(m?s)$/.test(part)) {
+      if (!duration) {
+        duration = part;
+      } else if (!delay) {
+        delay = part;
+      }
+      continue;
+    }
+
+    // Check if it's a timing function
+    if (timingFunctions.has(part) || part.startsWith("cubic-bezier(") || part.startsWith("steps(")) {
+      if (!timingFunction) timingFunction = part;
+      continue;
+    }
+
+    // Otherwise, treat as property name
+    if (!property) property = part;
+  }
+
+  const result: Record<string, string> = {};
+
+  // Replace "all" with "transform, opacity" (Webflow-safe default)
+  if (property) {
+    result["transition-property"] = property === "all" ? "transform, opacity" : property;
+  } else {
+    result["transition-property"] = "transform, opacity";
+  }
+
+  if (duration) result["transition-duration"] = duration;
+  if (timingFunction) result["transition-timing-function"] = timingFunction;
+  if (delay) result["transition-delay"] = delay;
+
+  return result;
+}
+
+function parseProperties(
+  propertiesStr: string,
+  variables: Map<string, string>,
+  warnings: CssWarning[],
+  selector?: string
+): Record<string, string> {
   const result: Record<string, string> = {};
   const properties: string[] = [];
   let current = "";
@@ -724,7 +865,19 @@ function parseProperties(propertiesStr: string, variables: Map<string, string>, 
     const name = prop.substring(0, colonIndex).trim().toLowerCase();
     let value = prop.substring(colonIndex + 1).trim().replace(/\s*!important\s*$/i, "");
 
-    if (STRIP_PROPERTIES.has(name)) continue;
+    // Emit warning for stripped properties
+    if (STRIP_PROPERTIES.has(name)) {
+      warnings.push({
+        type: "stripped_property",
+        message: `Property "${name}" is not supported by Webflow and has been stripped`,
+        selector,
+        property: name,
+        value,
+        reason: "STRIP_PROPERTIES",
+        severity: "warning",
+      });
+      continue;
+    }
 
     const { resolved, hasUnresolved } = resolveCssVariables(value, variables, 5, name);
     if (hasUnresolved) {
@@ -754,8 +907,27 @@ function parseProperties(propertiesStr: string, variables: Map<string, string>, 
       continue;
     }
 
+    // Expand transition shorthand into explicit props (Webflow natively supports transitions)
+    if (name === "transition") {
+      const expanded = expandTransitionShorthand(value);
+      if (Object.keys(expanded).length > 0) {
+        Object.assign(result, expanded);
+      } else {
+        warnings.push({ type: "unsupported_property", message: `Unparsed transition shorthand: ${value}`, property: name });
+      }
+      continue;
+    }
+
     if (!WEBFLOW_SUPPORTED_PROPERTIES.has(name) && !SHORTHAND_EXPANSIONS[name]) {
-      warnings.push({ type: "unsupported_property", message: `Unsupported CSS property: ${name}`, property: name });
+      warnings.push({
+        type: "unsupported_property",
+        message: `Unsupported CSS property: ${name}`,
+        selector,
+        property: name,
+        value,
+        reason: "unsupported",
+        severity: "warning",
+      });
       continue;
     }
 
@@ -1134,7 +1306,7 @@ function processRule(
     });
   }
 
-  const properties = parseProperties(propertiesStr, variables, warnings);
+  const properties = parseProperties(propertiesStr, variables, warnings, selector);
   const styleLess = propertiesToStyleLess(properties);
   if (!styleLess) return;
 
@@ -1266,6 +1438,41 @@ function extractMediaBlocks(css: string): Array<{ query: string; content: string
   return results;
 }
 
+/**
+ * Extract @keyframes blocks using proper brace matching.
+ * @keyframes have nested braces which break the simple rule regex.
+ * Returns array of { name, content, fullMatch } for each @keyframes block.
+ */
+function extractKeyframeBlocks(css: string): Array<{ name: string; content: string; fullMatch: string }> {
+  const results: Array<{ name: string; content: string; fullMatch: string }> = [];
+  // Match both @keyframes and @-webkit-keyframes
+  const keyframeStartRegex = /@(-webkit-)?keyframes\s+([\w-]+)\s*\{/g;
+  let match;
+
+  while ((match = keyframeStartRegex.exec(css)) !== null) {
+    const name = match[2];
+    const startIndex = match.index;
+    const openBraceIndex = match.index + match[0].length - 1;
+
+    // Find the matching closing brace using brace counting
+    let braceCount = 1;
+    let i = openBraceIndex + 1;
+    while (i < css.length && braceCount > 0) {
+      if (css[i] === "{") braceCount++;
+      else if (css[i] === "}") braceCount--;
+      i++;
+    }
+
+    if (braceCount === 0) {
+      const content = css.slice(openBraceIndex + 1, i - 1);
+      const fullMatch = css.slice(startIndex, i);
+      results.push({ name, content, fullMatch });
+    }
+  }
+
+  return results;
+}
+
 export function parseCSS(css: string): ParsedCssResult {
   const warnings: CssWarning[] = [];
   const classes: Record<string, ClassIndexEntry> = {};
@@ -1291,6 +1498,13 @@ export function parseCSS(css: string): ParsedCssResult {
 
   // Remove all media blocks from CSS for base rule parsing (mobile-first base)
   for (const { fullMatch } of mediaBlocks) {
+    cssWithoutMedia = cssWithoutMedia.replace(fullMatch, "");
+  }
+
+  // Extract and remove @keyframes blocks (nested braces break the simple regex)
+  // These will be preserved for embed CSS output
+  const keyframeBlocks = extractKeyframeBlocks(cssWithoutMedia);
+  for (const { fullMatch } of keyframeBlocks) {
     cssWithoutMedia = cssWithoutMedia.replace(fullMatch, "");
   }
 
@@ -1328,6 +1542,19 @@ export function parseCSS(css: string): ParsedCssResult {
     const breakpointResult = detectBreakpoint(query);
     const minWidth = detectMinWidth(query);
 
+    // Route non-standard max-width breakpoints (>991px) to CSS embed
+    // These would otherwise overwrite desktop base styles, breaking layouts like bento grids
+    // that rely on specific desktop breakpoints (e.g., @media max-width: 1200px)
+    if (breakpointResult && !breakpointResult.isMinWidth && breakpointResult.name === 'desktop' && breakpointResult.originalWidth > 991) {
+      nonStandardMediaBlocks.push(fullMatch);
+      warnings.push({
+        type: "breakpoint_embedded",
+        message: `Max-width breakpoint ${breakpointResult.originalWidth}px exceeds Webflow's max (991px), moved to CSS embed`,
+        severity: "info",
+      });
+      continue;
+    }
+
     // Parse rules inside media query
     let ruleMatch;
     const innerRegex = /([^{}]+)\{([^{}]+)\}/g;
@@ -1351,7 +1578,7 @@ export function parseCSS(css: string): ParsedCssResult {
 
         if (breakpointResult.isMinWidth) {
           // Min-width query: either goes to UP breakpoint or promotes to base
-          const props = parseProperties(propertiesStr, variables, warnings);
+          const props = parseProperties(propertiesStr, variables, warnings, selectors);
           for (const sel of selectors.split(",")) {
             const parsed = parseSelector(sel.trim());
             if (!parsed.className) continue;
@@ -1387,7 +1614,7 @@ export function parseCSS(css: string): ParsedCssResult {
 
       // Fallback: use legacy minWidth detection for edge cases
       if (typeof minWidth === "number") {
-        const props = parseProperties(propertiesStr, variables, warnings);
+        const props = parseProperties(propertiesStr, variables, warnings, selectors);
         for (const sel of selectors.split(",")) {
           const parsed = parseSelector(sel.trim());
           if (!parsed.className) continue;
@@ -1432,6 +1659,9 @@ export function parseCSS(css: string): ParsedCssResult {
   // ============================================
   enforceExplicitLayoutProperties(classes, warnings);
 
+  // Combine all @keyframes blocks for embed CSS
+  const keyframesCss = keyframeBlocks.map(k => k.fullMatch).join("\n\n");
+
   return {
     classIndex: {
       classes,
@@ -1453,6 +1683,7 @@ export function parseCSS(css: string): ParsedCssResult {
     cleanCss,
     cssVariables: variables,
     elementTypography,
+    keyframes: keyframesCss,
   };
 }
 
@@ -1494,7 +1725,7 @@ function extractElementBaseStyles(
       
       if (!elementSelectors.includes(targetElement)) continue;
 
-      const properties = parseProperties(propertiesStr, variables, warnings);
+      const properties = parseProperties(propertiesStr, variables, warnings, selector);
       const styleLess = propertiesToStyleLess(properties);
       if (!styleLess) continue;
 

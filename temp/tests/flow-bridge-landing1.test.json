@@ -1,0 +1,11 @@
+{
+  "name": "Flow Bridge Landing v1",
+  "entryType": "single_html",
+  "paths": {
+    "html": "flow-bridge-landing1.html"
+  },
+  "expectations": {
+    "maxDiffRatio": 0.05
+  },
+  "tags": ["landing", "flowbridge"]
+}

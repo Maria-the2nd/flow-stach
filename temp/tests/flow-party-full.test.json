@@ -1,0 +1,11 @@
+{
+  "name": "Flow Party Full Landing",
+  "entryType": "single_html",
+  "paths": {
+    "html": "flow-party-full.html"
+  },
+  "expectations": {
+    "maxDiffRatio": 0.05
+  },
+  "tags": ["landing", "full-page"]
+}

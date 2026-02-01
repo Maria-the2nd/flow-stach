@@ -14,17 +14,17 @@ export function ExploreView() {
     return (
         <div className="max-w-7xl mx-auto px-6 py-12">
             <div className="text-center mb-16 space-y-4">
-                <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">
+                <h1 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight">
                     Explore the Supply
                 </h1>
-                <p className="text-lg text-slate-500 max-w-2xl mx-auto">
+                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                     Discover high-quality templates, components, and tools to accelerate your workflow.
                     Everything you need to build better, faster.
                 </p>
             </div>
 
             <div className="flex justify-center mb-12">
-                <div className="bg-slate-100 p-1.5 rounded-xl inline-flex gap-1 shadow-inner">
+                <div className="bg-accent/50 p-1.5 rounded-xl inline-flex gap-1 shadow-inner border border-border">
                     <TabButton
                         active={activeTab === 'templates'}
                         onClick={() => setActiveTab('templates')}
@@ -50,8 +50,8 @@ export function ExploreView() {
                 {activeTab === 'templates' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {PUBLIC_TEMPLATES.map((item) => (
-                            <div key={item.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden premium-card-hover flex flex-col h-full">
-                                <div className="aspect-video bg-slate-50 relative overflow-hidden">
+                            <div key={item.id} className="group bg-card rounded-2xl border border-white/20 ring-1 ring-white/10 overflow-hidden premium-card-hover flex flex-col h-full shadow-lg shadow-primary/5">
+                                <div className="aspect-video bg-accent/30 relative overflow-hidden">
                                     <Image
                                         src={item.image}
                                         alt={item.name}
@@ -60,15 +60,15 @@ export function ExploreView() {
                                         className="object-cover group-hover:scale-105 transition-transform duration-700"
                                         unoptimized
                                     />
-                                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-slate-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm tracking-wider uppercase">
+                                    <div className="absolute top-4 right-4 bg-card/90 backdrop-blur text-foreground px-3 py-1 rounded-full text-xs font-bold shadow-sm tracking-wider uppercase">
                                         {item.price}
                                     </div>
                                 </div>
                                 <div className="p-6 flex flex-col flex-grow">
-                                    <h3 className="text-lg font-bold text-slate-900 mb-2 leading-tight group-hover:text-blue-600 transition-colors">{item.name}</h3>
-                                    <p className="text-slate-500 text-sm mb-6 flex-grow leading-relaxed">{item.description}</p>
+                                    <h3 className="text-lg font-bold text-foreground mb-2 leading-tight group-hover:text-primary transition-colors">{item.name}</h3>
+                                    <p className="text-muted-foreground text-sm mb-6 flex-grow leading-relaxed">{item.description}</p>
                                     <Link href="/workspace/projects" className="mt-auto">
-                                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-200/50 premium-hover transition-all h-11 font-bold">
+                                        <Button className="w-full bg-primary hover:opacity-90 text-primary-foreground shadow-xl shadow-primary/20 premium-hover transition-all h-11 font-bold btn-premium">
                                             Add to Workspace <ArrowRight className="w-4 h-4 ml-2" />
                                         </Button>
                                     </Link>
@@ -81,8 +81,8 @@ export function ExploreView() {
                 {activeTab === 'components' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {PUBLIC_COMPONENTS.map((item) => (
-                            <div key={item.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden premium-card-hover flex flex-col h-full">
-                                <div className="aspect-video bg-slate-50 relative overflow-hidden">
+                            <div key={item.id} className="group bg-card rounded-2xl border border-white/20 ring-1 ring-white/10 overflow-hidden premium-card-hover flex flex-col h-full shadow-lg shadow-primary/5">
+                                <div className="aspect-video bg-accent/30 relative overflow-hidden">
                                     <Image
                                         src={item.image}
                                         alt={item.name}
@@ -91,15 +91,15 @@ export function ExploreView() {
                                         className="object-cover group-hover:scale-105 transition-transform duration-700"
                                         unoptimized
                                     />
-                                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-slate-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm tracking-wider uppercase">
+                                    <div className="absolute top-4 right-4 bg-card/90 backdrop-blur text-foreground px-3 py-1 rounded-full text-xs font-bold shadow-sm tracking-wider uppercase">
                                         {item.price}
                                     </div>
                                 </div>
                                 <div className="p-6 flex flex-col flex-grow">
-                                    <h3 className="text-lg font-bold text-slate-900 mb-2 leading-tight group-hover:text-blue-600 transition-colors">{item.name}</h3>
-                                    <p className="text-slate-500 text-sm mb-6 flex-grow leading-relaxed">{item.description}</p>
+                                    <h3 className="text-lg font-bold text-foreground mb-2 leading-tight group-hover:text-primary transition-colors">{item.name}</h3>
+                                    <p className="text-muted-foreground text-sm mb-6 flex-grow leading-relaxed">{item.description}</p>
                                     <Link href="/workspace/projects" className="mt-auto">
-                                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-200/50 premium-hover transition-all h-11 font-bold">
+                                        <Button className="w-full bg-primary hover:opacity-90 text-primary-foreground shadow-xl shadow-primary/20 premium-hover transition-all h-11 font-bold btn-premium">
                                             Add to Workspace <ArrowRight className="w-4 h-4 ml-2" />
                                         </Button>
                                     </Link>
@@ -112,18 +112,18 @@ export function ExploreView() {
                 {activeTab === 'tools' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                         {PUBLIC_TOOLS.map((item) => (
-                            <div key={item.id} className="group bg-white rounded-2xl border border-slate-200 p-8 premium-card-hover flex flex-col items-center text-center">
-                                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                            <div key={item.id} className="group bg-card rounded-2xl border border-white/20 ring-1 ring-white/10 p-8 premium-card-hover flex flex-col items-center text-center shadow-lg shadow-primary/5">
+                                <div className="w-16 h-16 bg-primary/5 text-primary rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                                     {item.icon === 'code' ? (
                                         <Wrench className="w-8 h-8" />
                                     ) : (
                                         <CodepenIcon className="w-8 h-8" />
                                     )}
                                 </div>
-                                <h3 className="text-2xl font-bold text-slate-900 mb-3">{item.name}</h3>
-                                <p className="text-slate-500 mb-8">{item.description}</p>
+                                <h3 className="text-2xl font-bold text-foreground mb-3">{item.name}</h3>
+                                <p className="text-muted-foreground mb-8">{item.description}</p>
                                 <Link href={`/workspace/import?source=${item.source}`} className="w-full">
-                                    <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-200/50 premium-hover font-bold px-12">
+                                    <Button size="lg" className="w-full bg-primary hover:opacity-90 text-primary-foreground shadow-xl shadow-primary/20 premium-hover font-bold px-12 btn-premium">
                                         Use Tool <ArrowRight className="w-4 h-4 ml-2" />
                                     </Button>
                                 </Link>
@@ -143,8 +143,8 @@ function TabButton({ active, onClick, icon, label }: { active: boolean, onClick:
             className={`
                 flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                 ${active
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                 }
             `}
         >

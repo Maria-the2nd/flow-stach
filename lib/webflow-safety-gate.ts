@@ -15,6 +15,7 @@ import { prepareHTMLForWebflow } from "./validation/html-sanitizer";
 import type { WebflowPayload, WebflowNode } from "./webflow-converter";
 import { chunkEmbed, type ChunkedEmbedResult } from "./embed-chunker";
 import { extractClassNamesFromCSS } from "./css-embed-router";
+import { ErrorIssueCodes } from "./validation-types";
 
 export const WEBFLOW_EMBED_CHAR_LIMIT = 50_000;
 export const WEBFLOW_EMBED_SOFT_LIMIT = 40_000;
@@ -411,10 +412,10 @@ function createPlaceholderStylesForMissingClasses(
   const referencedStyleIds = collectAllReferencedStyleIds(payload.payload.nodes);
 
   // Find any style UUIDs that don't have matching styles
-  // This should NOT happen if the converter is working correctly
   const missingStyleRefs: string[] = [];
   const embedOnlyClasses: string[] = [];
   const noStyleClasses: string[] = [];
+  const addedPlaceholders: string[] = [];
 
   for (const styleId of referencedStyleIds) {
     if (!existingStyleIds.has(styleId)) {
@@ -434,11 +435,49 @@ function createPlaceholderStylesForMissingClasses(
     }
   }
 
-  // We no longer create placeholder styles here - the converter handles this
-  // Just return the payload as-is with categorization info
+  // Create placeholder styles for missing style references
+  // This is a safety net - the converter should create these, but sometimes
+  // edge cases slip through (merged payloads, regenerated IDs, etc.)
+  if (missingStyleRefs.length > 0) {
+    const result = JSON.parse(JSON.stringify(payload)) as WebflowPayload;
+
+    for (const styleId of missingStyleRefs) {
+      // Skip Webflow reserved classes (shouldn't have UUIDs but just in case)
+      if (styleId.startsWith('w-') || styleId.startsWith('wf-')) {
+        continue;
+      }
+
+      // Use first 8 chars of UUID for a readable placeholder name
+      const shortId = styleId.slice(0, 8);
+      const placeholderName = `placeholder-${shortId}`;
+
+      result.payload.styles.push({
+        _id: styleId,
+        fake: false,
+        type: "class",
+        name: placeholderName,
+        namespace: "",
+        comb: "",
+        styleLess: "",  // Empty - actual styles may come from embed
+        variants: {},
+        children: [],
+      });
+
+      addedPlaceholders.push(placeholderName);
+    }
+
+    return {
+      fixedPayload: result,
+      addedPlaceholders,
+      embedOnlyClasses,
+      noStyleClasses,
+      missingStyleRefs,
+    };
+  }
+
   return {
     fixedPayload: payload,
-    addedPlaceholders: [],  // No longer adding placeholders here
+    addedPlaceholders: [],
     embedOnlyClasses,
     noStyleClasses,
     missingStyleRefs,
@@ -671,31 +710,34 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
   if (cssChunking) {
     if (cssChunking.wasChunked) {
       embedSizeWarnings.push(...cssChunking.instructions);
-      // Check if any chunk exceeds hard limit
-      const oversized = cssChunking.chunks.find(c => c.size > WEBFLOW_EMBED_CHAR_LIMIT);
-      if (oversized) {
-        embedSizeErrors.push(`CSS chunk ${oversized.index + 1} exceeds ${WEBFLOW_EMBED_CHAR_LIMIT} chars after chunking`);
-      }
+    }
+    // Check if any chunk exceeds hard limit
+    const oversized = cssChunking.chunks.find(c => c.size > WEBFLOW_EMBED_CHAR_LIMIT);
+    if (oversized) {
+      embedSizeErrors.push(`CSS embed chunk ${oversized.index + 1} exceeds ${WEBFLOW_EMBED_CHAR_LIMIT} chars after chunking`);
+    }
+    if (!oversized && cssChunking.chunks.length === 1 && finalCssEmbed.length > WEBFLOW_EMBED_CHAR_LIMIT) {
+      embedSizeErrors.push(`CSS embed chunk 1 exceeds ${WEBFLOW_EMBED_CHAR_LIMIT} chars after chunking`);
     }
   }
 
   if (jsChunking) {
     if (jsChunking.wasChunked) {
       embedSizeWarnings.push(...jsChunking.instructions);
-      const oversized = jsChunking.chunks.find(c => c.size > WEBFLOW_EMBED_CHAR_LIMIT);
-      if (oversized) {
-        embedSizeErrors.push(`JS chunk ${oversized.index + 1} exceeds ${WEBFLOW_EMBED_CHAR_LIMIT} chars after chunking`);
-      }
+    }
+    const oversized = jsChunking.chunks.find(c => c.size > WEBFLOW_EMBED_CHAR_LIMIT);
+    if (oversized) {
+      embedSizeErrors.push(`JS embed chunk ${oversized.index + 1} exceeds ${WEBFLOW_EMBED_CHAR_LIMIT} chars after chunking`);
     }
   }
 
   if (htmlChunking) {
     if (htmlChunking.wasChunked) {
       embedSizeWarnings.push(...htmlChunking.instructions);
-      const oversized = htmlChunking.chunks.find(c => c.size > WEBFLOW_EMBED_CHAR_LIMIT);
-      if (oversized) {
-        embedSizeErrors.push(`HTML chunk ${oversized.index + 1} exceeds ${WEBFLOW_EMBED_CHAR_LIMIT} chars after chunking`);
-      }
+    }
+    const oversized = htmlChunking.chunks.find(c => c.size > WEBFLOW_EMBED_CHAR_LIMIT);
+    if (oversized) {
+      embedSizeErrors.push(`HTML embed chunk ${oversized.index + 1} exceeds ${WEBFLOW_EMBED_CHAR_LIMIT} chars after chunking`);
     }
   }
 
@@ -739,7 +781,19 @@ export function ensureWebflowPasteSafety(input: WebflowSafetyGateInput): Webflow
     ...placeholderAutoFixes,
   ];
 
-  const blocked = fatalIssues.length > 0 || !finalPreflight.canProceed;
+  const preflightErrors = finalPreflight.issues.filter((issue) => issue.severity === "error");
+  const hasEmbedSizeError = preflightErrors.some(
+    (issue) => issue.code === ErrorIssueCodes.EMBED_SIZE_EXCEEDED
+  );
+  const hasNonEmbedErrors = preflightErrors.some(
+    (issue) => issue.code !== ErrorIssueCodes.EMBED_SIZE_EXCEEDED
+  );
+  const hasFatalIssues = finalPreflight.issues.some((issue) => issue.severity === "fatal");
+  const preflightCanProceed =
+    finalPreflight.canProceed ||
+    (hasEmbedSizeError && !hasNonEmbedErrors && !hasFatalIssues && embedSizeErrors.length === 0);
+
+  const blocked = fatalIssues.length > 0 || !preflightCanProceed;
   const status: WebflowSafetyReport["status"] = blocked
     ? "block"
     : warnings.length > 0 || autoFixes.length > 0

@@ -432,7 +432,7 @@ function generateBemName(params: {
   // Shared classes become BEM utilities (avoid cross-component collisions)
   if (isShared) {
     const utilityToken = selectRoleToken(className, existingParts.element, context) || "utility";
-    const element = `utility-${utilityToken}`;
+    const element = `utility-u-${utilityToken}`;
     const bemName = ensureUniqueBemName(
       enforceMaxBemLength(formatBEM(projectBlock, element), MAX_BEM_LENGTH),
       usedBemNames
@@ -451,7 +451,7 @@ function generateBemName(params: {
     : { element: undefined, modifier: undefined };
 
   // Determine block name
-  let block = projectBlock;
+  const block = projectBlock;
 
   // Determine element name (strict BEM: always include element)
   let element = inferred.element || existingParts.element;

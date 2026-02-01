@@ -1,0 +1,11 @@
+{
+  "name": "Flow Bridge All Outputs Test",
+  "entryType": "single_html",
+  "paths": {
+    "html": "flow-bridge-test-all-outputs.html"
+  },
+  "expectations": {
+    "maxDiffRatio": 0.05
+  },
+  "tags": ["test", "all-outputs"]
+}

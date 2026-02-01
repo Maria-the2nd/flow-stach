@@ -178,8 +178,16 @@ export const getProjectById = query({
       );
     }
 
+    let thumbnailUrl: string | null = null;
+    if (project.thumbnailStorageId) {
+      thumbnailUrl = await ctx.storage.getUrl(project.thumbnailStorageId);
+    }
+
     return {
-      project,
+      project: {
+        ...project,
+        thumbnailUrl,
+      },
       artifacts,
       components,
     };
@@ -535,6 +543,11 @@ export const deleteAllMyProjects = mutation({
           // Delete asset
           await ctx.db.delete(asset._id)
           deletedAssets++
+        }
+
+        // Delete template thumbnail from storage if exists
+        if (template.thumbnailStorageId) {
+          await ctx.storage.delete(template.thumbnailStorageId)
         }
 
         // Delete template

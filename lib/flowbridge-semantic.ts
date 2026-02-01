@@ -1474,13 +1474,36 @@ export function updateJSClassReferences(
     const escapedOriginal = escapeRegex(original);
 
     // querySelector/querySelectorAll patterns: '.class-name'
-    const selectorPattern = new RegExp(
-      `(['"\`])\\.${escapedOriginal}(['"\`\\s,\\[\\]:>+~])`,
+    // Pattern 1: Class at start of selector (right after opening quote)
+    const selectorStartPattern = new RegExp(
+      `(['"\`])\\.${escapedOriginal}(['"\`\\s,\\[\\]:>+~.])`,
       'g'
     );
-    updated = updated.replace(selectorPattern, (match, q1, after) => {
+    updated = updated.replace(selectorStartPattern, (match, q1, after) => {
       replacements++;
       return `${q1}.${renamed}${after}`;
+    });
+
+    // Pattern 2: Class in middle of selector (after space, comma, combinators)
+    // Matches: ", .class", " .class", ">.class", "+.class", "~.class"
+    const selectorMidPattern = new RegExp(
+      `([\\s,>+~])\\.${escapedOriginal}(?=['"\`\\s,\\[\\]:>+~.]|$)`,
+      'g'
+    );
+    updated = updated.replace(selectorMidPattern, (match, before) => {
+      replacements++;
+      return `${before}.${renamed}`;
+    });
+
+    // Pattern 3: Chained class selectors like ".other.class" or ".fp__other.class"
+    // Matches: alphanumeric/hyphen/underscore followed by .class
+    const chainedClassPattern = new RegExp(
+      `([a-zA-Z0-9_-])\\.${escapedOriginal}(?=['"\`\\s,\\[\\]:>+~.]|$)`,
+      'g'
+    );
+    updated = updated.replace(chainedClassPattern, (match, before) => {
+      replacements++;
+      return `${before}.${renamed}`;
     });
 
     // classList.add/remove/toggle/contains patterns

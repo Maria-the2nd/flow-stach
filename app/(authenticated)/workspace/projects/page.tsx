@@ -21,11 +21,11 @@ function formatDate(timestamp: number): string {
 function getStatusDisplay(status: string): { label: string; color: string } {
     switch (status) {
         case 'complete':
-            return { label: 'Ready', color: 'bg-green-500' };
+            return { label: 'Ready', color: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' };
         case 'draft':
-            return { label: 'Draft', color: 'bg-amber-500' };
+            return { label: 'Draft', color: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' };
         default:
-            return { label: status, color: 'bg-slate-400' };
+            return { label: status, color: 'bg-muted shadow-sm' };
     }
 }
 
@@ -153,17 +153,17 @@ export default function ProjectsPage() {
     if (projects === undefined) {
         return (
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Projects</h1>
+                <div className="flex items-center justify-between mb-8">
+                    <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">Projects</h1>
                     <Link href="/workspace/import">
-                        <Button className="bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-lg shadow-blue-200/50">
-                            <Plus className="w-4 h-4 mr-2" />
+                        <Button className="bg-primary text-primary-foreground hover:opacity-90 font-black shadow-lg shadow-primary/20 rounded-2xl px-8 h-12 btn-premium">
+                            <Plus className="w-5 h-5 mr-2" />
                             Import Project
                         </Button>
                     </Link>
                 </div>
                 <div className="flex items-center justify-center h-64">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
                 </div>
             </div>
         );
@@ -173,24 +173,25 @@ export default function ProjectsPage() {
     if (projects.length === 0) {
         return (
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Projects</h1>
+                <div className="flex items-center justify-between mb-8">
+                    <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">Projects</h1>
                     <Link href="/workspace/import">
-                        <Button className="bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-lg shadow-blue-200/50">
-                            <Plus className="w-4 h-4 mr-2" />
+                        <Button className="bg-primary text-primary-foreground hover:opacity-90 font-black shadow-lg shadow-primary/20 rounded-2xl px-8 h-12 btn-premium">
+                            <Plus className="w-5 h-5 mr-2" />
                             Import Project
                         </Button>
                     </Link>
                 </div>
-                <div className="flex flex-col items-center justify-center h-64 bg-white/80 backdrop-blur-xl rounded-[32px] border border-slate-200 shadow-xl shadow-slate-200/50">
-                    <FolderOpen className="w-16 h-16 text-slate-300 mb-4" />
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">No projects yet</h3>
-                    <p className="text-slate-500 mb-6 text-center max-w-md">
+                <div className="flex flex-col items-center justify-center h-80 bg-card/80 backdrop-blur-xl rounded-[32px] border border-white/20 ring-1 ring-white/10 shadow-2xl shadow-primary/5 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-50 pointer-events-none" />
+                    <FolderOpen className="w-20 h-20 text-muted-foreground/20 mb-6 group-hover:scale-110 transition-transform duration-500" />
+                    <h3 className="text-2xl font-black text-foreground mb-3 tracking-tight">No projects yet</h3>
+                    <p className="text-muted-foreground mb-8 text-center max-w-md font-medium leading-relaxed">
                         Import your first HTML project to get started with Webflow conversion.
                     </p>
                     <Link href="/workspace/import">
-                        <Button className="bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-lg shadow-blue-200/50 px-8 premium-hover">
-                            <Plus className="w-4 h-4 mr-2" />
+                        <Button className="bg-primary text-primary-foreground hover:opacity-90 font-black shadow-2xl shadow-primary/20 px-10 h-14 rounded-2xl transition-all btn-premium premium-hover active:scale-95">
+                            <Plus className="w-5 h-5 mr-3" />
                             Import Project
                         </Button>
                     </Link>
@@ -213,9 +214,9 @@ export default function ProjectsPage() {
             {/* Delete confirmation modal */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">Delete Project?</h3>
-                        <p className="text-slate-500 mb-6">
+                    <div className="bg-card rounded-2xl p-6 max-w-md w-full shadow-2xl border border-border">
+                        <h3 className="text-xl font-bold text-foreground mb-2">Delete Project?</h3>
+                        <p className="text-muted-foreground mb-6">
                             This will permanently delete the project, all its components, and associated data. This action cannot be undone.
                         </p>
                         <div className="flex gap-3 justify-end">
@@ -239,9 +240,9 @@ export default function ProjectsPage() {
             {/* Clear all confirmation modal */}
             {showClearAllConfirm && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+                    <div className="bg-card rounded-2xl p-6 max-w-md w-full shadow-2xl border border-border">
                         <h3 className="text-xl font-bold text-red-600 mb-2">Clear All Projects?</h3>
-                        <p className="text-slate-500 mb-4">
+                        <p className="text-muted-foreground mb-4">
                             This will permanently delete <strong>ALL {projects?.length} projects</strong>, their components, artifacts, and associated data.
                         </p>
                         <p className="text-red-600 font-bold text-sm mb-6">
@@ -274,32 +275,29 @@ export default function ProjectsPage() {
                 </div>
             )}
 
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Projects</h1>
-                <div className="flex gap-3">
+            <div className="flex items-center justify-between mb-8">
+                <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">Projects</h1>
+                <div className="flex gap-4">
                     {projects && projects.length > 0 && (
                         <Button
                             variant="outline"
                             onClick={() => setShowClearAllConfirm(true)}
                             disabled={isDeletingAll}
-                            className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold"
+                            className="bg-white/50 backdrop-blur-sm border-red-500/20 text-red-500 hover:bg-red-500/10 hover:border-red-500 font-black rounded-2xl px-6 h-12"
                         >
                             {isDeletingAll ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Clearing...
-                                </>
+                                <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
                                 <>
-                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    <Trash2 className="w-5 h-5 mr-2" />
                                     Clear All
                                 </>
                             )}
                         </Button>
                     )}
                     <Link href="/workspace/import">
-                        <Button className="bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-lg shadow-blue-200/50">
-                            <Plus className="w-4 h-4 mr-2" />
+                        <Button className="bg-primary text-primary-foreground hover:opacity-90 font-black shadow-lg shadow-primary/20 rounded-2xl px-8 h-12 btn-premium">
+                            <Plus className="w-5 h-5 mr-2" />
                             Import Project
                         </Button>
                     </Link>
@@ -319,19 +317,19 @@ export default function ProjectsPage() {
                                 <button
                                     onClick={(e) => handleUploadClick(project._id, e)}
                                     disabled={isUploading}
-                                    className="w-8 h-8 rounded-lg bg-white/90 backdrop-blur shadow-lg flex items-center justify-center hover:bg-white transition-colors disabled:opacity-50"
+                                    className="w-8 h-8 rounded-lg bg-card/90 backdrop-blur shadow-lg flex items-center justify-center hover:bg-card transition-colors disabled:opacity-50"
                                     title="Upload thumbnail"
                                 >
                                     {isUploading ? (
-                                        <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
                                     ) : (
-                                        <ImageIcon className="w-4 h-4 text-slate-600" />
+                                        <ImageIcon className="w-4 h-4 text-muted-foreground" />
                                     )}
                                 </button>
                                 <button
                                     onClick={(e) => handleDeleteClick(project._id, e)}
                                     disabled={isDeleting}
-                                    className="w-8 h-8 rounded-lg bg-white/90 backdrop-blur shadow-lg flex items-center justify-center hover:bg-red-50 transition-colors disabled:opacity-50"
+                                    className="w-8 h-8 rounded-lg bg-card/90 backdrop-blur shadow-lg flex items-center justify-center hover:bg-red-500/10 transition-colors disabled:opacity-50"
                                     title="Delete project"
                                 >
                                     {isDeleting ? (
@@ -343,44 +341,44 @@ export default function ProjectsPage() {
                             </div>
 
                             <Link href={`/workspace/projects/${project._id}`} className="block">
-                                <div className="!bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200 overflow-hidden premium-card-hover flex flex-col h-full shadow-xl shadow-slate-200/50">
-                                    <div className="aspect-video bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden flex items-center justify-center">
+                                <div className="bg-card/90 backdrop-blur-xl rounded-[32px] border border-white/20 ring-1 ring-white/10 overflow-hidden premium-card-hover flex flex-col h-full shadow-2xl shadow-primary/5 group/card">
+                                    <div className="aspect-video bg-gradient-to-br from-accent/20 to-accent/40 relative overflow-hidden flex items-center justify-center border-b border-white/10">
                                         {project.thumbnailUrl ? (
                                             <Image
                                                 src={project.thumbnailUrl}
                                                 alt={project.name}
                                                 fill
                                                 sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                className="object-cover group-hover/card:scale-110 transition-transform duration-700"
                                                 unoptimized
                                             />
                                         ) : (
-                                            <div className="text-6xl font-bold text-slate-200 group-hover:scale-110 transition-transform duration-500">
+                                            <div className="text-7xl font-black text-muted-foreground/10 group-hover/card:scale-110 transition-transform duration-700 select-none">
                                                 {project.name.charAt(0).toUpperCase()}
                                             </div>
                                         )}
-                                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-slate-900 px-3 py-1 rounded-full text-[10px] font-bold shadow-sm tracking-wider uppercase flex items-center gap-2">
+                                        <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-md text-foreground px-3 py-1.5 rounded-full text-[10px] font-black shadow-lg tracking-wider uppercase flex items-center gap-2 border border-border/50">
                                             <div className={`w-1.5 h-1.5 rounded-full ${statusDisplay.color}`} />
                                             {statusDisplay.label}
                                         </div>
                                     </div>
-                                    <div className="p-6 flex flex-col flex-grow">
-                                        <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-tight mb-2">
+                                    <div className="p-7 flex flex-col flex-grow">
+                                        <h3 className="text-xl font-bold text-foreground group-hover/card:text-primary transition-colors leading-tight mb-3">
                                             {project.name}
                                         </h3>
-                                        <p className="text-slate-500 text-sm mb-6 flex-grow leading-relaxed">
+                                        <p className="text-muted-foreground/70 text-sm mb-6 flex-grow leading-relaxed font-medium">
                                             {project.classCount ? `${project.classCount} classes` : 'Ready for Webflow'}
                                         </p>
 
-                                        <div className="space-y-2 mb-6 text-xs text-slate-400 font-medium">
+                                        <div className="space-y-2 mb-6 text-[11px] text-muted-foreground/50 font-bold uppercase tracking-wider">
                                             <div className="flex items-center gap-2">
                                                 <Calendar className="w-3.5 h-3.5" />
-                                                Imported on {formatDate(project._creationTime)}
+                                                Imported {formatDate(project._creationTime)}
                                             </div>
                                         </div>
 
-                                        <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-sm text-blue-600 font-bold group-hover:translate-x-1 transition-transform">
-                                            <span>Inspect Project</span>
+                                        <div className="pt-5 border-t border-border/50 flex justify-between items-center text-sm text-primary font-black group-hover/card:translate-x-1 transition-transform">
+                                            <span className="tracking-tight uppercase">Inspect Project</span>
                                             <ArrowRight className="w-4 h-4" />
                                         </div>
                                     </div>

@@ -10,6 +10,7 @@ interface FontChecklistCardProps {
   fonts?: Array<{
     name: string;
     status: 'available' | 'missing' | 'unknown';
+    weights?: number[];  // [400, 500, 700] for Webflow installation
     warning?: boolean;
     installationGuide: string;
   }>;
@@ -20,10 +21,10 @@ export function FontChecklistCard({ fonts }: FontChecklistCardProps) {
 
   if (!fonts || fonts.length === 0) {
     return (
-      <Card className="!bg-white/80 backdrop-blur-xl border-slate-200">
+      <Card className="bg-card/50 backdrop-blur-xl border-border">
         <CardHeader>
-          <CardTitle>Font Checklist</CardTitle>
-          <CardDescription>No custom fonts detected in this project.</CardDescription>
+          <CardTitle className="text-foreground">Font Checklist</CardTitle>
+          <CardDescription className="text-muted-foreground">No custom fonts detected in this project.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -36,10 +37,10 @@ export function FontChecklistCard({ fonts }: FontChecklistCardProps) {
   };
 
   return (
-    <Card className="!bg-white/80 backdrop-blur-xl border-slate-200 shadow-xl shadow-slate-200/50 rounded-[32px] overflow-hidden">
+    <Card className="bg-card/50 backdrop-blur-xl border-border shadow-xl shadow-background/50 rounded-[32px] overflow-hidden">
       <CardHeader className="pb-6">
-        <CardTitle className="text-2xl font-bold text-slate-900">Font Checklist</CardTitle>
-        <CardDescription className="text-slate-500 font-medium max-w-xl leading-relaxed">
+        <CardTitle className="text-2xl font-bold text-foreground">Font Checklist</CardTitle>
+        <CardDescription className="text-muted-foreground font-medium max-w-xl leading-relaxed">
           Step 2: You must install these fonts bellow on webflow. Go to Site Settings → Fonts in Webflow, upload the custom font or search for it if its a google font.
         </CardDescription>
       </CardHeader>
@@ -50,7 +51,7 @@ export function FontChecklistCard({ fonts }: FontChecklistCardProps) {
             const isOpen = openIndexes.includes(idx);
 
             return (
-              <div key={idx} className="bg-slate-50/50 border border-slate-100 rounded-2xl overflow-hidden transition-all hover:bg-white hover:border-blue-100 group">
+              <div key={idx} className="bg-accent/20 border border-border/50 rounded-2xl overflow-hidden transition-all hover:bg-accent/40 hover:border-primary/20 group">
                 <button
                   onClick={() => toggleOpen(idx)}
                   className="w-full text-left"
@@ -67,7 +68,14 @@ export function FontChecklistCard({ fonts }: FontChecklistCardProps) {
                           <AlertTriangle className="w-5 h-5" />
                         )}
                       </div>
-                      <span className="font-bold text-slate-900">{font.name}</span>
+                      <span className="font-bold text-foreground">
+                        {font.name}
+                        {font.weights && font.weights.length > 0 && (
+                          <span className="text-muted-foreground font-normal ml-1">
+                            ({font.weights.sort((a, b) => a - b).join(', ')})
+                          </span>
+                        )}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -79,7 +87,7 @@ export function FontChecklistCard({ fonts }: FontChecklistCardProps) {
                       </Badge>
                       <ChevronDown
                         className={cn(
-                          "w-4 h-4 text-slate-400 transition-transform duration-300",
+                          "w-4 h-4 text-muted-foreground transition-transform duration-300",
                           isOpen && "rotate-180"
                         )}
                       />
@@ -88,9 +96,9 @@ export function FontChecklistCard({ fonts }: FontChecklistCardProps) {
                 </button>
 
                 {isOpen && (
-                  <div className="px-6 pb-6 pt-2 bg-white/50 border-t border-slate-100 animate-in fade-in duration-300">
-                    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                      <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                  <div className="px-6 pb-6 pt-2 bg-accent/20 border-t border-border/50 animate-in fade-in duration-300">
+                    <div className="bg-background/50 p-4 rounded-xl border border-border/50 shadow-sm">
+                      <p className="text-sm text-muted-foreground font-medium leading-relaxed italic">
                         {font.installationGuide}
                       </p>
                     </div>
@@ -102,9 +110,9 @@ export function FontChecklistCard({ fonts }: FontChecklistCardProps) {
         </div>
 
         {/* Summary */}
-        <div className="p-4 bg-blue-50/50 rounded-[20px] border border-blue-100/50">
-          <p className="text-sm text-blue-900 font-medium flex items-center gap-2">
-            <span className="font-bold uppercase text-[10px] bg-blue-100 px-2 py-0.5 rounded-md">Summary</span>
+        <div className="p-4 bg-primary/5 rounded-[20px] border border-primary/10">
+          <p className="text-sm text-primary font-medium flex items-center gap-2">
+            <span className="font-bold uppercase text-[10px] bg-primary/10 px-2 py-0.5 rounded-md">Summary</span>
             <span>
               {fonts.filter((f) => f.status === 'available').length} of {fonts.length} fonts ready.
               {fonts.filter((f) => f.status !== 'available').length > 0 && ` Action required for ${fonts.filter((f) => f.status !== 'available').length} font(s).`}

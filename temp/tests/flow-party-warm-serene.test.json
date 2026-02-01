@@ -1,0 +1,11 @@
+{
+  "name": "Flow Party Warm Serene",
+  "entryType": "single_html",
+  "paths": {
+    "html": "flow-party-warm-serene.html"
+  },
+  "expectations": {
+    "maxDiffRatio": 0.05
+  },
+  "tags": ["warm-serene", "luxury"]
+}

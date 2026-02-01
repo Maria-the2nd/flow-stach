@@ -1,519 +1,630 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flow Bridge Test - All 5 Outputs</title>
-  
-  <!-- LIBRARIES: Should be detected and shown in Step 5 -->
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
-  
+  <title>The Ultimate Webflow Import Challenge — Flow Bridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&family=JetBrains+Mono:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
   <style>
-    /* ============================================
-       DESIGN TOKENS - Should go to Step 1
-       Basic CSS variables, hex/rgb colors, px/rem spacing
-       ============================================ */
     :root {
-      /* Colors - simple formats */
-      --color-primary: #1a1a2e;
-      --color-secondary: #16213e;
-      --color-accent: #e94560;
-      --color-text: #ffffff;
-      --color-text-muted: rgb(180, 180, 190);
-      --color-surface: #0f0f1a;
-      
-      /* Typography */
-      --font-display: "Inter", sans-serif;
-      --font-body: "Inter", sans-serif;
-      --font-size-base: 16px;
-      --font-size-lg: 1.25rem;
-      --font-size-xl: 2rem;
-      --font-size-hero: 4rem;
-      --line-height-tight: 1.1;
-      --line-height-normal: 1.6;
-      
-      /* Spacing */
-      --spacing-xs: 8px;
-      --spacing-sm: 16px;
-      --spacing-md: 24px;
-      --spacing-lg: 48px;
-      --spacing-xl: 96px;
-      --spacing-section: 120px;
-      
-      /* Borders */
-      --radius-sm: 4px;
-      --radius-md: 8px;
-      --radius-lg: 16px;
-      --radius-full: 9999px;
+      --primary: #00ffcc;
+      --secondary: #7000ff;
+      --accent: #ff007a;
+      --bg: #050505;
+      --surface: #111111;
+      --text: #ffffff;
+      --text-dim: #a0a0a0;
+      --glass: rgba(255, 255, 255, 0.03);
+      --border: rgba(255, 255, 255, 0.1);
     }
-    
-    /* ============================================
-       NATIVE CSS - Should go to Webflow JSON (Step 2)
-       Flexbox, grid, basic styling
-       ============================================ */
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      user-select: none;
     }
-    
+
     body {
-      font-family: var(--font-body);
-      font-size: var(--font-size-base);
-      line-height: var(--line-height-normal);
-      color: var(--color-text);
-      background-color: var(--color-surface);
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      overflow-x: hidden;
+      line-height: 1.5;
     }
-    
-    .section {
-      padding: var(--spacing-section) var(--spacing-lg);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
+
+    /* --- THREE.JS CANVAS --- */
+    #three-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
+      height: 100vh;
+      z-index: -2;
+      pointer-events: none;
     }
-    
-    /* Hero Section */
-    .hero {
-      text-align: center;
+
+    /* --- CUSTOM CURSOR --- */
+    .cursor-trail {
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      background: var(--primary);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10000;
+      mix-blend-mode: difference;
+      transition: transform 0.1s ease-out;
+      display: none;
     }
-    
-    .hero__title {
-      font-family: var(--font-display);
-      font-size: var(--font-size-hero);
-      font-weight: 700;
-      line-height: var(--line-height-tight);
-      margin-bottom: var(--spacing-md);
-    }
-    
-    .hero__subtitle {
-      font-size: var(--font-size-lg);
-      color: var(--color-text-muted);
-      max-width: 600px;
-      margin: 0 auto var(--spacing-lg);
-    }
-    
-    .hero__cta {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--spacing-xs);
-      padding: var(--spacing-sm) var(--spacing-md);
-      background-color: var(--color-accent);
-      color: var(--color-text);
-      text-decoration: none;
-      border-radius: var(--radius-full);
-      font-weight: 600;
-      transition: transform 0.3s ease;
-    }
-    
-    .hero__cta:hover {
-      transform: scale(1.05);
-    }
-    
-    /* Feature Grid */
-    .features {
-      background-color: var(--color-primary);
-    }
-    
-    .features__grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: var(--spacing-md);
-    }
-    
-    .feature-card {
-      background-color: var(--color-secondary);
-      padding: var(--spacing-lg);
-      border-radius: var(--radius-lg);
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-sm);
-    }
-    
-    .feature-card__icon {
-      width: 48px;
-      height: 48px;
-      background-color: var(--color-accent);
-      border-radius: var(--radius-md);
+
+    /* --- FIXED NAV --- */
+    .nav {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 1200px;
+      height: 70px;
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 40px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 24px;
+      justify-content: space-between;
+      padding: 0 30px;
+      z-index: 1000;
     }
-    
-    .feature-card__title {
-      font-size: var(--font-size-lg);
-      font-weight: 600;
-    }
-    
-    .feature-card__description {
-      color: var(--color-text-muted);
-      font-size: 14px;
-    }
-    
-    /* Stats Section */
-    .stats {
-      text-align: center;
-    }
-    
-    .stats__grid {
-      display: flex;
-      justify-content: center;
-      gap: var(--spacing-xl);
-    }
-    
-    .stat {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-xs);
-    }
-    
-    .stat__number {
-      font-size: 3.5rem;
+
+    .nav-logo {
+      font-family: 'Syncopate', sans-serif;
       font-weight: 700;
-      font-family: var(--font-display);
-    }
-    
-    .stat__label {
-      color: var(--color-text-muted);
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-    
-    /* ============================================
-       MODERN CSS - Should go to CSS Embed (Step 3)
-       oklch, color-mix, @container, :has(), backdrop-filter
-       ============================================ */
-    
-    /* oklch colors - NOT supported in Webflow native */
-    .gradient-text {
-      background: linear-gradient(
-        135deg,
-        oklch(0.7 0.25 330),
-        oklch(0.6 0.3 280),
-        oklch(0.5 0.25 230)
-      );
+      font-size: 1.2rem;
+      letter-spacing: -1px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
     }
-    
-    /* color-mix - NOT supported in Webflow native */
-    .color-mix-bg {
-      background-color: color-mix(in srgb, var(--color-accent) 80%, white);
+
+    .nav-links {
+      display: flex;
+      gap: 30px;
     }
-    
-    /* Container queries - NOT supported in Webflow native */
-    .card-container {
-      container-type: inline-size;
-      container-name: card;
+
+    .nav-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: color 0.3s;
     }
-    
-    @container card (min-width: 400px) {
-      .feature-card {
-        flex-direction: row;
-        align-items: center;
-      }
-      
-      .feature-card__icon {
-        flex-shrink: 0;
-      }
+
+    .nav-links a:hover {
+      color: var(--primary);
     }
-    
-    /* :has() selector - NOT supported in Webflow native */
-    .feature-card:has(.feature-card__badge) {
-      border: 2px solid var(--color-accent);
+
+    .btn-glitch {
+      background: var(--primary);
+      color: var(--bg);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-weight: 700;
+      border: none;
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
     }
-    
-    .features__grid:has(.feature-card:hover) .feature-card:not(:hover) {
-      opacity: 0.6;
-      filter: blur(1px);
-    }
-    
-    /* backdrop-filter - partially supported but complex */
-    .glass-card {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    /* @layer - NOT supported in Webflow native */
-    @layer utilities {
-      .visually-hidden {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border: 0;
-      }
-    }
-    
-    /* Complex animations for scroll */
-    .reveal-up {
-      opacity: 0;
-      transform: translateY(60px);
-    }
-    
-    .reveal-scale {
-      opacity: 0;
-      transform: scale(0.9);
-    }
-    
-    .split-text .char {
-      display: inline-block;
-      opacity: 0;
+
+    .btn-glitch::after {
+      content: 'GO';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.7, 0, 0.3, 1);
+    }
+
+    .btn-glitch:hover::after {
+      transform: translateY(0);
+    }
+
+    /* --- HERO --- */
+    .hero {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      perspective: 2000px;
+      overflow: hidden;
+    }
+
+    .hero-bg-text {
+      position: absolute;
+      font-family: 'Syncopate', sans-serif;
+      font-size: 15vw;
+      font-weight: 900;
+      color: rgba(255, 255, 255, 0.02);
+      white-space: nowrap;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: -1;
+    }
+
+    .hero-content {
+      text-align: center;
+      max-width: 800px;
+      z-index: 10;
+      transform-style: preserve-3d;
+      animation: heroFloat 6s ease-in-out infinite;
+    }
+
+    @keyframes heroFloat {
+
+      0%,
+      100% {
+        transform: translateY(0) rotateX(5deg);
+      }
+
+      50% {
+        transform: translateY(-20px) rotateX(-5deg);
+      }
+    }
+
+    .hero h1 {
+      font-family: 'Syncopate', sans-serif;
+      font-size: 5rem;
+      line-height: 0.9;
+      margin-bottom: 20px;
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      color: var(--text-dim);
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+
+    /* --- THE FLOATING ASSET --- */
+    .floating-sphere {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      top: 20%;
+      right: 5%;
+      z-index: 5;
+      filter: drop-shadow(0 0 50px rgba(112, 0, 255, 0.3));
+      animation: rotateSphere 20s linear infinite;
+    }
+
+    @keyframes rotateSphere {
+      from {
+        transform: rotate(0deg) scale(1);
+      }
+
+      50 {
+        transform: rotate(180deg) scale(1.1);
+      }
+
+      to {
+        transform: rotate(360deg) scale(1);
+      }
+    }
+
+    /* --- SECTION 1: BENTO GRID --- */
+    .section-bento {
+      padding: 100px 5%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(3, 300px);
+      gap: 20px;
+      grid-template-areas:
+        "a a b c"
+        "a a d e"
+        "f g g e";
+    }
+
+    .bento-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .bento-item:hover {
+      border-color: var(--primary);
+      transform: scale(0.98);
+    }
+
+    .item-a {
+      grid-area: a;
+      background: linear-gradient(135deg, #111, #222);
+    }
+
+    .item-b {
+      grid-area: b;
+    }
+
+    .item-c {
+      grid-area: c;
+      background: var(--secondary);
+    }
+
+    .item-d {
+      grid-area: d;
+    }
+
+    .item-e {
+      grid-area: e;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    .item-f {
+      grid-area: f;
+    }
+
+    .item-g {
+      grid-area: g;
+    }
+
+    .bento-item h3 {
+      font-family: 'Syncopate', sans-serif;
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+
+    /* --- SECTION 2: THE MIX BLEND CHAOS --- */
+    .section-blend {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      color: black;
+      position: relative;
+    }
+
+    .blend-text {
+      font-family: 'Syncopate', sans-serif;
+      font-size: 10rem;
+      font-weight: 900;
+      mix-blend-mode: difference;
+      color: white;
+      z-index: 20;
+    }
+
+    .blend-image {
+      position: absolute;
+      width: 800px;
+      height: 100%;
+      object-fit: cover;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.8;
+      filter: grayscale(1);
+      z-index: 10;
+    }
+
+    /* --- SECTION 3: SKEWED LAYOUT --- */
+    .skew-wrapper {
+      background: var(--primary);
+      color: var(--bg);
+      padding: 15vw 0;
+      transform: skewY(-10deg);
+      margin-top: 100px;
+      margin-bottom: 100px;
+    }
+
+    .skew-content {
+      transform: skewY(10deg);
+      max-width: 1000px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .skew-content h2 {
+      font-family: 'Syncopate', sans-serif;
+      font-size: 4rem;
+      margin-bottom: 30px;
+    }
+
+    /* --- SECTION 4: THE OVERLAPPING CARDS --- */
+    .overlap-row {
+      padding: 100px 5%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-stack {
+      position: relative;
+      width: 400px;
+      height: 500px;
+    }
+
+    .stress-card {
+      position: absolute;
+      width: 400px;
+      height: 500px;
+      background: var(--surface);
+      border: 5px solid var(--text);
+      padding: 40px;
+      top: 0;
+      left: 0;
+      transition: transform 0.3s;
+    }
+
+    .stress-card:nth-child(1) {
+      transform: translate(-40px, -40px);
+      z-index: 1;
+      border-color: var(--primary);
+    }
+
+    .stress-card:nth-child(2) {
+      transform: translate(0, 0);
+      z-index: 2;
+      border-color: var(--secondary);
+    }
+
+    .stress-card:nth-child(3) {
+      transform: translate(40px, 40px);
+      z-index: 3;
+      border-color: var(--accent);
+    }
+
+    .stress-card:hover {
+      transform: translate(0, -60px) scale(1.05);
+      z-index: 10;
+    }
+
+    /* --- SECTION 5: COMPLEX FORM --- */
+    .section-form {
+      padding: 100px 5%;
+      background-image: url('C:/Users/maria/.gemini/antigravity/brain/4265891b-d2ae-436d-9327-dd3a132d0f7f/abstract_ui_patterns_1769355854020.png');
+      background-size: cover;
+      background-attachment: fixed;
+      position: relative;
+    }
+
+    .glass-form {
+      max-width: 600px;
+      margin: 0 auto;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(40px);
+      padding: 50px;
+      border-radius: 40px;
+      border: 1px solid var(--border);
+    }
+
+    .input-chaos {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid var(--border);
+      padding: 15px 0;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .input-chaos:focus {
+      border-color: var(--primary);
+    }
+
+    /* --- FOOTER --- */
+    footer {
+      padding: 100px 5%;
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 50px;
+    }
+
+    .footer-col h4 {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--primary);
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    /* --- MOUSE GLOW --- */
+    .mouse-glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(112, 0, 255, 0.15) 0%, transparent 70%);
+      top: -300px;
+      left: -300px;
+      pointer-events: none;
+      z-index: 1;
     }
   </style>
 </head>
+
 <body>
-  
-  <!-- HERO SECTION -->
-  <section class="section hero">
-    <div class="container">
-      <h1 class="hero__title gradient-text split-text">
-        Build Faster.<br>Ship Better.
-      </h1>
-      <p class="hero__subtitle reveal-up">
-        Transform your workflow with AI-powered tools that understand design. 
-        From concept to production in minutes, not hours.
-      </p>
-      <a href="#features" class="hero__cta reveal-scale">
-        <span>Get Started</span>
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M10 3a1 1 0 011 1v10.586l3.293-3.293a1 1 0 111.414 1.414l-5 5a1 1 0 01-1.414 0l-5-5a1 1 0 111.414-1.414L9 14.586V4a1 1 0 011-1z"/>
-        </svg>
-      </a>
+  <div class="mouse-glow" id="mouseGlow"></div>
+  <div class="cursor-trail" id="cursor"></div>
+
+  <nav class="nav">
+    <div class="nav-logo">FLOW_STACH</div>
+    <div class="nav-links">
+      <a href="#chaos">The Chaos</a>
+      <a href="#bento">Bento Structure</a>
+      <a href="#skew">Perspective</a>
+      <a href="#stress">Stress Test</a>
     </div>
-  </section>
-  
-  <!-- FEATURES SECTION -->
-  <section id="features" class="section features">
-    <div class="container">
-      <div class="features__grid">
-        
-        <div class="card-container">
-          <div class="feature-card glass-card reveal-up">
-            <div class="feature-card__icon">⚡</div>
-            <div>
-              <span class="feature-card__badge">New</span>
-              <h3 class="feature-card__title">Lightning Fast</h3>
-              <p class="feature-card__description">
-                Convert designs to code in seconds with our optimized AI pipeline.
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="card-container">
-          <div class="feature-card glass-card reveal-up">
-            <div class="feature-card__icon">🎨</div>
-            <div>
-              <h3 class="feature-card__title">Design Tokens</h3>
-              <p class="feature-card__description">
-                Automatic extraction and organization of your design system variables.
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="card-container">
-          <div class="feature-card glass-card reveal-up">
-            <div class="feature-card__icon">✨</div>
-            <div>
-              <h3 class="feature-card__title">Modern CSS</h3>
-              <p class="feature-card__description">
-                Support for oklch, container queries, and all the latest CSS features.
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="card-container">
-          <div class="feature-card glass-card reveal-up">
-            <div class="feature-card__icon">🔄</div>
-            <div>
-              <h3 class="feature-card__title">Smart Animations</h3>
-              <p class="feature-card__description">
-                GSAP and Lenis detection with automatic CDN configuration.
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="card-container">
-          <div class="feature-card glass-card reveal-up">
-            <div class="feature-card__icon">🛡️</div>
-            <div>
-              <h3 class="feature-card__title">Validation</h3>
-              <p class="feature-card__description">
-                Pre-copy validation prevents Webflow Designer corruption.
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="card-container">
-          <div class="feature-card glass-card reveal-up">
-            <div class="feature-card__icon">📦</div>
-            <div>
-              <h3 class="feature-card__title">Multi-Output</h3>
-              <p class="feature-card__description">
-                Separate design tokens, structure, embeds, and libraries.
-              </p>
-            </div>
-          </div>
-        </div>
-        
-      </div>
-    </div>
-  </section>
-  
-  <!-- STATS SECTION -->
-  <section class="section stats">
-    <div class="container">
-      <div class="stats__grid">
-        <div class="stat reveal-up">
-          <span class="stat__number gradient-text" data-count="500">0</span>
-          <span class="stat__label">Components</span>
-        </div>
-        <div class="stat reveal-up">
-          <span class="stat__number gradient-text" data-count="10">0</span>
-          <span class="stat__label">Seconds Avg</span>
-        </div>
-        <div class="stat reveal-up">
-          <span class="stat__number gradient-text" data-count="99">0</span>
-          <span class="stat__label">Success Rate</span>
+    <button class="btn-glitch">DEPLOY CORE</button>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <div id="three-canvas"></div>
+      <div class="hero-bg-text">BRDIGE_CORE</div>
+      <img
+        src="C:/Users/maria/.gemini/antigravity/brain/4265891b-d2ae-436d-9327-dd3a132d0f7f/glass_sphere_3d_1769355867045.png"
+        class="floating-sphere" alt="3D Glass Sphere">
+      <div class="hero-content">
+        <span style="color: var(--primary); font-family: 'JetBrains Mono'; letter-spacing: 5px;">V.04 —
+          ARCHITECTURE</span>
+        <h1>THE ULTIMATE<br>IMPORT TRIAL.</h1>
+        <p>Nested transforms, grid overlap, mix-blend modes, and parallax layers.</p>
+        <div style="display: flex; gap: 20px; justify-content: center;">
+          <a href="#" class="btn-glitch">START IMPORT</a>
         </div>
       </div>
-    </div>
-  </section>
-  
-  <!-- ============================================
-       JAVASCRIPT - Should go to JS Embed (Step 4)
-       GSAP animations, Lenis smooth scroll, counters
-       ============================================ -->
+    </section>
+
+    <section class="section-bento" id="bento">
+      <div class="bento-grid">
+        <div class="bento-item item-a">
+          <h3>01. THE GRID SYSTEM</h3>
+        </div>
+        <div class="bento-item item-b">
+          <h3>02. BLURRED BORDERS</h3>
+        </div>
+        <div class="bento-item item-c">
+          <h3>03. SOLID POP</h3>
+        </div>
+        <div class="bento-item item-d">
+          <img
+            src="C:/Users/maria/.gemini/antigravity/brain/4265891b-d2ae-436d-9327-dd3a132d0f7f/futuristic_cityscape_minimal_1769355881652.png"
+            style="width: 100%; height: 100%; object-fit: cover; border-radius: 20px;" alt="Cityscape">
+        </div>
+        <div class="bento-item item-e">
+          <h3>STACKED LOGIC</h3>
+        </div>
+        <div class="bento-item item-f">
+          <p>Z-INDEX 50</p>
+        </div>
+        <div class="bento-item item-g">
+          <h3>HORIZONTAL EXPANSION</h3>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-blend" id="chaos">
+      <img
+        src="C:/Users/maria/.gemini/antigravity/brain/4265891b-d2ae-436d-9327-dd3a132d0f7f/abstract_ui_patterns_1769355854020.png"
+        class="blend-image" alt="Background Patterns">
+      <div class="blend-text">REALITY</div>
+    </section>
+
+    <section class="skew-wrapper" id="skew">
+      <div class="skew-content">
+        <h2>BEYOND THE FOLD</h2>
+      </div>
+    </section>
+
+    <section class="overlap-row" id="stress">
+      <div class="card-stack">
+        <div class="stress-card"></div>
+        <div class="stress-card"></div>
+        <div class="stress-card">
+          <h3 style="margin-top: 200px;">THE TOP LAYER</h3>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-form">
+      <div class="glass-form">
+        <h2 style="font-family: 'Syncopate'; margin-bottom: 40px;">CONNECT_CORE</h2>
+        <input type="text" class="input-chaos" placeholder="PRIMARY_ID">
+        <button class="btn-glitch" style="width: 100%; padding: 20px;">INITIALIZE SEQUENCE</button>
+      </div>
+    </section>
+  </main>
+
   <script>
-    // Register GSAP plugins
-    gsap.registerPlugin(ScrollTrigger);
-    
-    // Initialize Lenis smooth scroll
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
+    // --- THREE.JS ---
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.getElementById('three-canvas').appendChild(renderer.domElement);
+
+    const particlesCount = 1500;
+    const posArray = new Float32Array(particlesCount * 3);
+    for (let i = 0; i < particlesCount * 3; i++) posArray[i] = (Math.random() - 0.5) * 10;
+    const particlesGeometry = new THREE.BufferGeometry();
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    const particlesMaterial = new THREE.PointsMaterial({ size: 0.005, color: 0x00ffcc, transparent: true, opacity: 0.8 });
+    const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+    scene.add(particlesMesh);
+
+    const shapeGeometry = new THREE.IcosahedronGeometry(2, 1);
+    const shapeMaterial = new THREE.MeshPhongMaterial({ color: 0x7000ff, wireframe: true, transparent: true, opacity: 0.3 });
+    const shapeMesh = new THREE.Mesh(shapeGeometry, shapeMaterial);
+    scene.add(shapeMesh);
+
+    const pointLight = new THREE.PointLight(0xffffff, 1);
+    pointLight.position.set(2, 3, 4);
+    scene.add(pointLight);
+
+    camera.position.z = 5;
+
+    let mouseX = 0, mouseY = 0;
+    document.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX / window.innerWidth) - 0.5;
+      mouseY = (e.clientY / window.innerHeight) - 0.5;
+      document.getElementById('mouseGlow').style.left = e.clientX - 300 + 'px';
+      document.getElementById('mouseGlow').style.top = e.clientY - 300 + 'px';
+      document.getElementById('cursor').style.display = 'block';
+      document.getElementById('cursor').style.left = e.clientX - 10 + 'px';
+      document.getElementById('cursor').style.top = e.clientY - 10 + 'px';
     });
-    
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      particlesMesh.rotation.y += 0.001 + mouseX * 0.01;
+      particlesMesh.rotation.x += mouseY * 0.01;
+      shapeMesh.rotation.x += 0.005;
+      shapeMesh.rotation.y += 0.005;
+      renderer.render(scene, camera);
     }
-    requestAnimationFrame(raf);
-    
-    // Update ScrollTrigger on Lenis scroll
-    lenis.on('scroll', ScrollTrigger.update);
-    
-    gsap.ticker.add((time) => {
-      lenis.raf(time * 1000);
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
     });
-    
-    gsap.ticker.lagSmoothing(0);
-    
-    // Split text animation for hero title
-    const heroTitle = document.querySelector('.hero__title');
-    if (heroTitle) {
-      const text = heroTitle.innerHTML;
-      heroTitle.innerHTML = text.split('').map(char => 
-        char === ' ' ? ' ' : `<span class="char">${char}</span>`
-      ).join('');
-      
-      gsap.to('.hero__title .char', {
-        opacity: 1,
-        y: 0,
-        duration: 0.6,
-        stagger: 0.03,
-        ease: 'power3.out',
-        delay: 0.3
-      });
-    }
-    
-    // Reveal animations on scroll
-    gsap.utils.toArray('.reveal-up').forEach((element) => {
-      gsap.to(element, {
-        opacity: 1,
-        y: 0,
-        duration: 1,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: element,
-          start: 'top 80%',
-          toggleActions: 'play none none reverse'
-        }
-      });
-    });
-    
-    gsap.utils.toArray('.reveal-scale').forEach((element) => {
-      gsap.to(element, {
-        opacity: 1,
-        scale: 1,
-        duration: 0.8,
-        ease: 'back.out(1.7)',
-        scrollTrigger: {
-          trigger: element,
-          start: 'top 80%',
-          toggleActions: 'play none none reverse'
-        }
-      });
-    });
-    
-    // Counter animation for stats
-    gsap.utils.toArray('[data-count]').forEach((counter) => {
-      const target = parseInt(counter.dataset.count);
-      
-      gsap.to(counter, {
-        innerHTML: target,
-        duration: 2,
-        ease: 'power2.out',
-        snap: { innerHTML: 1 },
-        scrollTrigger: {
-          trigger: counter,
-          start: 'top 80%',
-          toggleActions: 'play none none reset'
-        },
-        onUpdate: function() {
-          counter.innerHTML = Math.round(this.targets()[0].innerHTML);
-        }
-      });
-    });
-    
-    // Feature cards stagger animation
-    ScrollTrigger.batch('.feature-card', {
-      onEnter: (elements) => {
-        gsap.to(elements, {
-          opacity: 1,
-          y: 0,
-          stagger: 0.15,
-          duration: 0.8,
-          ease: 'power3.out'
-        });
-      },
-      start: 'top 85%'
+
+    window.addEventListener('scroll', () => {
+      const scrolled = window.pageYOffset;
+      document.querySelector('.floating-sphere').style.transform = `translateY(${scrolled * 0.2}px) rotate(${scrolled * 0.1}deg)`;
     });
   </script>
-  
 </body>
+
 </html>

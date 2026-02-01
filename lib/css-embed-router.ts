@@ -533,8 +533,66 @@ function determineRoutingReason(reason: string, selector: string): RoutingReason
 
 /**
  * Check if properties contain vendor prefixes that need embed
+ * Returns which specific properties need embed so we can split the rule
  */
-function propertiesNeedEmbed(properties: string): { needsEmbed: boolean; reason: string | null; routingReasons: RoutingReason[] } {
+function propertiesNeedEmbed(properties: string): {
+  needsEmbed: boolean;
+  reason: string | null;
+  routingReasons: RoutingReason[];
+  embedProperties: string[];  // Properties that must go to embed
+  nativeProperties: string[]; // Properties that can stay native
+} {
+  const routingReasons: RoutingReason[] = [];
+  const embedProperties: string[] = [];
+  const nativeProperties: string[] = [];
+
+  // Parse individual properties
+  const propList = properties.split(';').map(p => p.trim()).filter(Boolean);
+
+  for (const propStr of propList) {
+    const colonIdx = propStr.indexOf(':');
+    if (colonIdx === -1) continue;
+
+    const propName = propStr.substring(0, colonIdx).trim().toLowerCase();
+    const propValue = propStr.substring(colonIdx + 1).trim();
+    const fullProp = `${propName}: ${propValue}`;
+
+    // Check if this property needs embed
+    let needsEmbed = false;
+    for (const vendorProp of VENDOR_PREFIX_PROPERTIES) {
+      if (propName === vendorProp || propName.includes(vendorProp)) {
+        needsEmbed = true;
+        routingReasons.push({ type: 'vendor-prefix', prefix: vendorProp });
+        break;
+      }
+    }
+
+    // Check generic vendor prefixes
+    if (!needsEmbed && (propName.startsWith('-webkit-') || propName.startsWith('-moz-') || propName.startsWith('-ms-'))) {
+      needsEmbed = true;
+      routingReasons.push({ type: 'vendor-prefix', prefix: propName.split('-').slice(0, 2).join('-') });
+    }
+
+    if (needsEmbed) {
+      embedProperties.push(fullProp);
+    } else {
+      nativeProperties.push(fullProp);
+    }
+  }
+
+  const hasEmbedProps = embedProperties.length > 0;
+
+  return {
+    needsEmbed: hasEmbedProps,
+    reason: hasEmbedProps ? `Vendor-prefixed property: ${embedProperties[0].split(':')[0]}` : null,
+    routingReasons,
+    embedProperties,
+    nativeProperties,
+  };
+}
+
+// Legacy check for simple cases (backwards compatibility)
+function propertiesNeedEmbedSimple(properties: string): { needsEmbed: boolean; reason: string | null; routingReasons: RoutingReason[] } {
   const routingReasons: RoutingReason[] = [];
 
   for (const prop of VENDOR_PREFIX_PROPERTIES) {
@@ -982,8 +1040,8 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
     // Determine category
     const category = determineRuleCategory(rule.selector);
 
-    if (selectorCheck.needsEmbed || propsCheck.needsEmbed) {
-      // Route to embed
+    if (selectorCheck.needsEmbed) {
+      // Selector requires embed - route ENTIRE rule to embed
       const bucket = embedRulesByBreakpoint.get('base')!;
       const embedRule = `${rule.selector} { ${rule.properties} }`;
       bucket.push(embedRule);
@@ -991,11 +1049,81 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
       warnings.push({
         type: 'selector_complex',
         selector: rule.selector,
-        reason: selectorCheck.reason || propsCheck.reason || 'Complex selector/property',
+        reason: selectorCheck.reason || 'Complex selector',
         severity: 'info',
       });
 
       // Trace embed rule
+      if (tracer) {
+        const ruleId = tracer.traceRule(
+          rule.selector,
+          rule.fullMatch,
+          'embed',
+          reasons.length > 0 ? reasons : [{ type: 'standard-property' }],
+          category
+        );
+        tracer.setRuleOutput(ruleId, undefined, embedRule);
+      }
+    } else if (propsCheck.needsEmbed && propsCheck.nativeProperties.length > 0) {
+      // SPLIT RULE: Some properties need embed, others can be native
+      // This is the FIX for bento-item losing styles when backdrop-filter is present
+      const bucket = embedRulesByBreakpoint.get('base')!;
+
+      // Embed only the vendor-prefixed properties
+      const embedProps = propsCheck.embedProperties.join('; ');
+      const embedRule = `${rule.selector} { ${embedProps}; }`;
+      bucket.push(embedRule);
+
+      warnings.push({
+        type: 'selector_complex',
+        selector: rule.selector,
+        reason: propsCheck.reason || 'Vendor-prefixed property (split to embed)',
+        severity: 'info',
+      });
+
+      // Native gets the rest of the properties (with CSS variables resolved)
+      const nativeProps = propsCheck.nativeProperties.join('; ');
+      const { resolved: resolvedProperties, unresolvedVars } = resolveVariablesInProperties(
+        nativeProps,
+        cssVariables
+      );
+
+      if (unresolvedVars.length > 0) {
+        warnings.push({
+          type: 'selector_complex',
+          selector: rule.selector,
+          reason: `Unresolved CSS variables in native styles: ${unresolvedVars.join(', ')}`,
+          severity: 'warning',
+        });
+      }
+
+      const nativeRule = `${rule.selector} { ${resolvedProperties} }`;
+      nativeRules.push(nativeRule);
+
+      // Trace both parts
+      if (tracer) {
+        const ruleId = tracer.traceRule(
+          rule.selector,
+          rule.fullMatch,
+          'split', // Mark as split
+          reasons.length > 0 ? reasons : [{ type: 'standard-property' }],
+          category
+        );
+        tracer.setRuleOutput(ruleId, nativeRule, embedRule);
+      }
+    } else if (propsCheck.needsEmbed) {
+      // All properties need embed (no native properties)
+      const bucket = embedRulesByBreakpoint.get('base')!;
+      const embedRule = `${rule.selector} { ${rule.properties} }`;
+      bucket.push(embedRule);
+
+      warnings.push({
+        type: 'selector_complex',
+        selector: rule.selector,
+        reason: propsCheck.reason || 'Vendor-prefixed properties',
+        severity: 'info',
+      });
+
       if (tracer) {
         const ruleId = tracer.traceRule(
           rule.selector,

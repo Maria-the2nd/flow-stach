@@ -125,6 +125,7 @@ export default defineSchema({
       name: v.string(),
       source: v.string(),
       url: v.optional(v.string()),
+      weights: v.optional(v.array(v.number())),  // [400, 500, 700] for Webflow installation
       status: v.string(),
       warning: v.optional(v.boolean()),
       installationGuide: v.string(),
@@ -138,6 +139,10 @@ export default defineSchema({
       sizeWarning: v.boolean(),
       blocked: v.boolean(),
       classification: v.string(),
+      // Hosted image fields (for downloadable images)
+      hostedUrl: v.optional(v.string()),
+      hostedFilename: v.optional(v.string()),
+      storageId: v.optional(v.id("_storage")),
     }))),
 
     // Design tokens (for quick access)
@@ -194,4 +199,17 @@ export default defineSchema({
   })
     .index("by_project", ["projectId"])
     .index("by_project_type", ["projectId", "type"]),
+
+  // Hosted images for import projects (Convex file storage)
+  hostedImages: defineTable({
+    projectId: v.id("importProjects"),
+    originalUrl: v.string(),
+    originalFilename: v.string(),
+    storageId: v.id("_storage"),
+    mimeType: v.string(),
+    sizeBytes: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_original_url", ["originalUrl"]),
 })

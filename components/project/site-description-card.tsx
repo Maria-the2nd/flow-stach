@@ -42,12 +42,12 @@ export function SiteDescriptionCard({ projectId, description }: SiteDescriptionC
   };
 
   return (
-    <Card className="!bg-white/80 backdrop-blur-xl border-slate-200 shadow-xl shadow-slate-200/50 rounded-[32px] overflow-hidden">
+    <Card className="bg-card/50 backdrop-blur-xl border-border shadow-xl shadow-background/50 rounded-[32px] overflow-hidden">
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1 flex-1">
-            <CardTitle className="text-2xl font-bold text-slate-900">About This Site</CardTitle>
-            <CardDescription className="text-slate-500 font-medium max-w-xl leading-relaxed">
+            <CardTitle className="text-2xl font-bold text-foreground">About This Site</CardTitle>
+            <CardDescription className="text-muted-foreground font-medium max-w-xl leading-relaxed">
               Add a brief description of what this site is about. This helps you remember the project context.
             </CardDescription>
           </div>
@@ -56,7 +56,7 @@ export function SiteDescriptionCard({ projectId, description }: SiteDescriptionC
               variant="outline"
               size="sm"
               onClick={() => setIsEditing(true)}
-              className="shrink-0 rounded-xl border-slate-200 hover:bg-slate-50"
+              className="shrink-0 rounded-xl border-border hover:bg-accent"
             >
               <Pencil className="w-4 h-4 mr-2" />
               Edit
@@ -72,11 +72,11 @@ export function SiteDescriptionCard({ projectId, description }: SiteDescriptionC
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder="Describe what this site is about..."
-              className="min-h-[120px] resize-none rounded-xl border-slate-200 focus:border-blue-300 focus:ring-blue-200"
+              className="min-h-[120px] resize-none rounded-xl border-border focus:border-primary/50 focus:ring-primary/20 bg-background"
               maxLength={500}
             />
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-muted-foreground">
                 {value.length}/500 characters
               </span>
               <div className="flex gap-2">
@@ -94,7 +94,7 @@ export function SiteDescriptionCard({ projectId, description }: SiteDescriptionC
                   size="sm"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="rounded-xl bg-blue-600 hover:bg-blue-700"
+                  className="rounded-xl bg-primary hover:opacity-90 text-primary-foreground"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {isSaving ? "Saving..." : "Save"}
@@ -103,13 +103,13 @@ export function SiteDescriptionCard({ projectId, description }: SiteDescriptionC
             </div>
           </div>
         ) : (
-          <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-5">
+          <div className="bg-accent/30 border border-border/50 rounded-2xl p-5">
             {description ? (
-              <p className="text-slate-700 font-medium leading-relaxed whitespace-pre-wrap">
+              <p className="text-foreground font-medium leading-relaxed whitespace-pre-wrap">
                 {description}
               </p>
             ) : (
-              <p className="text-slate-400 italic">
+              <p className="text-muted-foreground italic text-sm">
                 No description yet. Click &quot;Edit&quot; to add one.
               </p>
             )}

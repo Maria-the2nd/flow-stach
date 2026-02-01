@@ -1,8 +1,10 @@
 # Three-Output System
 
-**Status**: ✅ Implemented and Tested
+> **⚠️ DEPRECATED**: This document describes an older architecture. The current system uses a **single hidden div output** (class: `delete-me`) that contains all styles. See `SYSTEM_MANIFEST.md` for the current approach.
 
-The Flow Bridge conversion now produces three distinct outputs that users copy to different places in Webflow:
+**Status**: ❌ Deprecated (replaced by single-div output)
+
+~~The Flow Bridge conversion now produces three distinct outputs that users copy to different places in Webflow:~~
 
 ## The Three Outputs
 

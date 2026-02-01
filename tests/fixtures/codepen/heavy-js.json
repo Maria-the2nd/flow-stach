@@ -1,0 +1,21 @@
+{
+  "name": "heavy-js",
+  "description": "Pen with heavy JS (GSAP) and warnings",
+  "jsonp": "__CP_JSONP__34567({\"html\":\"<div><canvas></canvas><svg><filter id=\\\"f\\\"></filter><animate attributeName=\\\"x\\\" /></svg><script type=\\\"module\\\"></script></div>\",\"css\":\".stage{height:100vh;}\",\"js\":\"fetch('https://api.example.com'); localStorage.setItem('k','v');\",\"css_external\":\"\",\"js_external\":[\"https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js\",\"https://cdn.jsdelivr.net/npm/gsap@3.11.5/dist/ScrollTrigger.min.js\"],\"title\":\"GSAP Stage\",\"author_name\":\"Test User\",\"js_pre_processor\":\"babel\"});",
+  "expectedInput": {
+    "projectName": "GSAP Stage",
+    "htmlText": "<div><canvas></canvas><svg><filter id=\"f\"></filter><animate attributeName=\"x\" /></svg><script type=\"module\"></script></div>",
+    "cssText": ".stage{height:100vh;}",
+    "jsText": "fetch('https://api.example.com'); localStorage.setItem('k','v');",
+    "cssUrls": [],
+    "jsUrls": [
+      "https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js",
+      "https://cdn.jsdelivr.net/npm/gsap@3.11.5/dist/ScrollTrigger.min.js"
+    ],
+    "provenance": "codepen"
+  },
+  "meta": {
+    "preprocessors": ["babel"],
+    "penUrl": "https://codepen.io/testuser/pen/gsapstage"
+  }
+}

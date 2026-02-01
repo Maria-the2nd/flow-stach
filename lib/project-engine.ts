@@ -10,6 +10,8 @@ import { applyDeterministicComponentNames } from "./flowbridge-semantic"
 import { applySemanticPatchResponse, buildSemanticPatchRequest, type FlowbridgeSemanticPatchMeta } from "./flowbridge-semantic"
 import { ensureWebflowPasteSafety } from "./webflow-safety-gate"
 import { renameClassesForProject, isBemRenamingEnabled, type ClassRenamingReport, type LlmClassContext } from "./bem-renamer"
+import { detectFontsFromCSS, buildFontChecklist } from "./font-detector"
+import { detectLibraries } from "./js-library-detector"
 
 export type ProcessingStage = "parsing" | "extracting" | "componentizing" | "semantic" | "generating" | "complete" | "idle"
 
@@ -50,6 +52,7 @@ export type DetectedFont = {
     name: string;
     source: string;
     url?: string;
+    weights?: number[];  // [400, 500, 700] for Webflow installation
     status: string;
     warning?: boolean;
     installationGuide: string;
@@ -218,7 +221,25 @@ export async function processProjectImport(
 
         // 5. GENERATING FINAL ARTIFACTS
         reportProgress("generating", 90);
+
+        // DEBUG: Check if :nth-child rules are present before literalization
+        const hasNthChildBefore = finalCss.includes(':nth-child');
+        console.log(`[project-engine] :nth-child in finalCss BEFORE literalize: ${hasNthChildBefore}`);
+        if (hasNthChildBefore) {
+            const nthChildRules = finalCss.match(/\.[^{]+:nth-child\([^)]+\)\s*\{[^}]+\}/g);
+            console.log(`[project-engine] Found :nth-child rules:`, nthChildRules?.slice(0, 3));
+        }
+
         const literalization = literalizeCssForWebflow(finalCss);
+
+        // DEBUG: Check if :nth-child rules survived literalization
+        const hasNthChildAfter = literalization.css.includes(':nth-child');
+        console.log(`[project-engine] :nth-child in literalization.css AFTER literalize: ${hasNthChildAfter}`);
+        if (hasNthChildAfter) {
+            const nthChildRulesAfter = literalization.css.match(/\.[^{]+:nth-child\([^)]+\)\s*\{[^}]+\}/g);
+            console.log(`[project-engine] :nth-child rules after literalize:`, nthChildRulesAfter?.slice(0, 3));
+        }
+
         const finalCssResult = parseCSS(literalization.css);
         const tokenPayloadResult = buildCssTokenPayload(literalization.css, { namespace: tokens.namespace, includePreview: true });
         const tokenSafety = ensureWebflowPasteSafety({ payload: tokenPayloadResult.webflowPayload });
@@ -227,15 +248,25 @@ export async function processProjectImport(
             : tokenSafety.webflowJson;
 
         const images = extractImages(normalization.html, literalization.css);
-        const googleFontsUrl = tokens?.fonts?.googleFonts || "";
-        const mappedFonts = (tokens?.fonts?.families || []).map(f => ({
-            name: f,
-            source: "Google Fonts",
-            url: googleFontsUrl,
-            status: "pending",
-            warning: false,
-            installationGuide: `Go to Site Settings -> Fonts and add ${f}`
-        }));
+
+        // Use font detector for proper weight detection
+        const detectedFonts = detectFontsFromCSS(literalization.css);
+        const fontChecklist = buildFontChecklist(detectedFonts);
+
+        const mappedFonts = detectedFonts.map((font, idx) => {
+            const checklist = fontChecklist[idx];
+            return {
+                name: font.family,
+                source: font.source === 'google' ? 'Google Fonts' :
+                        font.source === 'adobe' ? 'Adobe Fonts' :
+                        font.source === 'system' ? 'System' : 'Custom',
+                url: font.url,
+                weights: font.weights.length > 0 ? font.weights : undefined,
+                status: checklist.status === 'available' ? 'available' : 'missing',
+                warning: checklist.warning || false,
+                installationGuide: checklist.installationGuide,
+            };
+        });
 
         const finalComponents = componentsTree.components.map(c => {
             const payload = buildComponentPayload(c, finalCssResult.classIndex, tokenPayloadResult.establishedClasses, {
@@ -258,6 +289,20 @@ export async function processProjectImport(
 
         reportProgress("complete", 100);
 
+        // Detect libraries from inline JavaScript and merge with external scripts
+        const detectedLibraries = detectLibraries(workingJs);
+        if (detectedLibraries.names.length > 0) {
+            console.log(`[project-engine] Detected libraries from inline JS: ${detectedLibraries.displayNames.join(', ')}`);
+        }
+
+        // Combine: external scripts from HTML + detected library CDNs + external stylesheets
+        const allExternalScripts = Array.from(new Set([
+            ...cleanResult.externalScripts,
+            ...detectedLibraries.scripts,  // CDN URLs for detected libraries (e.g., Three.js, GSAP)
+            ...detectedLibraries.styles,   // CSS CDN URLs for libraries that need them
+            ...cleanResult.externalStylesheets,
+        ]));
+
         return {
             projectName: tokens.name,
             projectSlug: tokens.slug,
@@ -268,7 +313,7 @@ export async function processProjectImport(
                 classIndex: JSON.stringify(finalCssResult.classIndex),
                 cleanHtml: componentsTree.components.map(c => c.htmlContent).join(""),
                 scriptsJs: workingJs,
-                externalScripts: cleanResult.externalScripts,
+                externalScripts: allExternalScripts,
                 jsHooks: extractJsHooks(componentsTree.components.map(c => c.htmlContent).join(""))
             },
             components: finalComponents,

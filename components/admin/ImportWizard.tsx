@@ -841,18 +841,18 @@ export function ImportWizard() {
       >
         <AlertDialogContent className="glass-card border-none shadow-2xl sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-blue-600">
+            <AlertDialogTitle className="flex items-center gap-2 text-primary">
               <HugeiconsIcon icon={Alert01Icon} size={24} />
               Refined Processing
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4 pt-4 text-slate-600 font-medium">
+            <AlertDialogDescription className="space-y-4 pt-4 text-muted-foreground font-medium">
               <div>
                 To ensure a premium design system integration, we refined your code:
               </div>
 
-              <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 space-y-2">
-                <div className="font-bold text-blue-900 ">Adjustments made:</div>
-                <ul className="list-disc list-inside text-sm space-y-1 text-blue-800/70">
+              <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 space-y-2">
+                <div className="font-bold text-primary ">Adjustments made:</div>
+                <ul className="list-disc list-inside text-sm space-y-1 text-primary/70">
                   {unsupportedContentDialog.removedReferences.map((ref, i) => (
                     <li key={i} className="font-mono text-xs">{ref}</li>
                   ))}
@@ -862,7 +862,7 @@ export function ImportWizard() {
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
             <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-8 shadow-lg shadow-blue-200/50"
+              className="bg-primary hover:opacity-90 text-primary-foreground rounded-full px-8 shadow-lg shadow-primary/20"
               onClick={() => setUnsupportedContentDialog(prev => ({ ...prev, open: false }))}
             >
               Perfect, Proceed
@@ -872,11 +872,11 @@ export function ImportWizard() {
       </AlertDialog>
 
       <div className="flex flex-col items-center text-center space-y-3 pt-10">
-        <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-blue-600/60 bg-blue-50 px-4 py-1.5 rounded-full">Project Engine</span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-primary/70 bg-primary/5 px-4 py-1.5 rounded-full">Project Engine</span>
         <h1 className="premium-gradient-text font-display text-4xl leading-none tracking-tight sm:text-6xl uppercase">
           Import Design
         </h1>
-        <p className="max-w-xl text-slate-500 font-medium text-sm sm:text-base leading-relaxed">
+        <p className="max-w-xl text-muted-foreground font-medium text-sm sm:text-base leading-relaxed">
           Inject any AI-generated HTML/CSS into your library. <br className="hidden sm:block" />
           We&apos;ll automatically extract components, tokens, and assets.
         </p>
@@ -884,46 +884,51 @@ export function ImportWizard() {
 
       {step === "input" && (
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
-          <Card className="glass-card border-none overflow-hidden rounded-[40px]">
-            <CardContent className="p-1.5 sm:p-2">
+          <div className="bg-card/80 backdrop-blur-xl rounded-[32px] border border-white/20 ring-1 ring-white/10 p-10 shadow-2xl shadow-primary/5 min-h-[400px]">
+            {/* Step Content */}
+            <div className="space-y-6">
+              <div className="space-y-2 text-center mb-8">
+                <h2 className="text-3xl font-black text-foreground tracking-tight">Import HTML</h2>
+                <p className="text-muted-foreground text-sm">Paste your HTML code below or upload a file.</p>
+              </div>
               <div className="relative group">
                 <div className="flex flex-col sm:flex-row gap-2 mb-2">
-                  <div className="flex-grow glass-card border-none rounded-[32px] px-6 py-4 focus-within:ring-2 ring-blue-500/20 transition-all flex items-center gap-4">
-                    <HugeiconsIcon icon={FileEditIcon} className="text-blue-500" size={20} />
+                  <div className="flex-grow glass-card border-none rounded-[32px] px-6 py-4 focus-within:ring-2 ring-primary/20 transition-all flex items-center gap-4">
+                    <HugeiconsIcon icon={FileEditIcon} className="text-primary" size={20} />
                     <input
-                      className="bg-transparent border-none text-slate-900 font-bold placeholder:text-slate-300 w-full focus:outline-none"
+                      className="bg-transparent border-none text-foreground font-bold placeholder:text-muted-foreground/30 w-full focus:outline-none"
                       placeholder="Name your masterpiece"
                       value={projectName}
                       onChange={(e) => setProjectName(e.target.value)}
                     />
                   </div>
-                  <div className="glass-card border-none rounded-[32px] px-6 py-4 flex items-center gap-2 cursor-pointer hover:bg-white/80 transition-all overflow-hidden relative">
+                  <div className="glass-card border-none rounded-[32px] px-6 py-4 flex items-center gap-2 cursor-pointer hover:bg-accent/80 transition-all overflow-hidden relative">
                     <Label htmlFor="fileUpload" className="flex items-center gap-3 cursor-pointer">
-                      <HugeiconsIcon icon={Upload04Icon} className="text-slate-400 group-hover:text-blue-500" size={20} />
-                      <span className="text-sm font-bold text-slate-600 whitespace-nowrap">Upload .html</span>
+                      <HugeiconsIcon icon={Upload04Icon} className="text-muted-foreground group-hover:text-primary" size={20} />
+                      <span className="text-sm font-bold text-muted-foreground whitespace-nowrap group-hover:text-foreground">Upload .html</span>
                     </Label>
                     <input id="fileUpload" type="file" accept=".html,.htm" className="hidden" onChange={handleFileUpload} />
                   </div>
                 </div>
 
-                <div className="bg-slate-50/50 rounded-[32px] p-6 min-h-[400px] border border-slate-100/50 relative overflow-hidden transition-all duration-700 group-focus-within:border-blue-500/20 group-focus-within:bg-white/40">
+                <div className="bg-accent/20 rounded-[32px] p-6 min-h-[400px] border border-border/30 relative overflow-hidden transition-all duration-700 group-focus-within:border-primary/20 group-focus-within:bg-accent/40">
                   <Textarea
                     id="htmlInput"
                     value={htmlInput}
                     onChange={(e) => setHtmlInput(e.target.value)}
                     placeholder="Paste the code here..."
-                    className="absolute inset-0 bg-transparent border-none focus-visible:ring-0 font-mono text-sm resize-none p-8 text-slate-600 h-full w-full"
+                    className="absolute inset-0 bg-transparent border-none focus-visible:ring-0 font-mono text-sm resize-none p-8 text-foreground h-full w-full"
                   />
                   {!htmlInput && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-                      <HugeiconsIcon icon={CodeIcon} size={120} className="text-slate-400" strokeWidth={1} />
+                      <HugeiconsIcon icon={CodeIcon} size={120} className="text-muted-foreground" strokeWidth={1} />
                     </div>
                   )}
                 </div>
 
                 <div className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest px-4">
-                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} className="text-green-500" />
+                  <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest px-4">
+                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} className="text-emerald-500" />
                     HTML / CSS / JS ONLY
                   </div>
 
@@ -931,7 +936,7 @@ export function ImportWizard() {
                     size="lg"
                     onClick={handleParse}
                     disabled={!htmlInput.trim() || processingStatus !== "idle"}
-                    className="bg-blue-600 hover:bg-black text-white rounded-full px-12 h-14 font-black shadow-xl shadow-blue-200/50 group transition-all duration-500 hover:scale-105"
+                    className="bg-primary hover:opacity-90 text-primary-foreground rounded-full px-12 h-14 font-black shadow-xl shadow-primary/20 group transition-all duration-500 hover:scale-105"
                   >
                     {processingStatus === "idle" ? (
                       <>
@@ -944,8 +949,8 @@ export function ImportWizard() {
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {processingStatus !== "idle" && (
             <div className="mt-12 glass-card p-10 rounded-[40px] border-none animate-in fade-in zoom-in duration-700">
@@ -959,17 +964,17 @@ export function ImportWizard() {
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000 grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             {/* Header Status Card */}
-            <div className="glass-card border-none p-8 rounded-[40px] flex flex-col sm:flex-row items-center justify-between gap-6 overflow-hidden relative group">
+            <div className="bg-card/80 backdrop-blur-xl rounded-[32px] border border-white/20 ring-1 ring-white/10 p-10 shadow-2xl shadow-primary/5 flex flex-col sm:flex-row items-center justify-between gap-6 overflow-hidden relative group">
               <div className="absolute top-0 right-0 p-8 opacity-[0.03] scale-[4] group-hover:rotate-12 transition-transform duration-1000 pointer-events-none">
                 <HugeiconsIcon icon={CheckmarkCircle01Icon} size={120} />
               </div>
               <div className="space-y-2">
-                <h2 className="text-3xl font-black tracking-tighter uppercase text-slate-900">{projectName}</h2>
+                <h2 className="text-3xl font-black tracking-tighter uppercase text-foreground">{projectName}</h2>
                 <div className="flex flex-wrap gap-3">
-                  <Badge variant="secondary" className="rounded-full bg-blue-50 text-blue-600 border-none px-4 py-1 font-bold text-[10px] uppercase">
+                  <Badge variant="secondary" className="rounded-full bg-primary/10 text-primary border-none px-4 py-1 font-bold text-[10px] uppercase">
                     {componentTree?.components.length || 0} Components
                   </Badge>
-                  <Badge variant="secondary" className="rounded-full bg-slate-50 text-slate-600 border-none px-4 py-1 font-bold text-[10px] uppercase tracking-widest font-mono">
+                  <Badge variant="secondary" className="rounded-full bg-accent text-muted-foreground border-none px-4 py-1 font-bold text-[10px] uppercase tracking-widest font-mono">
                     {Object.keys(artifacts.classIndex.classes).length} Styles
                   </Badge>
                   {llmSummary?.mode !== "live" && (
@@ -982,7 +987,7 @@ export function ImportWizard() {
               <Button
                 onClick={handleImport}
                 disabled={isImporting}
-                className="bg-blue-600 hover:bg-black text-white rounded-full px-10 h-16 font-black shadow-2xl shadow-blue-200/50 text-lg transition-all duration-500"
+                className="bg-primary hover:opacity-90 text-primary-foreground rounded-full px-10 h-16 font-black shadow-2xl shadow-primary/20 text-lg transition-all duration-500"
               >
                 {isImporting ? (
                   <>
@@ -999,15 +1004,15 @@ export function ImportWizard() {
             </div>
 
             {/* Visual Preview Grid */}
-            <div className="glass-card border-none p-10 rounded-[40px] space-y-8">
+            <div className="bg-card/80 backdrop-blur-xl rounded-[32px] border border-white/20 ring-1 ring-white/10 p-10 shadow-2xl shadow-primary/5 space-y-8">
               <div className="flex items-center justify-between">
-                <h3 className="font-black text-lg uppercase tracking-widest text-slate-900 border-l-4 border-blue-600 pl-6">Detected Visuals</h3>
-                <span className="text-xs font-bold text-slate-400">{detectedImages.length} Matches</span>
+                <h3 className="font-black text-lg uppercase tracking-widest text-foreground border-l-4 border-primary pl-6">Detected Visuals</h3>
+                <span className="text-xs font-bold text-muted-foreground">{detectedImages.length} Matches</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {detectedImages.slice(0, 8).map((img, i) => (
-                  <div key={i} className="aspect-square rounded-[24px] overflow-hidden bg-slate-50 border border-slate-100 group relative">
+                  <div key={i} className="aspect-square rounded-[24px] overflow-hidden bg-accent/30 border border-border group relative">
                     <Image
                       src={img.url}
                       alt={`Detected visual ${i + 1}`}
@@ -1022,7 +1027,7 @@ export function ImportWizard() {
                   </div>
                 ))}
                 {detectedImages.length === 0 && (
-                  <div className="col-span-full py-10 flex flex-col items-center justify-center text-slate-300 gap-4">
+                  <div className="col-span-full py-10 flex flex-col items-center justify-center text-muted-foreground/30 gap-4">
                     <HugeiconsIcon icon={Layers01Icon} size={48} strokeWidth={1} />
                     <span className="text-[10px] font-bold uppercase tracking-widest">No static images found</span>
                   </div>
@@ -1031,15 +1036,15 @@ export function ImportWizard() {
             </div>
 
             {/* Component Tree View */}
-            <div className="glass-card border-none p-10 rounded-[40px] space-y-8">
+            <div className="bg-card/80 backdrop-blur-xl rounded-[32px] border border-white/20 ring-1 ring-white/10 p-10 shadow-2xl shadow-primary/5 space-y-8">
               <div className="flex items-center justify-between">
-                <h3 className="font-black text-lg uppercase tracking-widest text-slate-900 border-l-4 border-blue-600 pl-6">Structure</h3>
+                <h3 className="font-black text-lg uppercase tracking-widest text-foreground border-l-4 border-primary pl-6">Structure</h3>
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="skip-toggle" className="text-[10px] font-black text-slate-400 uppercase">Skip Core Styles</Label>
+                  <Label htmlFor="skip-toggle" className="text-[10px] font-black text-muted-foreground uppercase">Skip Core Styles</Label>
                   <input
                     id="skip-toggle"
                     type="checkbox"
-                    className="rounded-full h-4 w-4 accent-blue-600"
+                    className="rounded-full h-4 w-4 accent-primary"
                     checked={skipEstablishedStyles}
                     onChange={(e) => setSkipEstablishedStyles(e.target.checked)}
                   />
@@ -1050,29 +1055,29 @@ export function ImportWizard() {
                 {componentTree?.components.map((c) => {
                   const safetyReport = componentSafetyReports.get(c.id)
                   return (
-                    <div key={c.id} className="glass-card border-none rounded-[32px] p-6 hover:bg-white/80 transition-all border border-transparent hover:border-slate-100 group">
+                    <div key={c.id} className="glass-card border-none rounded-[32px] p-6 hover:bg-accent/40 transition-all border border-transparent hover:border-border/50 group">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-5">
-                          <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 font-black text-sm">
+                          <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-sm">
                             {c.type === "nav" ? "NAV" : c.type === "hero" ? "HERO" : "SEC"}
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900">{c.name}</div>
-                            <div className="text-[10px] uppercase font-bold tracking-widest text-slate-400">{c.classesUsed.length} classes detected</div>
+                            <div className="font-bold text-foreground">{c.name}</div>
+                            <div className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60">{c.classesUsed.length} classes detected</div>
                           </div>
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="rounded-full bg-slate-50 text-slate-900 font-bold hover:bg-blue-600 hover:text-white transition-all text-[10px] group-hover:px-6"
+                          className="rounded-full bg-accent text-foreground font-bold hover:bg-primary hover:text-white transition-all text-[10px] group-hover:px-6"
                           onClick={() => handleCopyComponent(c)}
                         >
                           COPY
                         </Button>
                       </div>
                       {safetyReport && (
-                        <details className="mt-4 rounded-2xl border border-slate-100 bg-white/70 p-3 text-xs">
-                          <summary className="cursor-pointer font-semibold text-slate-700">Safety Report</summary>
+                        <details className="mt-4 bg-white/5 rounded-2xl p-4 border border-white/10 ring-1 ring-white/5 flex gap-4 premium-card-hover group/item">
+                          <summary className="cursor-pointer font-semibold text-muted-foreground/80">Safety Report</summary>
                           <div className="mt-3">
                             <SafetyReportPanel report={safetyReport} />
                           </div>
@@ -1086,30 +1091,25 @@ export function ImportWizard() {
           </div>
 
           <aside className="space-y-8">
-            {/* Fonts Checklist */}
-            <div className="glass-card border-none p-10 rounded-[40px] space-y-6">
-              <h3 className="font-black text-sm uppercase tracking-widest text-slate-900">Font Stack</h3>
+            {/* Fonts Section */}
+            <div className="bg-card/80 backdrop-blur-xl rounded-[32px] border border-white/20 ring-1 ring-white/10 p-10 shadow-2xl shadow-primary/5 space-y-6">
+              <h3 className="font-black text-sm uppercase tracking-widest text-foreground">Font Stack</h3>
               <div className="space-y-4">
                 {detectedFonts.map((font, i) => (
-                  <div key={i} className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900 text-sm">{font.name}</span>
-                      <Badge className="bg-green-50 text-green-600 border-none rounded-full text-[8px] font-black">GOO</Badge>
-                    </div>
-                    <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-                      <div className="h-full w-full bg-green-500" />
-                    </div>
+                  <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 ring-1 ring-white/5 transition-all hover:bg-white/10">
+                    <span className="font-bold text-foreground text-sm">{font.name}</span>
+                    <Badge className="bg-emerald-500/10 text-emerald-500 border-none rounded-full text-[8px] font-black">GOO</Badge>
                   </div>
                 ))}
                 {detectedFonts.length === 0 && (
-                  <p className="text-xs text-slate-400 italic">No custom font families found.</p>
+                  <p className="text-xs text-muted-foreground italic">No custom font families found.</p>
                 )}
               </div>
             </div>
 
             {/* LLM Engine Data */}
             {llmSummary && (
-              <div className="glass-card border-none p-10 rounded-[40px] space-y-6 bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-2xl shadow-purple-200/50">
+              <div className="glass-card border-none p-10 rounded-[40px] space-y-6 bg-gradient-to-br from-primary/80 to-primary text-primary-foreground shadow-2xl shadow-primary/20">
                 <div className="flex items-center gap-3 opacity-80">
                   <HugeiconsIcon icon={JavaScriptIcon} size={16} />
                   <span className="text-[10px] font-black uppercase tracking-widest">Optimizing Intelligence</span>
@@ -1118,11 +1118,11 @@ export function ImportWizard() {
                   <div className="text-3xl font-black tracking-tighter leading-none">
                     {llmSummary.htmlMutations} Adjustments
                   </div>
-                  <p className="text-xs font-medium text-white/70 leading-relaxed uppercase tracking-wider italic">
+                  <p className="text-xs font-medium text-primary-foreground/70 leading-relaxed uppercase tracking-wider italic">
                     &ldquo;AI parsed your architecture and mapped {llmSummary.renamedComponents} custom components with semantic accuracy.&rdquo;
                   </p>
                 </div>
-                <div className="pt-4 border-t border-white/10 flex justify-between items-center text-[10px] font-black tracking-[0.2em] opacity-80 uppercase">
+                <div className="pt-4 border-t border-primary-foreground/10 flex justify-between items-center text-[10px] font-black tracking-[0.2em] opacity-80 uppercase">
                   <span>MODEL: {llmSummary.model?.split('/').pop() || "FP-GEN-V2"}</span>
                   <span>V:{llmSummary.mode.toUpperCase()}</span>
                 </div>
@@ -1132,7 +1132,7 @@ export function ImportWizard() {
             <Button
               variant="outline"
               onClick={handleReset}
-              className="w-full rounded-full border-2 border-slate-100 hover:bg-slate-50 font-black h-14 text-slate-400 uppercase tracking-widest text-[10px]"
+              className="w-full rounded-full border-2 border-border hover:bg-accent font-black h-14 text-muted-foreground uppercase tracking-widest text-[10px]"
             >
               Reset Engine
             </Button>
@@ -1142,31 +1142,31 @@ export function ImportWizard() {
 
       {step === "complete" && importResult && (
         <div className="animate-in fade-in zoom-in duration-1000 max-w-2xl mx-auto">
-          <Card className="glass-card border-none p-12 rounded-[50px] text-center space-y-8 shadow-2xl shadow-blue-100">
-            <div className="mx-auto h-24 w-24 rounded-[32px] bg-green-50 flex items-center justify-center text-green-500 shadow-lg shadow-green-100">
+          <Card className="glass-card border-none p-12 rounded-[50px] text-center space-y-8 shadow-2xl shadow-primary/10">
+            <div className="mx-auto h-24 w-24 rounded-[32px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-lg shadow-emerald-500/10">
               <HugeiconsIcon icon={CheckmarkCircle01Icon} size={48} />
             </div>
             <div className="space-y-2">
               <h2 className="premium-gradient-text text-4xl font-black uppercase tracking-tight">Injection Successful</h2>
-              <p className="text-slate-500 font-medium">Your design has been fully converted and indexed.</p>
+              <p className="text-muted-foreground font-medium">Your design has been fully converted and indexed.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50/50 p-6 rounded-[32px]">
-                <div className="text-3xl font-black text-slate-900">{importResult.assetsCreated}</div>
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">New Assets</div>
+              <div className="bg-accent/30 p-6 rounded-[32px] border border-border/50">
+                <div className="text-3xl font-black text-foreground">{importResult.assetsCreated}</div>
+                <div className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest px-4">New Assets</div>
               </div>
-              <div className="bg-slate-50/50 p-6 rounded-[32px]">
-                <div className="text-3xl font-black text-slate-900">{importResult.artifactsStored}</div>
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">Artifacts</div>
+              <div className="bg-accent/30 p-6 rounded-[32px] border border-border/50">
+                <div className="text-3xl font-black text-foreground">{importResult.artifactsStored}</div>
+                <div className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest px-4">Artifacts</div>
               </div>
             </div>
 
             <div className="flex flex-col gap-4">
-              <Button asChild className="bg-black hover:bg-blue-600 text-white rounded-full h-16 font-black text-lg transition-all duration-500">
-                <Link href="/assets">EXPLORE LIBRARY</Link>
+              <Button asChild className="bg-primary hover:opacity-90 text-primary-foreground rounded-full h-16 font-black text-lg transition-all duration-500">
+                <Link href="/workspace/projects">EXPLORE LIBRARY</Link>
               </Button>
-              <Button variant="ghost" onClick={handleReset} className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+              <Button variant="ghost" onClick={handleReset} className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] hover:text-foreground hover:bg-transparent">
                 Import Another Project
               </Button>
             </div>

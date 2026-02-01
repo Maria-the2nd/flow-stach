@@ -30,6 +30,8 @@ import { Progress } from "@/components/ui/progress";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { processProjectImport } from "@/lib/project-engine";
+import { resolveCodePen, type CodePenMeta, type ImportInput, type ValidationMessage } from "@/lib/codepen-resolver";
+import { runCodePenPreflight, type CodePenPreflightResult } from "@/lib/validation/codepen-preflight";
 import { toast } from "sonner";
 
 // Main component with Suspense boundary
@@ -37,7 +39,7 @@ export default function ImportPage() {
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         }>
             <ImportForm />
@@ -57,8 +59,8 @@ function ImportForm() {
 
     // CodePen States
     const [codepenUrl, setCodepenUrl] = useState("");
-    const [isFetching, setIsFetching] = useState(false);
-    const [hasFetched, setHasFetched] = useState(false);
+    const [codepenMeta, setCodepenMeta] = useState<CodePenMeta | null>(null);
+    const [codepenPreflight, setCodepenPreflight] = useState<CodePenPreflightResult | null>(null);
 
     const [isImporting, setIsImporting] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -77,6 +79,34 @@ function ImportForm() {
     const [cssUrls, setCssUrls] = useState<string[]>([]);
     const [jsUrls, setJsUrls] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const healthPanelRef = useRef<HTMLDivElement>(null);
+
+    const buildCodePenInput = (overrides?: Partial<ImportInput>): ImportInput => ({
+        projectName: overrides?.projectName ?? (projectName.trim() || "CodePen Import"),
+        htmlText: overrides?.htmlText ?? htmlText,
+        cssText: overrides?.cssText ?? cssText,
+        jsText: overrides?.jsText ?? jsText,
+        cssUrls: overrides?.cssUrls ?? cssUrls,
+        jsUrls: overrides?.jsUrls ?? jsUrls,
+        provenance: 'codepen',
+    });
+
+    const runPreflightAndStore = (input: ImportInput, meta?: CodePenMeta) => {
+        const result = runCodePenPreflight(input, meta);
+        setCodepenPreflight(result);
+        return result;
+    };
+
+    const getFieldMessages = (field: ValidationMessage['field']) => {
+        if (!codepenPreflight) {
+            return [] as ValidationMessage[];
+        }
+        return [
+            ...codepenPreflight.blockers,
+            ...codepenPreflight.warnings,
+            ...codepenPreflight.infos,
+        ].filter((message) => message.field === field);
+    };
 
     // Sync search params with state
     useEffect(() => {
@@ -109,33 +139,42 @@ function ImportForm() {
         }
     };
 
-    const handleFetchCodePen = () => {
-        if (!codepenUrl.includes('codepen.io')) {
-            toast.error("Invalid URL", { description: "Please enter a valid CodePen URL" });
-            return;
-        }
+    const buildMultiFileHtmlFromParts = (parts: {
+        htmlText: string;
+        cssText: string;
+        jsText: string;
+        cssUrls: string[];
+        jsUrls: string[];
+    }) => {
+        const normalizedCssUrls = parts.cssUrls.map((url) => url.trim()).filter(Boolean);
+        const normalizedJsUrls = parts.jsUrls.map((url) => url.trim()).filter(Boolean);
 
-        setIsFetching(true);
-        toast.info("Fetch wiring next. UI first, chaos later.");
+        const cssLinks = normalizedCssUrls
+            .map((url) => `<link rel="stylesheet" href="${url}">`)
+            .join("\n");
+        const jsLinks = normalizedJsUrls
+            .map((url) => `<script src="${url}"></script>`)
+            .join("\n");
 
-        // Stubbed population after 1.5s
-        setTimeout(() => {
-            setIsFetching(false);
-            setHasFetched(true);
-            setHtmlText("<!-- CodePen HTML will appear here -->\n<div class='pen-root'>\n  <h1>Imported from Pen</h1>\n</div>");
-            setCssText("/* CodePen CSS */\n.pen-root {\n  color: #3b82f6;\n}");
-            setJsText("// CodePen JS\nconsole.log('Pen loaded');");
+        const cssBlock = parts.cssText.trim() ? `<style>\n${parts.cssText.trim()}\n</style>` : "";
+        const jsBlock = parts.jsText.trim() ? `<script>\n${parts.jsText.trim()}\n</script>` : "";
 
-            if (!projectName) {
-                const parts = codepenUrl.split('/');
-                const slug = parts[parts.length - 1] || "Pen";
-                setProjectName(`[CodePen] ${slug}`);
-            }
-        }, 1500);
+        return [cssLinks, cssBlock, parts.htmlText, jsLinks, jsBlock]
+            .filter((block) => block && block.trim().length > 0)
+            .join("\n\n");
     };
 
+    const buildMultiFileHtml = () => buildMultiFileHtmlFromParts({
+        htmlText,
+        cssText,
+        jsText,
+        cssUrls,
+        jsUrls,
+    });
+
     const handleImport = async () => {
-        if (!projectName.trim()) {
+        const hasCodepenUrl = codepenUrl.trim().length > 0;
+        if (!projectName.trim() && !(importSource === 'codepen' && hasCodepenUrl)) {
             toast.error('Please enter a project name');
             return;
         }
@@ -145,16 +184,58 @@ function ImportForm() {
             return;
         }
 
-        if ((importSource === 'codepen' || (importSource === 'html' && importType === 'multi')) && !htmlText) {
+        if ((importSource === 'codepen' || (importSource === 'html' && importType === 'multi')) && !htmlText && !hasCodepenUrl) {
             toast.error('HTML content is required');
             return;
         }
 
         setIsImporting(true);
         setError(null);
-        setProgress(0);
+        setProgress(5);
+        setCurrentStageLabel("PARSING");
 
         try {
+            let resolvedInput: ImportInput | null = null;
+            let resolvedMeta: CodePenMeta | null = null;
+            let effectiveProjectName = projectName.trim();
+
+            if (importSource === 'codepen' && hasCodepenUrl) {
+                setCurrentStageLabel("FETCHING CODEPEN");
+                setProgress(2);
+
+                const resolved = await resolveCodePen(codepenUrl.trim());
+                resolvedInput = resolved.input;
+                resolvedMeta = resolved.meta ?? null;
+
+                setHtmlText(resolved.input.htmlText);
+                setCssText(resolved.input.cssText);
+                setJsText(resolved.input.jsText);
+                setCssUrls(resolved.input.cssUrls);
+                setJsUrls(resolved.input.jsUrls);
+                setCodepenMeta(resolvedMeta);
+
+                if (!effectiveProjectName) {
+                    effectiveProjectName = resolved.input.projectName;
+                    setProjectName(resolved.input.projectName);
+                }
+
+                const preflight = runPreflightAndStore(resolved.input, resolved.meta);
+                if (preflight.blockers.length > 0) {
+                    toast.error('Fix blockers before importing.');
+                    healthPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setIsImporting(false);
+                    return;
+                }
+            } else if (importSource === 'codepen') {
+                const preflight = runPreflightAndStore(buildCodePenInput(), codepenMeta ?? undefined);
+                if (preflight.blockers.length > 0) {
+                    toast.error('Fix blockers before importing.');
+                    healthPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setIsImporting(false);
+                    return;
+                }
+            }
+
             let finalHtml = htmlText;
 
             // If single file, read it first
@@ -167,10 +248,18 @@ function ImportForm() {
                 });
             }
 
+            if (importSource === 'codepen' || (importSource === 'html' && importType === 'multi')) {
+                if (resolvedInput) {
+                    finalHtml = buildMultiFileHtmlFromParts(resolvedInput);
+                } else {
+                    finalHtml = buildMultiFileHtml();
+                }
+            }
+
             // Process with engine
             const result = await processProjectImport(
                 finalHtml,
-                projectName,
+                effectiveProjectName,
                 (stage, prog) => {
                     setProgress(prog);
                     setCurrentStageLabel(stage.toUpperCase());
@@ -212,16 +301,16 @@ function ImportForm() {
 
     if (isDone) {
         return (
-            <div className="max-w-2xl mx-auto py-24 px-6 text-center space-y-8">
-                <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-emerald-100 animate-in zoom-in duration-500">
+            <div className="max-w-6xl mx-auto py-24 px-6 text-center space-y-8">
+                <div className="w-20 h-20 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 animate-in zoom-in duration-500 border border-emerald-500/20">
                     <CheckCircle2 className="w-10 h-10" />
                 </div>
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Import Successful</h1>
-                    <p className="text-slate-500">Your project &ldquo;{projectName}&rdquo; is ready and converted.</p>
+                    <h1 className="text-3xl font-black text-foreground mb-2">Import Successful</h1>
+                    <p className="text-muted-foreground font-medium">Your project &ldquo;{projectName}&rdquo; is ready and converted.</p>
                 </div>
                 <Link href={`/workspace/projects/${newProjectId}`}>
-                    <Button className="bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200/50 premium-hover px-12 h-14 rounded-2xl font-bold text-lg">
+                    <Button className="bg-primary text-primary-foreground hover:opacity-90 shadow-xl shadow-primary/20 premium-hover px-12 h-14 rounded-2xl font-black text-lg btn-premium">
                         View Project <ArrowRight className="w-5 h-5 ml-2" />
                     </Button>
                 </Link>
@@ -230,33 +319,33 @@ function ImportForm() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto py-12 px-6">
-            <div className="mb-8 text-center space-y-4">
-                <h1 className="text-4xl font-bold text-slate-900 tracking-tight">Import Project</h1>
-                <p className="text-slate-500 text-lg">
+        <div className="w-full max-w-[1700px] mx-auto py-12 px-8">
+            <div className="mb-12 text-center space-y-4">
+                <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight">Import Project</h1>
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">
                     {importSource === 'html'
                         ? (importType === 'single' ? "Transform your legacy code into high-performance components." : "Import your HTML + CSS + JS (separately).")
                         : "Import your HTML + CSS + JS from CodePen."
                     }
                 </p>
                 {importSource === 'codepen' && (
-                    <p className="text-slate-400 text-sm max-w-lg mx-auto italic">
-                        Paste a public CodePen link. We&rsquo;ll pull HTML + CSS + JS + external resources (fetch wiring next).
+                    <p className="text-muted-foreground/60 text-sm max-w-lg mx-auto italic font-medium">
+                        Paste a public CodePen link or paste the HTML + CSS + JS manually below.
                     </p>
                 )}
             </div>
 
-            <div className="bg-white/90 backdrop-blur-xl rounded-[32px] border border-slate-200 overflow-hidden shadow-2xl p-8 relative">
+            <div className="bg-card/80 backdrop-blur-xl rounded-[32px] border border-white/20 ring-1 ring-white/10 overflow-hidden shadow-2xl shadow-primary/5 p-10 relative">
                 {isImporting && (
-                    <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-12 text-center animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-12 text-center animate-in fade-in duration-300">
                         <div className="w-full max-w-sm space-y-8">
                             <div className="space-y-4">
-                                <h3 className="text-2xl font-bold text-slate-900">Importing Project...</h3>
-                                <p className="text-slate-500 text-sm">Analyzing code architecture and mapping semantic elements.</p>
+                                <h3 className="text-2xl font-bold text-foreground">Importing Project...</h3>
+                                <p className="text-muted-foreground text-sm">Analyzing code architecture and mapping semantic elements.</p>
                             </div>
                             <div className="space-y-2">
-                                <Progress value={progress} className="h-3 bg-slate-100 [&>div]:bg-blue-600 rounded-full shadow-inner" />
-                                <div className="flex justify-between text-xs font-bold text-blue-600 tracking-wider">
+                                <Progress value={progress} className="h-3 bg-accent [&>div]:bg-primary rounded-full shadow-inner" />
+                                <div className="flex justify-between text-xs font-bold text-primary tracking-wider">
                                     <span>{Math.round(progress)}% COMPLETE</span>
                                     <span>{currentStageLabel}</span>
                                 </div>
@@ -265,53 +354,62 @@ function ImportForm() {
                     </div>
                 )}
 
-                <div className="space-y-10">
-                    {/* Top Source Toggle */}
-                    <div className="flex justify-center">
-                        <div className="bg-slate-100/80 backdrop-blur p-1.5 rounded-2xl inline-flex gap-1 shadow-inner">
+                <div className="space-y-12">
+                    {/* Top Action Bar */}
+                    <div className="flex justify-between items-center pb-8 border-b border-white/10">
+                        <div className="bg-slate-500/10 p-1.5 rounded-2xl inline-flex gap-1 shadow-inner border border-white/10 ring-1 ring-white/5 h-fit">
                             <button
                                 onClick={() => setImportSource('html')}
-                                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${importSource === 'html' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
+                                className={`flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-black transition-all duration-300 ${importSource === 'html' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
                             >
                                 <FileText className="w-4 h-4" /> HTML Bundle
                             </button>
                             <button
                                 onClick={() => setImportSource('codepen')}
-                                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${importSource === 'codepen' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
+                                className={`flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-black transition-all duration-300 ${importSource === 'codepen' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
                             >
                                 <Files className="w-4 h-4" /> CodePen
                             </button>
                         </div>
+
+                        <Button
+                            onClick={handleImport}
+                            disabled={isImporting}
+                            className="bg-primary text-primary-foreground hover:opacity-90 shadow-xl shadow-primary/20 premium-hover px-10 h-14 rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50 btn-premium"
+                        >
+                            {isImporting ? <Loader2 className="w-6 h-6 mr-3 animate-spin" /> : <>Import Project <ArrowRight className="w-6 h-6 ml-3" /></>}
+                        </Button>
                     </div>
 
-                    <div className="space-y-8">
+                    <div className="space-y-10">
                         {/* Project Name Field */}
-                        <div className="space-y-3">
-                            <Label htmlFor="projectName" className="text-slate-700 font-bold ml-1">Project Name</Label>
+                        <div className="space-y-3 max-w-xl">
+                            <Label htmlFor="projectName" className="text-foreground font-bold ml-1">Project Name</Label>
                             <Input
                                 id="projectName"
                                 value={projectName}
                                 onChange={(e) => setProjectName(e.target.value)}
                                 placeholder="e.g. Osmo Loader, Client Site v2"
-                                className="h-12 rounded-xl border-slate-200 focus:ring-blue-500 focus:border-blue-500 font-medium"
+                                className="h-14 rounded-2xl border-border focus:ring-primary focus:border-primary font-bold bg-slate-500/5 backdrop-blur-sm shadow-inner px-6 text-lg"
                             />
-                            <p className="text-[10px] text-slate-400 font-medium ml-1">Give it a name you&rsquo;ll recognize later (e.g. &ldquo;Osmo Loader&rdquo;, &ldquo;Client Site v2&rdquo;).</p>
+                            <p className="text-[10px] text-muted-foreground font-medium ml-1">Give it a name you&rsquo;ll recognize later (e.g. &ldquo;Osmo Loader&rdquo;, &ldquo;Client Site v2&rdquo;).</p>
                         </div>
 
+
                         {importSource === 'html' ? (
-                            <div className="space-y-8">
+                            <div className="space-y-12">
                                 {/* HTML Sub-toggle */}
-                                <div className="flex justify-center">
-                                    <div className="bg-slate-50 border border-slate-100 p-1 rounded-xl flex gap-1">
+                                <div className="flex justify-start">
+                                    <div className="bg-slate-500/5 border border-white/10 ring-1 ring-white/5 p-1 rounded-xl flex gap-1">
                                         <button
                                             onClick={() => setImportType('single')}
-                                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${importType === 'single' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                            className={`px-6 py-2 rounded-lg text-xs uppercase tracking-widest font-black transition-all ${importType === 'single' ? 'bg-white text-black shadow-lg' : 'text-muted-foreground/60 hover:text-foreground hover:bg-white/5'}`}
                                         >
                                             Single File
                                         </button>
                                         <button
                                             onClick={() => setImportType('multi')}
-                                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${importType === 'multi' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                            className={`px-6 py-2 rounded-lg text-xs uppercase tracking-widest font-black transition-all ${importType === 'multi' ? 'bg-white text-black shadow-lg' : 'text-muted-foreground/60 hover:text-foreground hover:bg-white/5'}`}
                                         >
                                             Multi-File
                                         </button>
@@ -332,113 +430,185 @@ function ImportForm() {
                                             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                                             onDragLeave={() => setIsDragging(false)}
                                             onDrop={(e) => { e.preventDefault(); setIsDragging(false); e.dataTransfer.files?.[0] && handleFileSelect(e.dataTransfer.files[0]); }}
-                                            className={`flex flex-col items-center justify-center border-2 border-dashed rounded-3xl p-16 text-center group hover:bg-slate-50/50 transition-all cursor-pointer ${isDragging ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200 bg-slate-50/50'}`}
+                                            className={`flex flex-col items-center justify-center border-2 border-dashed rounded-[40px] p-24 text-center group hover:bg-white/[0.02] transition-all cursor-pointer ${isDragging ? 'border-primary bg-primary/5' : 'border-white/10 bg-slate-500/5 ring-1 ring-white/5 shadow-inner'}`}
                                         >
-                                            <div className={`w-20 h-20 rounded-[24px] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-sm ${selectedFile ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
-                                                {selectedFile ? <CheckCircle2 className="w-10 h-10" /> : <UploadCloud className="w-10 h-10" />}
+                                            <div className={`w-32 h-32 rounded-[40px] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform shadow-2xl ${selectedFile ? 'bg-emerald-500/10 text-emerald-500 shadow-emerald-500/10' : 'bg-primary/10 text-primary shadow-primary/10'}`}>
+                                                {selectedFile ? <CheckCircle2 className="w-16 h-16" /> : <UploadCloud className="w-16 h-16" />}
                                             </div>
-                                            <h4 className="text-xl font-bold text-slate-900 mb-2">{selectedFile ? selectedFile.name : 'Upload HTML Bundle'}</h4>
-                                            <p className="text-slate-500 text-sm max-w-[280px]">Drag your single HTML file containing CSS and JS.</p>
+                                            <h4 className="text-3xl font-black text-foreground mb-3 tracking-tight">{selectedFile ? selectedFile.name : 'Upload HTML Bundle'}</h4>
+                                            <p className="text-muted-foreground font-medium text-lg max-w-[400px] leading-relaxed">Drag your single HTML file containing CSS and JS.</p>
                                         </div>
                                     </div>
                                 ) : (
-                                    <MultiFileEditor
-                                        htmlText={htmlText} setHtmlText={setHtmlText}
-                                        cssText={cssText} setCssText={setCssText}
-                                        jsText={jsText} setJsText={setJsText}
-                                        cssUrls={cssUrls} setCssUrls={setCssUrls}
-                                        jsUrls={jsUrls} setJsUrls={setJsUrls}
-                                    />
-                                )}
-                            </div>
-                        ) : (
-                            <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
-                                {/* CodePen URL Input */}
-                                <div className="space-y-3">
-                                    <Label className="text-slate-700 font-bold ml-1">CodePen URL</Label>
-                                    <div className="flex gap-2">
-                                        <Input
-                                            value={codepenUrl}
-                                            onChange={(e) => setCodepenUrl(e.target.value)}
-                                            placeholder="https://codepen.io/osmosupply/pen/RNaeYqp"
-                                            className="h-12 rounded-xl border-slate-200 focus:ring-blue-500 font-medium"
+                                    <div className="space-y-12 animate-in fade-in duration-500">
+                                        <LibrariesEditor
+                                            cssUrls={cssUrls} setCssUrls={setCssUrls}
+                                            jsUrls={jsUrls} setJsUrls={setJsUrls}
                                         />
-                                        <Button
-                                            onClick={handleFetchCodePen}
-                                            disabled={isFetching || !codepenUrl}
-                                            className="h-12 px-8 bg-slate-900 text-white hover:bg-black rounded-xl font-bold disabled:opacity-50"
-                                        >
-                                            {isFetching ? <Loader2 className="w-4 h-4 animate-spin" /> : "Fetch"}
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                {/* Collapsed/Disabled Multi-File Editor as "Review & Edit" */}
-                                <div className={`transition-all duration-500 ${hasFetched ? 'opacity-100 scale-100' : 'opacity-50 blur-[1px]'}`}>
-                                    <div className="flex items-center gap-3 mb-6 px-1">
-                                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs shadow-inner">2</div>
-                                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Review & Edit (HTML + CSS + JS)</h3>
-                                        <div className="h-px flex-1 bg-slate-100" />
-                                    </div>
-
-                                    <div className={!hasFetched ? "pointer-events-none" : ""}>
                                         <MultiFileEditor
                                             htmlText={htmlText} setHtmlText={setHtmlText}
                                             cssText={cssText} setCssText={setCssText}
                                             jsText={jsText} setJsText={setJsText}
-                                            cssUrls={cssUrls} setCssUrls={setCssUrls}
-                                            jsUrls={jsUrls} setJsUrls={setJsUrls}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-12 animate-in slide-in-from-right-4 duration-500">
+                                {/* CodePen URL Input */}
+                                <div className="space-y-3 max-w-2xl">
+                                    <Label className="text-foreground font-bold ml-1">CodePen URL</Label>
+                                    <Input
+                                        value={codepenUrl}
+                                        onChange={(e) => setCodepenUrl(e.target.value)}
+                                        placeholder="https://codepen.io/osmosupply/pen/RNaeYqp"
+                                        className="h-14 rounded-2xl border-white/10 ring-1 ring-white/5 focus:ring-primary font-bold bg-slate-500/5 backdrop-blur-sm px-6 shadow-inner"
+                                    />
+                                    <div className="flex items-center gap-3 ml-1" />
+                                </div>
+
+                                {/* Libraries Section */}
+                                <LibrariesEditor
+                                    cssUrls={cssUrls} setCssUrls={setCssUrls}
+                                    jsUrls={jsUrls} setJsUrls={setJsUrls}
+                                    libraryMessages={getFieldMessages('libraries')}
+                                />
+
+                                {/* CodePen Health Panel */}
+                                {codepenPreflight && (
+                                    <div ref={healthPanelRef} className="rounded-2xl border border-white/10 bg-slate-500/5 p-6 space-y-4 shadow-inner">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-muted-foreground font-bold text-xs shadow-inner">Health Panel</div>
+                                                <h3 className="text-xs font-black text-foreground uppercase tracking-widest">Pre-flight Check</h3>
+                                            </div>
+                                            <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                                                <span className={codepenPreflight.blockers.length > 0 ? "text-red-500" : ""}>Blockers: {codepenPreflight.blockers.length}</span>
+                                                <span className={codepenPreflight.warnings.length > 0 ? "text-amber-500" : ""}>Warnings: {codepenPreflight.warnings.length}</span>
+                                                <span>Info: {codepenPreflight.infos.length}</span>
+                                            </div>
+                                        </div>
+                                        <details className="text-xs text-muted-foreground">
+                                            <summary className="cursor-pointer font-semibold text-foreground/80">View health details</summary>
+                                            <div className="mt-4 space-y-4">
+                                                {codepenPreflight.blockers.length > 0 && (
+                                                    <div>
+                                                        <p className="text-red-500 font-bold uppercase tracking-widest text-[10px] mb-2">Blockers</p>
+                                                        <div className="space-y-2">
+                                                            {codepenPreflight.blockers.map((item) => (
+                                                                <div key={`${item.code}-${item.title}`} className="text-red-500/90 bg-red-500/5 p-3 rounded-xl border border-red-500/10">
+                                                                    <div className="font-bold">{item.title}</div>
+                                                                    <div className="text-[11px] text-red-500/70">{item.detail}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {codepenPreflight.warnings.length > 0 && (
+                                                    <div>
+                                                        <p className="text-amber-500 font-bold uppercase tracking-widest text-[10px] mb-2">Warnings</p>
+                                                        <div className="space-y-2">
+                                                            {codepenPreflight.warnings.map((item) => (
+                                                                <div key={`${item.code}-${item.title}`} className="text-amber-500/90 bg-amber-500/5 p-3 rounded-xl border border-amber-500/10">
+                                                                    <div className="font-bold">{item.title}</div>
+                                                                    <div className="text-[11px] text-amber-500/70">{item.detail}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {codepenPreflight.infos.length > 0 && (
+                                                    <div>
+                                                        <p className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] mb-2">Info</p>
+                                                        <div className="space-y-2">
+                                                            {codepenPreflight.infos.map((item) => (
+                                                                <div key={`${item.code}-${item.title}`} className="text-muted-foreground/80 bg-white/5 p-3 rounded-xl border border-white/10">
+                                                                    <div className="font-bold">{item.title}</div>
+                                                                    <div className="text-[11px] text-muted-foreground/70">{item.detail}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </details>
+                                    </div>
+                                )}
+
+                                <div className={`transition-all duration-500 ${importSource === 'codepen' ? 'opacity-100' : 'opacity-50 blur-[1px]'}`}>
+                                    <div className="flex items-center gap-3 mb-8 px-1">
+                                        <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-muted-foreground font-bold text-xs shadow-inner">2</div>
+                                        <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Review & Edit</h3>
+                                        <div className="h-px flex-1 bg-white/10" />
+                                    </div>
+
+                                    <div className={importSource === 'codepen' ? "" : "pointer-events-none"}>
+                                        <MultiFileEditor
+                                            htmlText={htmlText} setHtmlText={setHtmlText}
+                                            cssText={cssText} setCssText={setCssText}
+                                            jsText={jsText} setJsText={setJsText}
+                                            htmlMessages={getFieldMessages('html')}
+                                            cssMessages={getFieldMessages('css')}
+                                            jsMessages={getFieldMessages('js')}
                                         />
                                     </div>
                                 </div>
                             </div>
                         )}
-                    </div>
 
-                    {error && (
-                        <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-start gap-3 animate-in fade-in duration-300">
-                            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
-                            <div className="space-y-1">
-                                <p className="text-sm font-bold text-red-900">Import Failed</p>
-                                <p className="text-sm text-red-600">{error}</p>
+                        {error && (
+                            <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6 flex items-start gap-4 animate-in fade-in duration-300">
+                                <AlertCircle className="w-6 h-6 text-red-500 mt-0.5" />
+                                <div className="space-y-1">
+                                    <p className="text-lg font-black text-red-500 leading-none">Import Failed</p>
+                                    <p className="text-sm text-red-500/70 font-medium">{error}</p>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    <div className="space-y-6">
-                        <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-6 text-sm text-blue-800 leading-relaxed font-medium">
-                            <span className="font-bold flex items-center gap-2 mb-2"><AlertCircle className="w-4 h-4" /> Importer Scope:</span>
-                            <div className="space-y-1">
-                                <p>Supports static HTML + CSS + JavaScript (plus external libraries).</p>
-                                <p className="opacity-70">Not supported (yet): React/Vue, build tools, TypeScript, server code.</p>
-                                <p className="text-xs mt-2 text-blue-600/70 italic">Webflow limits still apply &mdash; if something can&rsquo;t be represented as native elements, it becomes custom code.</p>
+                        <div className="space-y-10 pt-12 border-t border-white/10">
+                            <div className="bg-primary/5 border border-primary/10 rounded-3xl p-8 text-primary/80 leading-relaxed font-medium">
+                                <span className="font-black flex items-center gap-3 mb-4 text-primary"><AlertCircle className="w-5 h-5" /> Importer Scope:</span>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                                    <div className="space-y-2">
+                                        <p className="font-bold text-primary">• Static HTML + CSS + JS</p>
+                                        <p className="font-bold text-primary">• External CDN Libraries</p>
+                                        <p className="font-bold text-primary">• Google Fonts & Icons</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="font-bold text-primary">Not Supported (yet):</p>
+                                        <p>• React, Vue, Svelte</p>
+                                        <p>• TypeScript/SCSS (raw only)</p>
+                                        <p>• Server-side code</p>
+                                    </div>
+                                </div>
+                                <p className="text-xs mt-6 opacity-60 italic">Webflow limits still apply &mdash; complex logic remains as custom code.</p>
                             </div>
-                        </div>
 
-                        <div className="flex justify-between items-center pt-6 border-t border-slate-100">
-                            <Button
-                                variant="ghost"
-                                onClick={() => {
-                                    setImportSource('html');
-                                    setImportType('single');
-                                    setProjectName("");
-                                    setSelectedFile(null);
-                                    setHasFetched(false);
-                                    setHtmlText("");
-                                    setCssText("");
-                                    setJsText("");
-                                }}
-                                className="text-slate-500 font-bold hover:bg-slate-50 rounded-xl px-8"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleImport}
-                                disabled={isImporting || (importSource === 'codepen' && !hasFetched)}
-                                className="bg-blue-600 text-white hover:bg-blue-700 shadow-2xl shadow-blue-200/50 premium-hover px-12 h-14 rounded-2xl font-bold text-lg transition-transform active:scale-95 disabled:opacity-50"
-                            >
-                                {isImporting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <>Import Project <ArrowRight className="w-5 h-5 ml-2" /></>}
-                            </Button>
+                            <div className="flex justify-between items-center">
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => {
+                                        setImportSource('html');
+                                        setImportType('single');
+                                        setProjectName("");
+                                        setSelectedFile(null);
+                                        setHtmlText("");
+                                        setCssText("");
+                                        setJsText("");
+                                    }}
+                                    className="text-muted-foreground font-black hover:bg-slate-500/5 rounded-2xl px-12 h-16 text-lg"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleImport}
+                                    disabled={isImporting}
+                                    className="bg-primary text-primary-foreground hover:opacity-90 shadow-2xl shadow-primary/20 premium-hover px-16 h-20 rounded-2xl font-black text-2xl transition-all active:scale-95 disabled:opacity-50 btn-premium"
+                                >
+                                    {isImporting ? <Loader2 className="w-8 h-8 mr-4 animate-spin" /> : <>Import Project <ArrowRight className="w-8 h-8 ml-4" /></>}
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -447,118 +617,209 @@ function ImportForm() {
     );
 }
 
-function MultiFileEditor({ htmlText, setHtmlText, cssText, setCssText, jsText, setJsText, cssUrls, setCssUrls, jsUrls, setJsUrls }: any) {
+function LibrariesEditor({
+    cssUrls,
+    setCssUrls,
+    jsUrls,
+    setJsUrls,
+    libraryMessages = [],
+}: {
+    cssUrls: string[];
+    setCssUrls: (value: string[]) => void;
+    jsUrls: string[];
+    setJsUrls: (value: string[]) => void;
+    libraryMessages?: ValidationMessage[];
+}) {
+    const renderMessages = (messages: ValidationMessage[]) => {
+        if (messages.length === 0) return null;
+        return (
+            <div className="space-y-1 mb-4">
+                {messages.map((message) => (
+                    <div key={`${message.code}-${message.title}`} className="text-[11px] font-semibold text-muted-foreground">
+                        <span className={message.severity === 'block' ? 'text-red-500' : message.severity === 'warn' ? 'text-amber-500' : 'text-foreground/70'}>
+                            {message.title}
+                        </span>
+                        {message.detail ? <span className="text-muted-foreground/70"> — {message.detail}</span> : null}
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
     return (
-        <div className="space-y-8 animate-in fade-in duration-300">
-            {/* Libraries Section */}
-            <div className="space-y-6">
-                <div className="flex items-center gap-2 px-1">
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Libraries (external URLs)</h3>
-                    <div className="h-px flex-1 bg-slate-100" />
-                </div>
-                <p className="text-xs text-slate-500 px-1 -mt-4">Paste the CDN links your project depends on. We&rsquo;ll keep them as external includes, not inline bloat.</p>
+        <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex items-center gap-3 px-1">
+                <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Libraries (external URLs)</h3>
+                <div className="h-px flex-1 bg-white/10" />
+            </div>
+            <p className="text-xs text-muted-foreground px-1 -mt-4 font-medium leading-relaxed">Paste the CDN links your project depends on. These stay as external includes.</p>
+            {renderMessages(libraryMessages)}
 
-                <div className="space-y-6">
-                    {/* CSS URLs */}
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between px-1">
-                            <div className="space-y-0.5">
-                                <Label className="text-xs font-bold text-slate-700">CSS URLs</Label>
-                                <p className="text-[10px] text-slate-400 font-medium tracking-tight">One per row. Example: Slater, Google Fonts, resets, frameworks.</p>
-                            </div>
-                            <div className="flex gap-2">
-                                {cssUrls.length > 0 && <button onClick={() => setCssUrls([])} className="text-[10px] font-bold text-slate-400 hover:text-red-500">Clear all</button>}
-                                <button onClick={() => setCssUrls([...cssUrls, ""])} className="text-[10px] font-bold text-blue-600 flex items-center gap-1"><Plus className="w-3 h-3" /> Add CSS URL</button>
-                            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* CSS URLs */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-1">
+                        <div className="space-y-0.5">
+                            <Label className="text-xs font-black text-foreground uppercase tracking-wider">CSS URLs</Label>
+                            <p className="text-[10px] text-muted-foreground font-medium tracking-tight">Example: Google Fonts, resets, frameworks.</p>
                         </div>
-                        <div className="space-y-2">
-                            {cssUrls.map((url: string, idx: number) => (
-                                <div key={idx} className="flex gap-2">
-                                    <Input
-                                        value={url}
-                                        onChange={(e) => { const n = [...cssUrls]; n[idx] = e.target.value; setCssUrls(n); }}
-                                        placeholder="https://slater.app/10324/23333.css"
-                                        className="h-10 text-sm bg-slate-50/50"
-                                    />
-                                    <Button variant="ghost" size="icon" onClick={() => setCssUrls(cssUrls.filter((_: any, i: number) => i !== idx))}><X className="w-4 h-4" /></Button>
-                                </div>
-                            ))}
-                            {cssUrls.length === 0 && <div className="border border-dashed rounded-xl py-3 text-center text-[10px] text-slate-400 italic">No external CSS links added</div>}
+                        <div className="flex gap-3">
+                            {cssUrls.length > 0 && <button onClick={() => setCssUrls([])} className="text-[10px] font-black text-muted-foreground/40 hover:text-destructive transition-colors uppercase tracking-widest">Clear</button>}
+                            <button onClick={() => setCssUrls([...cssUrls, ""])} className="text-[10px] font-black text-primary flex items-center gap-1 uppercase tracking-widest hover:opacity-80 transition-all"><Plus className="w-3 h-3" /> Add URL</button>
                         </div>
                     </div>
-                    {/* JS URLs */}
                     <div className="space-y-3">
-                        <div className="flex items-center justify-between px-1">
-                            <div className="space-y-0.5">
-                                <Label className="text-xs font-bold text-slate-700">JS URLs</Label>
-                                <p className="text-[10px] text-slate-400 font-medium tracking-tight">One per row. Example: GSAP, SplitText, Lenis, Swiper.</p>
+                        {cssUrls.map((url: string, idx: number) => (
+                            <div key={idx} className="flex gap-2 group">
+                                <Input
+                                    value={url}
+                                    onChange={(e) => { const n = [...cssUrls]; n[idx] = e.target.value; setCssUrls(n); }}
+                                    placeholder="https://fonts.googleapis.com/css2?..."
+                                    className="h-11 text-xs font-mono bg-slate-500/5 border-white/10 ring-1 ring-white/5 rounded-xl px-4 focus:ring-primary shadow-inner"
+                                />
+                                <Button variant="ghost" size="icon" className="shrink-0 hover:bg-destructive/10 hover:text-destructive rounded-xl w-11 h-11" onClick={() => setCssUrls(cssUrls.filter((_, i) => i !== idx))}><X className="w-4 h-4" /></Button>
                             </div>
-                            <div className="flex gap-2">
-                                {jsUrls.length > 0 && <button onClick={() => setJsUrls([])} className="text-[10px] font-bold text-slate-400 hover:text-red-500">Clear all</button>}
-                                <button onClick={() => setJsUrls([...jsUrls, ""])} className="text-[10px] font-bold text-blue-600 flex items-center gap-1"><Plus className="w-3 h-3" /> Add JS URL</button>
+                        ))}
+                        {cssUrls.length === 0 && <div className="border border-dashed border-white/10 rounded-2xl py-6 text-center text-[10px] text-muted-foreground/40 font-bold uppercase tracking-widest backdrop-blur-sm bg-white/[0.02]">No external CSS</div>}
+                    </div>
+                </div>
+                {/* JS URLs */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-1">
+                        <div className="space-y-0.5">
+                            <Label className="text-xs font-black text-foreground uppercase tracking-wider">JS URLs</Label>
+                            <p className="text-[10px] text-muted-foreground font-medium tracking-tight">Example: GSAP, SplitText, Swiper.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            {jsUrls.length > 0 && <button onClick={() => setJsUrls([])} className="text-[10px] font-black text-muted-foreground/40 hover:text-destructive transition-colors uppercase tracking-widest">Clear</button>}
+                            <button onClick={() => setJsUrls([...jsUrls, ""])} className="text-[10px] font-black text-primary flex items-center gap-1 uppercase tracking-widest hover:opacity-80 transition-all"><Plus className="w-3 h-3" /> Add URL</button>
+                        </div>
+                    </div>
+                    <div className="space-y-3">
+                        {jsUrls.map((url: string, idx: number) => (
+                            <div key={idx} className="flex gap-2 group">
+                                <Input
+                                    value={url}
+                                    onChange={(e) => { const n = [...jsUrls]; n[idx] = e.target.value; setJsUrls(n); }}
+                                    placeholder="https://cdn.jsdelivr.net/npm/gsap@3/..."
+                                    className="h-11 text-xs font-mono bg-slate-500/5 border-white/10 ring-1 ring-white/5 rounded-xl px-4 focus:ring-primary shadow-inner"
+                                />
+                                <Button variant="ghost" size="icon" className="shrink-0 hover:bg-destructive/10 hover:text-destructive rounded-xl w-11 h-11" onClick={() => setJsUrls(jsUrls.filter((_, i) => i !== idx))}><X className="w-4 h-4" /></Button>
                             </div>
-                        </div>
-                        <div className="space-y-2">
-                            {jsUrls.map((url: string, idx: number) => (
-                                <div key={idx} className="flex gap-2">
-                                    <Input
-                                        value={url}
-                                        onChange={(e) => { const n = [...jsUrls]; n[idx] = e.target.value; setJsUrls(n); }}
-                                        placeholder="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"
-                                        className="h-10 text-sm bg-slate-50/50"
-                                    />
-                                    <Button variant="ghost" size="icon" onClick={() => setJsUrls(jsUrls.filter((_: any, i: number) => i !== idx))}><X className="w-4 h-4" /></Button>
-                                </div>
-                            ))}
-                            {jsUrls.length === 0 && <div className="border border-dashed rounded-xl py-3 text-center text-[10px] text-slate-400 italic">No external JS links added</div>}
-                        </div>
+                        ))}
+                        {jsUrls.length === 0 && <div className="border border-dashed border-white/10 rounded-2xl py-6 text-center text-[10px] text-muted-foreground/40 font-bold uppercase tracking-widest backdrop-blur-sm bg-white/[0.02]">No external JS</div>}
                     </div>
                 </div>
             </div>
+        </div>
+    );
+}
 
-            {/* Source Code Section */}
-            <div className="space-y-6">
-                <div className="flex items-center gap-2 px-1">
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Source Code</h3>
-                    <div className="h-px flex-1 bg-slate-100" />
-                </div>
-
-                <Tabs defaultValue="html" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 bg-slate-100/50 p-1 h-12 rounded-xl mb-4">
-                        <TabsTrigger value="html" className="rounded-lg font-bold flex items-center gap-2"><Code2 className="w-3.5 h-3.5" /> HTML</TabsTrigger>
-                        <TabsTrigger value="css" className="rounded-lg font-bold flex items-center gap-2"><Palette className="w-3.5 h-3.5" /> CSS</TabsTrigger>
-                        <TabsTrigger value="js" className="rounded-lg font-bold flex items-center gap-2"><Zap className="w-3.5 h-3.5" /> JavaScript</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="html" className="space-y-4 animate-in fade-in duration-300">
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-end px-1">
-                                <Label className="text-sm font-bold text-slate-700">HTML (required)</Label>
-                                <span className="text-[10px] font-bold text-slate-400">{htmlText.length.toLocaleString()} chars</span>
-                            </div>
-                            <Textarea value={htmlText} onChange={(e) => setHtmlText(e.target.value)} placeholder="<!-- Paste HTML here -->" className="min-h-[240px] font-mono text-xs bg-slate-50/50 rounded-xl" />
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="css" className="space-y-4 animate-in fade-in duration-300">
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-end px-1">
-                                <Label className="text-sm font-bold text-slate-700">CSS (optional)</Label>
-                                <span className="text-[10px] font-bold text-slate-400">{cssText.length.toLocaleString()} chars</span>
-                            </div>
-                            <Textarea value={cssText} onChange={(e) => setCssText(e.target.value)} placeholder="/* Paste CSS here */" className="min-h-[240px] font-mono text-xs bg-slate-50/50 rounded-xl" />
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="js" className="space-y-4 animate-in fade-in duration-300">
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-end px-1">
-                                <Label className="text-sm font-bold text-slate-700">JavaScript (optional)</Label>
-                                <span className="text-[10px] font-bold text-slate-400">{jsText.length.toLocaleString()} chars</span>
-                            </div>
-                            <Textarea value={jsText} onChange={(e) => setJsText(e.target.value)} placeholder="// Paste JS here" className="min-h-[240px] font-mono text-xs bg-slate-50/50 rounded-xl" />
-                        </div>
-                    </TabsContent>
-                </Tabs>
+function MultiFileEditor({
+    htmlText,
+    setHtmlText,
+    cssText,
+    setCssText,
+    jsText,
+    setJsText,
+    htmlMessages = [],
+    cssMessages = [],
+    jsMessages = [],
+}: {
+    htmlText: string;
+    setHtmlText: (value: string) => void;
+    cssText: string;
+    setCssText: (value: string) => void;
+    jsText: string;
+    setJsText: (value: string) => void;
+    htmlMessages?: ValidationMessage[];
+    cssMessages?: ValidationMessage[];
+    jsMessages?: ValidationMessage[];
+}) {
+    const renderMessages = (messages: ValidationMessage[]) => {
+        if (messages.length === 0) return null;
+        return (
+            <div className="space-y-1">
+                {messages.map((message) => (
+                    <div key={`${message.code}-${message.title}`} className="text-[11px] font-semibold text-muted-foreground">
+                        <span className={message.severity === 'block' ? 'text-red-500' : message.severity === 'warn' ? 'text-amber-500' : 'text-foreground/70'}>
+                            {message.title}
+                        </span>
+                        {message.detail ? <span className="text-muted-foreground/70"> — {message.detail}</span> : null}
+                    </div>
+                ))}
             </div>
+        );
+    };
+
+    return (
+        <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="flex items-center gap-3 px-1">
+                <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Live Editor</h3>
+                <div className="h-px flex-1 bg-white/10" />
+            </div>
+
+            <Tabs defaultValue="html" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 bg-slate-500/5 border border-white/10 ring-1 ring-white/5 p-1 h-16 rounded-2xl mb-8 max-w-4xl mx-auto shadow-inner">
+                    <TabsTrigger value="html" className="rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20"><Code2 className="w-5 h-5" /> HTML</TabsTrigger>
+                    <TabsTrigger value="css" className="rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20"><Palette className="w-5 h-5" /> CSS</TabsTrigger>
+                    <TabsTrigger value="js" className="rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20"><Zap className="w-5 h-5" /> JavaScript</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="html" className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end px-1">
+                            <Label className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
+                                <Code2 className="w-4 h-4 text-primary" /> HTML
+                            </Label>
+                            <span className="text-[10px] font-bold text-muted-foreground/40 tracking-widest">{htmlText.length.toLocaleString()} CHARS</span>
+                        </div>
+                        {renderMessages(htmlMessages)}
+                        <Textarea
+                            value={htmlText}
+                            onChange={(e) => setHtmlText(e.target.value)}
+                            placeholder="<!-- Paste HTML here -->"
+                            className="min-h-[700px] font-mono text-base bg-slate-500/5 text-foreground border-white/10 ring-1 ring-white/5 rounded-[40px] p-10 leading-relaxed focus:ring-primary/20 shadow-inner resize-none w-full"
+                        />
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="css" className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end px-1">
+                            <Label className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
+                                <Palette className="w-4 h-4 text-primary" /> CSS
+                            </Label>
+                            <span className="text-[10px] font-bold text-muted-foreground/40 tracking-widest">{cssText.length.toLocaleString()} CHARS</span>
+                        </div>
+                        {renderMessages(cssMessages)}
+                        <Textarea
+                            value={cssText}
+                            onChange={(e) => setCssText(e.target.value)}
+                            placeholder="/* Paste CSS here */"
+                            className="min-h-[700px] font-mono text-base bg-slate-500/5 text-foreground border-white/10 ring-1 ring-white/5 rounded-[40px] p-10 leading-relaxed focus:ring-primary/20 shadow-inner resize-none w-full"
+                        />
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="js" className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end px-1">
+                            <Label className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-primary" /> JavaScript
+                            </Label>
+                            <span className="text-[10px] font-bold text-muted-foreground/40 tracking-widest">{jsText.length.toLocaleString()} CHARS</span>
+                        </div>
+                        {renderMessages(jsMessages)}
+                        <Textarea
+                            value={jsText}
+                            onChange={(e) => setJsText(e.target.value)}
+                            placeholder="// Paste JS here"
+                            className="min-h-[700px] font-mono text-base bg-slate-500/5 text-foreground border-white/10 ring-1 ring-white/5 rounded-[40px] p-10 leading-relaxed focus:ring-primary/20 shadow-inner resize-none w-full"
+                        />
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

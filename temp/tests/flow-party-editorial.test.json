@@ -1,0 +1,11 @@
+{
+  "name": "Flow Party Editorial",
+  "entryType": "single_html",
+  "paths": {
+    "html": "flow-party-editorial.html"
+  },
+  "expectations": {
+    "maxDiffRatio": 0.05
+  },
+  "tags": ["editorial", "portfolio"]
+}

@@ -7,7 +7,7 @@ Light/Dark mode toggle using `next-themes` with System/Light/Dark options.
 ## Where
 
 - **ThemeProvider**: `app/providers/ThemeProvider.tsx` - Wraps the app with next-themes provider
-- **ThemeToggle**: `components/sidebar/ThemeToggle.tsx` - Dropdown toggle component
+- **ThemeToggle**: `components/sidebar/ThemeToggle.tsx` - Premium icon toggle component
 - **Sidebar**: `components/sidebar/Sidebar.tsx` - Toggle placed in sidebar footer (bottom-right)
 
 ## Implementation Details
@@ -19,8 +19,9 @@ Light/Dark mode toggle using `next-themes` with System/Light/Dark options.
 - `disableTransitionOnChange` - Prevents flash during theme switch
 
 ### Toggle UI
-- Icon button showing sun/moon based on current theme
-- Dropdown menu with radio items: System, Light, Dark
+- Premium icon button with smooth sun/moon transitions
+- Direct toggle: Cycles between Light and Dark modes
+- Glassmorphism effect with backdrop blur and subtle borders
 - Uses hugeicons for consistent iconography
 
 ### Tailwind Dark Mode
@@ -35,9 +36,7 @@ Already configured in `globals.css`:
 2. Navigate to any page with the sidebar
 3. Click the theme toggle button (sun/moon icon) in the sidebar footer
 4. Verify:
-   - **System**: Follows OS light/dark preference
-   - **Light**: Forces light mode
-   - **Dark**: Forces dark mode
+   - **Direct Toggle**: Switches between light and dark modes instantly with animation.
 5. Refresh the page - theme selection should persist
 6. Check that all UI elements respond correctly to theme changes
 
@@ -48,5 +47,5 @@ Already configured in `globals.css`:
 | `package.json` | Added `next-themes` dependency |
 | `app/providers/ThemeProvider.tsx` | New - Theme provider component |
 | `app/layout.tsx` | Wrapped with ThemeProvider, added `suppressHydrationWarning` |
-| `components/sidebar/ThemeToggle.tsx` | New - Theme toggle dropdown |
+| `components/sidebar/ThemeToggle.tsx` | New - Premium icon toggle |
 | `components/sidebar/Sidebar.tsx` | Added ThemeToggle to footer |

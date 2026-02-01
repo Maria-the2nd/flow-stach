@@ -7,6 +7,34 @@ import { ELEMENT_TO_CLASS_MAP, parseCSS, type ClassIndex } from "./css-parser";
 import { sanitizeGradientsForWebflow } from "./gradient-sanitizer";
 import { decoupleGradientsFromTransforms } from "./gradient-transform-decoupler";
 import { literalizeCssForWebflow } from "./webflow-literalizer";
+import {
+  convertNthChildToBem,
+  applyNthChildModifiersToHtml,
+  applyFirstLastChildModifiersToHtml,
+  applyOddEvenModifiersToHtml,
+  applyAnFormulaModifiersToHtml,
+  applyAnPlusBModifiersToHtml,
+  applyNthLastChildModifiersToHtml,
+  removeConvertedNthChildRules,
+  removeConvertedFirstLastChildRules,
+  removeConvertedOddEvenRules,
+  removeConvertedAnFormulaRules,
+  removeConvertedAnPlusBRules,
+  removeConvertedNthLastChildRules,
+  logNthChildConversionReport,
+  type NthChildHtmlInjection,
+  type NthChildConversionReport,
+  type FirstLastChildHtmlInjection,
+  type OddEvenHtmlInjection,
+  type AnFormulaHtmlInjection,
+  type AnPlusBHtmlInjection,
+  type NthLastChildHtmlInjection,
+} from "./nth-child-converter";
+import {
+  detectFrameworks,
+  sanitizeVoidElements,
+  type FrameworkDetectionResult,
+} from "./framework-detector";
 
 export interface NormalizationOptions {
   /** Throw when layout-critical properties are missing (default: false). */
@@ -18,6 +46,12 @@ export interface NormalizationResult {
   css: string;
   warnings: string[];
   classIndex?: ClassIndex;
+  /** Report of nth-child to BEM conversions (if any) */
+  nthChildReport?: NthChildConversionReport;
+  /** Framework detection results (React, Tailwind, etc.) */
+  frameworkDetection?: FrameworkDetectionResult;
+  /** Body background CSS to add to embed (when body has max-width constraint) */
+  bodyBackgroundEmbed?: string;
 }
 
 interface RawRule {
@@ -52,6 +86,8 @@ interface NormalizationContext {
   needsBodyWrapper: boolean;
   bodyExtraClasses: Set<string>;
   descendantMappings: DescendantMapping[];
+  /** nth-child modifiers to inject into HTML elements */
+  nthChildInjections: NthChildHtmlInjection[];
 }
 
 interface HtmlNormalizationResult {
@@ -177,7 +213,34 @@ export function normalizeHtmlCssForWebflow(
     needsBodyWrapper: false,
     bodyExtraClasses: new Set(),
     descendantMappings: [],
+    nthChildInjections: [],
   };
+
+  // ============================================
+  // FRAMEWORK DETECTION (EARLY)
+  // ============================================
+  // Detect React, JSX, Tailwind, Vue, Angular, Svelte, Alpine.js patterns
+  // This runs BEFORE conversion to catch incompatible content early
+  const frameworkDetection = detectFrameworks(html);
+
+  // Add framework warnings to the warnings array
+  for (const issue of frameworkDetection.issues) {
+    if (issue.severity === 'block') {
+      warnings.push(`[BLOCKED] ${issue.message}${issue.suggestion ? ` - ${issue.suggestion}` : ''}`);
+    } else if (issue.severity === 'warn') {
+      warnings.push(`[WARNING] ${issue.message}${issue.suggestion ? ` - ${issue.suggestion}` : ''}`);
+    }
+  }
+
+  // Sanitize void elements to prevent React error #137
+  // This removes any invalid content from void elements like <br>, <hr>, etc.
+  const voidSanitization = sanitizeVoidElements(html);
+  if (voidSanitization.fixed.length > 0) {
+    for (const fix of voidSanitization.fixed) {
+      warnings.push(`[AUTO-FIX] ${fix}`);
+    }
+    html = voidSanitization.html;
+  }
 
   // CRITICAL: Normalize self-closing tags FIRST before any parsing
   // This prevents React error #137 in Webflow's paste handler
@@ -212,6 +275,62 @@ export function normalizeHtmlCssForWebflow(
     sanitizedCss = decoupledResult.css;
   }
   warnings.push(...decoupledResult.warnings);
+
+  // Convert positional selectors (:nth-child(N), :first-child, :last-child, odd/even) to BEM modifier classes
+  // This enables native Webflow support instead of requiring CSS embed
+  const nthChildResult = convertNthChildToBem(sanitizedCss);
+  let nthChildReport: NthChildConversionReport | undefined;
+
+  if (nthChildResult.report.converted > 0) {
+    logNthChildConversionReport(nthChildResult.report);
+    nthChildReport = nthChildResult.report;
+
+    // Apply nth-child modifiers to HTML (add modifier classes based on position)
+    normalizedHtml = applyNthChildModifiersToHtml(normalizedHtml, nthChildResult.htmlInjections);
+
+    // Apply first-child/last-child modifiers to HTML
+    normalizedHtml = applyFirstLastChildModifiersToHtml(normalizedHtml, nthChildResult.firstLastInjections);
+
+    // Apply odd/even modifiers to HTML
+    normalizedHtml = applyOddEvenModifiersToHtml(normalizedHtml, nthChildResult.oddEvenInjections);
+
+    // Apply an formula modifiers to HTML (every Nth element)
+    normalizedHtml = applyAnFormulaModifiersToHtml(normalizedHtml, nthChildResult.anFormulaInjections);
+
+    // Apply an+b formula modifiers to HTML (cyclic slot positions)
+    normalizedHtml = applyAnPlusBModifiersToHtml(normalizedHtml, nthChildResult.anPlusBInjections);
+
+    // Apply nth-last-child modifiers to HTML (from end positions)
+    normalizedHtml = applyNthLastChildModifiersToHtml(normalizedHtml, nthChildResult.nthLastChildInjections);
+
+    // Remove converted nth-child rules from CSS (they're now BEM classes)
+    sanitizedCss = removeConvertedNthChildRules(sanitizedCss, nthChildResult.htmlInjections);
+
+    // Remove converted first-child/last-child rules from CSS
+    sanitizedCss = removeConvertedFirstLastChildRules(sanitizedCss, nthChildResult.firstLastInjections);
+
+    // Remove converted odd/even rules from CSS
+    sanitizedCss = removeConvertedOddEvenRules(sanitizedCss, nthChildResult.oddEvenInjections);
+
+    // Remove converted an formula rules from CSS
+    sanitizedCss = removeConvertedAnFormulaRules(sanitizedCss, nthChildResult.anFormulaInjections);
+
+    // Remove converted an+b formula rules from CSS
+    sanitizedCss = removeConvertedAnPlusBRules(sanitizedCss, nthChildResult.anPlusBInjections);
+
+    // Remove converted nth-last-child rules from CSS
+    sanitizedCss = removeConvertedNthLastChildRules(sanitizedCss, nthChildResult.nthLastChildInjections);
+
+    // Add the converted BEM rules to CSS
+    sanitizedCss = nthChildResult.convertedCss + '\n\n' + sanitizedCss;
+
+    // Store injections in context for later HTML processing
+    context.nthChildInjections = nthChildResult.htmlInjections;
+
+    warnings.push(
+      `Converted ${nthChildResult.report.converted} positional CSS rules to BEM modifier classes`
+    );
+  }
 
   // Continue with selector normalization (element → class)
   const defaultFontFamily = findDefaultFontFamily(sanitizedCss);
@@ -261,11 +380,24 @@ export function normalizeHtmlCssForWebflow(
     }
   }
 
+  // Extract body background to embed when .wf-body has constraining layout (max-width)
+  // This ensures background covers full viewport, not just the constrained container
+  const bodyBackgroundResult = extractBodyBackgroundForEmbed(normalizedCss);
+  if (bodyBackgroundResult.embedCss) {
+    normalizedCss = bodyBackgroundResult.updatedCss;
+    warnings.push(
+      `Extracted body background to embed CSS for full-viewport coverage (body has max-width constraint)`
+    );
+  }
+
   return {
     html: htmlResult.html,
     css: normalizedCss,
     warnings,
     classIndex,
+    nthChildReport,
+    frameworkDetection,
+    bodyBackgroundEmbed: bodyBackgroundResult.embedCss,
   };
 }
 
@@ -397,24 +529,36 @@ function normalizeSelector(selector: string, context: NormalizationContext): str
     return `${paragraphClassMatch[1]}${pseudo}`;
   }
 
-  // Descendant element selectors: .parent h1 -> .heading-h1
-  // Handle class + element descendant selectors (e.g., ".hero h1", ".card p")
+  // Descendant element selectors: .parent h2 -> .parent-h2 (MODIFIER class)
+  // BEM COMBO CLASS APPROACH:
+  // 1. Create modifier class for descendant selector styles (e.g., .section-header-h2)
+  // 2. Base typography class (heading-h2) is added separately to ALL headings
+  // 3. Result: <h2 class="heading-h2 section-header-h2"> (BOTH classes)
+  //
+  // This follows Webflow's BEM pattern:
+  // - Base class has typography (Fredoka, uppercase)
+  // - Modifier class has context-specific styles (margin-bottom)
+  // - No style conflicts because each context has its own modifier
   const descendantElementMatch = base.match(/\.([a-zA-Z_-][\w-]*)\s+(h[1-6]|p|a|ul|ol|li|blockquote|section|nav|header|footer|main|article|aside)$/);
   if (descendantElementMatch) {
     const parentClass = descendantElementMatch[1];
     const element = descendantElementMatch[2];
-    const webflowClass = ELEMENT_TO_CLASS_MAP[element];
-    if (webflowClass) {
-      // Return the Webflow class and add to context for later HTML processing
-      context.descendantMappings.push({
-        parentClass,
-        target: element,
-        targetType: "tag",
-        className: webflowClass,
-        combinator: " ",
-      });
-      return `.${webflowClass}${pseudo}`;
-    }
+    // Create MODIFIER class for descendant styles
+    // Base typography class is added separately, so element gets BOTH
+    const isComboClassElement = element === "a" || element === "p" || /^h[1-6]$/.test(element) ||
+      element === "ul" || element === "ol" || element === "li" || element === "blockquote";
+    const className = isComboClassElement
+      ? deriveDescendantClassName(parentClass, element)
+      : ELEMENT_TO_CLASS_MAP[element] || `${parentClass}-${element}`;
+    // Add to context for later HTML processing
+    context.descendantMappings.push({
+      parentClass,
+      target: element,
+      targetType: "tag",
+      className,
+      combinator: " ",
+    });
+    return `.${className}${pseudo}`;
   }
 
   // Descendant selectors: .parent .child -> .parent-child (flatten + inject class on child)
@@ -470,11 +614,35 @@ function splitPseudo(selector: string): { base: string; pseudo: string } {
 }
 
 function deriveDescendantClassName(parentClass: string, target: string): string {
+  // Anchor tags: context-aware link naming
   if (target === "a") {
     if (parentClass.endsWith("links")) return parentClass.replace(/links$/, "link");
     if (parentClass.endsWith("link")) return parentClass;
     if (parentClass.endsWith("s")) return `${parentClass.slice(0, -1)}-link`;
     return `${parentClass}-link`;
+  }
+  // Paragraph tags: create MODIFIER class (not base class)
+  // Base typography class will be added separately, giving element BOTH classes
+  // This follows BEM combo class pattern: base class + modifier class
+  if (target === "p") {
+    return `${parentClass}-p`;
+  }
+  // Heading tags: create MODIFIER class (not base class)
+  // Base typography class (heading-h1, heading-h2) will be added separately
+  // Element gets BOTH: heading-h2 (typography) + section-header-h2 (modifier)
+  if (/^h[1-6]$/.test(target)) {
+    return `${parentClass}-${target}`;
+  }
+  // List elements: create MODIFIER class (not base class)
+  // Base class (list-ul, list-ol, list-item) will be added separately
+  // Element gets BOTH: list-ul (typography) + features-ul (modifier)
+  if (target === "ul" || target === "ol" || target === "li") {
+    return `${parentClass}-${target}`;
+  }
+  // Blockquote: create MODIFIER class (not base class)
+  // Base class (blockquote) will be added separately
+  if (target === "blockquote") {
+    return `${parentClass}-blockquote`;
   }
   return `${parentClass}-${target}`;
 }
@@ -638,14 +806,15 @@ function normalizeHtmlWithDomParser(
   for (const tag of HEADING_TAGS) {
     wrapper.querySelectorAll(tag).forEach((el) => {
       const element = el as HTMLElement;
-      const headingClasses = Array.from(element.classList).filter((name) => name.startsWith("heading-"));
-      if (headingClasses.length === 0) {
-        const injected = `heading-${tag}`;
-        element.classList.add(injected);
-        requiredTypographyClasses.add(injected);
-      } else {
-        headingClasses.forEach((name) => requiredTypographyClasses.add(name));
+      // BEM COMBO CLASS APPROACH:
+      // ALWAYS add base typography class (heading-h1, heading-h2, etc.)
+      // Element may also have modifier classes from descendant selectors
+      // Result: <h2 class="heading-h2 section-header-h2"> (both classes)
+      const baseClass = `heading-${tag}`;
+      if (!element.classList.contains(baseClass)) {
+        element.classList.add(baseClass);
       }
+      requiredTypographyClasses.add(baseClass);
       if (element.classList.contains("btn")) hasBtnClass = true;
     });
   }
@@ -663,15 +832,35 @@ function normalizeHtmlWithDomParser(
     });
   }
 
+  // BEM COMBO CLASS APPROACH for list elements:
+  // ALWAYS add base class (list-ul, list-ol, list-item, blockquote)
+  // Element may also have modifier classes from descendant selectors
+  const LIST_ELEMENTS = [
+    { tag: "ul", baseClass: "list-ul" },
+    { tag: "ol", baseClass: "list-ol" },
+    { tag: "li", baseClass: "list-item" },
+    { tag: "blockquote", baseClass: "blockquote" },
+  ];
+  for (const { tag, baseClass } of LIST_ELEMENTS) {
+    wrapper.querySelectorAll(tag).forEach((el) => {
+      const element = el as HTMLElement;
+      if (!element.classList.contains(baseClass)) {
+        element.classList.add(baseClass);
+      }
+      requiredTypographyClasses.add(baseClass);
+    });
+  }
+
   wrapper.querySelectorAll("p").forEach((el) => {
     const element = el as HTMLElement;
-    const textClasses = Array.from(element.classList).filter((name) => name.startsWith("text-"));
-    if (textClasses.length === 0) {
+    // BEM COMBO CLASS APPROACH:
+    // ALWAYS add base typography class (text-body)
+    // Element may also have modifier classes from descendant selectors
+    // Result: <p class="text-body section-header-p"> (both classes)
+    if (!element.classList.contains("text-body")) {
       element.classList.add("text-body");
-      requiredTypographyClasses.add("text-body");
-    } else {
-      textClasses.forEach((name) => requiredTypographyClasses.add(name));
     }
+    requiredTypographyClasses.add("text-body");
     if (element.classList.contains("btn")) hasBtnClass = true;
   });
 
@@ -738,14 +927,15 @@ export function normalizeHtmlWithFallback(
 
   walkElements(parsed, (element) => {
     if (HEADING_TAGS.includes(element.tag)) {
-      const headingClasses = element.classes.filter((name) => name.startsWith("heading-"));
-      if (headingClasses.length === 0) {
-        const injected = `heading-${element.tag}`;
-        element.classes.push(injected);
-        requiredTypographyClasses.add(injected);
-      } else {
-        headingClasses.forEach((name) => requiredTypographyClasses.add(name));
+      // BEM COMBO CLASS APPROACH:
+      // ALWAYS add base typography class (heading-h1, heading-h2, etc.)
+      // Element may also have modifier classes from descendant selectors
+      // Result: heading gets both base + modifier classes
+      const baseClass = `heading-${element.tag}`;
+      if (!element.classes.includes(baseClass)) {
+        element.classes.push(baseClass);
       }
+      requiredTypographyClasses.add(baseClass);
     }
 
     // Inject wf-* classes on structural elements (section, nav, header, footer, etc.)
@@ -757,13 +947,30 @@ export function normalizeHtmlWithFallback(
     }
 
     if (element.tag === "p") {
-      const textClasses = element.classes.filter((name) => name.startsWith("text-"));
-      if (textClasses.length === 0) {
+      // BEM COMBO CLASS APPROACH:
+      // ALWAYS add base typography class (text-body)
+      // Element may also have modifier classes from descendant selectors
+      if (!element.classes.includes("text-body")) {
         element.classes.push("text-body");
-        requiredTypographyClasses.add("text-body");
-      } else {
-        textClasses.forEach((name) => requiredTypographyClasses.add(name));
       }
+      requiredTypographyClasses.add("text-body");
+    }
+
+    // BEM COMBO CLASS APPROACH for list elements:
+    // ALWAYS add base class (list-ul, list-ol, list-item, blockquote)
+    // Element may also have modifier classes from descendant selectors
+    const LIST_ELEMENT_MAP: Record<string, string> = {
+      ul: "list-ul",
+      ol: "list-ol",
+      li: "list-item",
+      blockquote: "blockquote",
+    };
+    if (LIST_ELEMENT_MAP[element.tag]) {
+      const baseClass = LIST_ELEMENT_MAP[element.tag];
+      if (!element.classes.includes(baseClass)) {
+        element.classes.push(baseClass);
+      }
+      requiredTypographyClasses.add(baseClass);
     }
 
     if (element.classes.includes("btn")) {
@@ -1107,35 +1314,46 @@ function ensureTypographyFontRules(
   defaultFontFamily: string | null,
   warnings: string[]
 ): void {
-  const ruleIndex = new Map<string, NormalizedRule>();
+  // Track which classes have font-family defined in ANY rule
+  const classesWithFont = new Set<string>();
 
   for (const rule of baseRules) {
-    for (const selector of rule.selectors) {
-      const classMatch = selector.match(/^\.(\w[\w-]*)$/);
-      if (!classMatch) continue;
-      ruleIndex.set(classMatch[1], rule);
+    if (rule.properties.has("font-family")) {
+      for (const selector of rule.selectors) {
+        const classMatch = selector.match(/^\.(\w[\w-]*)$/);
+        if (classMatch) {
+          classesWithFont.add(classMatch[1]);
+        }
+      }
     }
   }
 
   const required = new Set(requiredTypographyClasses);
-  if (hasBtnClass || ruleIndex.has("btn")) required.add("btn");
+  if (hasBtnClass || classesWithFont.has("btn")) required.add("btn");
 
+  // For classes that need font-family, only add if NO rule has it
   for (const className of required) {
-    const rule = ruleIndex.get(className);
-    if (rule) {
-      if (!rule.properties.has("font-family")) {
-        if (defaultFontFamily) {
-          rule.properties.set("font-family", defaultFontFamily);
-        } else {
-          warnings.push(`Missing font-family for ".${className}" and no default font found.`);
-        }
-      }
-    } else {
+    if (!classesWithFont.has(className)) {
       if (defaultFontFamily) {
-        baseRules.push({
-          selectors: [`.${className}`],
-          properties: new Map([["font-family", defaultFontFamily]]),
-        });
+        // Find an existing rule to add font-family to, or create a new one
+        let foundRule = false;
+        for (const rule of baseRules) {
+          for (const selector of rule.selectors) {
+            const classMatch = selector.match(/^\.(\w[\w-]*)$/);
+            if (classMatch && classMatch[1] === className) {
+              rule.properties.set("font-family", defaultFontFamily);
+              foundRule = true;
+              break;
+            }
+          }
+          if (foundRule) break;
+        }
+        if (!foundRule) {
+          baseRules.push({
+            selectors: [`.${className}`],
+            properties: new Map([["font-family", defaultFontFamily]]),
+          });
+        }
       } else {
         warnings.push(`Missing font-family for ".${className}" and no default font found.`);
       }
@@ -1172,6 +1390,91 @@ function serializeCss(baseRules: NormalizedRule[], mediaBlocks: NormalizedMediaB
     .filter(Boolean);
 
   return [...baseOutput, ...mediaOutput].join("\n\n");
+}
+
+/**
+ * Extract body background properties to embed CSS when .wf-body has constraining layout.
+ *
+ * Problem: In HTML, `body { background: #000; max-width: 1200px; }` fills the entire viewport
+ * with background while constraining content. But in Webflow, .wf-body is a div, so background
+ * only covers the constrained area, leaving white space on sides.
+ *
+ * Solution: Extract background properties to embed CSS targeting `body` element, which Webflow
+ * applies to the actual page body (full viewport). Layout constraints stay on .wf-body div.
+ */
+function extractBodyBackgroundForEmbed(css: string): { updatedCss: string; embedCss: string | undefined } {
+  // Background properties that should apply to full viewport
+  const BACKGROUND_PROPS = [
+    'background',
+    'background-color',
+    'background-image',
+    'background-repeat',
+    'background-position',
+    'background-size',
+    'background-attachment',
+  ];
+
+  // Layout constraints that indicate .wf-body is smaller than viewport
+  const CONSTRAINT_PROPS = ['max-width', 'width'];
+
+  // Find .wf-body rule
+  const wfBodyMatch = css.match(/\.wf-body\s*\{([^}]+)\}/);
+  if (!wfBodyMatch) {
+    return { updatedCss: css, embedCss: undefined };
+  }
+
+  const propsStr = wfBodyMatch[1];
+  const props = parsePropertiesForExtraction(propsStr);
+
+  // Check if there's BOTH a background AND a constraint
+  const hasBackground = BACKGROUND_PROPS.some(p => props.has(p));
+  const hasConstraint = CONSTRAINT_PROPS.some(p => props.has(p));
+
+  if (!hasBackground || !hasConstraint) {
+    return { updatedCss: css, embedCss: undefined };
+  }
+
+  // Extract background properties for embed
+  const backgroundProps: string[] = [];
+  const remainingProps: string[] = [];
+
+  for (const [name, value] of props) {
+    if (BACKGROUND_PROPS.includes(name)) {
+      backgroundProps.push(`${name}: ${value}`);
+    } else {
+      remainingProps.push(`${name}: ${value}`);
+    }
+  }
+
+  if (backgroundProps.length === 0) {
+    return { updatedCss: css, embedCss: undefined };
+  }
+
+  // Build embed CSS with body selector (applies to Webflow page body)
+  const embedCss = `body { ${backgroundProps.join('; ')}; }`;
+
+  // Update .wf-body rule to remove background properties
+  const updatedWfBody = `.wf-body { ${remainingProps.join('; ')}; }`;
+  const updatedCss = css.replace(wfBodyMatch[0], updatedWfBody);
+
+  return { updatedCss, embedCss };
+}
+
+/**
+ * Parse CSS properties string into a Map for extraction logic.
+ */
+function parsePropertiesForExtraction(propsStr: string): Map<string, string> {
+  const result = new Map<string, string>();
+  const propRegex = /([\w-]+)\s*:\s*([^;]+)/g;
+  let match;
+
+  while ((match = propRegex.exec(propsStr)) !== null) {
+    const name = match[1].trim().toLowerCase();
+    const value = match[2].trim();
+    result.set(name, value);
+  }
+
+  return result;
 }
 
 function serializeRule(rule: NormalizedRule): string {

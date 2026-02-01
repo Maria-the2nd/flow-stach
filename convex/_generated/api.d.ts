@@ -13,6 +13,7 @@ import type * as assets from "../assets.js";
 import type * as auth from "../auth.js";
 import type * as backfill from "../backfill.js";
 import type * as favorites from "../favorites.js";
+import type * as images from "../images.js";
 import type * as import_ from "../import.js";
 import type * as payloads from "../payloads.js";
 import type * as projects from "../projects.js";
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   backfill: typeof backfill;
   favorites: typeof favorites;
+  images: typeof images;
   import: typeof import_;
   payloads: typeof payloads;
   projects: typeof projects;
