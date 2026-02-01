@@ -82,6 +82,25 @@ Redirect to /workspace/projects/[id] → User sees full project page
 
 ---
 
+## Session 2 - Templates Library UI Update (2026-02-01)
+
+### Added to `/workspace/library` page:
+- [x] **Delete button** - Trash icon on card hover, with confirmation modal
+- [x] **Thumbnail upload button** - Image icon on card hover, opens file picker
+- [x] Uses existing `api.assets.deleteById` mutation
+- [x] Uses existing `api.assets.generateThumbnailUploadUrl` + `updateThumbnail` mutations
+- [x] TypeScript compilation passes
+- [x] UI tested - hover buttons appear, delete modal works
+
+### TODO for Next Session:
+- [ ] Test actual delete functionality end-to-end (verify Convex removes data)
+- [ ] Test thumbnail upload end-to-end (verify image saves and displays)
+- [ ] Test WebflowTemplateImport with real Webflow export folder
+- [ ] Verify imported template appears in correct location
+- [ ] Any bug fixes discovered during testing
+
+---
+
 ## Features Automatically Inherited
 
 Since WebflowTemplateImport now uses the same `importProjects`/`importArtifacts` infrastructure as HTML Bundle import, templates automatically get:
