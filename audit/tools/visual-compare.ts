@@ -31,6 +31,31 @@ interface CompareResult {
 }
 
 /**
+ * Extract font links from HTML (Google Fonts, Adobe Fonts, etc.)
+ */
+function extractFontLinks(html: string): string[] {
+  const fontLinks: string[] = [];
+
+  // Match <link> tags that load fonts
+  const linkRegex = /<link[^>]*href\s*=\s*["']([^"']*fonts[^"']*)["'][^>]*>/gi;
+  let match;
+
+  while ((match = linkRegex.exec(html)) !== null) {
+    fontLinks.push(match[0]);
+  }
+
+  // Also match preconnect links for font services
+  const preconnectRegex = /<link[^>]*rel\s*=\s*["']preconnect["'][^>]*href\s*=\s*["']([^"']*(?:fonts\.googleapis|fonts\.gstatic|typekit|use\.typekit)[^"']*)["'][^>]*>/gi;
+  while ((match = preconnectRegex.exec(html)) !== null) {
+    if (!fontLinks.includes(match[0])) {
+      fontLinks.push(match[0]);
+    }
+  }
+
+  return fontLinks;
+}
+
+/**
  * Generate visual comparison files for a single test
  */
 function generateComparison(slug: string): CompareResult | null {
@@ -62,7 +87,10 @@ function generateComparison(slug: string): CompareResult | null {
     manifest.manifest.name
   );
 
-  // 3. Extract and normalize
+  // 3. Extract font links before processing (they get lost during normalization)
+  const fontLinks = extractFontLinks(originalHtml);
+
+  // 4. Extract and normalize
   const cleanResult = extractCleanHtml(originalHtml);
   let combinedCss = cleanResult.extractedStyles;
   if (bundle.css) {
@@ -71,20 +99,21 @@ function generateComparison(slug: string): CompareResult | null {
 
   const normResult = normalizeHtmlCssForWebflow(cleanResult.cleanHtml, combinedCss);
 
-  // 4. Route CSS to native vs embed
+  // 5. Route CSS to native vs embed
   const routingResult = routeCSS(normResult.css);
 
-  // 5. Build Webflow-ready HTML with BOTH native and embed CSS
+  // 6. Build Webflow-ready HTML with BOTH native and embed CSS
   const webflowReadyHtml = buildWebflowReadyHtml(
     normResult.html,
     routingResult.native,
     routingResult.embed,
     bundle.js || '',
     manifest.manifest.name,
-    normResult.bodyBackgroundEmbed
+    normResult.bodyBackgroundEmbed,
+    fontLinks
   );
 
-  // 6. Save files
+  // 7. Save files
   const outputDir = path.join(AUDIT_CONFIG.outputDir, slug);
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
@@ -127,7 +156,8 @@ function buildWebflowReadyHtml(
   embedCss: string,
   js: string,
   title: string,
-  bodyBackgroundEmbed?: string
+  bodyBackgroundEmbed?: string,
+  fontLinks?: string[]
 ): string {
   // Combine all embed CSS
   let allEmbedCss = embedCss;
@@ -140,13 +170,18 @@ function buildWebflowReadyHtml(
     ? wrapEmbedCSSInStyleTag(allEmbedCss)
     : '';
 
+  // Format font links for inclusion
+  const fontLinksHtml = fontLinks && fontLinks.length > 0
+    ? `\n  <!-- Font links -->\n  ${fontLinks.join('\n  ')}\n`
+    : '';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title} - Webflow Ready</title>
-
+${fontLinksHtml}
   <!-- ============================================ -->
   <!-- NATIVE CSS (converted to Webflow classes)   -->
   <!-- This would be in Webflow's style system     -->

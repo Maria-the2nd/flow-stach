@@ -135,10 +135,8 @@ function processRules(
   const output: RawRule[] = [];
 
   for (const rule of rules) {
-    if (rule.selector.includes("::")) {
-      warnings.push(`Removed pseudo-element rule: ${rule.selector}`);
-      continue;
-    }
+    // Note: Pseudo-element rules (::before, ::after) are preserved here
+    // and will be routed to embed CSS by css-embed-router later
 
     const entries = parseProperties(rule.properties);
     const processed: PropertyEntry[] = [];

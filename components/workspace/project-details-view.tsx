@@ -155,6 +155,8 @@ function ProjectContent({
     const tokenWebflowJsonArtifact = artifacts.find((a) => a.type === "token_webflow_json");
     const jsHooksArtifact = artifacts.find((a) => a.type === "js_hooks");
     const externalScriptsArtifact = artifacts.find((a) => a.type === "external_scripts");
+    const externalStylesheetsArtifact = artifacts.find((a) => (a.type as string) === "external_stylesheets");
+    const securityWarningsArtifact = artifacts.find((a) => (a.type as string) === "security_warnings");
     // Note: class_renaming_report is a newer artifact type that may not be in all projects
     const classRenamingArtifact = artifacts.find((a) => (a.type as string) === "class_renaming_report");
 
@@ -168,40 +170,86 @@ function ProjectContent({
         }
     }, [classRenamingArtifact?.content]);
 
-    // Bug 4 Fix: Parse external libraries/dependencies
+    // Parse external libraries/dependencies - handle scripts and stylesheets separately
     const externalLibraries: Array<{ url: string; name: string; type: 'script' | 'style' }> = [];
+
+    // Helper to detect library name from URL
+    const detectLibraryName = (url: string): string => {
+        const urlLower = url.toLowerCase();
+        if (urlLower.includes('gsap')) return 'GSAP';
+        if (urlLower.includes('scrolltrigger')) return 'ScrollTrigger';
+        if (urlLower.includes('lenis')) return 'Lenis Smooth Scroll';
+        if (urlLower.includes('swiper')) return 'Swiper';
+        if (urlLower.includes('locomotive')) return 'Locomotive Scroll';
+        if (urlLower.includes('splitting')) return 'Splitting.js';
+        if (urlLower.includes('typed')) return 'Typed.js';
+        if (urlLower.includes('anime')) return 'Anime.js';
+        if (urlLower.includes('three')) return 'Three.js';
+        if (urlLower.includes('barba')) return 'Barba.js';
+        if (urlLower.includes('jquery')) return 'jQuery';
+        if (urlLower.includes('finsweet')) return 'Finsweet Attributes';
+        if (urlLower.includes('fonts.googleapis.com')) return 'Google Fonts';
+        if (urlLower.includes('fonts.gstatic.com')) return 'Google Fonts';
+        if (urlLower.includes('use.typekit.net')) return 'Adobe Fonts';
+        // Extract name from URL path
+        const jsMatch = url.match(/\/([^\/]+)\.(min\.)?js$/i);
+        if (jsMatch) return jsMatch[1];
+        const cssMatch = url.match(/\/([^\/]+)\.(min\.)?css$/i);
+        if (cssMatch) return cssMatch[1];
+        return 'External Resource';
+    };
+
+    // Parse external scripts (JavaScript)
     if (externalScriptsArtifact?.content) {
         try {
             const urls = JSON.parse(externalScriptsArtifact.content) as unknown;
             if (Array.isArray(urls)) {
                 urls.forEach((url) => {
                     if (typeof url !== "string") return;
-                    // Detect library name from URL
-                    const urlLower = url.toLowerCase();
-                    let name = 'External Library';
-                    if (urlLower.includes('gsap')) name = 'GSAP';
-                    else if (urlLower.includes('scrolltrigger')) name = 'ScrollTrigger';
-                    else if (urlLower.includes('lenis')) name = 'Lenis Smooth Scroll';
-                    else if (urlLower.includes('swiper')) name = 'Swiper';
-                    else if (urlLower.includes('locomotive')) name = 'Locomotive Scroll';
-                    else if (urlLower.includes('splitting')) name = 'Splitting.js';
-                    else if (urlLower.includes('typed')) name = 'Typed.js';
-                    else if (urlLower.includes('anime')) name = 'Anime.js';
-                    else if (urlLower.includes('three')) name = 'Three.js';
-                    else if (urlLower.includes('barba')) name = 'Barba.js';
-                    else if (urlLower.includes('jquery')) name = 'jQuery';
-                    else if (urlLower.includes('finsweet')) name = 'Finsweet Attributes';
-                    else {
-                        // Extract name from URL path
-                        const match = url.match(/\/([^\/]+)\.(min\.)?js$/i);
-                        if (match) name = match[1];
-                    }
-                    const type = url.endsWith('.css') ? 'style' : 'script';
-                    externalLibraries.push({ url, name, type });
+                    const name = detectLibraryName(url);
+                    externalLibraries.push({ url, name, type: 'script' });
                 });
             }
         } catch (e) {
             console.error("Failed to parse external_scripts:", e);
+        }
+    }
+
+    // Parse external stylesheets (CSS) - now stored separately
+    if (externalStylesheetsArtifact?.content) {
+        try {
+            const urls = JSON.parse(externalStylesheetsArtifact.content) as unknown;
+            if (Array.isArray(urls)) {
+                urls.forEach((url) => {
+                    if (typeof url !== "string") return;
+                    const name = detectLibraryName(url);
+                    externalLibraries.push({ url, name, type: 'style' });
+                });
+            }
+        } catch (e) {
+            console.error("Failed to parse external_stylesheets:", e);
+        }
+    }
+
+    // Parse security warnings (blocked CDNs, CORS errors, etc.)
+    const securityWarnings: Array<{
+        type: string;
+        url: string;
+        reason: string;
+        alternative?: string;
+    }> = [];
+    if (securityWarningsArtifact?.content) {
+        try {
+            const warnings = JSON.parse(securityWarningsArtifact.content) as unknown;
+            if (Array.isArray(warnings)) {
+                warnings.forEach((w) => {
+                    if (typeof w === 'object' && w !== null && 'url' in w && 'reason' in w) {
+                        securityWarnings.push(w as typeof securityWarnings[number]);
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Failed to parse security_warnings:", e);
         }
     }
 
@@ -236,7 +284,7 @@ function ProjectContent({
                 type: 'CSS',
                 label: 'Embed Styles',
                 content: wrapEmbedCSSInStyleTag(cssRouting.embed),
-                description: 'CSS that Webflow cannot handle natively (variables, media queries, complex selectors). Add to page <head> embed or before </body>.'
+                description: 'CSS variables, media queries, animations, and complex selectors. In Webflow: Press A → Search "Embed" → Place at TOP of page → Paste inside.'
             });
         }
 
@@ -252,7 +300,7 @@ function ProjectContent({
             type: 'JavaScript',
             label: 'Scripts',
             content: `<script>\n${jsArtifact.content}\n</script>`,
-            description: 'Component scripts. Add to page footer before </body>.'
+            description: 'Component scripts and interactions. In Webflow: Page Settings (gear icon) → Custom Code → Paste in "Before </body> tag" section.'
         });
     }
 
@@ -265,7 +313,7 @@ function ProjectContent({
                     type: 'JavaScript',
                     label: 'Event Hooks',
                     content: `<script>\n// Event Handlers & Interactions\n${hooks.join('\n\n')}\n</script>`,
-                    description: 'Interactive behaviors. Add after main scripts.'
+                    description: 'Interactive event handlers. In Webflow: Add after main scripts in Page Settings → Custom Code → Before </body> tag.'
                 });
             }
         } catch (e) {
@@ -663,18 +711,21 @@ function ProjectContent({
                                 </div>
                             )}
 
-                            {/* Font Checklist - Compact */}
+                            {/* Font Installation Checklist */}
                             {normalizedFonts && normalizedFonts.length > 0 && (
                                 <div className="space-y-3">
-                                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Add to Webflow Fonts</h4>
+                                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                                        <span>Install These Fonts</span>
+                                        <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-none font-bold text-[8px] uppercase">Required</Badge>
+                                    </h4>
                                     <div className="space-y-2">
                                         {normalizedFonts.map((font, idx) => (
-                                            <div key={idx} className="flex items-center justify-between py-1 border-b border-border/50 last:border-0">
+                                            <div key={idx} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-bold text-foreground">{font.name}</span>
                                                     {font.weights && font.weights.length > 0 && (
                                                         <span className="text-[10px] text-muted-foreground/60">
-                                                            Weights: {font.weights.sort((a, b) => a - b).join(', ')}
+                                                            Select weights: {font.weights.sort((a, b) => a - b).join(', ')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -684,9 +735,53 @@ function ProjectContent({
                                             </div>
                                         ))}
                                     </div>
-                                    <p className="text-[10px] text-muted-foreground/60 italic">
-                                        Go to Site Settings &rarr; Fonts to add these fonts
+                                    <div className="text-[11px] text-muted-foreground/80 space-y-1.5 p-3 bg-muted/30 rounded-lg">
+                                        <p className="font-semibold text-foreground/80">How to install fonts in Webflow:</p>
+                                        <ol className="list-decimal list-inside space-y-1 pl-1">
+                                            <li>Open your Webflow project</li>
+                                            <li>Go to <strong>Site Settings</strong> → <strong>Fonts</strong></li>
+                                            <li>Click <strong>Add fonts</strong> → Select <strong>Google Fonts</strong> (or Adobe)</li>
+                                            <li>Search for each font name above</li>
+                                            <li>Select the required weights shown above</li>
+                                            <li><strong>Publish</strong> your site to apply fonts</li>
+                                        </ol>
+                                        <p className="text-amber-600 dark:text-amber-400 font-medium mt-2">
+                                            ⚠️ Fonts won't render until installed in Webflow
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Security Warnings from Import (blocked CDNs, etc.) */}
+                            {securityWarnings.length > 0 && (
+                                <div className="space-y-3 p-5 bg-red-500/5 rounded-[24px] border border-red-500/20 ring-1 ring-red-500/10 shadow-inner">
+                                    <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                                        Security Issues Detected
+                                    </h4>
+                                    <p className="text-[11px] text-muted-foreground font-medium leading-tight">
+                                        {securityWarnings.length} external resource{securityWarnings.length > 1 ? 's were' : ' was'} removed due to security restrictions.
                                     </p>
+                                    <div className="space-y-2 mt-3">
+                                        {securityWarnings.map((warning, idx) => (
+                                            <div key={idx} className="p-3 bg-white/5 rounded-xl border border-white/10 text-[10px]">
+                                                <div className="flex items-start gap-2">
+                                                    <Badge className="bg-red-500/10 text-red-400 border-none font-bold text-[8px] uppercase shrink-0 mt-0.5">
+                                                        {warning.type === 'blocked_cdn' ? 'BLOCKED' : 'CORS'}
+                                                    </Badge>
+                                                    <div className="flex-1 min-w-0">
+                                                        <code className="text-muted-foreground font-mono break-all block">{warning.url}</code>
+                                                        <p className="text-muted-foreground/80 mt-1">{warning.reason}</p>
+                                                        {warning.alternative && (
+                                                            <p className="text-emerald-400 mt-1 font-medium">
+                                                                ✓ Use alternative: {warning.alternative}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
@@ -695,10 +790,10 @@ function ProjectContent({
                                 <div className="space-y-3 p-5 bg-white/5 rounded-[24px] border border-white/10 ring-1 ring-white/5 shadow-inner">
                                     <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
                                         Safety Check
-                                        {siteSafetyReport.status === 'pass' ? <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> : <AlertCircle className="w-3.5 h-3.5 text-amber-500" />}
+                                        {siteSafetyReport.status === 'pass' && securityWarnings.length === 0 ? <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> : <AlertCircle className="w-3.5 h-3.5 text-amber-500" />}
                                     </h4>
                                     <p className="text-[11px] text-muted-foreground font-medium leading-tight">
-                                        {siteSafetyReport.status === 'pass' ? 'Payload is safe to paste.' : 'Export contains minor warnings.'}
+                                        {siteSafetyReport.status === 'pass' && securityWarnings.length === 0 ? 'Payload is safe to paste.' : 'Export contains minor warnings.'}
                                     </p>
 
                                     <div className="flex flex-col gap-2 mt-2">
@@ -838,18 +933,39 @@ function ProjectContent({
                         <TabsContent value="embeds" className="space-y-8 mt-0">
                             {hasEmbeds ? (
                                 <>
-                                    {/* Bug 4 Fix: Libraries Section */}
+                                    {/* External Libraries Section */}
                                     {externalLibraries.length > 0 && (
                                         <div className="bg-card/80 backdrop-blur-xl rounded-[32px] border border-white/20 ring-1 ring-white/10 p-8 shadow-2xl shadow-primary/5 space-y-6">
                                             <div className="space-y-2">
-                                                <div className="flex items-center gap-3">
-                                                    <h3 className="text-2xl font-bold text-foreground">External Libraries</h3>
-                                                    <Badge className="bg-orange-500/10 text-orange-600 dark:text-orange-400 border-none font-bold text-[10px] uppercase">
-                                                        {externalLibraries.length} {externalLibraries.length === 1 ? 'library' : 'libraries'}
-                                                    </Badge>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <h3 className="text-2xl font-bold text-foreground">External Libraries</h3>
+                                                        <Badge className="bg-orange-500/10 text-orange-600 dark:text-orange-400 border-none font-bold text-[10px] uppercase">
+                                                            {externalLibraries.length} {externalLibraries.length === 1 ? 'library' : 'libraries'}
+                                                        </Badge>
+                                                    </div>
+                                                    {/* Copy All Button */}
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-primary font-bold border-primary/20 hover:bg-primary/5 h-10 px-5 rounded-xl"
+                                                        onClick={async (e) => {
+                                                            e.preventDefault();
+                                                            // Generate all tags with correct type
+                                                            const allTags = externalLibraries.map(lib =>
+                                                                lib.type === 'script'
+                                                                    ? `<script src="${lib.url}"></script>`
+                                                                    : `<link rel="stylesheet" href="${lib.url}">`
+                                                            ).join('\n');
+                                                            await copyText(allTags);
+                                                            toast.success(`Copied ${externalLibraries.length} library tags`);
+                                                        }}
+                                                    >
+                                                        Copy All Tags
+                                                    </Button>
                                                 </div>
                                                 <p className="text-muted-foreground font-medium leading-relaxed">
-                                                    Add these CDN links to your Webflow project settings to enable third-party functionalites.
+                                                    Add these CDN links to your Webflow project. <strong>Stylesheets</strong> go in <code className="text-xs bg-muted px-1 py-0.5 rounded">Site Settings → Custom Code → Head Code</code>. <strong>Scripts</strong> go in <code className="text-xs bg-muted px-1 py-0.5 rounded">Page Settings → Custom Code → Before &lt;/body&gt; tag</code>.
                                                 </p>
                                             </div>
 
@@ -893,11 +1009,35 @@ function ProjectContent({
 
                                     {/* Custom Embeds Section */}
                                     <div className="bg-card/80 backdrop-blur-xl rounded-[32px] border border-white/20 ring-1 ring-white/10 p-8 shadow-2xl shadow-primary/5 space-y-8">
-                                        <div className="space-y-2">
+                                        <div className="space-y-3">
                                             <h3 className="text-2xl font-bold text-foreground">Custom Embeds</h3>
                                             <p className="text-muted-foreground font-medium leading-relaxed">
-                                                Complex CSS and functional JavaScript that Webflow cannot handle natively. Paste these into individual Embed blocks.
+                                                Complex CSS and functional JavaScript that Webflow cannot handle natively.
                                             </p>
+                                            {/* Embed Placement Guide */}
+                                            <div className="p-4 bg-blue-500/5 rounded-xl border border-blue-500/20 space-y-3">
+                                                <p className="font-semibold text-foreground/90 text-sm">Quick Placement Guide:</p>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                                    <div className="space-y-1.5">
+                                                        <Badge className="bg-purple-500/10 text-purple-400 border-none font-bold text-[10px] uppercase">CSS Embed</Badge>
+                                                        <ol className="list-decimal list-inside space-y-0.5 text-muted-foreground pl-1">
+                                                            <li>Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">A</kbd> to open Add panel</li>
+                                                            <li>Search for <strong>"Embed"</strong></li>
+                                                            <li>Drag to <strong>TOP of page</strong> (above all content)</li>
+                                                            <li>Paste the CSS embed code inside</li>
+                                                        </ol>
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <Badge className="bg-yellow-500/10 text-yellow-500 border-none font-bold text-[10px] uppercase">JS Scripts</Badge>
+                                                        <ol className="list-decimal list-inside space-y-0.5 text-muted-foreground pl-1">
+                                                            <li>Click <strong>Page Settings</strong> (gear icon)</li>
+                                                            <li>Scroll to <strong>Custom Code</strong></li>
+                                                            <li>Paste in <strong>Before &lt;/body&gt; tag</strong></li>
+                                                            <li>Save and close settings</li>
+                                                        </ol>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div className="space-y-6">

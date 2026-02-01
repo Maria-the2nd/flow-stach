@@ -292,14 +292,49 @@ const LIBRARY_REGISTRY: LibraryMatch[] = [
     order: 3
   },
   // Intersection Observer Polyfill
+  // Note: polyfill.io was compromised in 2024 and is blocked by many services including Webflow.
+  // Using cdnjs alternative instead.
   {
     name: 'intersection-observer',
     displayName: 'IntersectionObserver Polyfill',
     patterns: [/\bIntersectionObserver\b/],
-    cdnUrl: 'https://polyfill.io/v3/polyfill.min.js?features=IntersectionObserver',
+    cdnUrl: 'https://cdnjs.cloudflare.com/ajax/libs/intersection-observer/0.12.2/intersection-observer.min.js',
     order: 0
   },
 ];
+
+// ============================================
+// BLOCKED CDN DOMAINS
+// ============================================
+
+/**
+ * CDN domains that are known to be blocked or compromised.
+ * These should be replaced with alternative CDNs.
+ */
+export const BLOCKED_CDN_DOMAINS = [
+  {
+    domain: 'polyfill.io',
+    reason: 'Domain was compromised in 2024 and is blocked by Webflow and major browsers',
+    alternative: 'cdnjs.cloudflare.com or unpkg.com',
+  },
+] as const;
+
+/**
+ * Check if a URL uses a blocked CDN domain
+ */
+export function isBlockedCdnUrl(url: string): { blocked: boolean; reason?: string; alternative?: string } {
+  const urlLower = url.toLowerCase();
+  for (const blocked of BLOCKED_CDN_DOMAINS) {
+    if (urlLower.includes(blocked.domain)) {
+      return {
+        blocked: true,
+        reason: blocked.reason,
+        alternative: blocked.alternative,
+      };
+    }
+  }
+  return { blocked: false };
+}
 
 // ============================================
 // CLUB GREENSOCK (PAID) PLUGINS

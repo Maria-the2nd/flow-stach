@@ -368,6 +368,10 @@ const EMBED_AT_RULE_PATTERNS: Record<string, RegExp> = {
  * Selectors that require embed (Webflow cannot handle natively)
  */
 const EMBED_SELECTOR_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
+  // Universal selector (Webflow can't style * natively)
+  { pattern: /^\*/, reason: 'Universal selector (*)' },
+  { pattern: /,\s*\*/, reason: 'Universal selector in list' },
+
   // Pseudo-elements (Webflow has no ::before/::after support)
   { pattern: /::before/, reason: '::before pseudo-element' },
   { pattern: /::after/, reason: '::after pseudo-element' },
@@ -425,15 +429,17 @@ const EMBED_SELECTOR_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   { pattern: /\s+~\s+/, reason: 'General sibling combinator (~)' },
 
   // ID selectors (Webflow uses classes, not IDs for styling)
-  { pattern: /^#[\w-]+\s*\{/, reason: 'ID selector' },
+  { pattern: /^#[\w-]+$/, reason: 'ID selector' },
   { pattern: /\s#[\w-]+/, reason: 'ID selector in compound' },
 
-  // Pure element selectors (without class)
-  { pattern: /^(html|body)\s*\{/i, reason: 'html/body element selector' },
-  { pattern: /^(div|span|p|a|ul|ol|li|h[1-6]|img|form|input|button|textarea|select|table|tr|td|th|thead|tbody|tfoot|nav|header|footer|main|section|article|aside|figure|figcaption|video|audio|canvas|svg|iframe)\s*\{/i, reason: 'Pure element selector' },
+  // Pure element selectors (without class) - these get routed to embed
+  // Note: selectors like "body" are converted to ".wf-body" by normalizer,
+  // but we still need to catch any that slip through
+  { pattern: /^(html|body)$/i, reason: 'html/body element selector' },
+  { pattern: /^(div|span|p|a|ul|ol|li|h[1-6]|img|form|input|button|textarea|select|table|tr|td|th|thead|tbody|tfoot|nav|header|footer|main|section|article|aside|figure|figcaption|video|audio|canvas|svg|iframe)$/i, reason: 'Pure element selector' },
 
-  // Multiple element selectors
-  { pattern: /^[\w,\s]+\{/, reason: 'Element selector list' },
+  // Element selector followed by pseudo (html:root, body::before, etc.)
+  { pattern: /^(html|body)[:.]/, reason: 'html/body element with pseudo/class' },
 ];
 
 /**
@@ -454,6 +460,46 @@ const VENDOR_PREFIX_PROPERTIES = [
   'backdrop-filter', // Often needs -webkit- prefix
 ];
 
+/**
+ * CSS value patterns that require embed routing
+ * Webflow's native style panel cannot represent these
+ */
+const EMBED_VALUE_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
+  // Modern CSS functions not supported in Webflow's style panel
+  { pattern: /clamp\s*\(/, reason: 'clamp() function' },
+  { pattern: /min\s*\([^)]*,[^)]*\)/, reason: 'min() function' },
+  { pattern: /max\s*\([^)]*,[^)]*\)/, reason: 'max() function' },
+  // Note: calc() is sometimes supported, but complex calc() may need embed
+  { pattern: /calc\s*\([^)]*[\+\-\*\/][^)]*var\s*\(/, reason: 'calc() with CSS variables' },
+
+  // CSS variables (var()) - Webflow has limited native support
+  { pattern: /var\s*\(--/, reason: 'CSS variable (var())' },
+
+  // Modern color functions
+  { pattern: /oklch\s*\(/, reason: 'oklch() color function' },
+  { pattern: /oklab\s*\(/, reason: 'oklab() color function' },
+  { pattern: /color-mix\s*\(/, reason: 'color-mix() function' },
+  { pattern: /light-dark\s*\(/, reason: 'light-dark() function' },
+
+  // Container query units
+  { pattern: /\d+cq[whilbmins]/, reason: 'Container query units' },
+
+  // Viewport units (some older ones may work, but dvh/svh/lvh are newer)
+  { pattern: /\d+[dsl]v[hwib]/, reason: 'Dynamic viewport units (dvh, svh, lvh)' },
+];
+
+/**
+ * Check if any property value requires embed routing
+ */
+function valueNeedsEmbed(properties: string): { needsEmbed: boolean; reason: string | null } {
+  for (const { pattern, reason } of EMBED_VALUE_PATTERNS) {
+    if (pattern.test(properties)) {
+      return { needsEmbed: true, reason };
+    }
+  }
+  return { needsEmbed: false, reason: null };
+}
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
@@ -472,12 +518,10 @@ function selectorNeedsEmbed(selector: string): { needsEmbed: boolean; reason: st
     return { needsEmbed: true, reason: 'Descendant selector (.parent .child)', routingReasons };
   }
 
-  // Check compound selectors (multiple classes on same element)
-  // e.g., ".class1.class2" must go to embed
-  if (/\.[a-zA-Z_][\w-]*\.[a-zA-Z_][\w-]*/.test(trimmed)) {
-    routingReasons.push({ type: 'compound-selector' });
-    return { needsEmbed: true, reason: 'Compound selector (.class1.class2)', routingReasons };
-  }
+  // NOTE: Compound selectors (BEM combo classes like .card.dark, .card.sage)
+  // are NATIVELY SUPPORTED by Webflow as combo classes.
+  // Do NOT route them to embed - they should stay in native CSS.
+  // See: https://webflow.com/blog/class-naming-101-bem
 
   // Check against known patterns
   for (const { pattern, reason } of EMBED_SELECTOR_PATTERNS) {
@@ -571,6 +615,15 @@ function propertiesNeedEmbed(properties: string): {
     if (!needsEmbed && (propName.startsWith('-webkit-') || propName.startsWith('-moz-') || propName.startsWith('-ms-'))) {
       needsEmbed = true;
       routingReasons.push({ type: 'vendor-prefix', prefix: propName.split('-').slice(0, 2).join('-') });
+    }
+
+    // Check if the property VALUE needs embed (clamp, calc with vars, etc.)
+    if (!needsEmbed) {
+      const valueCheck = valueNeedsEmbed(propValue);
+      if (valueCheck.needsEmbed) {
+        needsEmbed = true;
+        routingReasons.push({ type: 'css-function', function: valueCheck.reason || 'CSS function' });
+      }
     }
 
     if (needsEmbed) {
@@ -667,6 +720,13 @@ function extractRulesWithBraceMatching(css: string): Array<{ selector: string; p
 
     // Skip if this looks like an at-rule continuation
     if (selector.startsWith('@') || !selector) continue;
+
+    // Skip if this is a media query - the regex [^{}@] skips @, so we need to
+    // check if @ precedes the match (e.g., "@media ..." becomes "media ...")
+    if (startIndex > 0 && css[startIndex - 1] === '@') continue;
+
+    // Also skip if selector looks like a media query (starts with "media ")
+    if (selector.toLowerCase().startsWith('media ')) continue;
 
     // Find matching closing brace
     let braceCount = 1;
@@ -813,6 +873,9 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
   const embedRulesByBreakpoint = new Map<BreakpointKey, string[]>();
   let workingCSS = rawCSS;
   let atRulesExtracted = 0;
+
+  // Track native media query rules separately (they shouldn't be re-extracted from workingCSS)
+  const nativeMediaRules: string[] = [];
 
   // Initialize tracer if tracing enabled
   const tracer = options?.trace ? new CSSRoutingTracer() : null;
@@ -1000,7 +1063,8 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
         }
 
         const nativeRule = `@media ${query} { ${rule.selector} { ${resolvedProperties} } }`;
-        workingCSS += `\n${nativeRule}`;
+        // Add to nativeMediaRules instead of workingCSS to avoid re-extraction issues
+        nativeMediaRules.push(nativeRule);
 
         // Trace native rule
         if (tracer) {
@@ -1202,9 +1266,12 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
     });
   }
 
+  // Combine base rules and media rules for native output
+  const allNativeRules = [...nativeRules, ...nativeMediaRules];
+
   const stats: RoutingStats = {
-    totalRules: nativeRules.length + totalEmbedRules,
-    nativeRules: nativeRules.length,
+    totalRules: allNativeRules.length + totalEmbedRules,
+    nativeRules: allNativeRules.length,
     embedRules: totalEmbedRules,
     atRulesExtracted,
     embedSizeBytes,
@@ -1214,7 +1281,7 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
   const trace = tracer?.finalize(rawCSS);
 
   return {
-    native: nativeRules.join('\n'),
+    native: allNativeRules.join('\n'),
     embed: embedCSS,
     warnings,
     stats,

@@ -1710,6 +1710,12 @@ function validatePayloadIntegrity(
 export interface ConvertOptions {
   /** Prefix for generated node IDs (default: class prefix or 'wf') */
   idPrefix?: string;
+  /**
+   * Source type for the content being converted.
+   * - 'html': User-submitted HTML (default) - full normalization
+   * - 'webflow-export': Webflow-exported templates - reduced normalization
+   */
+  source?: 'html' | 'webflow-export';
 }
 
 /**

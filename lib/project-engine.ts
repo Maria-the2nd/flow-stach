@@ -11,7 +11,7 @@ import { applySemanticPatchResponse, buildSemanticPatchRequest, type FlowbridgeS
 import { ensureWebflowPasteSafety } from "./webflow-safety-gate"
 import { renameClassesForProject, isBemRenamingEnabled, type ClassRenamingReport, type LlmClassContext } from "./bem-renamer"
 import { detectFontsFromCSS, buildFontChecklist } from "./font-detector"
-import { detectLibraries } from "./js-library-detector"
+import { detectLibraries, isBlockedCdnUrl } from "./js-library-detector"
 
 export type ProcessingStage = "parsing" | "extracting" | "componentizing" | "semantic" | "generating" | "complete" | "idle"
 
@@ -25,8 +25,13 @@ export interface EngineResult {
         classIndex: string;
         cleanHtml: string;
         scriptsJs: string;
+        /** External JavaScript CDN URLs (scripts) */
         externalScripts: string[];
+        /** External CSS CDN URLs (stylesheets) */
+        externalStylesheets: string[];
         jsHooks: string[];
+        /** Security warnings for blocked/invalid resources */
+        securityWarnings?: SecurityWarning[];
     };
     components: Array<{
         id: string;
@@ -47,6 +52,13 @@ export interface EngineResult {
     /** Report from BEM class renaming stage */
     classRenamingReport?: ClassRenamingReport;
 }
+
+export type SecurityWarning = {
+    type: 'blocked_cdn' | 'cors_error' | 'invalid_script';
+    url: string;
+    reason: string;
+    alternative?: string;
+};
 
 export type DetectedFont = {
     name: string;
@@ -295,13 +307,49 @@ export async function processProjectImport(
             console.log(`[project-engine] Detected libraries from inline JS: ${detectedLibraries.displayNames.join(', ')}`);
         }
 
-        // Combine: external scripts from HTML + detected library CDNs + external stylesheets
-        const allExternalScripts = Array.from(new Set([
+        // Separate external scripts (JS) and stylesheets (CSS)
+        // This fixes the issue where fonts/stylesheets were being rendered as <script> tags
+        const rawExternalScripts = Array.from(new Set([
             ...cleanResult.externalScripts,
-            ...detectedLibraries.scripts,  // CDN URLs for detected libraries (e.g., Three.js, GSAP)
-            ...detectedLibraries.styles,   // CSS CDN URLs for libraries that need them
-            ...cleanResult.externalStylesheets,
+            ...detectedLibraries.scripts,  // CDN URLs for detected JS libraries (e.g., Three.js, GSAP)
         ]));
+
+        const rawExternalStylesheets = Array.from(new Set([
+            ...cleanResult.externalStylesheets,
+            ...detectedLibraries.styles,   // CSS CDN URLs for libraries that need them (e.g., Swiper CSS)
+        ]));
+
+        // Filter out blocked CDN scripts and collect security warnings
+        const securityWarnings: SecurityWarning[] = [];
+        const allExternalScripts = rawExternalScripts.filter(url => {
+            const check = isBlockedCdnUrl(url);
+            if (check.blocked) {
+                securityWarnings.push({
+                    type: 'blocked_cdn',
+                    url,
+                    reason: check.reason || 'Domain is blocked',
+                    alternative: check.alternative,
+                });
+                console.log(`[project-engine] Removed blocked CDN script: ${url}`);
+                return false;
+            }
+            return true;
+        });
+
+        const allExternalStylesheets = rawExternalStylesheets.filter(url => {
+            const check = isBlockedCdnUrl(url);
+            if (check.blocked) {
+                securityWarnings.push({
+                    type: 'blocked_cdn',
+                    url,
+                    reason: check.reason || 'Domain is blocked',
+                    alternative: check.alternative,
+                });
+                console.log(`[project-engine] Removed blocked CDN stylesheet: ${url}`);
+                return false;
+            }
+            return true;
+        });
 
         return {
             projectName: tokens.name,
@@ -314,7 +362,9 @@ export async function processProjectImport(
                 cleanHtml: componentsTree.components.map(c => c.htmlContent).join(""),
                 scriptsJs: workingJs,
                 externalScripts: allExternalScripts,
-                jsHooks: extractJsHooks(componentsTree.components.map(c => c.htmlContent).join(""))
+                externalStylesheets: allExternalStylesheets,
+                jsHooks: extractJsHooks(componentsTree.components.map(c => c.htmlContent).join("")),
+                securityWarnings: securityWarnings.length > 0 ? securityWarnings : undefined,
             },
             components: finalComponents,
             tokenWebflowJson,

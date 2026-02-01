@@ -3,7 +3,7 @@
  * Rewrites HTML + CSS into class-only selectors that Webflow can import cleanly.
  */
 
-import { ELEMENT_TO_CLASS_MAP, parseCSS, type ClassIndex } from "./css-parser";
+import { ELEMENT_TO_CLASS_MAP, parseCSS, extractCssVariables, type ClassIndex } from "./css-parser";
 import { sanitizeGradientsForWebflow } from "./gradient-sanitizer";
 import { decoupleGradientsFromTransforms } from "./gradient-transform-decoupler";
 import { literalizeCssForWebflow } from "./webflow-literalizer";
@@ -264,6 +264,16 @@ export function normalizeHtmlCssForWebflow(
   warnings.push(...literalizedResult.warnings);
   sanitizedCss = literalizedResult.css;
 
+  // Fix scroll animation visibility (classes like .fade-up with opacity: 0)
+  // These hide content by default, expecting JS to add .visible - make them visible for Webflow
+  const animationVisibilityFix = fixScrollAnimationVisibility(sanitizedCss);
+  if (animationVisibilityFix.fixedCount > 0) {
+    sanitizedCss = animationVisibilityFix.css;
+    warnings.push(
+      `Fixed ${animationVisibilityFix.fixedCount} scroll animation class(es) with opacity: 0 → 1 for visibility`
+    );
+  }
+
   // Decouple gradients from transforms to prevent Webflow import race condition
   // This structurally separates gradient-bearing elements from transform-bearing elements
   const decoupledResult = decoupleGradientsFromTransforms(normalizedHtml, sanitizedCss);
@@ -390,8 +400,30 @@ export function normalizeHtmlCssForWebflow(
     );
   }
 
+  // CRITICAL: Resolve CSS variables in inline HTML styles
+  // Webflow doesn't support var() in inline styles, so we must resolve them
+  // Use ORIGINAL css (before literalization) because :root block is stripped during processing
+  let finalHtml = htmlResult.html;
+  const inlineVarResult = resolveInlineStyleVariables(finalHtml, css);
+  if (inlineVarResult.resolvedCount > 0) {
+    finalHtml = inlineVarResult.html;
+    warnings.push(
+      `Resolved ${inlineVarResult.resolvedCount} CSS variable(s) in inline styles for Webflow compatibility`
+    );
+  }
+
+  // CRITICAL: Inject inline background styles from combo classes
+  // Webflow ignores background colors from pasted CSS, so we must use inline styles
+  const inlineBackgroundResult = injectInlineBackgroundStyles(finalHtml, normalizedCss);
+  if (inlineBackgroundResult.injectedCount > 0) {
+    finalHtml = inlineBackgroundResult.html;
+    warnings.push(
+      `Injected ${inlineBackgroundResult.injectedCount} inline background style(s) for Webflow compatibility`
+    );
+  }
+
   return {
-    html: htmlResult.html,
+    html: finalHtml,
     css: normalizedCss,
     warnings,
     classIndex,
@@ -1482,4 +1514,224 @@ function serializeRule(rule: NormalizedRule): string {
   const propertiesText = serializeProperties(rule.properties);
   if (!selectorText || !propertiesText) return "";
   return `${selectorText} { ${propertiesText} }`;
+}
+
+/**
+ * Fix scroll animation classes that hide content by default.
+ *
+ * Common patterns like `.fade-up`, `.fade-in`, `.reveal`, etc. use `opacity: 0`
+ * as their initial state, expecting JavaScript to add a `.visible` class.
+ * Without the animation script, content stays invisible in Webflow.
+ *
+ * This function:
+ * 1. Finds CSS rules with animation-like class names that have opacity: 0
+ * 2. Overrides them to opacity: 1 so content is visible by default
+ *
+ * @returns Object with updated CSS and count of fixes applied
+ */
+function fixScrollAnimationVisibility(css: string): { css: string; fixedCount: number } {
+  // Common animation class name patterns
+  const ANIMATION_CLASS_PATTERNS = [
+    /\.fade[-_]?(up|in|out|down|left|right)?(?![a-z])/gi,
+    /\.reveal(?![a-z])/gi,
+    /\.animate[-_]?(in|on[-_]?scroll)?(?![a-z])/gi,
+    /\.slide[-_]?(up|in|down|left|right)(?![a-z])/gi,
+    /\.scroll[-_]?(reveal|animate|trigger)(?![a-z])/gi,
+    /\.appear(?![a-z])/gi,
+    /\.show[-_]?on[-_]?scroll(?![a-z])/gi,
+    /\.hidden[-_]?initial(?![a-z])/gi,
+    /\.aos[-_]/gi, // AOS (Animate On Scroll) library
+    /\.wow(?![a-z])/gi, // WOW.js library
+    /\.sal(?![a-z])/gi, // SAL (Scroll Animation Library)
+  ];
+
+  let fixedCount = 0;
+  let updatedCss = css;
+
+  // Find and fix animation rules with opacity: 0
+  const ruleRegex = /(\.[a-zA-Z_-][a-zA-Z0-9_-]*)\s*\{([^}]+)\}/g;
+  let match;
+
+  while ((match = ruleRegex.exec(css)) !== null) {
+    const selector = match[1];
+    const properties = match[2];
+
+    // Check if this is an animation class
+    const isAnimationClass = ANIMATION_CLASS_PATTERNS.some(pattern => {
+      pattern.lastIndex = 0; // Reset regex state
+      return pattern.test(selector);
+    });
+
+    if (!isAnimationClass) continue;
+
+    // Check if it has opacity: 0 (with possible variations)
+    const opacityZeroMatch = properties.match(/opacity\s*:\s*0(?:[;\s}]|$)/i);
+    if (!opacityZeroMatch) continue;
+
+    // Replace opacity: 0 with opacity: 1 in this rule
+    const fixedProperties = properties.replace(
+      /opacity\s*:\s*0(?=[\s;]|$)/gi,
+      'opacity: 1'
+    );
+
+    const originalRule = match[0];
+    const fixedRule = `${selector} { ${fixedProperties} }`;
+
+    updatedCss = updatedCss.replace(originalRule, fixedRule);
+    fixedCount++;
+  }
+
+  return { css: updatedCss, fixedCount };
+}
+
+/**
+ * Resolve CSS variables in inline styles within HTML.
+ *
+ * Webflow doesn't support CSS variables in inline styles (style="background: var(--sage)").
+ * This function finds all inline styles with var() references and resolves them to actual values.
+ *
+ * @param html The HTML content
+ * @param css The CSS content (to extract variable definitions from :root)
+ * @returns Updated HTML with resolved inline styles
+ */
+export function resolveInlineStyleVariables(html: string, css: string): { html: string; resolvedCount: number } {
+  // Extract CSS variables from the CSS (returns a Map)
+  const variables = extractCssVariables(css);
+
+  if (variables.size === 0) {
+    return { html, resolvedCount: 0 };
+  }
+
+  let resolvedCount = 0;
+
+  // Find all inline style attributes with var() references
+  const updatedHtml = html.replace(
+    /style\s*=\s*"([^"]*var\s*\([^)]+\)[^"]*)"/gi,
+    (fullMatch, styleValue) => {
+      let resolvedStyle = styleValue;
+
+      // Resolve all var() references in this style
+      // Pattern: var(--name) or var(--name, fallback)
+      resolvedStyle = resolvedStyle.replace(
+        /var\(\s*(--[\w-]+)\s*(?:,\s*([^)]+))?\)/g,
+        (varMatch: string, varName: string, fallback: string | undefined) => {
+          const value = variables.get(varName);
+          if (value) {
+            resolvedCount++;
+            return value;
+          } else if (fallback) {
+            resolvedCount++;
+            return fallback.trim();
+          }
+          // Keep original if can't resolve
+          return varMatch;
+        }
+      );
+
+      return `style="${resolvedStyle}"`;
+    }
+  );
+
+  return { html: updatedHtml, resolvedCount };
+}
+
+/**
+ * Escape special regex characters in a string
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Inject inline styles for background colors from combo classes.
+ *
+ * CRITICAL: Webflow ignores background colors from pasted CSS.
+ * This function extracts background colors from combo class rules
+ * and injects them as inline styles on matching HTML elements.
+ *
+ * Example:
+ * - CSS: `.card.sage { background: #C5D1C8; }`
+ * - HTML: `<div class="card sage">` → `<div class="card sage" style="background: #C5D1C8;">`
+ *
+ * @param html The HTML content
+ * @param css The CSS content
+ * @returns Updated HTML with inline background styles
+ */
+export function injectInlineBackgroundStyles(html: string, css: string): { html: string; injectedCount: number } {
+  // Extract combo class rules with background colors
+  // Pattern: .class1.class2 { ... background: value; ... }
+  const comboRuleRegex = /\.([a-zA-Z_][\w-]*)\.([a-zA-Z_][\w-]*)\s*\{([^}]*)\}/g;
+  const backgroundMappings: Array<{ class1: string; class2: string; background: string }> = [];
+
+  let match;
+  while ((match = comboRuleRegex.exec(css)) !== null) {
+    const class1 = match[1];
+    const class2 = match[2];
+    const properties = match[3];
+
+    // Extract background or background-color
+    const bgMatch = properties.match(/background(?:-color)?\s*:\s*([^;]+)/i);
+    if (bgMatch) {
+      const bgValue = bgMatch[1].trim();
+      // Only inject solid colors (hex, rgb, rgba, named colors)
+      // Skip gradients and complex values
+      if (/^(#[\da-fA-F]{3,8}|rgba?\([^)]+\)|[a-zA-Z]+)$/.test(bgValue)) {
+        backgroundMappings.push({ class1, class2, background: bgValue });
+      }
+    }
+  }
+
+  if (backgroundMappings.length === 0) {
+    return { html, injectedCount: 0 };
+  }
+
+  let updatedHtml = html;
+  let injectedCount = 0;
+
+  for (const mapping of backgroundMappings) {
+    // Find elements with both classes (in either order)
+    // CRITICAL: Use negative lookbehind/lookahead to prevent partial matches
+    // e.g., "card" should NOT match inside "stat-card" (hyphen is word boundary but not class boundary)
+    // Class names in HTML are separated by whitespace, so we need to check for:
+    // - Start of class value (after quote) or whitespace before the class
+    // - End of class value (before quote) or whitespace after the class
+    const class1Pattern = `(?<![a-zA-Z0-9_-])${escapeRegex(mapping.class1)}(?![a-zA-Z0-9_-])`;
+    const class2Pattern = `(?<![a-zA-Z0-9_-])${escapeRegex(mapping.class2)}(?![a-zA-Z0-9_-])`;
+
+    // Pattern 1: class="class1 ... class2 ..."
+    // Pattern 2: class="class2 ... class1 ..."
+    const patterns = [
+      new RegExp(
+        `(<[^>]*class\\s*=\\s*["'][^"']*${class1Pattern}[^"']*${class2Pattern}[^"']*)["']([^>]*>)`,
+        'gi'
+      ),
+      new RegExp(
+        `(<[^>]*class\\s*=\\s*["'][^"']*${class2Pattern}[^"']*${class1Pattern}[^"']*)["']([^>]*>)`,
+        'gi'
+      ),
+    ];
+
+    for (const pattern of patterns) {
+      updatedHtml = updatedHtml.replace(pattern, (fullMatch, before, after) => {
+        // Check if element already has a style attribute
+        if (/style\s*=\s*["']/i.test(before + after)) {
+          // Append to existing style
+          return fullMatch.replace(
+            /style\s*=\s*["']([^"']*)["']/i,
+            (styleMatch, existingStyle) => {
+              const separator = existingStyle.trim().endsWith(';') ? ' ' : '; ';
+              injectedCount++;
+              return `style="${existingStyle}${separator}background: ${mapping.background};"`;
+            }
+          );
+        } else {
+          // Add new style attribute
+          injectedCount++;
+          return `${before}" style="background: ${mapping.background};"${after}`;
+        }
+      });
+    }
+  }
+
+  return { html: updatedHtml, injectedCount };
 }

@@ -159,6 +159,7 @@ export type RoutingReason =
   | DescendantSelectorReason
   | CompoundSelectorReason
   | VendorPrefixReason
+  | CSSFunctionReason
   | CSSVariableReason
   | StandardPropertyReason
   | NativeStateReason
@@ -211,6 +212,11 @@ export interface CompoundSelectorReason {
 export interface VendorPrefixReason {
   type: 'vendor-prefix';
   prefix: string;
+}
+
+export interface CSSFunctionReason {
+  type: 'css-function';
+  function: string;
 }
 
 export interface CSSVariableReason {

@@ -191,6 +191,8 @@ export default defineSchema({
       v.literal("scripts_js"),
       v.literal("js_hooks"),
       v.literal("external_scripts"),
+      v.literal("external_stylesheets"),
+      v.literal("security_warnings"),
       v.literal("token_webflow_json"),
       v.literal("component_manifest")
     ),

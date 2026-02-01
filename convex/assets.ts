@@ -248,3 +248,160 @@ export const deleteThumbnail = mutation({
     return { success: true }
   },
 })
+
+/**
+ * Create a marketplace asset (admin only)
+ * Used for importing Webflow templates into the marketplace
+ */
+export const createMarketplaceAsset = mutation({
+  args: {
+    slug: v.string(),
+    title: v.string(),
+    category: v.string(),
+    description: v.optional(v.string()),
+    tags: v.array(v.string()),
+    pasteReliability: v.optional(v.union(v.literal("full"), v.literal("partial"), v.literal("none"))),
+    supportsCodeCopy: v.optional(v.boolean()),
+    capabilityNotes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    // Check if slug already exists
+    const existing = await ctx.db
+      .query("assets")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .unique()
+
+    if (existing) {
+      throw new Error(`Asset with slug "${args.slug}" already exists`)
+    }
+
+    const now = Date.now()
+
+    const assetId = await ctx.db.insert("assets", {
+      slug: args.slug,
+      title: args.title,
+      category: args.category,
+      description: args.description,
+      tags: args.tags,
+      isNew: true,
+      status: "published",
+      pasteReliability: args.pasteReliability ?? "full",
+      supportsCodeCopy: args.supportsCodeCopy ?? true,
+      capabilityNotes: args.capabilityNotes,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    return assetId
+  },
+})
+
+/**
+ * Update a marketplace asset (admin only)
+ */
+export const updateMarketplaceAsset = mutation({
+  args: {
+    assetId: v.id("assets"),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    category: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    status: v.optional(v.union(v.literal("draft"), v.literal("published"))),
+    pasteReliability: v.optional(v.union(v.literal("full"), v.literal("partial"), v.literal("none"))),
+    supportsCodeCopy: v.optional(v.boolean()),
+    capabilityNotes: v.optional(v.string()),
+    isNew: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    const asset = await ctx.db.get(args.assetId)
+    if (!asset) {
+      throw new Error("Asset not found")
+    }
+
+    const { assetId, ...updates } = args
+
+    // Remove undefined values
+    const cleanUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([, v]) => v !== undefined)
+    )
+
+    await ctx.db.patch(assetId, {
+      ...cleanUpdates,
+      updatedAt: Date.now(),
+    })
+
+    return { success: true }
+  },
+})
+
+/**
+ * Get all assets including drafts (admin only)
+ */
+export const listAllAdmin = query({
+  args: {
+    status: v.optional(v.union(v.literal("draft"), v.literal("published"))),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    let assets
+    if (args.status) {
+      assets = await ctx.db
+        .query("assets")
+        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .collect()
+    } else {
+      assets = await ctx.db.query("assets").collect()
+    }
+
+    // Sort by updatedAt descending
+    const sortedAssets = assets.sort((a, b) => b.updatedAt - a.updatedAt)
+
+    // Get thumbnail URLs
+    const assetsWithThumbnails = await Promise.all(
+      sortedAssets.map(async (asset) => {
+        let thumbnailUrl: string | null = null
+        if (asset.thumbnailStorageId) {
+          thumbnailUrl = await ctx.storage.getUrl(asset.thumbnailStorageId)
+        }
+        return {
+          ...asset,
+          thumbnailUrl,
+        }
+      })
+    )
+
+    return assetsWithThumbnails
+  },
+})
+
+/**
+ * Get a single asset by ID (admin only, includes drafts)
+ */
+export const getByIdAdmin = query({
+  args: {
+    assetId: v.id("assets"),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    const asset = await ctx.db.get(args.assetId)
+    if (!asset) {
+      return null
+    }
+
+    let thumbnailUrl: string | null = null
+    if (asset.thumbnailStorageId) {
+      thumbnailUrl = await ctx.storage.getUrl(asset.thumbnailStorageId)
+    }
+
+    return {
+      ...asset,
+      thumbnailUrl,
+    }
+  },
+})

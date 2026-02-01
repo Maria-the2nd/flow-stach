@@ -436,10 +436,93 @@ This document synthesizes information from:
 
 ---
 
-## 13. Change Log
+## 14. Flow Bridge Pipeline Processing Decisions
+
+These are critical implementation decisions made to work around Webflow's CSS handling limitations. **Do not remove these behaviors without understanding why they exist.**
+
+### 14.1 Inline Styles Must Be Preserved
+
+**Location:** `lib/html-parser.ts` → `extractCleanHtml()`
+
+**The Problem:** Early pipeline versions stripped all inline styles for "cleaner" output. This broke:
+- Grid layouts using `grid-column`, `grid-row` positioning (bento grids)
+- Flex positioning (`align-items`, `justify-content` overrides)
+- List styling (`list-style: none` for custom bullets)
+
+**The Fix:** `extractCleanHtml()` does NOT call `stripInlineStyles()`. Inline styles are preserved through the pipeline.
+
+**Warning:** If you see duplicate styling or want to "clean up" inline styles, remember they may contain layout-critical information that CSS classes alone cannot provide.
+
+---
+
+### 14.2 Background Colors Require Inline Injection for Combo Classes
+
+**Location:** `lib/webflow-normalizer.ts` → `injectInlineBackgroundStyles()`
+
+**The Problem:** Webflow **ignores background colors from pasted CSS** when using combo classes like `.card.sage` or `.card.dark`. The CSS is valid, but Webflow doesn't apply the background.
+
+**The Fix:** We detect combo class patterns (`.baseClass.modifier`) that set `background` or `background-color`, then inject those values as inline styles on matching HTML elements.
+
+**Example:**
+```css
+/* CSS (ignored by Webflow for combo classes) */
+.stat-card.sage { background: #C5D1C8; }
+```
+```html
+<!-- Before injection -->
+<div class="stat-card sage">...</div>
+
+<!-- After injection -->
+<div class="stat-card sage" style="background: #C5D1C8;">...</div>
+```
+
+**Regex Warning:** Class matching uses negative lookbehind/lookahead to prevent partial matches:
+```typescript
+// CORRECT: Won't match "card" inside "stat-card"
+const pattern = `(?<![a-zA-Z0-9_-])${className}(?![a-zA-Z0-9_-])`;
+
+// WRONG: Word boundary \b treats hyphen as boundary
+const pattern = `\\b${className}\\b`;  // "card" matches in "stat-card"!
+```
+
+---
+
+### 14.3 CSS Variables in Inline Styles Must Be Resolved
+
+**Location:** `lib/webflow-normalizer.ts` → `resolveInlineStyleVariables()`
+
+**The Problem:** Webflow does not support `var()` references in inline styles. A button with `style="background: var(--sage)"` renders with no background.
+
+**The Fix:** Before output, we resolve all `var()` references in inline styles to their literal values using the CSS `:root` variables.
+
+**Example:**
+```html
+<!-- Before resolution -->
+<a style="background: var(--sage); color: var(--charcoal);">Get Started</a>
+
+<!-- After resolution -->
+<a style="background: #C5D1C8; color: #1E1E1E;">Get Started</a>
+```
+
+**Implementation Note:** `extractCssVariables()` returns a `Map`, not an object. Use `variables.get(varName)` and `variables.size`, not `variables[varName]` and `Object.keys().length`.
+
+---
+
+### 14.4 Summary: Webflow CSS Handling Quirks
+
+| Issue | Symptom | Pipeline Fix |
+|-------|---------|--------------|
+| Combo class backgrounds ignored | `.card.sage` background doesn't apply | Inject inline `style="background: X"` |
+| `var()` in inline styles ignored | Buttons/elements have no color | Resolve to literal hex values |
+| Inline styles stripped | Grid layouts break, lists have wrong bullets | Preserve inline styles in parser |
+
+---
+
+## 15. Change Log
 
 | Date | Change | Reason |
 |------|--------|--------|
+| 2026-02-01 | Added Section 14: Pipeline Processing Decisions | Document inline styles, combo class backgrounds, CSS variable resolution |
 | 2026-01-24 | Initial consolidated document | Unified research from PDF and developer forums |
 
 ---

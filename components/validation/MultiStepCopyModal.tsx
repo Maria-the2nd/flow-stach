@@ -187,11 +187,17 @@ export function MultiStepCopyModal({ open, onOpenChange, payload, assetTitle }: 
                   </span>
                   <h3 className="font-semibold">CSS Embed (Required for Advanced Features)</h3>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Paste in Webflow: <strong>Add HTML Embed element → Paste inside <code>&lt;style&gt;</code> tags</strong>
-                </p>
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <p><strong>How to add in Webflow:</strong></p>
+                  <ol className="list-decimal list-inside space-y-1 pl-2 text-xs">
+                    <li>Press <kbd className="px-1 py-0.5 bg-muted rounded text-[10px] font-mono">A</kbd> to open the Add panel</li>
+                    <li>Search for <strong>"Embed"</strong> and drag it to your page</li>
+                    <li>Place it at the <strong>TOP of the page</strong> (above all content)</li>
+                    <li>Paste the CSS code below inside the embed</li>
+                  </ol>
+                </div>
                 {payload.detectedLibraries && payload.detectedLibraries.length > 0 && (
-                  <div className="text-xs text-amber-700  bg-amber-50  p-2 rounded">
+                  <div className="text-xs text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-950/50 p-2 rounded">
                     ⚠️ This component uses modern CSS features that require custom code
                   </div>
                 )}
@@ -217,9 +223,15 @@ export function MultiStepCopyModal({ open, onOpenChange, payload, assetTitle }: 
                   </span>
                   <h3 className="font-semibold">JavaScript Embed (Required for Interactions)</h3>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Paste in Webflow: <strong>Page Settings → Custom Code → Before &lt;/body&gt; tag</strong>
-                </p>
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <p><strong>How to add in Webflow:</strong></p>
+                  <ol className="list-decimal list-inside space-y-1 pl-2 text-xs">
+                    <li>Click the <strong>Page Settings</strong> gear icon (top left)</li>
+                    <li>Scroll down to the <strong>Custom Code</strong> section</li>
+                    <li>Paste the code in the <strong>"Before &lt;/body&gt; tag"</strong> field</li>
+                    <li>Click <strong>Save</strong> to apply</li>
+                  </ol>
+                </div>
                 <CopyButton
                   label="JavaScript"
                   content={payload.jsEmbed}

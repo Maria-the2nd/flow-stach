@@ -388,7 +388,14 @@ export const importProject = mutation({
       cleanHtml: v.string(),
       scriptsJs: v.optional(v.string()),
       externalScripts: v.optional(v.array(v.string())),
+      externalStylesheets: v.optional(v.array(v.string())),
       jsHooks: v.optional(v.array(v.string())),
+      securityWarnings: v.optional(v.array(v.object({
+        type: v.string(),
+        url: v.string(),
+        reason: v.string(),
+        alternative: v.optional(v.string()),
+      }))),
     }),
     components: v.array(
       v.object({
@@ -540,6 +547,8 @@ export const importProject = mutation({
       | "clean_html"
       | "scripts_js"
       | "external_scripts"
+      | "external_stylesheets"
+      | "security_warnings"
       | "js_hooks"
       | "token_webflow_json"
       | "component_manifest"
@@ -556,8 +565,16 @@ export const importProject = mutation({
           content: args.artifacts.externalScripts ? JSON.stringify(args.artifacts.externalScripts) : undefined,
         },
         {
+          type: "external_stylesheets",
+          content: args.artifacts.externalStylesheets ? JSON.stringify(args.artifacts.externalStylesheets) : undefined,
+        },
+        {
           type: "js_hooks",
           content: args.artifacts.jsHooks ? JSON.stringify(args.artifacts.jsHooks) : undefined,
+        },
+        {
+          type: "security_warnings",
+          content: args.artifacts.securityWarnings ? JSON.stringify(args.artifacts.securityWarnings) : undefined,
         },
         { type: "token_webflow_json", content: args.tokenWebflowJson },
         {

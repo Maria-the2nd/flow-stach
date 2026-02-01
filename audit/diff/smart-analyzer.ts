@@ -12,6 +12,7 @@
 export interface CssRule {
   selector: string;
   properties: Map<string, string>;
+  isMediaQuery?: boolean;  // True if this rule is inside a @media block
 }
 
 export interface AnalysisResult {
@@ -71,16 +72,75 @@ export function parseCssFromHtml(html: string): CssRule[] {
   // Comments like /* BUTTONS */ were being included in selectors
   cssContent = cssContent.replace(/\/\*[\s\S]*?\*\//g, '');
 
-  // Parse rules (simplified - handles most cases)
-  // Match selectors and their property blocks
+  // First, extract and remove media query blocks (we'll parse them separately)
+  // Use brace matching instead of regex for nested structures
+  const mediaQueryRules: CssRule[] = [];
+  const mediaStartRegex = /@media\s*[^{]+\{/g;
+  const mediaBlockPositions: { start: number; end: number }[] = [];
+
+  let mediaMatch;
+  while ((mediaMatch = mediaStartRegex.exec(cssContent)) !== null) {
+    const openBraceIdx = mediaMatch.index + mediaMatch[0].length - 1;
+    let braceCount = 1;
+    let i = openBraceIdx + 1;
+
+    // Find matching closing brace using brace counting
+    while (i < cssContent.length && braceCount > 0) {
+      if (cssContent[i] === '{') braceCount++;
+      else if (cssContent[i] === '}') braceCount--;
+      i++;
+    }
+
+    if (braceCount === 0) {
+      const mediaContent = cssContent.slice(openBraceIdx + 1, i - 1);
+      mediaBlockPositions.push({ start: mediaMatch.index, end: i });
+
+      // Parse rules inside this media query
+      const innerRuleRegex = /([^{}]+)\{([^{}]+)\}/g;
+      let innerMatch;
+      while ((innerMatch = innerRuleRegex.exec(mediaContent)) !== null) {
+        let selector = innerMatch[1].trim();
+        const propertiesStr = innerMatch[2].trim();
+
+        if (!selector || selector.startsWith('@')) continue;
+        selector = selector.replace(/\s+/g, ' ').trim();
+
+        const properties = new Map<string, string>();
+        const propParts = propertiesStr.split(';').filter(Boolean);
+
+        for (const part of propParts) {
+          const colonIdx = part.indexOf(':');
+          if (colonIdx === -1) continue;
+          const prop = part.slice(0, colonIdx).trim().toLowerCase();
+          const val = part.slice(colonIdx + 1).trim();
+          if (prop && val) {
+            properties.set(prop, val);
+          }
+        }
+
+        if (properties.size > 0) {
+          mediaQueryRules.push({ selector, properties, isMediaQuery: true });
+        }
+      }
+    }
+  }
+
+  // Remove media query blocks from cssContent to get base rules only
+  // Sort positions in reverse order to remove from end first (to preserve indices)
+  let baseContent = cssContent;
+  for (const pos of mediaBlockPositions.sort((a, b) => b.start - a.start)) {
+    baseContent = baseContent.slice(0, pos.start) + baseContent.slice(pos.end);
+  }
+
+  // Parse base rules (outside media queries)
   const ruleRegex = /([^{}]+)\{([^{}]+)\}/g;
   let match;
 
-  while ((match = ruleRegex.exec(cssContent)) !== null) {
+  while ((match = ruleRegex.exec(baseContent)) !== null) {
     let selector = match[1].trim();
     const propertiesStr = match[2].trim();
 
-    // Skip @rules like @media, @keyframes for now
+    // Skip @rules like @keyframes
     if (selector.startsWith('@')) continue;
 
     // Skip empty selectors (can happen after comment removal)
@@ -105,9 +165,12 @@ export function parseCssFromHtml(html: string): CssRule[] {
     }
 
     if (properties.size > 0) {
-      rules.push({ selector, properties });
+      rules.push({ selector, properties, isMediaQuery: false });
     }
   }
+
+  // Add media query rules at the end (for completeness, but they'll be filtered out in analysis)
+  rules.push(...mediaQueryRules);
 
   return rules;
 }
@@ -252,18 +315,28 @@ export function analyzeTransformation(
   const sanitizedRules = parseCssFromHtml(sanitizedHtml);
 
   // Build lookup map for sanitized rules
-  // IMPORTANT: Merge properties from duplicate selectors (e.g., base + media query)
+  // IMPORTANT: Keep BASE rule values, don't let media query values override them
+  // Media queries should be tracked separately for responsive preservation analysis
   const sanitizedMap = new Map<string, Map<string, string>>();
   for (const rule of sanitizedRules) {
+    // Skip media query rules - we only want base values for comparison
+    // Media queries start appearing after @media in the CSS
+    if (rule.selector.includes('@media') || rule.isMediaQuery) {
+      continue;
+    }
+
     // Normalize selector for lookup
     const normalized = rule.selector.toLowerCase().trim();
 
-    // Merge with existing properties instead of overwriting
+    // For base rules: First value wins (don't let later duplicates override)
+    // This ensures we compare against the base desktop value, not media query overrides
     const existing = sanitizedMap.get(normalized);
     if (existing) {
-      // Merge: new properties override old ones
+      // Only add properties that don't already exist (first value wins)
       for (const [prop, val] of rule.properties) {
-        existing.set(prop, val);
+        if (!existing.has(prop)) {
+          existing.set(prop, val);
+        }
       }
     } else {
       // Clone the Map to avoid mutation issues

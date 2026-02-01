@@ -714,7 +714,12 @@ export function stripScriptTags(html: string): { html: string; inlineScripts: st
 export function extractCleanHtml(html: string): CleanHtmlResult {
   const { html: noStylesHtml, styles } = stripStyleTags(html);
   const { html: noScriptsHtml, inlineScripts, externalScripts } = stripScriptTags(noStylesHtml);
-  const { html: cleanHtml, removedStyles } = stripInlineStyles(noScriptsHtml);
+
+  // IMPORTANT: Do NOT strip inline styles - they contain critical layout info
+  // like grid-column, grid-row, flex positioning, etc. that Webflow needs.
+  // Previously called stripInlineStyles() which broke bento grids and other layouts.
+  const cleanHtml = noScriptsHtml;
+  const removedStyles = new Map<string, string>(); // Empty map for backward compatibility
 
   const cleanHtmlNoLinks = cleanHtml.replace(/<link[^>]+rel="stylesheet"[^>]*>/gi, "");
 
@@ -734,10 +739,17 @@ export function extractCleanHtml(html: string): CleanHtmlResult {
   const finalCleanHtml = withoutIframes.replace(/\n\s*\n\s*\n/g, "\n\n").trim();
 
   const externalStylesheets: string[] = [];
-  const linkRegex = /<link[^>]+href="([^"]+)"[^>]+rel="stylesheet"[^>]*>/gi;
+  // Match stylesheet links with either order: href before rel, or rel before href
+  const linkRegexHrefFirst = /<link[^>]+href="([^"]+)"[^>]+rel="stylesheet"[^>]*>/gi;
+  const linkRegexRelFirst = /<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"[^>]*>/gi;
   let match;
-  while ((match = linkRegex.exec(html)) !== null) {
+  while ((match = linkRegexHrefFirst.exec(html)) !== null) {
     externalStylesheets.push(match[1]);
+  }
+  while ((match = linkRegexRelFirst.exec(html)) !== null) {
+    if (!externalStylesheets.includes(match[1])) {
+      externalStylesheets.push(match[1]);
+    }
   }
 
   return {

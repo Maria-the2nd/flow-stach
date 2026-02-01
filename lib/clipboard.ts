@@ -15,20 +15,10 @@ export type ValidatedCopyResult =
   | { success: true; warnings?: string[]; sanitized?: boolean }
   | { success: false; reason: string; validationErrors?: string[] };
 
-/**
- * Remove transition declarations from Webflow styleLess strings.
- * Webflow's paste parser can choke on some transition syntax.
- */
-function stripTransitions(styleLess: string): string {
-  const withoutTransitions = styleLess.replace(
-    /(^|[;\s])transition\s*:[^;]+;?/gi,
-    "$1"
-  );
-  return withoutTransitions
-    .replace(/;\s*;/g, ";")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
+// Note: Transition stripping was removed. According to Webflow's Developer Documentation,
+// Webflow natively supports transition-property, transition-duration, transition-timing-function,
+// and transition-delay. The previous stripTransitions() function was removing valid CSS that
+// Webflow can handle natively. See: https://developers.webflow.com/designer/reference/style-properties
 
 type WebflowStyle = {
   _id?: string;
@@ -58,31 +48,8 @@ function normalizeWebflowJson(jsonString: string): string {
 
     const { payload } = parsed;
 
-    if (Array.isArray(payload.styles)) {
-      payload.styles = payload.styles.map((style) => {
-        const nextStyle: WebflowStyle = { ...style };
-
-        if (typeof nextStyle.styleLess === "string") {
-          nextStyle.styleLess = stripTransitions(nextStyle.styleLess);
-        }
-
-        if (nextStyle.variants && typeof nextStyle.variants === "object") {
-          const nextVariants: WebflowStyle["variants"] = {};
-          for (const [key, variant] of Object.entries(nextStyle.variants)) {
-            nextVariants[key] = {
-              ...variant,
-              styleLess:
-                typeof variant?.styleLess === "string"
-                  ? stripTransitions(variant.styleLess)
-                  : variant?.styleLess,
-            };
-          }
-          nextStyle.variants = nextVariants;
-        }
-
-        return nextStyle;
-      });
-    }
+    // Note: We no longer strip transitions from styles. Webflow natively supports
+    // transition properties. The styles are passed through unchanged.
 
     const hasNodes = Array.isArray(payload.nodes) && payload.nodes.length > 0;
     if (!hasNodes && Array.isArray(payload.styles) && payload.styles.length > 0) {

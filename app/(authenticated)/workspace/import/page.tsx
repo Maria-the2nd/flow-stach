@@ -18,14 +18,17 @@ import {
     Palette,
     Zap,
     Download,
-    History
+    History,
+    LayoutTemplate,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 
 import { useState, useRef, useEffect, Suspense } from "react";
+import { WebflowTemplateImport, type WebflowTemplateImportHandle } from "@/components/admin/WebflowTemplateImport";
 import { Progress } from "@/components/ui/progress";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -33,6 +36,14 @@ import { processProjectImport } from "@/lib/project-engine";
 import { resolveCodePen, type CodePenMeta, type ImportInput, type ValidationMessage } from "@/lib/codepen-resolver";
 import { runCodePenPreflight, type CodePenPreflightResult } from "@/lib/validation/codepen-preflight";
 import { toast } from "sonner";
+
+function getAdminEmails(): string[] {
+    const envValue = process.env.NEXT_PUBLIC_ADMIN_EMAILS || "";
+    return envValue
+        .split(",")
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean);
+}
 
 // Main component with Suspense boundary
 export default function ImportPage() {
@@ -50,9 +61,15 @@ export default function ImportPage() {
 function ImportForm() {
     const searchParams = useSearchParams();
     const importMutation = useMutation(api.import.importProject);
+    const { user } = useUser();
 
-    // Main Import Source: 'html' | 'codepen'
-    const [importSource, setImportSource] = useState<'html' | 'codepen'>('html');
+    // Admin check
+    const isAdmin = getAdminEmails().includes(
+        user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? ''
+    );
+
+    // Main Import Source: 'html' | 'codepen' | 'webflow' (webflow is admin-only)
+    const [importSource, setImportSource] = useState<'html' | 'codepen' | 'webflow'>('html');
 
     // HTML Sub-types: 'single' | 'multi'
     const [importType, setImportType] = useState<'single' | 'multi'>('single');
@@ -65,6 +82,7 @@ function ImportForm() {
     const [isImporting, setIsImporting] = useState(false);
     const [progress, setProgress] = useState(0);
     const [currentStageLabel, setCurrentStageLabel] = useState("INITIALIZING");
+    const webflowImportRef = useRef<WebflowTemplateImportHandle>(null);
     const [error, setError] = useState<string | null>(null);
     const [isDone, setIsDone] = useState(false);
     const [newProjectId, setNewProjectId] = useState<string | null>(null);
@@ -370,17 +388,34 @@ function ImportForm() {
                             >
                                 <Files className="w-4 h-4" /> CodePen
                             </button>
+                            {isAdmin && (
+                                <button
+                                    onClick={() => setImportSource('webflow')}
+                                    className={`flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-black transition-all duration-300 ${importSource === 'webflow' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
+                                >
+                                    <LayoutTemplate className="w-4 h-4" /> Import Template
+                                </button>
+                            )}
                         </div>
 
                         <Button
-                            onClick={handleImport}
-                            disabled={isImporting}
+                            onClick={() => {
+                                if (importSource === 'webflow') {
+                                    webflowImportRef.current?.handleImport();
+                                } else {
+                                    handleImport();
+                                }
+                            }}
+                            disabled={isImporting || webflowImportRef.current?.isImporting}
                             className="bg-primary text-primary-foreground hover:opacity-90 shadow-xl shadow-primary/20 premium-hover px-10 h-14 rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50 btn-premium"
                         >
-                            {isImporting ? <Loader2 className="w-6 h-6 mr-3 animate-spin" /> : <>Import Project <ArrowRight className="w-6 h-6 ml-3" /></>}
+                            {isImporting ? <Loader2 className="w-6 h-6 mr-3 animate-spin" /> : <>{importSource === 'webflow' ? 'Import Template' : 'Import Project'} <ArrowRight className="w-6 h-6 ml-3" /></>}
                         </Button>
                     </div>
 
+                    {importSource === 'webflow' ? (
+                        <WebflowTemplateImport ref={webflowImportRef} />
+                    ) : (
                     <div className="space-y-10">
                         {/* Project Name Field */}
                         <div className="space-y-3 max-w-xl">
@@ -611,6 +646,7 @@ function ImportForm() {
                             </div>
                         </div>
                     </div>
+                    )}
                 </div>
             </div>
         </div>

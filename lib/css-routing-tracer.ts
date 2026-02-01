@@ -296,6 +296,8 @@ export function formatRoutingReason(reason: RoutingReason): string {
       return 'Compound selector (.class1.class2) requires embed';
     case 'vendor-prefix':
       return `Vendor prefix (${reason.prefix}) requires embed`;
+    case 'css-function':
+      return `CSS function (${reason.function}) requires embed`;
     case 'css-variable':
       return 'CSS variable requires embed';
     case 'standard-property':
@@ -338,6 +340,8 @@ export function getReasonLabel(reason: RoutingReason): string {
       return '.a.b';
     case 'vendor-prefix':
       return reason.prefix;
+    case 'css-function':
+      return reason.function;
     case 'css-variable':
       return 'var()';
     case 'standard-property':
