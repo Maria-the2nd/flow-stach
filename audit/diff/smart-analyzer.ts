@@ -65,7 +65,11 @@ export function parseCssFromHtml(html: string): CssRule[] {
   const styleMatch = html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
   if (!styleMatch) return rules;
 
-  const cssContent = styleMatch.map(s => s.replace(/<\/?style[^>]*>/gi, '')).join('\n');
+  let cssContent = styleMatch.map(s => s.replace(/<\/?style[^>]*>/gi, '')).join('\n');
+
+  // CRITICAL: Strip CSS comments BEFORE parsing
+  // Comments like /* BUTTONS */ were being included in selectors
+  cssContent = cssContent.replace(/\/\*[\s\S]*?\*\//g, '');
 
   // Parse rules (simplified - handles most cases)
   // Match selectors and their property blocks
@@ -73,11 +77,17 @@ export function parseCssFromHtml(html: string): CssRule[] {
   let match;
 
   while ((match = ruleRegex.exec(cssContent)) !== null) {
-    const selector = match[1].trim();
+    let selector = match[1].trim();
     const propertiesStr = match[2].trim();
 
     // Skip @rules like @media, @keyframes for now
     if (selector.startsWith('@')) continue;
+
+    // Skip empty selectors (can happen after comment removal)
+    if (!selector) continue;
+
+    // Normalize whitespace in selectors
+    selector = selector.replace(/\s+/g, ' ').trim();
 
     const properties = new Map<string, string>();
     const propParts = propertiesStr.split(';').filter(Boolean);
@@ -242,11 +252,23 @@ export function analyzeTransformation(
   const sanitizedRules = parseCssFromHtml(sanitizedHtml);
 
   // Build lookup map for sanitized rules
+  // IMPORTANT: Merge properties from duplicate selectors (e.g., base + media query)
   const sanitizedMap = new Map<string, Map<string, string>>();
   for (const rule of sanitizedRules) {
     // Normalize selector for lookup
     const normalized = rule.selector.toLowerCase().trim();
-    sanitizedMap.set(normalized, rule.properties);
+
+    // Merge with existing properties instead of overwriting
+    const existing = sanitizedMap.get(normalized);
+    if (existing) {
+      // Merge: new properties override old ones
+      for (const [prop, val] of rule.properties) {
+        existing.set(prop, val);
+      }
+    } else {
+      // Clone the Map to avoid mutation issues
+      sanitizedMap.set(normalized, new Map(rule.properties));
+    }
   }
 
   const preserved: AnalysisResult['preserved'] = [];
