@@ -1,6 +1,6 @@
 # Flow Bridge — Authoritative Current-State Specification
 
-Version: 2026-01-24
+Version: 2026-02-07
 
 This document is the canonical, present-tense specification of how the system works now. It supersedes conflicting or older documentation. When evidence conflicts, the chosen behavior is explicitly stated and the alternative is listed in the Deprecation Appendix.
 
@@ -187,22 +187,50 @@ Each item states ownership, storage, creation, and reuse.
 
 ## Processing Stages
 1) Parsing
-   - Strip `<style>` and `<script>` tags from HTML.
+   - Strip `<style>` and `<script>` tags from HTML via `extractCleanHtml()`.
    - Extract CSS, inline scripts, and external script URLs.
-   - Remove inline styles, inline event handlers, and iframes.
-2) Extracting
-   - Parse CSS into a class index.
-   - Extract design tokens from CSS variables.
-   - Extract images and font metadata.
-3) Componentizing
+   - Convert inline styles on elements to generated classes (e.g., `inline-1`).
+   - Remove inline event handlers and iframes.
+2) CSS Routing — Pre-Normalization (Hard-Blockers)
+   - `routeCSS(css, { phase: "hard-blockers" })` separates CSS that absolutely cannot be normalized.
+   - Hard-blocker rules go to embed: pseudo-elements (`::before`, `::after`), `@keyframes`, `@font-face`, `@supports`, vendor-prefix properties (`-webkit-background-clip`, etc.), `:nth-child()`, attribute selectors, `:has()`, `:not()`.
+   - Everything else stays native for normalization.
+3) Normalization
+   - `normalizeHtmlCssForWebflow()` rewrites HTML + CSS into class-only selectors.
+   - Converts element selectors to Webflow classes (`h1` → `.heading-h1`, `p` → `.text-body`, `a` → `.link`, etc.).
+   - Injects typography classes on classless elements.
+   - Auto-generates BEM class names for classless divs.
+   - Converts `:nth-child()` / `:first-child` / `:last-child` to BEM modifier classes.
+   - Resolves CSS variables in inline styles and gradients.
+   - Decouples gradient and transform properties on same element.
+   - Fixes scroll-reveal classes to visible state (prevents layout collapse without JS).
+   - Extracts body background to embed when `.wf-body` has max-width constraints.
+4) CSS Routing — Post-Normalization (Full)
+   - `routeCSS(css, { phase: "full" })` routes remaining non-native rules to embed.
+   - Descendant selectors (`.class element`) go to embed, EXCEPT flattenable typography elements (`h1`–`h6`, `p`, `a`, `ul`, `ol`, `li`, `blockquote`) which stay native because the parser creates modifier classes for them.
+   - Stateful interaction selectors (`.card.active .child`) go to embed to preserve runtime class toggles.
+   - Embed CSS from both phases is merged with body background embed.
+5) Literalization
+   - `literalizeCssForWebflow()` resolves all remaining CSS variables to literal values.
+   - Strips unsupported constructs (`content` property).
+   - Preserves quoted values for `font-family` and `grid-template-areas`.
+6) Extracting
+   - `parseCSS()` builds a ClassIndex from the finalized CSS.
+   - Extracts design tokens from CSS variables.
+   - Extracts images and font metadata.
+   - Creates modifier classes for descendant element selectors (e.g., `.hero h1` → `hero-h1` modifier class with context-specific styles, while `heading-h1` retains base typography).
+   - Routes non-standard media queries (container queries, `print`, `>991px` max-width, pseudo-classes inside min-width media) to `nonStandardMediaCss` for embed.
+   - `nonStandardMediaCss` is merged into final embed CSS output.
+7) Componentizing
    - Split normalized HTML into components/sections.
    - Apply deterministic component naming.
-4) Semantic Patching (Optional LLM)
+8) Semantic Patching (Optional LLM)
    - If unresolved variables or structural warnings exist, call `/api/flowbridge/semantic`.
    - LLM may rename components and patch HTML/CSS.
    - If LLM is unavailable, a mock fallback is used.
-5) Generating
-   - Literalize CSS (resolve CSS variables).
+9) Generating
+   - Convert ClassIndex to Webflow styles with UUID-based style IDs.
+   - `processElement()` traverses HTML tree, tracking `ancestorClasses` to inject modifier classes into descendant elements (e.g., `<h1>` inside `.hero` gets both `heading-h1` and `hero-h1` classes).
    - Generate Style Guide (Design Tokens) Webflow payload and per-component Webflow JSON.
    - Generate Site Structure Payload that includes base layout styles and excludes styles already provided by the Style Guide or Embeds.
    - Persist project, artifacts, assets, and payloads.
@@ -224,16 +252,20 @@ Preserved:
 - Inline script content
 - External script URLs
 - Image references
+- Inline styles on elements (converted to generated classes, e.g., `inline-1`)
 
 Normalized:
 - HTML converted to class-based structure for Webflow compatibility
 - Void elements normalized to self-closing syntax
 - CSS variables resolved to literal values (as much as possible)
 - Gradients and selectors sanitized for Webflow
- - Full-site structure payload includes base layout styles only and excludes Style Guide or Embed styles
+- Descendant element selectors flattened to modifier classes (e.g., `.hero h1` → `.hero-h1`)
+- Positional selectors converted to BEM modifier classes (`:nth-child(1)` → `-1`)
+- Non-standard media queries routed to embed CSS (`nonStandardMediaCss`)
+- Pseudo-class rules inside min-width media queries preserved in embed (not dropped)
+- Full-site structure payload includes base layout styles only and excludes Style Guide or Embed styles
 
 Discarded:
-- Inline styles on elements
 - Inline event handlers (e.g., `onclick=`)
 - `<iframe>` content
 - `<head>`/`<html>`/`<body>` wrappers

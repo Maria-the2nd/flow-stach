@@ -231,6 +231,14 @@ function deriveDescendantClassName(parentClass: string, target: string): string 
 function findBemEquivalents(selector: string): string[] {
   const trimmed = selector.trim();
 
+  // Strip pseudo-class suffix before BEM lookup (e.g., ".btn:hover" → ".btn")
+  // Pseudo-class rules often exist as Webflow variants or in embed
+  const withoutPseudo = trimmed.replace(/:(hover|focus|active|visited|focus-within|focus-visible)(?=\s|$|,)/, '').trim();
+  if (withoutPseudo !== trimmed && withoutPseudo) {
+    // Return BEM equivalents for the base selector (the pseudo variant is handled elsewhere)
+    return findBemEquivalents(withoutPseudo);
+  }
+
   // Direct element mapping
   const direct = SELECTOR_TO_BEM[trimmed.toLowerCase()];
   if (direct) return direct;
@@ -314,23 +322,22 @@ export function analyzeTransformation(
   const originalRules = parseCssFromHtml(originalHtml);
   const sanitizedRules = parseCssFromHtml(sanitizedHtml);
 
-  // Build lookup map for sanitized rules
-  // IMPORTANT: Keep BASE rule values, don't let media query values override them
-  // Media queries should be tracked separately for responsive preservation analysis
+  // Build lookup maps for sanitized rules
+  // Base map: desktop/base rule values (primary lookup)
+  // Fallback map: media query and embed rules (secondary lookup for responsive/variant rules)
   const sanitizedMap = new Map<string, Map<string, string>>();
-  for (const rule of sanitizedRules) {
-    // Skip media query rules - we only want base values for comparison
-    // Media queries start appearing after @media in the CSS
-    if (rule.selector.includes('@media') || rule.isMediaQuery) {
-      continue;
-    }
+  const sanitizedFallbackMap = new Map<string, Map<string, string>>();
 
+  for (const rule of sanitizedRules) {
     // Normalize selector for lookup
     const normalized = rule.selector.toLowerCase().trim();
 
-    // For base rules: First value wins (don't let later duplicates override)
-    // This ensures we compare against the base desktop value, not media query overrides
-    const existing = sanitizedMap.get(normalized);
+    // Choose which map to populate
+    const targetMap = (rule.selector.includes('@media') || rule.isMediaQuery)
+      ? sanitizedFallbackMap
+      : sanitizedMap;
+
+    const existing = targetMap.get(normalized);
     if (existing) {
       // Only add properties that don't already exist (first value wins)
       for (const [prop, val] of rule.properties) {
@@ -340,7 +347,7 @@ export function analyzeTransformation(
       }
     } else {
       // Clone the Map to avoid mutation issues
-      sanitizedMap.set(normalized, new Map(rule.properties));
+      targetMap.set(normalized, new Map(rule.properties));
     }
   }
 
@@ -406,6 +413,34 @@ export function analyzeTransformation(
             existing.count++;
           } else {
             variableResolutions.set(varName, { value: foundValue, count: 1 });
+          }
+        }
+      }
+
+      // Fallback: check media query / embed rules if not found in base
+      if (!found) {
+        // Check fallback map with original selector
+        if (sanitizedFallbackMap.has(normalizedOriginal)) {
+          const props = sanitizedFallbackMap.get(normalizedOriginal)!;
+          if (props.has(prop)) {
+            found = true;
+            foundSelector = originalRule.selector;
+            foundValue = props.get(prop)!;
+          }
+        }
+        // Check fallback map with BEM equivalents
+        if (!found) {
+          for (const bem of bemEquivalents) {
+            const normalizedBem = bem.toLowerCase().trim();
+            if (sanitizedFallbackMap.has(normalizedBem)) {
+              const props = sanitizedFallbackMap.get(normalizedBem)!;
+              if (props.has(prop)) {
+                found = true;
+                foundSelector = bem;
+                foundValue = props.get(prop)!;
+                break;
+              }
+            }
           }
         }
       }

@@ -873,7 +873,7 @@ export function ImportWizard() {
 
       <div className="flex flex-col items-center text-center space-y-3 pt-10">
         <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-primary/70 bg-primary/5 px-4 py-1.5 rounded-full">Project Engine</span>
-        <h1 className="premium-gradient-text font-display text-4xl leading-none tracking-tight sm:text-6xl uppercase">
+        <h1 className="premium-gradient-text font-bold text-4xl leading-none tracking-tight sm:text-6xl uppercase">
           Import Design
         </h1>
         <p className="max-w-xl text-muted-foreground font-medium text-sm sm:text-base leading-relaxed">
@@ -1076,7 +1076,7 @@ export function ImportWizard() {
                         </Button>
                       </div>
                       {safetyReport && (
-                        <details className="mt-4 bg-white/5 rounded-2xl p-4 border border-white/10 ring-1 ring-white/5 flex gap-4 premium-card-hover group/item">
+                        <details className="mt-4 bg-white/5 rounded-2xl p-4 border border-white/10 ring-1 ring-white/5 flex gap-4 group/item">
                           <summary className="cursor-pointer font-semibold text-muted-foreground/80">Safety Report</summary>
                           <div className="mt-3">
                             <SafetyReportPanel report={safetyReport} />

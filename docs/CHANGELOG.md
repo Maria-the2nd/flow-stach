@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - February 7, 2026
+
+#### CSS Pipeline: Pseudo-Class Rules in Min-Width Media Queries
+
+**Problem Solved:** `:hover` rules inside `@media (min-width: ...)` blocks were silently dropped by `parseCSS()`. The parser skipped pseudo-class selectors in min-width media blocks with `continue`, losing styles like `.btn:hover { background: ... }` inside large breakpoints.
+
+**Fix:** Pseudo-class rules inside non-standard min-width media queries are now collected and routed to `nonStandardMediaCss` as embed CSS, preserving them in the final output.
+
+**Files Modified:**
+- `lib/css-parser.ts` — Collect pseudo-class rules in min-width media, push to `nonStandardMediaBlocks`
+
+#### CSS Pipeline: Modifier Classes for Descendant Element Selectors
+
+**Problem Solved:** Descendant selectors like `.hero h1` were routed to embed CSS, losing Webflow Style Panel editability. The parser merged all styles into the base element class (`heading-h1`), losing the parent context.
+
+**Fix:** Three coordinated changes create modifier classes:
+1. **Parser** (`css-parser.ts`): `processRule()` creates modifier class `hero-h1` (separate from base `heading-h1`) with context-specific styles.
+2. **Converter** (`webflow-converter.ts`): `processElement()` tracks `ancestorClasses` and injects modifier classes into descendant elements. `<h1>` inside `.hero` gets both `heading-h1` and `hero-h1`.
+3. **Router** (`css-embed-router.ts`): Safety net updated — flattenable typography elements (`h1`–`h6`, `p`, `a`, `ul`, `ol`, `li`, `blockquote`) stay native since the parser creates modifier classes for them.
+
+**Files Modified:**
+- `lib/css-parser.ts` — Modifier class creation in `processRule()`
+- `lib/webflow-converter.ts` — `ancestorClasses` parameter and modifier class injection
+- `lib/css-embed-router.ts` — `flattenableElements` set in safety net
+
+#### UI: Remove Hardcoded CSS Classes from App Design System
+
+**Problem Solved:** `globals.css` contained hardcoded classes (`btn-premium`, `premium-hover`, `premium-card-hover`, `btn-primary-cta`, `glass-card-hover`, `font-display`, `scrollbar-hide`, `shadow-2xl`) that masked pipeline gaps by providing styles the converter should handle dynamically.
+
+**Fix:** Removed all hardcoded pipeline-pattern classes. Replaced with inline Tailwind utilities in component files.
+
+**Files Modified:**
+- `app/globals.css` — Removed ~140 lines of hardcoded classes
+- `app/(authenticated)/workspace/import/page.tsx` — Inline Tailwind
+- `app/(authenticated)/workspace/projects/page.tsx` — Inline Tailwind
+- `app/(authenticated)/workspace/library/page.tsx` — Inline Tailwind
+- `app/(authenticated)/workspace/components/page.tsx` — Inline Tailwind
+- `components/workspace/project-details-view.tsx` — Inline Tailwind
+- `components/explore/explore-view.tsx` — Inline Tailwind
+- `components/admin/WebflowTemplateImport.tsx` — Inline Tailwind
+
+### Added - February 5, 2026
+
+#### Pipeline Audit Harness with Smart CSS Analysis
+
+**New Feature:** Automated audit pipeline that compares original HTML/CSS against sanitized Webflow-ready output. Includes a smart CSS analyzer that tracks CSS preservation rates and identifies routing decisions.
+
+**Files Created/Modified:**
+- `audit/diff/smart-analyzer.ts` — CSS preservation analysis with fallback map for media/embed rules
+- `audit/runner/pipeline-executor.ts` — Audit pipeline executor consuming `nonStandardMediaCss`
+- `tests/regression/panel-first-routing-guarantees.test.ts` — Regression tests for routing behavior
+- `tests/regression/no-fixture-hardcoding.test.ts` — Ensures no fixture-specific logic
+
+---
+
 ### Added - January 25, 2026
 
 #### BEM Combo Class Pattern for Typography Inheritance 🎯
@@ -253,5 +308,5 @@ All common positional selectors are now auto-converted to BEM modifier classes:
 
 ---
 
-**Maintained by:** Flow-Stach Team  
-**Last Updated:** January 24, 2026
+**Maintained by:** Flow Bridge Team
+**Last Updated:** February 7, 2026

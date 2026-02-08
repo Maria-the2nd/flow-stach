@@ -1,5 +1,5 @@
 {
-  "name": "FlowBridge Basic",
+  "name": "flowbridge",
   "entryType": "single_html",
   "paths": {
     "html": "flowbridge.html"
@@ -7,5 +7,5 @@
   "expectations": {
     "maxDiffRatio": 0.05
   },
-  "tags": ["flowbridge", "basic"]
+  "tags": ["fresh-run"]
 }

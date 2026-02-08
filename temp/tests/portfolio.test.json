@@ -1,5 +1,5 @@
 {
-  "name": "Portfolio Template",
+  "name": "portfolio",
   "entryType": "single_html",
   "paths": {
     "html": "portfolio.html"
@@ -7,5 +7,5 @@
   "expectations": {
     "maxDiffRatio": 0.05
   },
-  "tags": ["portfolio", "template"]
+  "tags": ["fresh-run"]
 }

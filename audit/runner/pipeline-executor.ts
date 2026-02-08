@@ -5,12 +5,13 @@
  * NO LLM calls - audit runs offline, deterministic path only.
  */
 
-import { extractCleanHtml } from '../../lib/html-parser';
-import { normalizeHtmlCssForWebflow } from '../../lib/webflow-normalizer';
-import { parseCSS } from '../../lib/css-parser';
-import { literalizeCssForWebflow } from '../../lib/webflow-literalizer';
-import { componentizeHtml } from '../../lib/componentizer';
-import { buildCssTokenPayload } from '../../lib/webflow-converter';
+import { extractCleanHtml } from "../../lib/html-parser";
+import { normalizeHtmlCssForWebflow } from "../../lib/webflow-normalizer";
+import { parseCSS } from "../../lib/css-parser";
+import { literalizeCssForWebflow } from "../../lib/webflow-literalizer";
+import { componentizeHtml } from "../../lib/componentizer";
+import { buildCssTokenPayload } from "../../lib/webflow-converter";
+import { mergeEmbedCSS, routeCSS } from "../../lib/css-embed-router";
 
 export interface PipelineInput {
   html: string;
@@ -25,6 +26,8 @@ export interface PipelineOutput {
   sanitizedHtml: string;
   /** Sanitized CSS after normalization */
   sanitizedCss: string;
+  /** CSS routed to embed in the real pipeline */
+  embedCss: string;
   /** Parsed CSS class index */
   classIndex: Record<string, unknown>;
   /** Webflow safety gate result */
@@ -57,48 +60,87 @@ export function runPipeline(input: PipelineInput): PipelineOutput {
       combinedCss = `${combinedCss}\n\n/* External CSS */\n${input.css}`;
     }
 
-    // Step 2: Normalize HTML + CSS for Webflow
-    const normResult = normalizeHtmlCssForWebflow(cleanResult.cleanHtml, combinedCss);
+    // Step 2: Two-pass routing (same strategy as production converter):
+    // - pre-pass: route only hard blockers before normalization
+    // - post-pass: route remaining non-native rules after normalization
+    const preRouting = routeCSS(combinedCss, {
+      strategy: "panel-first",
+      phase: "hard-blockers",
+    });
+
+    // Step 3: Normalize pre-routed native CSS for Webflow
+    const normResult = normalizeHtmlCssForWebflow(
+      cleanResult.cleanHtml,
+      preRouting.native,
+    );
     if (normResult.warnings.length > 0) {
       warnings.push(...normResult.warnings);
     }
 
-    // Step 3: Parse CSS into class index
-    const cssResult = parseCSS(normResult.css);
+    const postRouting = routeCSS(normResult.css, {
+      strategy: "panel-first",
+      phase: "full",
+    });
 
-    // Step 4: Literalize CSS (resolve variables)
-    const literalResult = literalizeCssForWebflow(normResult.css);
+    const finalNativeCss = postRouting.native;
+    const finalEmbedCss = mergeEmbedCSS(
+      normResult.bodyBackgroundEmbed || "",
+      preRouting.embed,
+      postRouting.embed,
+    );
+
+    // Step 4: Parse CSS into class index
+    const cssResult = parseCSS(finalNativeCss);
+
+    // Merge non-standard media CSS (container queries, >991px breakpoints, pseudo+media rules)
+    // into embed output — same pattern as webflow-converter-streaming.ts
+    const completeEmbedCss = cssResult.classIndex.nonStandardMediaCss
+      ? mergeEmbedCSS(finalEmbedCss, cssResult.classIndex.nonStandardMediaCss)
+      : finalEmbedCss;
+
+    // Step 5: Literalize CSS (resolve variables)
+    const literalResult = literalizeCssForWebflow(finalNativeCss);
     if (literalResult.remainingVarCount > 0) {
-      warnings.push(`${literalResult.remainingVarCount} CSS variables could not be resolved`);
+      warnings.push(
+        `${literalResult.remainingVarCount} CSS variables could not be resolved`,
+      );
     }
 
-    // Step 5: Componentize HTML
+    // Step 6: Componentize HTML
     const componentTree = componentizeHtml(normResult.html);
 
-    // Step 6: Build CSS token payload
-    const tokenPayload = buildCssTokenPayload(normResult.css, {
-      namespace: 'audit',
+    // Step 7: Build CSS token payload
+    const tokenPayload = buildCssTokenPayload(finalNativeCss, {
+      namespace: "audit",
       includePreview: false,
     });
 
-    // Step 7: Safety check (simplified for audit - just check for obvious issues)
+    // Step 8: Safety check (simplified for audit - just check for obvious issues)
     const safetyResult = {
       safe: true,
       warnings: [] as string[],
       blockers: [] as string[],
     };
 
-    // Build sanitized HTML bundle for visual comparison
+    // Build sanitized HTML bundle for visual comparison (native + embed).
+    // Include both inline scripts extracted from source HTML and optional external JS fixture files
+    // so interaction-dependent states are represented in audit previews.
+    const previewJs = [cleanResult.extractedScripts, input.js]
+      .filter((chunk): chunk is string => !!chunk && chunk.trim().length > 0)
+      .join("\n\n");
+
     const sanitizedHtml = buildSanitizedBundle(
       normResult.html,
-      normResult.css,
-      input.js || ''
+      finalNativeCss,
+      completeEmbedCss,
+      previewJs,
     );
 
     return {
       originalHtml,
       sanitizedHtml,
-      sanitizedCss: normResult.css,
+      sanitizedCss: finalNativeCss,
+      embedCss: completeEmbedCss,
       classIndex: cssResult.classIndex as unknown as Record<string, unknown>,
       safetyResult: {
         safe: safetyResult.safe,
@@ -115,7 +157,8 @@ export function runPipeline(input: PipelineInput): PipelineOutput {
     return {
       originalHtml: input.html,
       sanitizedHtml: input.html,
-      sanitizedCss: '',
+      sanitizedCss: "",
+      embedCss: "",
       classIndex: {},
       safetyResult: { safe: false, warnings: [], blockers: [message] },
       warnings,
@@ -127,7 +170,17 @@ export function runPipeline(input: PipelineInput): PipelineOutput {
 /**
  * Build a complete HTML document from sanitized parts
  */
-function buildSanitizedBundle(html: string, css: string, js: string): string {
+function buildSanitizedBundle(
+  html: string,
+  css: string,
+  embedCss: string,
+  js: string,
+): string {
+  const nativeStyleTag = `<style data-flowbridge-native="true">\n${css}\n</style>`;
+  const embedStyleTag = embedCss
+    ? `\n<style data-flowbridge-embed="true">\n${embedCss}\n</style>`
+    : "";
+
   // Check if html is already a full document
   const isFullDocument = /<html/i.test(html) || /<!DOCTYPE/i.test(html);
 
@@ -135,12 +188,12 @@ function buildSanitizedBundle(html: string, css: string, js: string): string {
     // Inject updated CSS into existing document
     const withStyle = html.replace(
       /<\/head>/i,
-      `<style>\n${css}\n</style>\n</head>`
+      `${nativeStyleTag}${embedStyleTag}\n</head>`,
     );
     if (js) {
       return withStyle.replace(
         /<\/body>/i,
-        `<script>\n${js}\n</script>\n</body>`
+        `<script>\n${js}\n</script>\n</body>`,
       );
     }
     return withStyle;
@@ -153,13 +206,11 @@ function buildSanitizedBundle(html: string, css: string, js: string): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Audit Preview</title>
-  <style>
-${css}
-  </style>
+  ${nativeStyleTag}${embedStyleTag}
 </head>
 <body>
 ${html}
-${js ? `<script>\n${js}\n</script>` : ''}
+${js ? `<script>\n${js}\n</script>` : ""}
 </body>
 </html>`;
 }

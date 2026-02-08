@@ -3,7 +3,12 @@
  * Rewrites HTML + CSS into class-only selectors that Webflow can import cleanly.
  */
 
-import { ELEMENT_TO_CLASS_MAP, parseCSS, extractCssVariables, type ClassIndex } from "./css-parser";
+import {
+  ELEMENT_TO_CLASS_MAP,
+  parseCSS,
+  extractCssVariables,
+  type ClassIndex,
+} from "./css-parser";
 import { sanitizeGradientsForWebflow } from "./gradient-sanitizer";
 import { decoupleGradientsFromTransforms } from "./gradient-transform-decoupler";
 import { literalizeCssForWebflow } from "./webflow-literalizer";
@@ -114,10 +119,37 @@ const SELF_CLOSING_TAGS = new Set([
   "wbr",
 ]);
 
+const STATEFUL_CLASS_TOKENS = new Set([
+  "active",
+  "open",
+  "opened",
+  "closed",
+  "expanded",
+  "collapsed",
+  "selected",
+  "current",
+  "visible",
+  "hidden",
+  "disabled",
+  "enabled",
+  "checked",
+  "focused",
+  "focus",
+  "hover",
+  "pressed",
+  "loading",
+  "error",
+  "success",
+  "invalid",
+  "valid",
+]);
+
+const BASE_LINK_CLASS = ELEMENT_TO_CLASS_MAP["a"] || "link";
+
 /**
  * Normalize self-closing tags to XHTML format for Webflow compatibility.
  * Webflow's React parser requires void elements to be properly self-closed.
- * 
+ *
  * Converts:
  * - <br> → <br />
  * - <hr> → <hr />
@@ -127,8 +159,20 @@ const SELF_CLOSING_TAGS = new Set([
 function normalizeSelfClosingTags(html: string): string {
   // List of void elements that must be self-closing
   const voidElements = [
-    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-    'link', 'meta', 'param', 'source', 'track', 'wbr'
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
   ];
 
   let normalized = html;
@@ -136,20 +180,20 @@ function normalizeSelfClosingTags(html: string): string {
   for (const tag of voidElements) {
     // Pattern 1: <tag> (no slash, no closing tag)
     // Replace with <tag />
-    const pattern1 = new RegExp(`<${tag}(\\s[^>]*)?(?<!/)>`, 'gi');
+    const pattern1 = new RegExp(`<${tag}(\\s[^>]*)?(?<!/)>`, "gi");
     normalized = normalized.replace(pattern1, (match, attrs) => {
-      const attributes = attrs || '';
+      const attributes = attrs || "";
       // Remove any trailing slash that might exist
-      const cleanAttrs = attributes.replace(/\s*\/\s*$/, '');
+      const cleanAttrs = attributes.replace(/\s*\/\s*$/, "");
       return `<${tag}${cleanAttrs} />`;
     });
 
     // Pattern 2: <tag/> (slash without space)
     // Replace with <tag />
-    const pattern2 = new RegExp(`<${tag}(\\s[^>]*)?/>`, 'gi');
+    const pattern2 = new RegExp(`<${tag}(\\s[^>]*)?/>`, "gi");
     normalized = normalized.replace(pattern2, (match, attrs) => {
-      const attributes = attrs || '';
-      const cleanAttrs = attributes.replace(/\s*\/\s*$/, '').trim();
+      const attributes = attrs || "";
+      const cleanAttrs = attributes.replace(/\s*\/\s*$/, "").trim();
       return cleanAttrs ? `<${tag} ${cleanAttrs} />` : `<${tag} />`;
     });
   }
@@ -165,10 +209,16 @@ function removeProblematicAttributes(html: string): string {
   let cleaned = html;
 
   // Remove inline event handlers (onclick, onload, etc.)
-  cleaned = cleaned.replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+  cleaned = cleaned.replace(
+    /\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,
+    "",
+  );
 
   // Remove contenteditable attributes (can cause issues)
-  cleaned = cleaned.replace(/\s+contenteditable\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+  cleaned = cleaned.replace(
+    /\s+contenteditable\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,
+    "",
+  );
 
   return cleaned;
 }
@@ -182,19 +232,25 @@ function normalizeBrTagsInHeadings(html: string): string {
   // Match <br> or <br/> or <br /> inside heading tags (h1-h6)
   // This regex matches headings with their content, including nested tags
   const headingBrPattern = /<(h[1-6])([^>]*)>([\s\S]*?)<\/(h[1-6])>/gi;
-  
-  return html.replace(headingBrPattern, (match, openTag, attrs, content, closeTag) => {
-    // Only process if open and close tags match
-    if (openTag.toLowerCase() !== closeTag.toLowerCase()) {
-      return match;
-    }
-    
-    // Replace <br>, <br/>, or <br /> with a styled span that creates a line break
-    // Using display: block to force a line break without using <br>
-    const normalizedContent = content.replace(/<br\s*\/?>/gi, '<span style="display: block;"></span>');
-    
-    return `<${openTag}${attrs}>${normalizedContent}</${closeTag}>`;
-  });
+
+  return html.replace(
+    headingBrPattern,
+    (match, openTag, attrs, content, closeTag) => {
+      // Only process if open and close tags match
+      if (openTag.toLowerCase() !== closeTag.toLowerCase()) {
+        return match;
+      }
+
+      // Replace <br>, <br/>, or <br /> with a styled span that creates a line break
+      // Using display: block to force a line break without using <br>
+      const normalizedContent = content.replace(
+        /<br\s*\/?>/gi,
+        '<span style="display: block;"></span>',
+      );
+
+      return `<${openTag}${attrs}>${normalizedContent}</${closeTag}>`;
+    },
+  );
 }
 
 /**
@@ -204,7 +260,7 @@ export function normalizeHtmlCssForWebflow(
   html: string,
   css: string,
   options: NormalizationOptions = {},
-  preParsedClassIndex?: ClassIndex
+  preParsedClassIndex?: ClassIndex,
 ): NormalizationResult {
   const warnings: string[] = [];
   const strictLayout = options.strictLayout === true;
@@ -225,10 +281,14 @@ export function normalizeHtmlCssForWebflow(
 
   // Add framework warnings to the warnings array
   for (const issue of frameworkDetection.issues) {
-    if (issue.severity === 'block') {
-      warnings.push(`[BLOCKED] ${issue.message}${issue.suggestion ? ` - ${issue.suggestion}` : ''}`);
-    } else if (issue.severity === 'warn') {
-      warnings.push(`[WARNING] ${issue.message}${issue.suggestion ? ` - ${issue.suggestion}` : ''}`);
+    if (issue.severity === "block") {
+      warnings.push(
+        `[BLOCKED] ${issue.message}${issue.suggestion ? ` - ${issue.suggestion}` : ""}`,
+      );
+    } else if (issue.severity === "warn") {
+      warnings.push(
+        `[WARNING] ${issue.message}${issue.suggestion ? ` - ${issue.suggestion}` : ""}`,
+      );
     }
   }
 
@@ -253,7 +313,9 @@ export function normalizeHtmlCssForWebflow(
   // This resolves CSS vars inside gradients and rounds percentages
   const gradientResult = sanitizeGradientsForWebflow(css);
   if (gradientResult.sanitizedCount > 0) {
-    warnings.push(`Sanitized ${gradientResult.sanitizedCount} gradients for Webflow compatibility`);
+    warnings.push(
+      `Sanitized ${gradientResult.sanitizedCount} gradients for Webflow compatibility`,
+    );
   }
   warnings.push(...gradientResult.warnings);
   let sanitizedCss = gradientResult.css;
@@ -270,16 +332,19 @@ export function normalizeHtmlCssForWebflow(
   if (animationVisibilityFix.fixedCount > 0) {
     sanitizedCss = animationVisibilityFix.css;
     warnings.push(
-      `Fixed ${animationVisibilityFix.fixedCount} scroll animation class(es) with opacity: 0 → 1 for visibility`
+      `Fixed ${animationVisibilityFix.fixedCount} scroll animation class(es) to static visible defaults (opacity/transform)`,
     );
   }
 
   // Decouple gradients from transforms to prevent Webflow import race condition
   // This structurally separates gradient-bearing elements from transform-bearing elements
-  const decoupledResult = decoupleGradientsFromTransforms(normalizedHtml, sanitizedCss);
+  const decoupledResult = decoupleGradientsFromTransforms(
+    normalizedHtml,
+    sanitizedCss,
+  );
   if (decoupledResult.rewriteCount > 0) {
     warnings.push(
-      `Decoupled ${decoupledResult.rewriteCount} gradient+transform elements for Webflow compatibility (${decoupledResult.decoupledClasses.join(", ")})`
+      `Decoupled ${decoupledResult.rewriteCount} gradient+transform elements for Webflow compatibility (${decoupledResult.decoupledClasses.join(", ")})`,
     );
     normalizedHtml = decoupledResult.html;
     sanitizedCss = decoupledResult.css;
@@ -296,49 +361,85 @@ export function normalizeHtmlCssForWebflow(
     nthChildReport = nthChildResult.report;
 
     // Apply nth-child modifiers to HTML (add modifier classes based on position)
-    normalizedHtml = applyNthChildModifiersToHtml(normalizedHtml, nthChildResult.htmlInjections);
+    normalizedHtml = applyNthChildModifiersToHtml(
+      normalizedHtml,
+      nthChildResult.htmlInjections,
+    );
 
     // Apply first-child/last-child modifiers to HTML
-    normalizedHtml = applyFirstLastChildModifiersToHtml(normalizedHtml, nthChildResult.firstLastInjections);
+    normalizedHtml = applyFirstLastChildModifiersToHtml(
+      normalizedHtml,
+      nthChildResult.firstLastInjections,
+    );
 
     // Apply odd/even modifiers to HTML
-    normalizedHtml = applyOddEvenModifiersToHtml(normalizedHtml, nthChildResult.oddEvenInjections);
+    normalizedHtml = applyOddEvenModifiersToHtml(
+      normalizedHtml,
+      nthChildResult.oddEvenInjections,
+    );
 
     // Apply an formula modifiers to HTML (every Nth element)
-    normalizedHtml = applyAnFormulaModifiersToHtml(normalizedHtml, nthChildResult.anFormulaInjections);
+    normalizedHtml = applyAnFormulaModifiersToHtml(
+      normalizedHtml,
+      nthChildResult.anFormulaInjections,
+    );
 
     // Apply an+b formula modifiers to HTML (cyclic slot positions)
-    normalizedHtml = applyAnPlusBModifiersToHtml(normalizedHtml, nthChildResult.anPlusBInjections);
+    normalizedHtml = applyAnPlusBModifiersToHtml(
+      normalizedHtml,
+      nthChildResult.anPlusBInjections,
+    );
 
     // Apply nth-last-child modifiers to HTML (from end positions)
-    normalizedHtml = applyNthLastChildModifiersToHtml(normalizedHtml, nthChildResult.nthLastChildInjections);
+    normalizedHtml = applyNthLastChildModifiersToHtml(
+      normalizedHtml,
+      nthChildResult.nthLastChildInjections,
+    );
 
     // Remove converted nth-child rules from CSS (they're now BEM classes)
-    sanitizedCss = removeConvertedNthChildRules(sanitizedCss, nthChildResult.htmlInjections);
+    sanitizedCss = removeConvertedNthChildRules(
+      sanitizedCss,
+      nthChildResult.htmlInjections,
+    );
 
     // Remove converted first-child/last-child rules from CSS
-    sanitizedCss = removeConvertedFirstLastChildRules(sanitizedCss, nthChildResult.firstLastInjections);
+    sanitizedCss = removeConvertedFirstLastChildRules(
+      sanitizedCss,
+      nthChildResult.firstLastInjections,
+    );
 
     // Remove converted odd/even rules from CSS
-    sanitizedCss = removeConvertedOddEvenRules(sanitizedCss, nthChildResult.oddEvenInjections);
+    sanitizedCss = removeConvertedOddEvenRules(
+      sanitizedCss,
+      nthChildResult.oddEvenInjections,
+    );
 
     // Remove converted an formula rules from CSS
-    sanitizedCss = removeConvertedAnFormulaRules(sanitizedCss, nthChildResult.anFormulaInjections);
+    sanitizedCss = removeConvertedAnFormulaRules(
+      sanitizedCss,
+      nthChildResult.anFormulaInjections,
+    );
 
     // Remove converted an+b formula rules from CSS
-    sanitizedCss = removeConvertedAnPlusBRules(sanitizedCss, nthChildResult.anPlusBInjections);
+    sanitizedCss = removeConvertedAnPlusBRules(
+      sanitizedCss,
+      nthChildResult.anPlusBInjections,
+    );
 
     // Remove converted nth-last-child rules from CSS
-    sanitizedCss = removeConvertedNthLastChildRules(sanitizedCss, nthChildResult.nthLastChildInjections);
+    sanitizedCss = removeConvertedNthLastChildRules(
+      sanitizedCss,
+      nthChildResult.nthLastChildInjections,
+    );
 
     // Add the converted BEM rules to CSS
-    sanitizedCss = nthChildResult.convertedCss + '\n\n' + sanitizedCss;
+    sanitizedCss = nthChildResult.convertedCss + "\n\n" + sanitizedCss;
 
     // Store injections in context for later HTML processing
     context.nthChildInjections = nthChildResult.htmlInjections;
 
     warnings.push(
-      `Converted ${nthChildResult.report.converted} positional CSS rules to BEM modifier classes`
+      `Converted ${nthChildResult.report.converted} positional CSS rules to BEM modifier classes`,
     );
   }
 
@@ -358,7 +459,7 @@ export function normalizeHtmlCssForWebflow(
     htmlResult.requiredTypographyClasses,
     htmlResult.hasBtnClass,
     defaultFontFamily,
-    warnings
+    warnings,
   );
 
   let normalizedCss = serializeCss(baseRules, mediaRules);
@@ -366,11 +467,15 @@ export function normalizeHtmlCssForWebflow(
   const originalMinWidthBlocks =
     css.match(/@media\s*([^{]*min-width[^)]*\)[^{]*)\{([\s\S]*?)\}\s*/gi) || [];
   if (originalMinWidthBlocks.length > 0) {
-    const missingBlocks = originalMinWidthBlocks.filter((block) => !normalizedCss.includes(block));
+    const missingBlocks = originalMinWidthBlocks.filter(
+      (block) => !normalizedCss.includes(block),
+    );
     if (missingBlocks.length > 0) {
-      normalizedCss = [normalizedCss, ...missingBlocks].filter(Boolean).join("\n\n");
+      normalizedCss = [normalizedCss, ...missingBlocks]
+        .filter(Boolean)
+        .join("\n\n");
       warnings.push(
-        `Preserved ${missingBlocks.length} mobile-first @media block(s) that were dropped during normalization.`
+        `Preserved ${missingBlocks.length} mobile-first @media block(s) that were dropped during normalization.`,
       );
     }
   }
@@ -381,11 +486,11 @@ export function normalizeHtmlCssForWebflow(
 
   if (strictLayout) {
     const injectedDefaults = finalParsed.classIndex.warnings.filter((w) =>
-      /missing explicit properties/i.test(w.message)
+      /missing explicit properties/i.test(w.message),
     );
     if (injectedDefaults.length > 0) {
       throw new Error(
-        `Strict layout failed: ${injectedDefaults.length} layout containers required injected defaults.`
+        `Strict layout failed: ${injectedDefaults.length} layout containers required injected defaults.`,
       );
     }
   }
@@ -396,7 +501,7 @@ export function normalizeHtmlCssForWebflow(
   if (bodyBackgroundResult.embedCss) {
     normalizedCss = bodyBackgroundResult.updatedCss;
     warnings.push(
-      `Extracted body background to embed CSS for full-viewport coverage (body has max-width constraint)`
+      `Extracted body background to embed CSS for full-viewport coverage (body has max-width constraint)`,
     );
   }
 
@@ -408,17 +513,20 @@ export function normalizeHtmlCssForWebflow(
   if (inlineVarResult.resolvedCount > 0) {
     finalHtml = inlineVarResult.html;
     warnings.push(
-      `Resolved ${inlineVarResult.resolvedCount} CSS variable(s) in inline styles for Webflow compatibility`
+      `Resolved ${inlineVarResult.resolvedCount} CSS variable(s) in inline styles for Webflow compatibility`,
     );
   }
 
   // CRITICAL: Inject inline background styles from combo classes
   // Webflow ignores background colors from pasted CSS, so we must use inline styles
-  const inlineBackgroundResult = injectInlineBackgroundStyles(finalHtml, normalizedCss);
+  const inlineBackgroundResult = injectInlineBackgroundStyles(
+    finalHtml,
+    normalizedCss,
+  );
   if (inlineBackgroundResult.injectedCount > 0) {
     finalHtml = inlineBackgroundResult.html;
     warnings.push(
-      `Injected ${inlineBackgroundResult.injectedCount} inline background style(s) for Webflow compatibility`
+      `Injected ${inlineBackgroundResult.injectedCount} inline background style(s) for Webflow compatibility`,
     );
   }
 
@@ -433,7 +541,10 @@ export function normalizeHtmlCssForWebflow(
   };
 }
 
-function parseCssBlocks(css: string): { baseRules: RawRule[]; mediaBlocks: MediaBlock[] } {
+function parseCssBlocks(css: string): {
+  baseRules: RawRule[];
+  mediaBlocks: MediaBlock[];
+} {
   const cleanCss = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const mediaBlocks: MediaBlock[] = [];
 
@@ -493,7 +604,7 @@ function parseRulesFromContent(content: string): RawRule[] {
 function normalizeRuleSet(
   rules: RawRule[],
   context: NormalizationContext,
-  warnings: string[]
+  warnings: string[],
 ): NormalizedRule[] {
   const normalized: NormalizedRule[] = [];
 
@@ -525,7 +636,10 @@ function normalizeRuleSet(
   return normalized;
 }
 
-function normalizeSelector(selector: string, context: NormalizationContext): string | null {
+function normalizeSelector(
+  selector: string,
+  context: NormalizationContext,
+): string | null {
   const trimmed = selector.trim();
   if (!trimmed) return null;
 
@@ -533,7 +647,11 @@ function normalizeSelector(selector: string, context: NormalizationContext): str
   const baseLower = base.toLowerCase();
 
   // Check if this is a pure element selector that maps to a class
-  if (ELEMENT_TO_CLASS_MAP[baseLower] && !base.includes(".") && !base.includes(" ")) {
+  if (
+    ELEMENT_TO_CLASS_MAP[baseLower] &&
+    !base.includes(".") &&
+    !base.includes(" ")
+  ) {
     if (baseLower === "body") {
       context.needsBodyWrapper = true;
     }
@@ -545,7 +663,10 @@ function normalizeSelector(selector: string, context: NormalizationContext): str
   if (bodyClassMatch) {
     context.needsBodyWrapper = true;
     const classPart = bodyClassMatch[1];
-    classPart.split(".").filter(Boolean).forEach((name) => context.bodyExtraClasses.add(name));
+    classPart
+      .split(".")
+      .filter(Boolean)
+      .forEach((name) => context.bodyExtraClasses.add(name));
     return `.${ELEMENT_TO_CLASS_MAP["body"]}${classPart}${pseudo}`;
   }
 
@@ -571,14 +692,28 @@ function normalizeSelector(selector: string, context: NormalizationContext): str
   // - Base class has typography (Fredoka, uppercase)
   // - Modifier class has context-specific styles (margin-bottom)
   // - No style conflicts because each context has its own modifier
-  const descendantElementMatch = base.match(/\.([a-zA-Z_-][\w-]*)\s+(h[1-6]|p|a|ul|ol|li|blockquote|section|nav|header|footer|main|article|aside)$/);
+  const descendantElementMatch = base.match(
+    /^\.([a-zA-Z_-][\w-]*(?:\.[a-zA-Z_-][\w-]*)*)\s+(h[1-6]|p|a|ul|ol|li|blockquote|section|nav|header|footer|main|article|aside)$/,
+  );
   if (descendantElementMatch) {
-    const parentClass = descendantElementMatch[1];
+    const parentClassChain = descendantElementMatch[1];
+    const parentClasses = parentClassChain.split(".").filter(Boolean);
+    if (hasStatefulClassInChain(parentClasses)) {
+      return trimmed;
+    }
+    const parentClass =
+      parentClasses[parentClasses.length - 1] || parentClassChain;
     const element = descendantElementMatch[2];
     // Create MODIFIER class for descendant styles
     // Base typography class is added separately, so element gets BOTH
-    const isComboClassElement = element === "a" || element === "p" || /^h[1-6]$/.test(element) ||
-      element === "ul" || element === "ol" || element === "li" || element === "blockquote";
+    const isComboClassElement =
+      element === "a" ||
+      element === "p" ||
+      /^h[1-6]$/.test(element) ||
+      element === "ul" ||
+      element === "ol" ||
+      element === "li" ||
+      element === "blockquote";
     const className = isComboClassElement
       ? deriveDescendantClassName(parentClass, element)
       : ELEMENT_TO_CLASS_MAP[element] || `${parentClass}-${element}`;
@@ -594,9 +729,17 @@ function normalizeSelector(selector: string, context: NormalizationContext): str
   }
 
   // Descendant selectors: .parent .child -> .parent-child (flatten + inject class on child)
-  const descendantClassMatch = base.match(/\.([a-zA-Z_-][\w-]*)\s*(>|\s)\s*\.([a-zA-Z_-][\w-]*)$/);
+  const descendantClassMatch = base.match(
+    /^\.([a-zA-Z_-][\w-]*(?:\.[a-zA-Z_-][\w-]*)*)\s*(>|\s)\s*\.([a-zA-Z_-][\w-]*)$/,
+  );
   if (descendantClassMatch) {
-    const parentClass = descendantClassMatch[1];
+    const parentClassChain = descendantClassMatch[1];
+    const parentClasses = parentClassChain.split(".").filter(Boolean);
+    if (hasStatefulClassInChain(parentClasses)) {
+      return trimmed;
+    }
+    const parentClass =
+      parentClasses[parentClasses.length - 1] || parentClassChain;
     const combinator = descendantClassMatch[2] === ">" ? ">" : " ";
     const childClass = descendantClassMatch[3];
     const className = deriveDescendantClassName(parentClass, childClass);
@@ -611,9 +754,17 @@ function normalizeSelector(selector: string, context: NormalizationContext): str
   }
 
   // Descendant selectors: .parent h1 -> .parent-h1 (flatten to single class)
-  const descendantMatch = base.match(/\.([a-zA-Z_-][\w-]*)\s*(>|\s)\s*([a-zA-Z][\w-]*)$/);
+  const descendantMatch = base.match(
+    /^\.([a-zA-Z_-][\w-]*(?:\.[a-zA-Z_-][\w-]*)*)\s*(>|\s)\s*([a-zA-Z][\w-]*)$/,
+  );
   if (descendantMatch) {
-    const parentClass = descendantMatch[1];
+    const parentClassChain = descendantMatch[1];
+    const parentClasses = parentClassChain.split(".").filter(Boolean);
+    if (hasStatefulClassInChain(parentClasses)) {
+      return trimmed;
+    }
+    const parentClass =
+      parentClasses[parentClasses.length - 1] || parentClassChain;
     const combinator = descendantMatch[2] === ">" ? ">" : " ";
     const tag = descendantMatch[3].toLowerCase();
     const className = deriveDescendantClassName(parentClass, tag);
@@ -645,10 +796,14 @@ function splitPseudo(selector: string): { base: string; pseudo: string } {
   return { base: base.trim(), pseudo };
 }
 
-function deriveDescendantClassName(parentClass: string, target: string): string {
+function deriveDescendantClassName(
+  parentClass: string,
+  target: string,
+): string {
   // Anchor tags: context-aware link naming
   if (target === "a") {
-    if (parentClass.endsWith("links")) return parentClass.replace(/links$/, "link");
+    if (parentClass.endsWith("links"))
+      return parentClass.replace(/links$/, "link");
     if (parentClass.endsWith("link")) return parentClass;
     if (parentClass.endsWith("s")) return `${parentClass.slice(0, -1)}-link`;
     return `${parentClass}-link`;
@@ -677,6 +832,23 @@ function deriveDescendantClassName(parentClass: string, target: string): string 
     return `${parentClass}-blockquote`;
   }
   return `${parentClass}-${target}`;
+}
+
+function hasStatefulClassInChain(classNames: string[]): boolean {
+  for (const className of classNames) {
+    if (isStatefulClassToken(className)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isStatefulClassToken(className: string): boolean {
+  const normalized = className.toLowerCase();
+  if (STATEFUL_CLASS_TOKENS.has(normalized)) {
+    return true;
+  }
+  return /^(is|has|state|js)-/.test(normalized);
 }
 
 function parseProperties(propertiesStr: string): Map<string, string> {
@@ -716,11 +888,10 @@ function serializeProperties(properties: Map<string, string>): string {
     .join(" ");
 }
 
-
 function normalizeHtml(
   html: string,
   context: NormalizationContext,
-  warnings: string[]
+  warnings: string[],
 ): HtmlNormalizationResult {
   if (typeof DOMParser !== "undefined") {
     return normalizeHtmlWithDomParser(html, context, warnings);
@@ -732,13 +903,16 @@ function normalizeHtml(
 function normalizeHtmlWithDomParser(
   html: string,
   context: NormalizationContext,
-  warnings: string[]
+  warnings: string[],
 ): HtmlNormalizationResult {
   const requiredTypographyClasses = new Set<string>();
   let hasBtnClass = false;
 
   const parser = new DOMParser();
-  const doc = parser.parseFromString(`<div data-wf-root="true">${html}</div>`, "text/html");
+  const doc = parser.parseFromString(
+    `<div data-wf-root="true">${html}</div>`,
+    "text/html",
+  );
   const wrapper = doc.body.firstElementChild as HTMLElement | null;
 
   if (!wrapper) {
@@ -804,17 +978,23 @@ function normalizeHtmlWithDomParser(
     div.classList.add(bemClass);
     assignedCount++;
     warnings.push(
-      `Auto-assigned class "${bemClass}" to classless div (parent: ${parent?.classList[0] || "root"})`
+      `Auto-assigned class "${bemClass}" to classless div (parent: ${parent?.classList[0] || "root"})`,
     );
   });
 
   if (assignedCount > 0) {
-    warnings.push(`Auto-assigned ${assignedCount} BEM class(es) to classless div elements`);
+    warnings.push(
+      `Auto-assigned ${assignedCount} BEM class(es) to classless div elements`,
+    );
   }
 
   let bodyTarget: HTMLElement | null = wrapper;
   const elementChildren = Array.from(wrapper.children);
-  if (context.needsBodyWrapper && elementChildren.length === 1 && elementChildren[0].classList.contains("wf-body")) {
+  if (
+    context.needsBodyWrapper &&
+    elementChildren.length === 1 &&
+    elementChildren[0].classList.contains("wf-body")
+  ) {
     bodyTarget = elementChildren[0] as HTMLElement;
   }
 
@@ -826,9 +1006,10 @@ function normalizeHtmlWithDomParser(
   for (const mapping of context.descendantMappings) {
     const targetSelector =
       mapping.targetType === "class" ? `.${mapping.target}` : mapping.target;
-    const selector = mapping.combinator === ">"
-      ? `.${mapping.parentClass} > ${targetSelector}`
-      : `.${mapping.parentClass} ${targetSelector}`;
+    const selector =
+      mapping.combinator === ">"
+        ? `.${mapping.parentClass} > ${targetSelector}`
+        : `.${mapping.parentClass} ${targetSelector}`;
     wrapper.querySelectorAll(selector).forEach((el) => {
       const element = el as HTMLElement;
       element.classList.add(mapping.className);
@@ -853,7 +1034,15 @@ function normalizeHtmlWithDomParser(
 
   // Inject wf-* classes on structural elements (section, nav, header, footer, etc.)
   // This preserves spacing from element selectors like `section { padding: 80px 0; }`
-  const STRUCTURAL_TAGS = ["section", "nav", "header", "footer", "main", "article", "aside"];
+  const STRUCTURAL_TAGS = [
+    "section",
+    "nav",
+    "header",
+    "footer",
+    "main",
+    "article",
+    "aside",
+  ];
   for (const structuralTag of STRUCTURAL_TAGS) {
     wrapper.querySelectorAll(structuralTag).forEach((el) => {
       const element = el as HTMLElement;
@@ -896,12 +1085,23 @@ function normalizeHtmlWithDomParser(
     if (element.classList.contains("btn")) hasBtnClass = true;
   });
 
+  wrapper.querySelectorAll("a").forEach((el) => {
+    const element = el as HTMLElement;
+    if (!element.classList.contains(BASE_LINK_CLASS)) {
+      element.classList.add(BASE_LINK_CLASS);
+    }
+    if (element.classList.contains("btn")) hasBtnClass = true;
+  });
+
   wrapper.querySelectorAll(".btn").forEach(() => {
     hasBtnClass = true;
   });
 
   wrapper.removeAttribute("data-wf-root");
-  const htmlOutput = context.needsBodyWrapper && bodyTarget === wrapper ? wrapper.outerHTML : wrapper.innerHTML;
+  const htmlOutput =
+    context.needsBodyWrapper && bodyTarget === wrapper
+      ? wrapper.outerHTML
+      : wrapper.innerHTML;
 
   return { html: htmlOutput, requiredTypographyClasses, hasBtnClass };
 }
@@ -917,7 +1117,7 @@ export interface ParsedElement {
 export function normalizeHtmlWithFallback(
   html: string,
   context: NormalizationContext,
-  warnings: string[]
+  warnings: string[],
 ): HtmlNormalizationResult {
   const requiredTypographyClasses = new Set<string>();
   let hasBtnClass = false;
@@ -932,17 +1132,26 @@ export function normalizeHtmlWithFallback(
   // Auto-assign BEM classes to classless divs (prevents "Div Block" in Webflow Navigator)
   const assignedCount = assignClassesToClasslessDivs(parsed, warnings);
   if (assignedCount > 0) {
-    warnings.push(`Auto-assigned ${assignedCount} BEM class(es) to classless div elements`);
+    warnings.push(
+      `Auto-assigned ${assignedCount} BEM class(es) to classless div elements`,
+    );
   }
 
   let bodyTarget: ParsedElement | null = parsed;
-  const elementChildren = parsed.children.filter((child): child is ParsedElement => typeof child !== "string");
-  if (context.needsBodyWrapper && elementChildren.length === 1 && elementChildren[0].classes.includes("wf-body")) {
+  const elementChildren = parsed.children.filter(
+    (child): child is ParsedElement => typeof child !== "string",
+  );
+  if (
+    context.needsBodyWrapper &&
+    elementChildren.length === 1 &&
+    elementChildren[0].classes.includes("wf-body")
+  ) {
     bodyTarget = elementChildren[0];
   }
 
   if (context.needsBodyWrapper && bodyTarget) {
-    if (!bodyTarget.classes.includes("wf-body")) bodyTarget.classes.push("wf-body");
+    if (!bodyTarget.classes.includes("wf-body"))
+      bodyTarget.classes.push("wf-body");
     context.bodyExtraClasses.forEach((name) => {
       if (!bodyTarget?.classes.includes(name)) bodyTarget?.classes.push(name);
     });
@@ -955,7 +1164,15 @@ export function normalizeHtmlWithFallback(
   }
 
   // Structural elements that get wf-* classes for spacing preservation
-  const STRUCTURAL_TAGS_SET = new Set(["section", "nav", "header", "footer", "main", "article", "aside"]);
+  const STRUCTURAL_TAGS_SET = new Set([
+    "section",
+    "nav",
+    "header",
+    "footer",
+    "main",
+    "article",
+    "aside",
+  ]);
 
   walkElements(parsed, (element) => {
     if (HEADING_TAGS.includes(element.tag)) {
@@ -988,6 +1205,12 @@ export function normalizeHtmlWithFallback(
       requiredTypographyClasses.add("text-body");
     }
 
+    if (element.tag === "a") {
+      if (!element.classes.includes(BASE_LINK_CLASS)) {
+        element.classes.push(BASE_LINK_CLASS);
+      }
+    }
+
     // BEM COMBO CLASS APPROACH for list elements:
     // ALWAYS add base class (list-ul, list-ol, list-item, blockquote)
     // Element may also have modifier classes from descendant selectors
@@ -1011,7 +1234,10 @@ export function normalizeHtmlWithFallback(
   });
 
   delete parsed.attributes["data-wf-root"];
-  const htmlOutput = context.needsBodyWrapper && bodyTarget === parsed ? serializeElement(parsed) : serializeChildren(parsed.children);
+  const htmlOutput =
+    context.needsBodyWrapper && bodyTarget === parsed
+      ? serializeElement(parsed)
+      : serializeChildren(parsed.children);
 
   return { html: htmlOutput, requiredTypographyClasses, hasBtnClass };
 }
@@ -1019,7 +1245,7 @@ export function normalizeHtmlWithFallback(
 function applyDescendantMapping(
   root: ParsedElement,
   mapping: DescendantMapping,
-  onBtnDetected: () => void
+  onBtnDetected: () => void,
 ): void {
   walkElements(root, (element) => {
     if (!element.classes.includes(mapping.parentClass)) return;
@@ -1035,7 +1261,8 @@ function applyDescendantMapping(
       for (const child of element.children) {
         if (typeof child === "string") continue;
         if (match(child)) {
-          if (!child.classes.includes(mapping.className)) child.classes.push(mapping.className);
+          if (!child.classes.includes(mapping.className))
+            child.classes.push(mapping.className);
           if (child.classes.includes("btn")) onBtnDetected();
         }
       }
@@ -1043,14 +1270,18 @@ function applyDescendantMapping(
       walkElements(element, (child) => {
         if (child === element) return;
         if (!match(child)) return;
-        if (!child.classes.includes(mapping.className)) child.classes.push(mapping.className);
+        if (!child.classes.includes(mapping.className))
+          child.classes.push(mapping.className);
         if (child.classes.includes("btn")) onBtnDetected();
       });
     }
   });
 }
 
-export function walkElements(root: ParsedElement, onElement: (element: ParsedElement) => void): void {
+export function walkElements(
+  root: ParsedElement,
+  onElement: (element: ParsedElement) => void,
+): void {
   onElement(root);
   for (const child of root.children) {
     if (typeof child === "string") continue;
@@ -1073,7 +1304,7 @@ export function walkElements(root: ParsedElement, onElement: (element: ParsedEle
  */
 export function assignClassesToClasslessDivs(
   root: ParsedElement,
-  warnings: string[]
+  warnings: string[],
 ): number {
   let assignedCount = 0;
   const usedClassNames = new Set<string>();
@@ -1088,7 +1319,7 @@ export function assignClassesToClasslessDivs(
    */
   function generateBemClassName(
     parent: ParsedElement | null,
-    siblingIndex: number
+    siblingIndex: number,
   ): string {
     // No parent context - use generic name
     if (!parent || parent.classes.length === 0) {
@@ -1117,7 +1348,10 @@ export function assignClassesToClasslessDivs(
   /**
    * Generate a unique class name by appending a number if needed.
    */
-  function generateUniqueClassName(baseName: string, startIndex: number): string {
+  function generateUniqueClassName(
+    baseName: string,
+    startIndex: number,
+  ): string {
     if (!usedClassNames.has(baseName)) {
       usedClassNames.add(baseName);
       return baseName;
@@ -1143,17 +1377,19 @@ export function assignClassesToClasslessDivs(
    */
   function processWithParent(
     element: ParsedElement,
-    parent: ParsedElement | null
+    parent: ParsedElement | null,
   ): void {
     // If this is a classless div, assign a BEM class
     if (element.tag === "div" && element.classes.length === 0) {
       let siblingIndex = 0;
       if (parent) {
         // Find this element's position among sibling divs
-        siblingIndex = parent.children.filter(
-          (child): child is ParsedElement =>
-            typeof child !== "string" && child.tag === "div"
-        ).indexOf(element);
+        siblingIndex = parent.children
+          .filter(
+            (child): child is ParsedElement =>
+              typeof child !== "string" && child.tag === "div",
+          )
+          .indexOf(element);
       }
 
       const bemClass = generateBemClassName(parent, siblingIndex);
@@ -1161,7 +1397,7 @@ export function assignClassesToClasslessDivs(
       assignedCount++;
 
       warnings.push(
-        `Auto-assigned class "${bemClass}" to classless div (parent: ${parent?.classes[0] || "root"})`
+        `Auto-assigned class "${bemClass}" to classless div (parent: ${parent?.classes[0] || "root"})`,
       );
     }
 
@@ -1260,7 +1496,9 @@ function parseChildren(content: string): (ParsedElement | string)[] {
 
     if (SELF_CLOSING_TAGS.has(tagName) || attrString.endsWith("/")) {
       const selfClosingHtml = fullOpenTag;
-      const parsed = parseHtmlString(selfClosingHtml.replace(/\/$/, "") + `></${tagName}>`);
+      const parsed = parseHtmlString(
+        selfClosingHtml.replace(/\/$/, "") + `></${tagName}>`,
+      );
       if (parsed) children.push(parsed);
       remaining = remaining.substring(fullOpenTag.length).trim();
       continue;
@@ -1323,7 +1561,9 @@ function serializeElement(element: ParsedElement): string {
     .concat(attrs.class ? [`class="${attrs.class}"`] : [])
     .join(" ");
 
-  const openTag = attrString ? `<${element.tag} ${attrString}>` : `<${element.tag}>`;
+  const openTag = attrString
+    ? `<${element.tag} ${attrString}>`
+    : `<${element.tag}>`;
 
   if (SELF_CLOSING_TAGS.has(element.tag)) {
     return openTag;
@@ -1335,7 +1575,9 @@ function serializeElement(element: ParsedElement): string {
 
 function serializeChildren(children: (ParsedElement | string)[]): string {
   return children
-    .map((child) => (typeof child === "string" ? child : serializeElement(child)))
+    .map((child) =>
+      typeof child === "string" ? child : serializeElement(child),
+    )
     .join("");
 }
 
@@ -1344,7 +1586,7 @@ function ensureTypographyFontRules(
   requiredTypographyClasses: Set<string>,
   hasBtnClass: boolean,
   defaultFontFamily: string | null,
-  warnings: string[]
+  warnings: string[],
 ): void {
   // Track which classes have font-family defined in ANY rule
   const classesWithFont = new Set<string>();
@@ -1387,7 +1629,9 @@ function ensureTypographyFontRules(
           });
         }
       } else {
-        warnings.push(`Missing font-family for ".${className}" and no default font found.`);
+        warnings.push(
+          `Missing font-family for ".${className}" and no default font found.`,
+        );
       }
     }
   }
@@ -1402,7 +1646,12 @@ function findDefaultFontFamily(css: string): string | null {
     const properties = parseProperties(rule.properties);
     const fontFamily = properties.get("font-family");
     if (!fontFamily) continue;
-    if (selectors.some((selector) => selector.trim() === "body" || selector.trim() === ".wf-body")) {
+    if (
+      selectors.some(
+        (selector) =>
+          selector.trim() === "body" || selector.trim() === ".wf-body",
+      )
+    ) {
       return fontFamily;
     }
     if (!fallback) fallback = fontFamily;
@@ -1411,12 +1660,20 @@ function findDefaultFontFamily(css: string): string | null {
   return fallback;
 }
 
-function serializeCss(baseRules: NormalizedRule[], mediaBlocks: NormalizedMediaBlock[]): string {
-  const baseOutput = baseRules.map((rule) => serializeRule(rule)).filter(Boolean);
+function serializeCss(
+  baseRules: NormalizedRule[],
+  mediaBlocks: NormalizedMediaBlock[],
+): string {
+  const baseOutput = baseRules
+    .map((rule) => serializeRule(rule))
+    .filter(Boolean);
   const mediaOutput = mediaBlocks
     .filter((block) => block.rules.length > 0)
     .map((block) => {
-      const rules = block.rules.map((rule) => serializeRule(rule)).filter(Boolean).join("\n");
+      const rules = block.rules
+        .map((rule) => serializeRule(rule))
+        .filter(Boolean)
+        .join("\n");
       return rules ? `@media ${block.query} {\n${rules}\n}` : "";
     })
     .filter(Boolean);
@@ -1434,20 +1691,23 @@ function serializeCss(baseRules: NormalizedRule[], mediaBlocks: NormalizedMediaB
  * Solution: Extract background properties to embed CSS targeting `body` element, which Webflow
  * applies to the actual page body (full viewport). Layout constraints stay on .wf-body div.
  */
-function extractBodyBackgroundForEmbed(css: string): { updatedCss: string; embedCss: string | undefined } {
+function extractBodyBackgroundForEmbed(css: string): {
+  updatedCss: string;
+  embedCss: string | undefined;
+} {
   // Background properties that should apply to full viewport
   const BACKGROUND_PROPS = [
-    'background',
-    'background-color',
-    'background-image',
-    'background-repeat',
-    'background-position',
-    'background-size',
-    'background-attachment',
+    "background",
+    "background-color",
+    "background-image",
+    "background-repeat",
+    "background-position",
+    "background-size",
+    "background-attachment",
   ];
 
   // Layout constraints that indicate .wf-body is smaller than viewport
-  const CONSTRAINT_PROPS = ['max-width', 'width'];
+  const CONSTRAINT_PROPS = ["max-width", "width"];
 
   // Find .wf-body rule
   const wfBodyMatch = css.match(/\.wf-body\s*\{([^}]+)\}/);
@@ -1459,8 +1719,8 @@ function extractBodyBackgroundForEmbed(css: string): { updatedCss: string; embed
   const props = parsePropertiesForExtraction(propsStr);
 
   // Check if there's BOTH a background AND a constraint
-  const hasBackground = BACKGROUND_PROPS.some(p => props.has(p));
-  const hasConstraint = CONSTRAINT_PROPS.some(p => props.has(p));
+  const hasBackground = BACKGROUND_PROPS.some((p) => props.has(p));
+  const hasConstraint = CONSTRAINT_PROPS.some((p) => props.has(p));
 
   if (!hasBackground || !hasConstraint) {
     return { updatedCss: css, embedCss: undefined };
@@ -1483,10 +1743,10 @@ function extractBodyBackgroundForEmbed(css: string): { updatedCss: string; embed
   }
 
   // Build embed CSS with body selector (applies to Webflow page body)
-  const embedCss = `body { ${backgroundProps.join('; ')}; }`;
+  const embedCss = `body { ${backgroundProps.join("; ")}; }`;
 
   // Update .wf-body rule to remove background properties
-  const updatedWfBody = `.wf-body { ${remainingProps.join('; ')}; }`;
+  const updatedWfBody = `.wf-body { ${remainingProps.join("; ")}; }`;
   const updatedCss = css.replace(wfBodyMatch[0], updatedWfBody);
 
   return { updatedCss, embedCss };
@@ -1529,7 +1789,10 @@ function serializeRule(rule: NormalizedRule): string {
  *
  * @returns Object with updated CSS and count of fixes applied
  */
-function fixScrollAnimationVisibility(css: string): { css: string; fixedCount: number } {
+function fixScrollAnimationVisibility(css: string): {
+  css: string;
+  fixedCount: number;
+} {
   // Common animation class name patterns
   const ANIMATION_CLASS_PATTERNS = [
     /\.fade[-_]?(up|in|out|down|left|right)?(?![a-z])/gi,
@@ -1547,32 +1810,138 @@ function fixScrollAnimationVisibility(css: string): { css: string; fixedCount: n
 
   let fixedCount = 0;
   let updatedCss = css;
+  const visibilityStateTokens = new Set([
+    "visible",
+    "is-visible",
+    "shown",
+    "show",
+    "in-view",
+    "active",
+    "entered",
+    "loaded",
+  ]);
+  const visibleTransformByClass = new Map<string, string>();
+  const visibleOpacityByClass = new Map<string, string>();
+
+  const isAnimationSelector = (selector: string): boolean => {
+    return ANIMATION_CLASS_PATTERNS.some((pattern) => {
+      pattern.lastIndex = 0; // Reset regex state
+      return pattern.test(selector);
+    });
+  };
+
+  const getPropertyValue = (
+    properties: string,
+    property: "opacity" | "transform",
+  ): string | null => {
+    const match = properties.match(
+      new RegExp(`${property}\\s*:\\s*([^;]+)`, "i"),
+    );
+    return match?.[1]?.trim() || null;
+  };
+
+  const replacePropertyValue = (
+    properties: string,
+    property: "opacity" | "transform",
+    nextValue: string,
+  ): string => {
+    const propertyRegex = new RegExp(
+      `(${property}\\s*:\\s*)([^;]+)(\\s*;?)`,
+      "i",
+    );
+    return properties.replace(propertyRegex, `$1${nextValue}$3`);
+  };
+
+  // Gather visible-state transform/opacity values from selectors like .fade-up.visible
+  // so base animation classes can default to their final static state when scripts are absent.
+  const stateRuleRegex = /(\.[a-zA-Z_-][a-zA-Z0-9_.-]*)\s*\{([^}]+)\}/g;
+  let stateMatch;
+
+  while ((stateMatch = stateRuleRegex.exec(css)) !== null) {
+    const selector = stateMatch[1];
+    const properties = stateMatch[2];
+    const classTokens = selector
+      .split(".")
+      .map((token) => token.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (classTokens.length < 2) continue;
+
+    const hasVisibilityState = classTokens.some((token) =>
+      visibilityStateTokens.has(token),
+    );
+    if (!hasVisibilityState) continue;
+
+    const transformValue = getPropertyValue(properties, "transform");
+    const opacityValue = getPropertyValue(properties, "opacity");
+
+    for (const className of classTokens) {
+      if (visibilityStateTokens.has(className)) continue;
+      if (transformValue) {
+        visibleTransformByClass.set(className, transformValue);
+      }
+      if (opacityValue) {
+        visibleOpacityByClass.set(className, opacityValue);
+      }
+    }
+  }
 
   // Find and fix animation rules with opacity: 0
-  const ruleRegex = /(\.[a-zA-Z_-][a-zA-Z0-9_-]*)\s*\{([^}]+)\}/g;
+  const ruleRegex = /(\.[a-zA-Z_-][a-zA-Z0-9_.-]*)\s*\{([^}]+)\}/g;
   let match;
 
   while ((match = ruleRegex.exec(css)) !== null) {
     const selector = match[1];
     const properties = match[2];
+    const classTokens = selector
+      .split(".")
+      .map((token) => token.trim().toLowerCase())
+      .filter(Boolean);
 
-    // Check if this is an animation class
-    const isAnimationClass = ANIMATION_CLASS_PATTERNS.some(pattern => {
-      pattern.lastIndex = 0; // Reset regex state
-      return pattern.test(selector);
-    });
+    const className = classTokens[0];
+    // Check if this is an animation class.
+    // Generic path: any class with an inferred visible state map should be handled.
+    const isAnimationClass =
+      isAnimationSelector(selector) ||
+      visibleTransformByClass.has(className) ||
+      visibleOpacityByClass.has(className);
 
     if (!isAnimationClass) continue;
+    // Only patch base class selectors here (e.g. ".fade-up").
+    // Stateful combos like ".fade-up.visible" are source-of-truth for final state.
+    if (classTokens.length !== 1) continue;
+
+    let fixedProperties = properties;
+    let changed = false;
 
     // Check if it has opacity: 0 (with possible variations)
     const opacityZeroMatch = properties.match(/opacity\s*:\s*0(?:[;\s}]|$)/i);
-    if (!opacityZeroMatch) continue;
+    if (opacityZeroMatch) {
+      const visibleOpacity = visibleOpacityByClass.get(className) || "1";
+      fixedProperties = replacePropertyValue(
+        fixedProperties,
+        "opacity",
+        visibleOpacity,
+      );
+      changed = true;
+    }
 
-    // Replace opacity: 0 with opacity: 1 in this rule
-    const fixedProperties = properties.replace(
-      /opacity\s*:\s*0(?=[\s;]|$)/gi,
-      'opacity: 1'
-    );
+    // Prevent layout shift when animation JS is missing:
+    // use visible-state transform if available, otherwise neutralize to `none`.
+    const transformValue = getPropertyValue(properties, "transform");
+    if (
+      transformValue &&
+      (opacityZeroMatch || visibleTransformByClass.has(className))
+    ) {
+      const visibleTransform = visibleTransformByClass.get(className) || "none";
+      fixedProperties = replacePropertyValue(
+        fixedProperties,
+        "transform",
+        visibleTransform,
+      );
+      changed = true;
+    }
+    if (!changed) continue;
 
     const originalRule = match[0];
     const fixedRule = `${selector} { ${fixedProperties} }`;
@@ -1594,7 +1963,10 @@ function fixScrollAnimationVisibility(css: string): { css: string; fixedCount: n
  * @param css The CSS content (to extract variable definitions from :root)
  * @returns Updated HTML with resolved inline styles
  */
-export function resolveInlineStyleVariables(html: string, css: string): { html: string; resolvedCount: number } {
+export function resolveInlineStyleVariables(
+  html: string,
+  css: string,
+): { html: string; resolvedCount: number } {
   // Extract CSS variables from the CSS (returns a Map)
   const variables = extractCssVariables(css);
 
@@ -1625,11 +1997,11 @@ export function resolveInlineStyleVariables(html: string, css: string): { html: 
           }
           // Keep original if can't resolve
           return varMatch;
-        }
+        },
       );
 
       return `style="${resolvedStyle}"`;
-    }
+    },
   );
 
   return { html: updatedHtml, resolvedCount };
@@ -1639,7 +2011,7 @@ export function resolveInlineStyleVariables(html: string, css: string): { html: 
  * Escape special regex characters in a string
  */
 function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
@@ -1657,11 +2029,19 @@ function escapeRegex(str: string): string {
  * @param css The CSS content
  * @returns Updated HTML with inline background styles
  */
-export function injectInlineBackgroundStyles(html: string, css: string): { html: string; injectedCount: number } {
+export function injectInlineBackgroundStyles(
+  html: string,
+  css: string,
+): { html: string; injectedCount: number } {
   // Extract combo class rules with background colors
   // Pattern: .class1.class2 { ... background: value; ... }
-  const comboRuleRegex = /\.([a-zA-Z_][\w-]*)\.([a-zA-Z_][\w-]*)\s*\{([^}]*)\}/g;
-  const backgroundMappings: Array<{ class1: string; class2: string; background: string }> = [];
+  const comboRuleRegex =
+    /\.([a-zA-Z_][\w-]*)\.([a-zA-Z_][\w-]*)\s*\{([^}]*)\}/g;
+  const backgroundMappings: Array<{
+    class1: string;
+    class2: string;
+    background: string;
+  }> = [];
 
   let match;
   while ((match = comboRuleRegex.exec(css)) !== null) {
@@ -1703,11 +2083,11 @@ export function injectInlineBackgroundStyles(html: string, css: string): { html:
     const patterns = [
       new RegExp(
         `(<[^>]*class\\s*=\\s*["'][^"']*${class1Pattern}[^"']*${class2Pattern}[^"']*)["']([^>]*>)`,
-        'gi'
+        "gi",
       ),
       new RegExp(
         `(<[^>]*class\\s*=\\s*["'][^"']*${class2Pattern}[^"']*${class1Pattern}[^"']*)["']([^>]*>)`,
-        'gi'
+        "gi",
       ),
     ];
 
@@ -1719,10 +2099,10 @@ export function injectInlineBackgroundStyles(html: string, css: string): { html:
           return fullMatch.replace(
             /style\s*=\s*["']([^"']*)["']/i,
             (styleMatch, existingStyle) => {
-              const separator = existingStyle.trim().endsWith(';') ? ' ' : '; ';
+              const separator = existingStyle.trim().endsWith(";") ? " " : "; ";
               injectedCount++;
               return `style="${existingStyle}${separator}background: ${mapping.background};"`;
-            }
+            },
           );
         } else {
           // Add new style attribute

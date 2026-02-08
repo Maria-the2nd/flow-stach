@@ -10,13 +10,18 @@
  * CSS custom properties in its native style system.
  */
 
-import { minifyCSS } from './css-minifier';
-import { CSSRoutingTracer } from './css-routing-tracer';
-import { CSSRoutingTrace, RoutingReason, BreakpointMapping } from './routing-types';
+import { minifyCSS } from "./css-minifier";
+import { CSSRoutingTracer } from "./css-routing-tracer";
+import { ELEMENT_TO_CLASS_MAP } from "./css-parser";
+import {
+  CSSRoutingTrace,
+  RoutingReason,
+  BreakpointMapping,
+} from "./routing-types";
 
 // Re-export trace types for convenience
-export type { CSSRoutingTrace } from './routing-types';
-export { CSSRoutingTracer } from './css-routing-tracer';
+export type { CSSRoutingTrace } from "./routing-types";
+export { CSSRoutingTracer } from "./css-routing-tracer";
 
 // ============================================
 // TYPES
@@ -38,13 +43,30 @@ export interface CSSRoutingResult {
 export interface CSSRoutingOptions {
   /** Enable tracing for debugging */
   trace?: boolean;
+  /**
+   * Routing strategy:
+   * - panel-first: prefer native Webflow styles whenever possible
+   * - strict: route more value patterns to embed
+   */
+  strategy?: "panel-first" | "strict";
+  /**
+   * Routing phase:
+   * - full: normal routing behavior
+   * - hard-blockers: only route rules that cannot be safely normalized
+   */
+  phase?: "full" | "hard-blockers";
 }
 
 export interface RouterWarning {
-  type: 'embed_routed' | 'selector_complex' | 'at_rule_extracted' | 'size_warning' | 'size_error';
+  type:
+    | "embed_routed"
+    | "selector_complex"
+    | "at_rule_extracted"
+    | "size_warning"
+    | "size_error";
   selector?: string;
   reason: string;
-  severity?: 'info' | 'warning' | 'error';
+  severity?: "info" | "warning" | "error";
 }
 
 export interface RoutingStats {
@@ -62,7 +84,44 @@ export interface ExtractedRule {
   originalMediaQuery?: string;
 }
 
-export type BreakpointKey = 'base' | 'medium' | 'small' | 'tiny' | 'xlarge' | 'xxlarge' | 'xxxlarge';
+export type BreakpointKey =
+  | "base"
+  | "medium"
+  | "small"
+  | "tiny"
+  | "xlarge"
+  | "xxlarge"
+  | "xxxlarge";
+
+const EMBED_SELECTOR_EXCLUDED_TAGS = new Set(["html", "body"]);
+
+function remapElementSelectorsForEmbed(selector: string): string {
+  return selector
+    .split(",")
+    .map((part) => part.trim())
+    .map((part) => {
+      // Only remap pure element selectors (optionally with pseudo classes/elements).
+      // Examples:
+      //   h1 -> .heading-h1
+      //   a:hover -> .link:hover
+      //   p::before -> .text-body::before
+      // Non-pure selectors (combinators, classes, IDs, attributes) are left intact.
+      const match = part.match(
+        /^([a-z][a-z0-9-]*)(:{1,2}[a-z-]+(?:\([^)]*\))?)?$/i,
+      );
+      if (!match) return part;
+
+      const tag = match[1].toLowerCase();
+      if (EMBED_SELECTOR_EXCLUDED_TAGS.has(tag)) return part;
+
+      const mappedClass = ELEMENT_TO_CLASS_MAP[tag];
+      if (!mappedClass) return part;
+
+      const pseudo = match[2] || "";
+      return `.${mappedClass}${pseudo}`;
+    })
+    .join(", ");
+}
 
 // ============================================
 // CSS VARIABLE TYPES AND RESOLUTION
@@ -118,7 +177,8 @@ export function extractCSSVariables(css: string): CSSVariableMap {
   }
 
   // Also look for variables in html, body, * selectors
-  const globalVarRegex = /(?:html|body|\*)\s*\{[^}]*(--([\w-]+)\s*:\s*([^;]+);)/g;
+  const globalVarRegex =
+    /(?:html|body|\*)\s*\{[^}]*(--([\w-]+)\s*:\s*([^;]+);)/g;
   let globalMatch;
 
   while ((globalMatch = globalVarRegex.exec(css)) !== null) {
@@ -152,10 +212,10 @@ export function extractCSSVariables(css: string): CSSVariableMap {
 export function resolveCSSVariable(
   value: string,
   variables: CSSVariableMap,
-  maxDepth: number = 10
+  maxDepth: number = 10,
 ): VariableResolutionResult {
   // Quick check - if no var(), return immediately
-  if (!value.includes('var(')) {
+  if (!value.includes("var(")) {
     return { resolved: value, hadVariables: false, unresolvedVars: [] };
   }
 
@@ -164,7 +224,7 @@ export function resolveCSSVariable(
   let depth = 0;
 
   // Keep resolving until no more var() references or max depth reached
-  while (result.includes('var(') && depth < maxDepth) {
+  while (result.includes("var(") && depth < maxDepth) {
     depth++;
     let madeProgress = false;
 
@@ -191,7 +251,7 @@ export function resolveCSSVariable(
 
         // Return original to preserve for debugging
         return match;
-      }
+      },
     );
 
     // Prevent infinite loop if no progress made
@@ -201,7 +261,7 @@ export function resolveCSSVariable(
   return {
     resolved: result.trim(),
     hadVariables: true,
-    unresolvedVars
+    unresolvedVars,
   };
 }
 
@@ -218,21 +278,21 @@ export function resolveCSSVariable(
  */
 export function resolveVariablesInProperties(
   properties: string,
-  variables: CSSVariableMap
+  variables: CSSVariableMap,
 ): { resolved: string; unresolvedVars: string[] } {
   const unresolvedVars: string[] = [];
 
   // Parse properties, handling values with parentheses
   const parts: string[] = [];
-  let current = '';
+  let current = "";
   let parenDepth = 0;
 
   for (const char of properties) {
-    if (char === '(') parenDepth++;
-    else if (char === ')') parenDepth--;
-    if (char === ';' && parenDepth === 0) {
+    if (char === "(") parenDepth++;
+    else if (char === ")") parenDepth--;
+    if (char === ";" && parenDepth === 0) {
       if (current.trim()) parts.push(current.trim());
-      current = '';
+      current = "";
     } else {
       current += char;
     }
@@ -243,7 +303,7 @@ export function resolveVariablesInProperties(
   const resolvedParts: string[] = [];
 
   for (const part of parts) {
-    const colonIndex = part.indexOf(':');
+    const colonIndex = part.indexOf(":");
     if (colonIndex === -1) {
       resolvedParts.push(part);
       continue;
@@ -263,8 +323,8 @@ export function resolveVariablesInProperties(
   }
 
   return {
-    resolved: resolvedParts.join('; ') + (resolvedParts.length > 0 ? ';' : ''),
-    unresolvedVars: Array.from(new Set(unresolvedVars)) // Dedupe
+    resolved: resolvedParts.join("; ") + (resolvedParts.length > 0 ? ";" : ""),
+    unresolvedVars: Array.from(new Set(unresolvedVars)), // Dedupe
   };
 }
 
@@ -278,7 +338,7 @@ export function resolveVariablesInProperties(
  */
 export function resolveChainedVariables(
   variables: CSSVariableMap,
-  maxIterations: number = 10
+  maxIterations: number = 10,
 ): { resolved: CSSVariableMap; circularRefs: string[] } {
   const resolved = { ...variables };
   const circularRefs: string[] = [];
@@ -288,7 +348,7 @@ export function resolveChainedVariables(
     if (visitedArr.includes(varName)) return true;
 
     const value = resolved[varName];
-    if (!value || !value.includes('var(')) return false;
+    if (!value || !value.includes("var(")) return false;
 
     const newVisited = [...visitedArr, varName];
 
@@ -316,7 +376,7 @@ export function resolveChainedVariables(
 
   // Break circular references before resolution
   for (const varName of circularRefs) {
-    resolved[varName] = resolved[varName].replace(/var\([^)]+\)/g, 'unset');
+    resolved[varName] = resolved[varName].replace(/var\([^)]+\)/g, "unset");
   }
 
   // Keep resolving until no more changes
@@ -328,7 +388,7 @@ export function resolveChainedVariables(
     iteration++;
 
     for (const [varName, varValue] of Object.entries(resolved)) {
-      if (varValue.includes('var(')) {
+      if (varValue.includes("var(")) {
         const resolution = resolveCSSVariable(varValue, resolved, 1);
 
         if (resolution.resolved !== varValue) {
@@ -341,7 +401,10 @@ export function resolveChainedVariables(
 
   // Warn about circular references
   if (circularRefs.length > 0) {
-    console.warn('[css-embed-router] Circular variable references detected:', circularRefs);
+    console.warn(
+      "[css-embed-router] Circular variable references detected:",
+      circularRefs,
+    );
   }
 
   return { resolved, circularRefs };
@@ -352,112 +415,353 @@ export function resolveChainedVariables(
 // ============================================
 
 /**
- * At-rules that MUST go to embed (cannot be represented in Webflow native styles)
+ * Block at-rules that MUST go to embed (cannot be represented in Webflow native styles).
+ * Extracted with brace matching to avoid corrupting nested blocks (e.g. @keyframes).
  */
-const EMBED_AT_RULE_PATTERNS: Record<string, RegExp> = {
-  keyframes: /@keyframes\s+[\w-]+\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\}/gi,
-  fontFace: /@font-face\s*\{[^}]+\}/gi,
-  supports: /@supports\s*\([^)]+\)\s*\{[\s\S]*?\}(?=\s*(?:@|\.|#|[a-z]|\s*$))/gi,
-  layer: /@layer\s+[\w-]+\s*\{[\s\S]*?\}(?=\s*(?:@|\.|#|[a-z]|\s*$))/gi,
+const BLOCK_EMBED_AT_RULE_NAMES = [
+  "keyframes",
+  "font-face",
+  "supports",
+  "layer",
+] as const;
+
+/**
+ * Simple at-rules terminated by ';' that can be extracted safely with regex.
+ */
+const SIMPLE_EMBED_AT_RULE_PATTERNS: Record<string, RegExp> = {
   charset: /@charset\s+[^;]+;/gi,
   import: /@import\s+[^;]+;/gi,
   namespace: /@namespace\s+[^;]+;/gi,
 };
+
+interface ExtractedAtRuleBlock {
+  name: string;
+  rule: string;
+}
+
+function isAtRuleBoundaryChar(char: string | undefined): boolean {
+  if (!char) return true;
+  return /\s|\{|\(|;/.test(char);
+}
+
+/**
+ * Find the closing brace index for a block that starts at openBraceIndex.
+ * Handles nested braces and ignores braces inside strings/comments.
+ */
+function findMatchingBraceEnd(css: string, openBraceIndex: number): number {
+  let braceCount = 0;
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let inComment = false;
+
+  for (let i = openBraceIndex; i < css.length; i++) {
+    const char = css[i];
+    const nextChar = css[i + 1];
+    const prevChar = css[i - 1];
+
+    if (inComment) {
+      if (char === "*" && nextChar === "/") {
+        inComment = false;
+        i++;
+      }
+      continue;
+    }
+
+    if (!inSingleQuote && !inDoubleQuote && char === "/" && nextChar === "*") {
+      inComment = true;
+      i++;
+      continue;
+    }
+
+    if (!inDoubleQuote && char === "'" && prevChar !== "\\") {
+      inSingleQuote = !inSingleQuote;
+      continue;
+    }
+
+    if (!inSingleQuote && char === '"' && prevChar !== "\\") {
+      inDoubleQuote = !inDoubleQuote;
+      continue;
+    }
+
+    if (inSingleQuote || inDoubleQuote) {
+      continue;
+    }
+
+    if (char === "{") {
+      braceCount++;
+    } else if (char === "}") {
+      braceCount--;
+      if (braceCount === 0) {
+        return i;
+      }
+    }
+  }
+
+  return -1;
+}
+
+/**
+ * Extract top-level block at-rules (e.g. @keyframes) without regex backtracking issues.
+ */
+function extractBlockAtRules(
+  css: string,
+  names: readonly string[],
+): { remainingCss: string; extracted: ExtractedAtRuleBlock[] } {
+  const extracted: ExtractedAtRuleBlock[] = [];
+  const keepChars: string[] = [];
+  const lowerCss = css.toLowerCase();
+  let i = 0;
+
+  while (i < css.length) {
+    if (css[i] !== "@") {
+      keepChars.push(css[i]);
+      i++;
+      continue;
+    }
+
+    let matchedName: string | null = null;
+    for (const name of names) {
+      const token = `@${name}`;
+      if (
+        lowerCss.startsWith(token, i) &&
+        isAtRuleBoundaryChar(css[i + token.length])
+      ) {
+        matchedName = name;
+        break;
+      }
+    }
+
+    if (!matchedName) {
+      keepChars.push(css[i]);
+      i++;
+      continue;
+    }
+
+    // Find block start ("{"), skipping strings/comments.
+    let cursor = i;
+    let openBraceIndex = -1;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let inComment = false;
+
+    while (cursor < css.length) {
+      const char = css[cursor];
+      const nextChar = css[cursor + 1];
+      const prevChar = css[cursor - 1];
+
+      if (inComment) {
+        if (char === "*" && nextChar === "/") {
+          inComment = false;
+          cursor++;
+        }
+        cursor++;
+        continue;
+      }
+
+      if (
+        !inSingleQuote &&
+        !inDoubleQuote &&
+        char === "/" &&
+        nextChar === "*"
+      ) {
+        inComment = true;
+        cursor += 2;
+        continue;
+      }
+
+      if (!inDoubleQuote && char === "'" && prevChar !== "\\") {
+        inSingleQuote = !inSingleQuote;
+        cursor++;
+        continue;
+      }
+
+      if (!inSingleQuote && char === '"' && prevChar !== "\\") {
+        inDoubleQuote = !inDoubleQuote;
+        cursor++;
+        continue;
+      }
+
+      if (!inSingleQuote && !inDoubleQuote && char === "{") {
+        openBraceIndex = cursor;
+        break;
+      }
+
+      if (!inSingleQuote && !inDoubleQuote && char === ";") {
+        // Not a block at-rule instance; keep as-is.
+        openBraceIndex = -1;
+        break;
+      }
+
+      cursor++;
+    }
+
+    if (openBraceIndex === -1) {
+      keepChars.push(css[i]);
+      i++;
+      continue;
+    }
+
+    const closeBraceIndex = findMatchingBraceEnd(css, openBraceIndex);
+    if (closeBraceIndex === -1) {
+      keepChars.push(css[i]);
+      i++;
+      continue;
+    }
+
+    extracted.push({
+      name: matchedName,
+      rule: css.slice(i, closeBraceIndex + 1),
+    });
+    i = closeBraceIndex + 1;
+  }
+
+  return { remainingCss: keepChars.join(""), extracted };
+}
 
 /**
  * Selectors that require embed (Webflow cannot handle natively)
  */
 const EMBED_SELECTOR_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   // Universal selector (Webflow can't style * natively)
-  { pattern: /^\*/, reason: 'Universal selector (*)' },
-  { pattern: /,\s*\*/, reason: 'Universal selector in list' },
+  { pattern: /^\*/, reason: "Universal selector (*)" },
+  { pattern: /,\s*\*/, reason: "Universal selector in list" },
 
   // Pseudo-elements (Webflow has no ::before/::after support)
-  { pattern: /::before/, reason: '::before pseudo-element' },
-  { pattern: /::after/, reason: '::after pseudo-element' },
-  { pattern: /::placeholder/, reason: '::placeholder pseudo-element' },
-  { pattern: /::selection/, reason: '::selection pseudo-element' },
-  { pattern: /::first-letter/, reason: '::first-letter pseudo-element' },
-  { pattern: /::first-line/, reason: '::first-line pseudo-element' },
-  { pattern: /::marker/, reason: '::marker pseudo-element' },
-  { pattern: /::backdrop/, reason: '::backdrop pseudo-element' },
-  { pattern: /::-webkit-/, reason: 'Webkit pseudo-element' },
-  { pattern: /::-moz-/, reason: 'Mozilla pseudo-element' },
+  { pattern: /::before/, reason: "::before pseudo-element" },
+  { pattern: /::after/, reason: "::after pseudo-element" },
+  { pattern: /::placeholder/, reason: "::placeholder pseudo-element" },
+  { pattern: /::selection/, reason: "::selection pseudo-element" },
+  { pattern: /::first-letter/, reason: "::first-letter pseudo-element" },
+  { pattern: /::first-line/, reason: "::first-line pseudo-element" },
+  { pattern: /::marker/, reason: "::marker pseudo-element" },
+  { pattern: /::backdrop/, reason: "::backdrop pseudo-element" },
+  { pattern: /::-webkit-/, reason: "Webkit pseudo-element" },
+  { pattern: /::-moz-/, reason: "Mozilla pseudo-element" },
 
   // Complex pseudo-classes
-  { pattern: /:nth-child\(/, reason: ':nth-child selector' },
-  { pattern: /:nth-of-type\(/, reason: ':nth-of-type selector' },
-  { pattern: /:nth-last-child\(/, reason: ':nth-last-child selector' },
-  { pattern: /:nth-last-of-type\(/, reason: ':nth-last-of-type selector' },
-  { pattern: /:first-of-type/, reason: ':first-of-type selector' },
-  { pattern: /:last-of-type/, reason: ':last-of-type selector' },
-  { pattern: /:only-child/, reason: ':only-child selector' },
-  { pattern: /:only-of-type/, reason: ':only-of-type selector' },
-  { pattern: /:not\(/, reason: ':not() selector' },
-  { pattern: /:has\(/, reason: ':has() selector' },
-  { pattern: /:where\(/, reason: ':where() selector' },
-  { pattern: /:is\(/, reason: ':is() selector' },
-  { pattern: /:empty/, reason: ':empty selector' },
-  { pattern: /:target/, reason: ':target selector' },
-  { pattern: /:focus-within/, reason: ':focus-within selector' },
-  { pattern: /:checked/, reason: ':checked selector' },
-  { pattern: /:disabled/, reason: ':disabled selector' },
-  { pattern: /:enabled/, reason: ':enabled selector' },
-  { pattern: /:required/, reason: ':required selector' },
-  { pattern: /:optional/, reason: ':optional selector' },
-  { pattern: /:valid/, reason: ':valid selector' },
-  { pattern: /:invalid/, reason: ':invalid selector' },
-  { pattern: /:in-range/, reason: ':in-range selector' },
-  { pattern: /:out-of-range/, reason: ':out-of-range selector' },
-  { pattern: /:read-only/, reason: ':read-only selector' },
-  { pattern: /:read-write/, reason: ':read-write selector' },
-  { pattern: /:default/, reason: ':default selector' },
-  { pattern: /:indeterminate/, reason: ':indeterminate selector' },
+  { pattern: /:nth-child\(/, reason: ":nth-child selector" },
+  { pattern: /:nth-of-type\(/, reason: ":nth-of-type selector" },
+  { pattern: /:nth-last-child\(/, reason: ":nth-last-child selector" },
+  { pattern: /:nth-last-of-type\(/, reason: ":nth-last-of-type selector" },
+  { pattern: /:first-of-type/, reason: ":first-of-type selector" },
+  { pattern: /:last-of-type/, reason: ":last-of-type selector" },
+  { pattern: /:only-child/, reason: ":only-child selector" },
+  { pattern: /:only-of-type/, reason: ":only-of-type selector" },
+  { pattern: /:not\(/, reason: ":not() selector" },
+  { pattern: /:has\(/, reason: ":has() selector" },
+  { pattern: /:where\(/, reason: ":where() selector" },
+  { pattern: /:is\(/, reason: ":is() selector" },
+  { pattern: /:empty/, reason: ":empty selector" },
+  { pattern: /:target/, reason: ":target selector" },
+  { pattern: /:focus-within/, reason: ":focus-within selector" },
+  { pattern: /:checked/, reason: ":checked selector" },
+  { pattern: /:disabled/, reason: ":disabled selector" },
+  { pattern: /:enabled/, reason: ":enabled selector" },
+  { pattern: /:required/, reason: ":required selector" },
+  { pattern: /:optional/, reason: ":optional selector" },
+  { pattern: /:valid/, reason: ":valid selector" },
+  { pattern: /:invalid/, reason: ":invalid selector" },
+  { pattern: /:in-range/, reason: ":in-range selector" },
+  { pattern: /:out-of-range/, reason: ":out-of-range selector" },
+  { pattern: /:read-only/, reason: ":read-only selector" },
+  { pattern: /:read-write/, reason: ":read-write selector" },
+  { pattern: /:default/, reason: ":default selector" },
+  { pattern: /:indeterminate/, reason: ":indeterminate selector" },
 
   // Attribute selectors
-  { pattern: /\[[\w-]+=/, reason: 'Attribute value selector' },
-  { pattern: /\[[\w-]+\^=/, reason: 'Attribute starts-with selector' },
-  { pattern: /\[[\w-]+\$=/, reason: 'Attribute ends-with selector' },
-  { pattern: /\[[\w-]+\*=/, reason: 'Attribute contains selector' },
-  { pattern: /\[[\w-]+~=/, reason: 'Attribute word selector' },
-  { pattern: /\[[\w-]+\|=/, reason: 'Attribute language selector' },
-  { pattern: /\[data-[\w-]+\]/, reason: 'Data attribute selector' },
+  { pattern: /\[[\w-]+=/, reason: "Attribute value selector" },
+  { pattern: /\[[\w-]+\^=/, reason: "Attribute starts-with selector" },
+  { pattern: /\[[\w-]+\$=/, reason: "Attribute ends-with selector" },
+  { pattern: /\[[\w-]+\*=/, reason: "Attribute contains selector" },
+  { pattern: /\[[\w-]+~=/, reason: "Attribute word selector" },
+  { pattern: /\[[\w-]+\|=/, reason: "Attribute language selector" },
+  { pattern: /\[data-[\w-]+\]/, reason: "Data attribute selector" },
 
   // Combinators (descendant selectors can't be represented natively)
-  { pattern: /\s+>\s+/, reason: 'Child combinator (>)' },
-  { pattern: /\s+\+\s+/, reason: 'Adjacent sibling combinator (+)' },
-  { pattern: /\s+~\s+/, reason: 'General sibling combinator (~)' },
+  { pattern: /\s+>\s+/, reason: "Child combinator (>)" },
+  { pattern: /\s+\+\s+/, reason: "Adjacent sibling combinator (+)" },
+  { pattern: /\s+~\s+/, reason: "General sibling combinator (~)" },
 
   // ID selectors (Webflow uses classes, not IDs for styling)
-  { pattern: /^#[\w-]+$/, reason: 'ID selector' },
-  { pattern: /\s#[\w-]+/, reason: 'ID selector in compound' },
+  { pattern: /^#[\w-]+$/, reason: "ID selector" },
+  { pattern: /\s#[\w-]+/, reason: "ID selector in compound" },
 
   // Pure element selectors (without class) - these get routed to embed
   // Note: selectors like "body" are converted to ".wf-body" by normalizer,
   // but we still need to catch any that slip through
-  { pattern: /^(html|body)$/i, reason: 'html/body element selector' },
-  { pattern: /^(div|span|p|a|ul|ol|li|h[1-6]|img|form|input|button|textarea|select|table|tr|td|th|thead|tbody|tfoot|nav|header|footer|main|section|article|aside|figure|figcaption|video|audio|canvas|svg|iframe)$/i, reason: 'Pure element selector' },
+  { pattern: /^(html|body)$/i, reason: "html/body element selector" },
+  {
+    pattern:
+      /^(div|span|p|a|ul|ol|li|h[1-6]|img|form|input|button|textarea|select|table|tr|td|th|thead|tbody|tfoot|nav|header|footer|main|section|article|aside|figure|figcaption|video|audio|canvas|svg|iframe)$/i,
+    reason: "Pure element selector",
+  },
 
   // Element selector followed by pseudo (html:root, body::before, etc.)
-  { pattern: /^(html|body)[:.]/, reason: 'html/body element with pseudo/class' },
+  {
+    pattern: /^(html|body)[:.]/,
+    reason: "html/body element with pseudo/class",
+  },
 ];
+
+const STATEFUL_CLASS_TOKENS = new Set([
+  "active",
+  "open",
+  "opened",
+  "closed",
+  "expanded",
+  "collapsed",
+  "selected",
+  "current",
+  "visible",
+  "hidden",
+  "disabled",
+  "enabled",
+  "checked",
+  "focused",
+  "focus",
+  "hover",
+  "pressed",
+  "loading",
+  "error",
+  "success",
+  "invalid",
+  "valid",
+]);
+
+/**
+ * Known state suffixes for is-/has- prefixes (narrow match to avoid false positives
+ * on static modifiers like .is-solution, .is-featured, .has-icon)
+ */
+const STATEFUL_SUFFIXES = new Set([
+  "active", "open", "opened", "closed", "expanded", "collapsed",
+  "selected", "visible", "hidden", "disabled", "focused", "checked",
+  "loading", "error", "current", "toggled", "pressed", "enabled",
+]);
+
+/**
+ * Typography elements that the parser flattens to modifier classes
+ * (e.g., ".hero h1" → "hero-h1"). These stay native in the router safety net.
+ */
+const FLATTENABLE_ELEMENTS = new Set([
+  "h1", "h2", "h3", "h4", "h5", "h6", "p", "a", "ul", "ol", "li", "blockquote",
+]);
 
 /**
  * Properties that require vendor prefixes to work correctly
  * These should be preserved in embed
  */
 const VENDOR_PREFIX_PROPERTIES = [
-  '-webkit-background-clip',
-  '-webkit-text-fill-color',
-  '-webkit-overflow-scrolling',
-  '-webkit-tap-highlight-color',
-  '-webkit-font-smoothing',
-  '-moz-osx-font-smoothing',
-  '-webkit-appearance',
-  '-moz-appearance',
-  '-webkit-mask',
-  '-webkit-mask-image',
-  'backdrop-filter', // Often needs -webkit- prefix
+  "-webkit-background-clip",
+  "-webkit-text-fill-color",
+  "-webkit-overflow-scrolling",
+  "-webkit-tap-highlight-color",
+  "-webkit-font-smoothing",
+  "-moz-osx-font-smoothing",
+  "-webkit-appearance",
+  "-moz-appearance",
+  "-webkit-mask",
+  "-webkit-mask-image",
+  "backdrop-filter", // Often needs -webkit- prefix
 ];
 
 /**
@@ -466,33 +770,56 @@ const VENDOR_PREFIX_PROPERTIES = [
  */
 const EMBED_VALUE_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   // Modern CSS functions not supported in Webflow's style panel
-  { pattern: /clamp\s*\(/, reason: 'clamp() function' },
-  { pattern: /min\s*\([^)]*,[^)]*\)/, reason: 'min() function' },
-  { pattern: /max\s*\([^)]*,[^)]*\)/, reason: 'max() function' },
+  { pattern: /clamp\s*\(/, reason: "clamp() function" },
+  { pattern: /min\s*\([^)]*,[^)]*\)/, reason: "min() function" },
+  { pattern: /max\s*\([^)]*,[^)]*\)/, reason: "max() function" },
   // Note: calc() is sometimes supported, but complex calc() may need embed
-  { pattern: /calc\s*\([^)]*[\+\-\*\/][^)]*var\s*\(/, reason: 'calc() with CSS variables' },
+  {
+    pattern: /calc\s*\([^)]*[\+\-\*\/][^)]*var\s*\(/,
+    reason: "calc() with CSS variables",
+  },
 
   // CSS variables (var()) - Webflow has limited native support
-  { pattern: /var\s*\(--/, reason: 'CSS variable (var())' },
+  { pattern: /var\s*\(--/, reason: "CSS variable (var())" },
 
   // Modern color functions
-  { pattern: /oklch\s*\(/, reason: 'oklch() color function' },
-  { pattern: /oklab\s*\(/, reason: 'oklab() color function' },
-  { pattern: /color-mix\s*\(/, reason: 'color-mix() function' },
-  { pattern: /light-dark\s*\(/, reason: 'light-dark() function' },
+  { pattern: /oklch\s*\(/, reason: "oklch() color function" },
+  { pattern: /oklab\s*\(/, reason: "oklab() color function" },
+  { pattern: /color-mix\s*\(/, reason: "color-mix() function" },
+  { pattern: /light-dark\s*\(/, reason: "light-dark() function" },
 
   // Container query units
-  { pattern: /\d+cq[whilbmins]/, reason: 'Container query units' },
+  { pattern: /\d+cq[whilbmins]/, reason: "Container query units" },
 
   // Viewport units (some older ones may work, but dvh/svh/lvh are newer)
-  { pattern: /\d+[dsl]v[hwib]/, reason: 'Dynamic viewport units (dvh, svh, lvh)' },
+  {
+    pattern: /\d+[dsl]v[hwib]/,
+    reason: "Dynamic viewport units (dvh, svh, lvh)",
+  },
 ];
+
+const EMBED_VALUE_PATTERNS_PANEL_FIRST: Array<{
+  pattern: RegExp;
+  reason: string;
+}> = [];
 
 /**
  * Check if any property value requires embed routing
  */
-function valueNeedsEmbed(properties: string): { needsEmbed: boolean; reason: string | null } {
-  for (const { pattern, reason } of EMBED_VALUE_PATTERNS) {
+function valueNeedsEmbed(
+  properties: string,
+  options?: CSSRoutingOptions,
+): {
+  needsEmbed: boolean;
+  reason: string | null;
+} {
+  const strategy = options?.strategy ?? "panel-first";
+  const patterns =
+    strategy === "strict"
+      ? EMBED_VALUE_PATTERNS
+      : EMBED_VALUE_PATTERNS_PANEL_FIRST;
+
+  for (const { pattern, reason } of patterns) {
     if (pattern.test(properties)) {
       return { needsEmbed: true, reason };
     }
@@ -507,15 +834,91 @@ function valueNeedsEmbed(properties: string): { needsEmbed: boolean; reason: str
 /**
  * Check if a selector requires embed routing
  */
-function selectorNeedsEmbed(selector: string): { needsEmbed: boolean; reason: string | null; routingReasons: RoutingReason[] } {
+function selectorNeedsEmbed(
+  selector: string,
+  options?: CSSRoutingOptions,
+): {
+  needsEmbed: boolean;
+  reason: string | null;
+  routingReasons: RoutingReason[];
+} {
   const trimmed = selector.trim();
   const routingReasons: RoutingReason[] = [];
+  const phase = options?.phase ?? "full";
+
+  // Stateful ancestor selectors can lose interaction context when flattened.
+  // Example: ".card:hover .card-image img" should stay in embed CSS.
+  const selectorParts = trimmed.split(",").map((part) => part.trim());
+  const hasStatefulAncestorCombinator = selectorParts.some((part) =>
+    /^\.[a-zA-Z_][\w-]*(?:\.[a-zA-Z_][\w-]*)*:[a-zA-Z-]+(?:\([^)]*\))?(?:\.[a-zA-Z_][\w-]*)*(?:\s*[>+~]\s*|\s+).+/.test(
+      part,
+    ),
+  );
+  if (hasStatefulAncestorCombinator) {
+    routingReasons.push({
+      type: "pseudo-class-complex",
+      class: "stateful-ancestor",
+    });
+    routingReasons.push({ type: "combinator", combinator: "descendant" });
+    return {
+      needsEmbed: true,
+      reason: "Stateful ancestor selector with combinator",
+      routingReasons,
+    };
+  }
+
+  // Stateful class ancestors (for example ".tab.active .tab-number") are often
+  // driven by runtime class toggles, and flattening them breaks interactions.
+  const hasStatefulClassAncestorCombinator = selectorParts.some((part) =>
+    hasStatefulClassAncestor(part),
+  );
+  if (hasStatefulClassAncestorCombinator) {
+    routingReasons.push({
+      type: "pseudo-class-complex",
+      class: "stateful-class-ancestor",
+    });
+    routingReasons.push({ type: "combinator", combinator: "descendant" });
+    return {
+      needsEmbed: true,
+      reason: "Stateful class ancestor selector with combinator",
+      routingReasons,
+    };
+  }
 
   // Check descendant selectors (space-separated classes)
   // e.g., ".parent .child" must go to embed
   if (/\.[a-zA-Z_][\w-]*\s+\.[a-zA-Z_][\w-]*/.test(trimmed)) {
-    routingReasons.push({ type: 'descendant-selector' });
-    return { needsEmbed: true, reason: 'Descendant selector (.parent .child)', routingReasons };
+    if (phase === "hard-blockers") {
+      return { needsEmbed: false, reason: null, routingReasons: [] };
+    }
+    routingReasons.push({ type: "descendant-selector" });
+    return {
+      needsEmbed: true,
+      reason: "Descendant selector (.parent .child)",
+      routingReasons,
+    };
+  }
+
+  // Safety net: catch ".class element" descendant selectors that survived normalization
+  // e.g., ".nav a", ".hero h2" — only in full phase (normalizer handles these in hard-blockers)
+  // Exception: typography elements (h1-h6, p, a, etc.) that ELEMENT_TO_CLASS_MAP handles
+  // are flattened to modifier classes by the parser (e.g., ".hero h1" → "hero-h1"), so they stay native.
+  const classElementMatch = trimmed.match(/\.[a-zA-Z_][\w-]*\s+([a-zA-Z][\w-]*)(?!\.)/);
+  if (classElementMatch) {
+    const element = classElementMatch[1].toLowerCase();
+    if (FLATTENABLE_ELEMENTS.has(element)) {
+      // Parser will create a modifier class — keep native
+    } else {
+      if (phase === "hard-blockers") {
+        return { needsEmbed: false, reason: null, routingReasons: [] };
+      }
+      routingReasons.push({ type: "descendant-selector" });
+      return {
+        needsEmbed: true,
+        reason: "Descendant selector (.class element)",
+        routingReasons,
+      };
+    }
   }
 
   // NOTE: Compound selectors (BEM combo classes like .card.dark, .card.sage)
@@ -526,6 +929,12 @@ function selectorNeedsEmbed(selector: string): { needsEmbed: boolean; reason: st
   // Check against known patterns
   for (const { pattern, reason } of EMBED_SELECTOR_PATTERNS) {
     if (pattern.test(trimmed)) {
+      if (
+        phase === "hard-blockers" &&
+        shouldDeferToNormalizer(reason, trimmed)
+      ) {
+        return { needsEmbed: false, reason: null, routingReasons: [] };
+      }
       // Determine routing reason type from pattern/reason
       const routingReason = determineRoutingReason(reason, trimmed);
       if (routingReason) {
@@ -538,39 +947,107 @@ function selectorNeedsEmbed(selector: string): { needsEmbed: boolean; reason: st
   return { needsEmbed: false, reason: null, routingReasons: [] };
 }
 
+function hasStatefulClassAncestor(selectorPart: string): boolean {
+  const combinatorMatch = selectorPart.match(/^(.+?)(?:\s*[>+~]\s*|\s+).+$/);
+  if (!combinatorMatch) return false;
+
+  const ancestorSegment = combinatorMatch[1].trim();
+  const classes = ancestorSegment.match(/\.([a-zA-Z_][\w-]*)/g);
+  if (!classes || classes.length < 2) return false;
+
+  return classes.some((classRef) => {
+    const className = classRef.slice(1).toLowerCase();
+    if (STATEFUL_CLASS_TOKENS.has(className)) return true;
+    // state- and js- prefixes are always dynamic
+    if (/^(state|js)-/.test(className)) return true;
+    // is-/has- prefixes only match known state words
+    const prefixMatch = className.match(/^(is|has)-(.+)$/);
+    if (prefixMatch && STATEFUL_SUFFIXES.has(prefixMatch[2])) return true;
+    return false;
+  });
+}
+
+/**
+ * Selectors that can be normalized into panel-editable classes should not be
+ * routed in the pre-normalization hard-blocker phase.
+ */
+function shouldDeferToNormalizer(reason: string, selector: string): boolean {
+  if (
+    reason === "Descendant selector (.parent .child)" ||
+    reason === ":nth-child selector" ||
+    reason === ":nth-last-child selector" ||
+    reason === "Pure element selector" ||
+    reason === "html/body element selector"
+  ) {
+    return true;
+  }
+
+  // Child combinators with class/tag pairs can be flattened by normalizer.
+  if (reason === "Child combinator (>)") {
+    return /^\.[a-zA-Z_][\w-]*\s*>\s*(\.[a-zA-Z_][\w-]*|[a-zA-Z][\w-]*)$/.test(
+      selector,
+    );
+  }
+
+  return false;
+}
+
 /**
  * Determine the RoutingReason type from pattern match reason
  */
-function determineRoutingReason(reason: string, selector: string): RoutingReason | null {
-  if (reason.includes('pseudo-element') || reason.includes('::')) {
+function determineRoutingReason(
+  reason: string,
+  selector: string,
+): RoutingReason | null {
+  if (reason.includes("pseudo-element") || reason.includes("::")) {
     const match = selector.match(/::([\w-]+)/);
-    return { type: 'pseudo-element', element: match ? `::${match[1]}` : reason };
+    return {
+      type: "pseudo-element",
+      element: match ? `::${match[1]}` : reason,
+    };
   }
-  if (reason.includes(':nth-') || reason.includes(':first-of') || reason.includes(':last-of') ||
-      reason.includes(':only-') || reason.includes(':not') || reason.includes(':has') ||
-      reason.includes(':where') || reason.includes(':is') || reason.includes(':empty') ||
-      reason.includes(':target') || reason.includes(':focus-within') || reason.includes(':checked') ||
-      reason.includes(':disabled') || reason.includes(':enabled') || reason.includes(':required') ||
-      reason.includes(':optional') || reason.includes(':valid') || reason.includes(':invalid')) {
+  if (
+    reason.includes(":nth-") ||
+    reason.includes(":first-of") ||
+    reason.includes(":last-of") ||
+    reason.includes(":only-") ||
+    reason.includes(":not") ||
+    reason.includes(":has") ||
+    reason.includes(":where") ||
+    reason.includes(":is") ||
+    reason.includes(":empty") ||
+    reason.includes(":target") ||
+    reason.includes(":focus-within") ||
+    reason.includes(":checked") ||
+    reason.includes(":disabled") ||
+    reason.includes(":enabled") ||
+    reason.includes(":required") ||
+    reason.includes(":optional") ||
+    reason.includes(":valid") ||
+    reason.includes(":invalid")
+  ) {
     const match = reason.match(/(:[a-z-]+(?:\([^)]*\))?)/i);
-    return { type: 'pseudo-class-complex', class: match ? match[1] : reason };
+    return { type: "pseudo-class-complex", class: match ? match[1] : reason };
   }
-  if (reason.includes('Attribute')) {
+  if (reason.includes("Attribute")) {
     const match = selector.match(/\[([\w-]+)/);
-    return { type: 'attribute-selector', attribute: match ? match[1] : 'attribute' };
+    return {
+      type: "attribute-selector",
+      attribute: match ? match[1] : "attribute",
+    };
   }
-  if (reason.includes('combinator')) {
-    if (reason.includes('>')) return { type: 'combinator', combinator: '>' };
-    if (reason.includes('+')) return { type: 'combinator', combinator: '+' };
-    if (reason.includes('~')) return { type: 'combinator', combinator: '~' };
-    return { type: 'combinator', combinator: 'combinator' };
+  if (reason.includes("combinator")) {
+    if (reason.includes(">")) return { type: "combinator", combinator: ">" };
+    if (reason.includes("+")) return { type: "combinator", combinator: "+" };
+    if (reason.includes("~")) return { type: "combinator", combinator: "~" };
+    return { type: "combinator", combinator: "combinator" };
   }
-  if (reason.includes('ID selector')) {
-    return { type: 'id-selector' };
+  if (reason.includes("ID selector")) {
+    return { type: "id-selector" };
   }
-  if (reason.includes('element selector') || reason.includes('Tag selector')) {
+  if (reason.includes("element selector") || reason.includes("Tag selector")) {
     const match = selector.match(/^(\w+)/);
-    return { type: 'tag-selector', tag: match ? match[1] : 'element' };
+    return { type: "tag-selector", tag: match ? match[1] : "element" };
   }
   return null;
 }
@@ -579,11 +1056,14 @@ function determineRoutingReason(reason: string, selector: string): RoutingReason
  * Check if properties contain vendor prefixes that need embed
  * Returns which specific properties need embed so we can split the rule
  */
-function propertiesNeedEmbed(properties: string): {
+function propertiesNeedEmbed(
+  properties: string,
+  options?: CSSRoutingOptions,
+): {
   needsEmbed: boolean;
   reason: string | null;
   routingReasons: RoutingReason[];
-  embedProperties: string[];  // Properties that must go to embed
+  embedProperties: string[]; // Properties that must go to embed
   nativeProperties: string[]; // Properties that can stay native
 } {
   const routingReasons: RoutingReason[] = [];
@@ -591,10 +1071,13 @@ function propertiesNeedEmbed(properties: string): {
   const nativeProperties: string[] = [];
 
   // Parse individual properties
-  const propList = properties.split(';').map(p => p.trim()).filter(Boolean);
+  const propList = properties
+    .split(";")
+    .map((p) => p.trim())
+    .filter(Boolean);
 
   for (const propStr of propList) {
-    const colonIdx = propStr.indexOf(':');
+    const colonIdx = propStr.indexOf(":");
     if (colonIdx === -1) continue;
 
     const propName = propStr.substring(0, colonIdx).trim().toLowerCase();
@@ -606,23 +1089,34 @@ function propertiesNeedEmbed(properties: string): {
     for (const vendorProp of VENDOR_PREFIX_PROPERTIES) {
       if (propName === vendorProp || propName.includes(vendorProp)) {
         needsEmbed = true;
-        routingReasons.push({ type: 'vendor-prefix', prefix: vendorProp });
+        routingReasons.push({ type: "vendor-prefix", prefix: vendorProp });
         break;
       }
     }
 
     // Check generic vendor prefixes
-    if (!needsEmbed && (propName.startsWith('-webkit-') || propName.startsWith('-moz-') || propName.startsWith('-ms-'))) {
+    if (
+      !needsEmbed &&
+      (propName.startsWith("-webkit-") ||
+        propName.startsWith("-moz-") ||
+        propName.startsWith("-ms-"))
+    ) {
       needsEmbed = true;
-      routingReasons.push({ type: 'vendor-prefix', prefix: propName.split('-').slice(0, 2).join('-') });
+      routingReasons.push({
+        type: "vendor-prefix",
+        prefix: propName.split("-").slice(0, 2).join("-"),
+      });
     }
 
     // Check if the property VALUE needs embed (clamp, calc with vars, etc.)
     if (!needsEmbed) {
-      const valueCheck = valueNeedsEmbed(propValue);
+      const valueCheck = valueNeedsEmbed(propValue, options);
       if (valueCheck.needsEmbed) {
         needsEmbed = true;
-        routingReasons.push({ type: 'css-function', function: valueCheck.reason || 'CSS function' });
+        routingReasons.push({
+          type: "css-function",
+          function: valueCheck.reason || "CSS function",
+        });
       }
     }
 
@@ -637,7 +1131,9 @@ function propertiesNeedEmbed(properties: string): {
 
   return {
     needsEmbed: hasEmbedProps,
-    reason: hasEmbedProps ? `Vendor-prefixed property: ${embedProperties[0].split(':')[0]}` : null,
+    reason: hasEmbedProps
+      ? `Vendor-prefixed property: ${embedProperties[0].split(":")[0]}`
+      : null,
     routingReasons,
     embedProperties,
     nativeProperties,
@@ -645,13 +1141,21 @@ function propertiesNeedEmbed(properties: string): {
 }
 
 // Legacy check for simple cases (backwards compatibility)
-function propertiesNeedEmbedSimple(properties: string): { needsEmbed: boolean; reason: string | null; routingReasons: RoutingReason[] } {
+function propertiesNeedEmbedSimple(properties: string): {
+  needsEmbed: boolean;
+  reason: string | null;
+  routingReasons: RoutingReason[];
+} {
   const routingReasons: RoutingReason[] = [];
 
   for (const prop of VENDOR_PREFIX_PROPERTIES) {
     if (properties.includes(prop)) {
-      routingReasons.push({ type: 'vendor-prefix', prefix: prop });
-      return { needsEmbed: true, reason: `Vendor-prefixed property: ${prop}`, routingReasons };
+      routingReasons.push({ type: "vendor-prefix", prefix: prop });
+      return {
+        needsEmbed: true,
+        reason: `Vendor-prefixed property: ${prop}`,
+        routingReasons,
+      };
     }
   }
 
@@ -659,21 +1163,42 @@ function propertiesNeedEmbedSimple(properties: string): { needsEmbed: boolean; r
   if (/-webkit-(?!background-clip)[\w-]+:/.test(properties)) {
     const match = properties.match(/-webkit-([\w-]+):/);
     if (match && !VENDOR_PREFIX_PROPERTIES.includes(`-webkit-${match[1]}`)) {
-      routingReasons.push({ type: 'vendor-prefix', prefix: `-webkit-${match[1]}` });
-      return { needsEmbed: true, reason: `Webkit prefix: -webkit-${match[1]}`, routingReasons };
+      routingReasons.push({
+        type: "vendor-prefix",
+        prefix: `-webkit-${match[1]}`,
+      });
+      return {
+        needsEmbed: true,
+        reason: `Webkit prefix: -webkit-${match[1]}`,
+        routingReasons,
+      };
     }
   }
 
   if (/-moz-[\w-]+:/.test(properties)) {
     const match = properties.match(/(-moz-[\w-]+):/);
-    routingReasons.push({ type: 'vendor-prefix', prefix: match ? match[1] : '-moz-' });
-    return { needsEmbed: true, reason: 'Mozilla vendor prefix', routingReasons };
+    routingReasons.push({
+      type: "vendor-prefix",
+      prefix: match ? match[1] : "-moz-",
+    });
+    return {
+      needsEmbed: true,
+      reason: "Mozilla vendor prefix",
+      routingReasons,
+    };
   }
 
   if (/-ms-[\w-]+:/.test(properties)) {
     const match = properties.match(/(-ms-[\w-]+):/);
-    routingReasons.push({ type: 'vendor-prefix', prefix: match ? match[1] : '-ms-' });
-    return { needsEmbed: true, reason: 'Microsoft vendor prefix', routingReasons };
+    routingReasons.push({
+      type: "vendor-prefix",
+      prefix: match ? match[1] : "-ms-",
+    });
+    return {
+      needsEmbed: true,
+      reason: "Microsoft vendor prefix",
+      routingReasons,
+    };
   }
 
   return { needsEmbed: false, reason: null, routingReasons: [] };
@@ -688,17 +1213,17 @@ function detectBreakpointFromQuery(query: string): BreakpointKey | null {
 
   if (maxMatch) {
     const width = parseInt(maxMatch[1], 10);
-    if (width <= 479) return 'tiny';
-    if (width <= 767) return 'small';
-    if (width <= 991) return 'medium';
+    if (width <= 479) return "tiny";
+    if (width <= 767) return "small";
+    if (width <= 991) return "medium";
     return null; // Desktop max-width goes to base
   }
 
   if (minMatch) {
     const width = parseInt(minMatch[1], 10);
-    if (width >= 1920) return 'xxxlarge';
-    if (width >= 1440) return 'xxlarge';
-    if (width >= 1280) return 'xlarge';
+    if (width >= 1920) return "xxxlarge";
+    if (width >= 1440) return "xxlarge";
+    if (width >= 1280) return "xlarge";
     return null; // Below 1280 goes to base
   }
 
@@ -708,8 +1233,14 @@ function detectBreakpointFromQuery(query: string): BreakpointKey | null {
 /**
  * Extract CSS rules using proper brace matching
  */
-function extractRulesWithBraceMatching(css: string): Array<{ selector: string; properties: string; fullMatch: string }> {
-  const rules: Array<{ selector: string; properties: string; fullMatch: string }> = [];
+function extractRulesWithBraceMatching(
+  css: string,
+): Array<{ selector: string; properties: string; fullMatch: string }> {
+  const rules: Array<{
+    selector: string;
+    properties: string;
+    fullMatch: string;
+  }> = [];
   const ruleStartRegex = /([^{}@]+)\{/g;
   let match;
 
@@ -719,21 +1250,21 @@ function extractRulesWithBraceMatching(css: string): Array<{ selector: string; p
     const openBraceIndex = match.index + match[0].length - 1;
 
     // Skip if this looks like an at-rule continuation
-    if (selector.startsWith('@') || !selector) continue;
+    if (selector.startsWith("@") || !selector) continue;
 
     // Skip if this is a media query - the regex [^{}@] skips @, so we need to
     // check if @ precedes the match (e.g., "@media ..." becomes "media ...")
-    if (startIndex > 0 && css[startIndex - 1] === '@') continue;
+    if (startIndex > 0 && css[startIndex - 1] === "@") continue;
 
     // Also skip if selector looks like a media query (starts with "media ")
-    if (selector.toLowerCase().startsWith('media ')) continue;
+    if (selector.toLowerCase().startsWith("media ")) continue;
 
     // Find matching closing brace
     let braceCount = 1;
     let i = openBraceIndex + 1;
     while (i < css.length && braceCount > 0) {
-      if (css[i] === '{') braceCount++;
-      else if (css[i] === '}') braceCount--;
+      if (css[i] === "{") braceCount++;
+      else if (css[i] === "}") braceCount--;
       i++;
     }
 
@@ -750,8 +1281,11 @@ function extractRulesWithBraceMatching(css: string): Array<{ selector: string; p
 /**
  * Extract media blocks with their content
  */
-function extractMediaBlocks(css: string): Array<{ query: string; content: string; fullMatch: string }> {
-  const results: Array<{ query: string; content: string; fullMatch: string }> = [];
+function extractMediaBlocks(
+  css: string,
+): Array<{ query: string; content: string; fullMatch: string }> {
+  const results: Array<{ query: string; content: string; fullMatch: string }> =
+    [];
   const mediaStartRegex = /@media\s*([^{]+)\s*\{/g;
   let match;
 
@@ -763,8 +1297,8 @@ function extractMediaBlocks(css: string): Array<{ query: string; content: string
     let braceCount = 1;
     let i = openBraceIndex + 1;
     while (i < css.length && braceCount > 0) {
-      if (css[i] === '{') braceCount++;
-      else if (css[i] === '}') braceCount--;
+      if (css[i] === "{") braceCount++;
+      else if (css[i] === "}") braceCount--;
       i++;
     }
 
@@ -802,17 +1336,24 @@ function isNonStandardMediaQuery(query: string): boolean {
 /**
  * Determine the category of a CSS rule based on its selector
  */
-function determineRuleCategory(selector: string): 'base' | 'pseudo' | 'combinator' | 'attribute' {
-  if (/::/.test(selector) || /:(hover|focus|active|visited|first-child|last-child|nth-|not\(|has\()/.test(selector)) {
-    return 'pseudo';
+function determineRuleCategory(
+  selector: string,
+): "base" | "pseudo" | "combinator" | "attribute" {
+  if (
+    /::/.test(selector) ||
+    /:(hover|focus|active|visited|first-child|last-child|nth-|not\(|has\()/.test(
+      selector,
+    )
+  ) {
+    return "pseudo";
   }
   if (/\s+>\s+|\s+\+\s+|\s+~\s+|\.\w+\s+\.\w+/.test(selector)) {
-    return 'combinator';
+    return "combinator";
   }
   if (/\[[\w-]+/.test(selector)) {
-    return 'attribute';
+    return "attribute";
   }
-  return 'base';
+  return "base";
 }
 
 /**
@@ -820,13 +1361,13 @@ function determineRuleCategory(selector: string): 'base' | 'pseudo' | 'combinato
  */
 function getWebflowBreakpointName(bp: BreakpointKey): string {
   const names: Record<BreakpointKey, string> = {
-    base: 'Desktop (base)',
-    medium: 'Tablet (991px)',
-    small: 'Mobile Landscape (767px)',
-    tiny: 'Mobile Portrait (478px)',
-    xlarge: 'Large (1280px)',
-    xxlarge: 'XLarge (1440px)',
-    xxxlarge: 'XXLarge (1920px)',
+    base: "Desktop (base)",
+    medium: "Tablet (991px)",
+    small: "Mobile Landscape (767px)",
+    tiny: "Mobile Portrait (478px)",
+    xlarge: "Large (1280px)",
+    xxlarge: "XLarge (1440px)",
+    xxxlarge: "XXLarge (1920px)",
   };
   return names[bp] || bp;
 }
@@ -834,23 +1375,26 @@ function getWebflowBreakpointName(bp: BreakpointKey): string {
 /**
  * Check if a breakpoint was rounded from its original value
  */
-function isBreakpointRounded(query: string, detectedBp: BreakpointKey): boolean {
+function isBreakpointRounded(
+  query: string,
+  detectedBp: BreakpointKey,
+): boolean {
   const maxMatch = query.match(/max-width:\s*(\d+)/i);
   const minMatch = query.match(/min-width:\s*(\d+)/i);
 
   if (maxMatch) {
     const width = parseInt(maxMatch[1], 10);
     // Check if it matches Webflow breakpoints exactly
-    if (detectedBp === 'tiny' && width !== 478) return true;
-    if (detectedBp === 'small' && width !== 767) return true;
-    if (detectedBp === 'medium' && width !== 991) return true;
+    if (detectedBp === "tiny" && width !== 478) return true;
+    if (detectedBp === "small" && width !== 767) return true;
+    if (detectedBp === "medium" && width !== 991) return true;
   }
 
   if (minMatch) {
     const width = parseInt(minMatch[1], 10);
-    if (detectedBp === 'xlarge' && width !== 1280) return true;
-    if (detectedBp === 'xxlarge' && width !== 1440) return true;
-    if (detectedBp === 'xxxlarge' && width !== 1920) return true;
+    if (detectedBp === "xlarge" && width !== 1280) return true;
+    if (detectedBp === "xxlarge" && width !== 1440) return true;
+    if (detectedBp === "xxxlarge" && width !== 1920) return true;
   }
 
   return false;
@@ -867,7 +1411,10 @@ function isBreakpointRounded(query: string, detectedBp: BreakpointKey): boolean 
  * values for rules routed to native Webflow styles, since Webflow doesn't
  * support CSS custom properties in its native style system.
  */
-export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutingResult {
+export function routeCSS(
+  rawCSS: string,
+  options?: CSSRoutingOptions,
+): CSSRoutingResult {
   const warnings: RouterWarning[] = [];
   const embedParts: string[] = [];
   const embedRulesByBreakpoint = new Map<BreakpointKey, string[]>();
@@ -881,7 +1428,15 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
   const tracer = options?.trace ? new CSSRoutingTracer() : null;
 
   // Initialize breakpoint buckets
-  for (const bp of ['base', 'medium', 'small', 'tiny', 'xlarge', 'xxlarge', 'xxxlarge'] as BreakpointKey[]) {
+  for (const bp of [
+    "base",
+    "medium",
+    "small",
+    "tiny",
+    "xlarge",
+    "xxlarge",
+    "xxxlarge",
+  ] as BreakpointKey[]) {
     embedRulesByBreakpoint.set(bp, []);
   }
 
@@ -892,47 +1447,79 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
   const rawVariables = extractCSSVariables(rawCSS);
 
   // Resolve any chained variable references (var(--a) where --a uses var(--b))
-  const { resolved: cssVariables, circularRefs } = resolveChainedVariables(rawVariables);
+  const { resolved: cssVariables, circularRefs } =
+    resolveChainedVariables(rawVariables);
 
   if (circularRefs.length > 0) {
     warnings.push({
-      type: 'size_warning',
-      reason: `Circular CSS variable references detected: ${circularRefs.join(', ')}`,
-      severity: 'warning',
+      type: "size_warning",
+      reason: `Circular CSS variable references detected: ${circularRefs.join(", ")}`,
+      severity: "warning",
     });
   }
 
   // Log variable extraction for debugging
   const varCount = Object.keys(cssVariables).length;
   if (varCount > 0) {
-    console.log(`[css-embed-router] Extracted ${varCount} CSS variables for resolution`);
+    console.log(
+      `[css-embed-router] Extracted ${varCount} CSS variables for resolution`,
+    );
   }
 
   // ============================================
   // STEP 1: Extract at-rules that must go to embed
   // ============================================
 
-  for (const [name, pattern] of Object.entries(EMBED_AT_RULE_PATTERNS)) {
-    // Reset pattern lastIndex
-    pattern.lastIndex = 0;
-    const matches = workingCSS.match(pattern);
-    if (matches) {
-      for (const m of matches) {
-        embedParts.push(m);
-        atRulesExtracted++;
+  // Block at-rules (brace-matched extraction)
+  const blockExtraction = extractBlockAtRules(
+    workingCSS,
+    BLOCK_EMBED_AT_RULE_NAMES,
+  );
+  if (blockExtraction.extracted.length > 0) {
+    const countsByName = new Map<string, number>();
 
-        // Trace the at-rule
-        if (tracer) {
-          tracer.traceAtRule(`@${name}`, m, name);
-        }
+    for (const entry of blockExtraction.extracted) {
+      embedParts.push(entry.rule);
+      atRulesExtracted++;
+      countsByName.set(entry.name, (countsByName.get(entry.name) ?? 0) + 1);
+
+      if (tracer) {
+        tracer.traceAtRule(`@${entry.name}`, entry.rule, entry.name);
       }
-      workingCSS = workingCSS.replace(pattern, '');
+    }
+
+    for (const [name, count] of countsByName.entries()) {
       warnings.push({
-        type: 'at_rule_extracted',
-        reason: `@${name} rules moved to embed (${matches.length} found)`,
-        severity: 'info',
+        type: "at_rule_extracted",
+        reason: `@${name} rules moved to embed (${count} found)`,
+        severity: "info",
       });
     }
+
+    workingCSS = blockExtraction.remainingCss;
+  }
+
+  // Simple ';' at-rules (regex extraction)
+  for (const [name, pattern] of Object.entries(SIMPLE_EMBED_AT_RULE_PATTERNS)) {
+    pattern.lastIndex = 0;
+    const matches = workingCSS.match(pattern);
+    if (!matches) continue;
+
+    for (const m of matches) {
+      embedParts.push(m);
+      atRulesExtracted++;
+
+      if (tracer) {
+        tracer.traceAtRule(`@${name}`, m, name);
+      }
+    }
+
+    workingCSS = workingCSS.replace(pattern, "");
+    warnings.push({
+      type: "at_rule_extracted",
+      reason: `@${name} rules moved to embed (${matches.length} found)`,
+      severity: "info",
+    });
   }
 
   // ============================================
@@ -951,11 +1538,11 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
         tracer.traceRootVariables(m);
       }
     }
-    workingCSS = workingCSS.replace(rootPattern, '');
+    workingCSS = workingCSS.replace(rootPattern, "");
     warnings.push({
-      type: 'at_rule_extracted',
-      reason: ':root CSS variables moved to embed',
-      severity: 'info',
+      type: "at_rule_extracted",
+      reason: ":root CSS variables moved to embed",
+      severity: "info",
     });
   }
 
@@ -972,39 +1559,38 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
 
   for (const { query, content, fullMatch } of mediaBlocks) {
     // Remove from working CSS
-    workingCSS = workingCSS.replace(fullMatch, '');
+    workingCSS = workingCSS.replace(fullMatch, "");
 
     // Check for non-standard media queries
     if (isNonStandardMediaQuery(query)) {
       embedParts.push(fullMatch);
       warnings.push({
-        type: 'at_rule_extracted',
+        type: "at_rule_extracted",
         reason: `Non-standard media query moved to embed: ${query}`,
-        severity: 'warning',
+        severity: "warning",
       });
 
       // Trace non-standard media query
       if (tracer) {
-        tracer.traceMediaRule(
-          `@media ${query}`,
-          fullMatch,
-          'embed',
-          [{ type: 'breakpoint-nonstandard', query }]
-        );
+        tracer.traceMediaRule(`@media ${query}`, fullMatch, "embed", [
+          { type: "breakpoint-nonstandard", query },
+        ]);
       }
       continue;
     }
 
     // Detect breakpoint
     const breakpoint = detectBreakpointFromQuery(query);
-    const webflowBreakpoint = breakpoint ? getWebflowBreakpointName(breakpoint) : 'base';
+    const webflowBreakpoint = breakpoint
+      ? getWebflowBreakpointName(breakpoint)
+      : "base";
 
     // Process rules inside the media block
     const rules = extractRulesWithBraceMatching(content);
 
     for (const rule of rules) {
-      const selectorCheck = selectorNeedsEmbed(rule.selector);
-      const propsCheck = propertiesNeedEmbed(rule.properties);
+      const selectorCheck = selectorNeedsEmbed(rule.selector, options);
+      const propsCheck = propertiesNeedEmbed(rule.properties, options);
 
       // Build routing reasons
       const reasons: RoutingReason[] = [
@@ -1013,24 +1599,30 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
       ];
 
       // Build breakpoint mapping info
-      const breakpointMapping: BreakpointMapping | undefined = breakpoint ? {
-        original: `@media ${query}`,
-        mapped: webflowBreakpoint,
-        wasRounded: isBreakpointRounded(query, breakpoint),
-      } : undefined;
+      const breakpointMapping: BreakpointMapping | undefined = breakpoint
+        ? {
+            original: `@media ${query}`,
+            mapped: webflowBreakpoint,
+            wasRounded: isBreakpointRounded(query, breakpoint),
+          }
+        : undefined;
 
       if (selectorCheck.needsEmbed || propsCheck.needsEmbed) {
         // Route to embed with breakpoint
-        const bp = breakpoint || 'base';
+        const bp = breakpoint || "base";
         const bucket = embedRulesByBreakpoint.get(bp)!;
-        const embedRule = `${rule.selector} { ${rule.properties} }`;
+        const embedSelector = remapElementSelectorsForEmbed(rule.selector);
+        const embedRule = `${embedSelector} { ${rule.properties} }`;
         bucket.push(embedRule);
 
         warnings.push({
-          type: 'selector_complex',
+          type: "selector_complex",
           selector: rule.selector,
-          reason: selectorCheck.reason || propsCheck.reason || 'Complex selector/property',
-          severity: 'info',
+          reason:
+            selectorCheck.reason ||
+            propsCheck.reason ||
+            "Complex selector/property",
+          severity: "info",
         });
 
         // Trace embed rule
@@ -1038,27 +1630,25 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
           const ruleId = tracer.traceMediaRule(
             rule.selector,
             rule.fullMatch,
-            'embed',
-            reasons.length > 0 ? reasons : [{ type: 'standard-property' }],
-            breakpointMapping
+            "embed",
+            reasons.length > 0 ? reasons : [{ type: "standard-property" }],
+            breakpointMapping,
           );
           tracer.setRuleOutput(ruleId, undefined, embedRule);
         }
       } else {
         // Keep in native CSS (re-wrap in media query)
         // IMPORTANT: Resolve CSS variables since Webflow native styles don't support var()
-        const { resolved: resolvedProperties, unresolvedVars } = resolveVariablesInProperties(
-          rule.properties,
-          cssVariables
-        );
+        const { resolved: resolvedProperties, unresolvedVars } =
+          resolveVariablesInProperties(rule.properties, cssVariables);
 
         // Warn about unresolved variables
         if (unresolvedVars.length > 0) {
           warnings.push({
-            type: 'selector_complex',
+            type: "selector_complex",
             selector: rule.selector,
-            reason: `Unresolved CSS variables in native styles: ${unresolvedVars.join(', ')}`,
-            severity: 'warning',
+            reason: `Unresolved CSS variables in native styles: ${unresolvedVars.join(", ")}`,
+            severity: "warning",
           });
         }
 
@@ -1069,14 +1659,14 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
         // Trace native rule
         if (tracer) {
           const mappingReason: RoutingReason = breakpoint
-            ? { type: 'breakpoint-mapped', from: query, to: webflowBreakpoint }
-            : { type: 'standard-property' };
+            ? { type: "breakpoint-mapped", from: query, to: webflowBreakpoint }
+            : { type: "standard-property" };
           const ruleId = tracer.traceMediaRule(
             rule.selector,
             rule.fullMatch,
-            'native',
+            "native",
             [mappingReason],
-            breakpointMapping
+            breakpointMapping,
           );
           tracer.setRuleOutput(ruleId, nativeRule);
         }
@@ -1092,8 +1682,8 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
   const nativeRules: string[] = [];
 
   for (const rule of baseRules) {
-    const selectorCheck = selectorNeedsEmbed(rule.selector);
-    const propsCheck = propertiesNeedEmbed(rule.properties);
+    const selectorCheck = selectorNeedsEmbed(rule.selector, options);
+    const propsCheck = propertiesNeedEmbed(rule.properties, options);
 
     // Build routing reasons
     const reasons: RoutingReason[] = [
@@ -1106,15 +1696,16 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
 
     if (selectorCheck.needsEmbed) {
       // Selector requires embed - route ENTIRE rule to embed
-      const bucket = embedRulesByBreakpoint.get('base')!;
-      const embedRule = `${rule.selector} { ${rule.properties} }`;
+      const bucket = embedRulesByBreakpoint.get("base")!;
+      const embedSelector = remapElementSelectorsForEmbed(rule.selector);
+      const embedRule = `${embedSelector} { ${rule.properties} }`;
       bucket.push(embedRule);
 
       warnings.push({
-        type: 'selector_complex',
+        type: "selector_complex",
         selector: rule.selector,
-        reason: selectorCheck.reason || 'Complex selector',
-        severity: 'info',
+        reason: selectorCheck.reason || "Complex selector",
+        severity: "info",
       });
 
       // Trace embed rule
@@ -1122,42 +1713,45 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
         const ruleId = tracer.traceRule(
           rule.selector,
           rule.fullMatch,
-          'embed',
-          reasons.length > 0 ? reasons : [{ type: 'standard-property' }],
-          category
+          "embed",
+          reasons.length > 0 ? reasons : [{ type: "standard-property" }],
+          category,
         );
         tracer.setRuleOutput(ruleId, undefined, embedRule);
       }
-    } else if (propsCheck.needsEmbed && propsCheck.nativeProperties.length > 0) {
+    } else if (
+      propsCheck.needsEmbed &&
+      propsCheck.nativeProperties.length > 0
+    ) {
       // SPLIT RULE: Some properties need embed, others can be native
       // This is the FIX for bento-item losing styles when backdrop-filter is present
-      const bucket = embedRulesByBreakpoint.get('base')!;
+      const bucket = embedRulesByBreakpoint.get("base")!;
 
       // Embed only the vendor-prefixed properties
-      const embedProps = propsCheck.embedProperties.join('; ');
-      const embedRule = `${rule.selector} { ${embedProps}; }`;
+      const embedProps = propsCheck.embedProperties.join("; ");
+      const embedSelector = remapElementSelectorsForEmbed(rule.selector);
+      const embedRule = `${embedSelector} { ${embedProps}; }`;
       bucket.push(embedRule);
 
       warnings.push({
-        type: 'selector_complex',
+        type: "selector_complex",
         selector: rule.selector,
-        reason: propsCheck.reason || 'Vendor-prefixed property (split to embed)',
-        severity: 'info',
+        reason:
+          propsCheck.reason || "Vendor-prefixed property (split to embed)",
+        severity: "info",
       });
 
       // Native gets the rest of the properties (with CSS variables resolved)
-      const nativeProps = propsCheck.nativeProperties.join('; ');
-      const { resolved: resolvedProperties, unresolvedVars } = resolveVariablesInProperties(
-        nativeProps,
-        cssVariables
-      );
+      const nativeProps = propsCheck.nativeProperties.join("; ");
+      const { resolved: resolvedProperties, unresolvedVars } =
+        resolveVariablesInProperties(nativeProps, cssVariables);
 
       if (unresolvedVars.length > 0) {
         warnings.push({
-          type: 'selector_complex',
+          type: "selector_complex",
           selector: rule.selector,
-          reason: `Unresolved CSS variables in native styles: ${unresolvedVars.join(', ')}`,
-          severity: 'warning',
+          reason: `Unresolved CSS variables in native styles: ${unresolvedVars.join(", ")}`,
+          severity: "warning",
         });
       }
 
@@ -1169,50 +1763,49 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
         const ruleId = tracer.traceRule(
           rule.selector,
           rule.fullMatch,
-          'split', // Mark as split
-          reasons.length > 0 ? reasons : [{ type: 'standard-property' }],
-          category
+          "split", // Mark as split
+          reasons.length > 0 ? reasons : [{ type: "standard-property" }],
+          category,
         );
         tracer.setRuleOutput(ruleId, nativeRule, embedRule);
       }
     } else if (propsCheck.needsEmbed) {
       // All properties need embed (no native properties)
-      const bucket = embedRulesByBreakpoint.get('base')!;
-      const embedRule = `${rule.selector} { ${rule.properties} }`;
+      const bucket = embedRulesByBreakpoint.get("base")!;
+      const embedSelector = remapElementSelectorsForEmbed(rule.selector);
+      const embedRule = `${embedSelector} { ${rule.properties} }`;
       bucket.push(embedRule);
 
       warnings.push({
-        type: 'selector_complex',
+        type: "selector_complex",
         selector: rule.selector,
-        reason: propsCheck.reason || 'Vendor-prefixed properties',
-        severity: 'info',
+        reason: propsCheck.reason || "Vendor-prefixed properties",
+        severity: "info",
       });
 
       if (tracer) {
         const ruleId = tracer.traceRule(
           rule.selector,
           rule.fullMatch,
-          'embed',
-          reasons.length > 0 ? reasons : [{ type: 'standard-property' }],
-          category
+          "embed",
+          reasons.length > 0 ? reasons : [{ type: "standard-property" }],
+          category,
         );
         tracer.setRuleOutput(ruleId, undefined, embedRule);
       }
     } else {
       // Keep native
       // IMPORTANT: Resolve CSS variables since Webflow native styles don't support var()
-      const { resolved: resolvedProperties, unresolvedVars } = resolveVariablesInProperties(
-        rule.properties,
-        cssVariables
-      );
+      const { resolved: resolvedProperties, unresolvedVars } =
+        resolveVariablesInProperties(rule.properties, cssVariables);
 
       // Warn about unresolved variables
       if (unresolvedVars.length > 0) {
         warnings.push({
-          type: 'selector_complex',
+          type: "selector_complex",
           selector: rule.selector,
-          reason: `Unresolved CSS variables in native styles: ${unresolvedVars.join(', ')}`,
-          severity: 'warning',
+          reason: `Unresolved CSS variables in native styles: ${unresolvedVars.join(", ")}`,
+          severity: "warning",
         });
       }
 
@@ -1224,9 +1817,9 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
         const ruleId = tracer.traceRule(
           rule.selector,
           rule.fullMatch,
-          'native',
-          [{ type: 'standard-property' }],
-          category
+          "native",
+          [{ type: "standard-property" }],
+          category,
         );
         tracer.setRuleOutput(ruleId, nativeRule);
       }
@@ -1237,7 +1830,10 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
   // STEP 5: Format embed CSS with breakpoints
   // ============================================
 
-  const formattedEmbedCSS = formatEmbedWithBreakpoints(embedRulesByBreakpoint, embedParts);
+  const formattedEmbedCSS = formatEmbedWithBreakpoints(
+    embedRulesByBreakpoint,
+    embedParts,
+  );
 
   // ============================================
   // STEP 6: Minify embed CSS for size optimization
@@ -1250,19 +1846,22 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
   // ============================================
 
   const embedSizeBytes = new TextEncoder().encode(embedCSS).length;
-  const totalEmbedRules = Array.from(embedRulesByBreakpoint.values()).reduce((sum, arr) => sum + arr.length, 0);
+  const totalEmbedRules = Array.from(embedRulesByBreakpoint.values()).reduce(
+    (sum, arr) => sum + arr.length,
+    0,
+  );
 
   if (embedSizeBytes > 50 * 1024) {
     warnings.push({
-      type: 'size_error',
+      type: "size_error",
       reason: `Embed CSS exceeds 50KB limit (${Math.round(embedSizeBytes / 1024)}KB). Consider splitting into multiple embeds.`,
-      severity: 'error',
+      severity: "error",
     });
   } else if (embedSizeBytes > 40 * 1024) {
     warnings.push({
-      type: 'size_warning',
+      type: "size_warning",
       reason: `Embed CSS is large (${Math.round(embedSizeBytes / 1024)}KB). May impact page performance.`,
-      severity: 'warning',
+      severity: "warning",
     });
   }
 
@@ -1281,7 +1880,7 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
   const trace = tracer?.finalize(rawCSS);
 
   return {
-    native: allNativeRules.join('\n'),
+    native: allNativeRules.join("\n"),
     embed: embedCSS,
     warnings,
     stats,
@@ -1298,87 +1897,87 @@ export function routeCSS(rawCSS: string, options?: CSSRoutingOptions): CSSRoutin
  */
 function formatEmbedWithBreakpoints(
   rulesByBreakpoint: Map<BreakpointKey, string[]>,
-  atRules: string[]
+  atRules: string[],
 ): string {
   const parts: string[] = [];
 
   // Add at-rules first (keyframes, font-face, etc.)
   if (atRules.length > 0) {
-    parts.push('/* At-rules */');
+    parts.push("/* At-rules */");
     parts.push(...atRules);
-    parts.push('');
+    parts.push("");
   }
 
   // Base styles (no media query)
-  const baseRules = rulesByBreakpoint.get('base') || [];
+  const baseRules = rulesByBreakpoint.get("base") || [];
   if (baseRules.length > 0) {
-    parts.push('/* Base styles */');
+    parts.push("/* Base styles */");
     parts.push(...baseRules);
-    parts.push('');
+    parts.push("");
   }
 
   // Max-width breakpoints (cascade DOWN)
-  const mediumRules = rulesByBreakpoint.get('medium') || [];
+  const mediumRules = rulesByBreakpoint.get("medium") || [];
   if (mediumRules.length > 0) {
-    parts.push('/* Tablet (max-width: 991px) */');
-    parts.push('@media (max-width: 991px) {');
-    parts.push(...mediumRules.map(r => '  ' + r));
-    parts.push('}');
-    parts.push('');
+    parts.push("/* Tablet (max-width: 991px) */");
+    parts.push("@media (max-width: 991px) {");
+    parts.push(...mediumRules.map((r) => "  " + r));
+    parts.push("}");
+    parts.push("");
   }
 
-  const smallRules = rulesByBreakpoint.get('small') || [];
+  const smallRules = rulesByBreakpoint.get("small") || [];
   if (smallRules.length > 0) {
-    parts.push('/* Mobile Landscape (max-width: 767px) */');
-    parts.push('@media (max-width: 767px) {');
-    parts.push(...smallRules.map(r => '  ' + r));
-    parts.push('}');
-    parts.push('');
+    parts.push("/* Mobile Landscape (max-width: 767px) */");
+    parts.push("@media (max-width: 767px) {");
+    parts.push(...smallRules.map((r) => "  " + r));
+    parts.push("}");
+    parts.push("");
   }
 
-  const tinyRules = rulesByBreakpoint.get('tiny') || [];
+  const tinyRules = rulesByBreakpoint.get("tiny") || [];
   if (tinyRules.length > 0) {
-    parts.push('/* Mobile Portrait (max-width: 478px) */');
-    parts.push('@media (max-width: 478px) {');
-    parts.push(...tinyRules.map(r => '  ' + r));
-    parts.push('}');
-    parts.push('');
+    parts.push("/* Mobile Portrait (max-width: 478px) */");
+    parts.push("@media (max-width: 478px) {");
+    parts.push(...tinyRules.map((r) => "  " + r));
+    parts.push("}");
+    parts.push("");
   }
 
   // Min-width breakpoints (cascade UP)
-  const xlargeRules = rulesByBreakpoint.get('xlarge') || [];
+  const xlargeRules = rulesByBreakpoint.get("xlarge") || [];
   if (xlargeRules.length > 0) {
-    parts.push('/* Large (min-width: 1280px) */');
-    parts.push('@media (min-width: 1280px) {');
-    parts.push(...xlargeRules.map(r => '  ' + r));
-    parts.push('}');
-    parts.push('');
+    parts.push("/* Large (min-width: 1280px) */");
+    parts.push("@media (min-width: 1280px) {");
+    parts.push(...xlargeRules.map((r) => "  " + r));
+    parts.push("}");
+    parts.push("");
   }
 
-  const xxlargeRules = rulesByBreakpoint.get('xxlarge') || [];
+  const xxlargeRules = rulesByBreakpoint.get("xxlarge") || [];
   if (xxlargeRules.length > 0) {
-    parts.push('/* XLarge (min-width: 1440px) */');
-    parts.push('@media (min-width: 1440px) {');
-    parts.push(...xxlargeRules.map(r => '  ' + r));
-    parts.push('}');
-    parts.push('');
+    parts.push("/* XLarge (min-width: 1440px) */");
+    parts.push("@media (min-width: 1440px) {");
+    parts.push(...xxlargeRules.map((r) => "  " + r));
+    parts.push("}");
+    parts.push("");
   }
 
-  const xxxlargeRules = rulesByBreakpoint.get('xxxlarge') || [];
+  const xxxlargeRules = rulesByBreakpoint.get("xxxlarge") || [];
   if (xxxlargeRules.length > 0) {
-    parts.push('/* XXLarge (min-width: 1920px) */');
-    parts.push('@media (min-width: 1920px) {');
-    parts.push(...xxxlargeRules.map(r => '  ' + r));
-    parts.push('}');
-    parts.push('');
+    parts.push("/* XXLarge (min-width: 1920px) */");
+    parts.push("@media (min-width: 1920px) {");
+    parts.push(...xxxlargeRules.map((r) => "  " + r));
+    parts.push("}");
+    parts.push("");
   }
 
   // Return empty if nothing to embed
   if (parts.length === 0) {
-    return '';
+    return "";
   }
 
-  return parts.join('\n').trim();
+  return parts.join("\n").trim();
 }
 
 /**
@@ -1386,9 +1985,12 @@ function formatEmbedWithBreakpoints(
  * @param embedCSS - CSS to wrap (may be already minified)
  * @param minify - Whether to minify the CSS (default: false, assumes pre-minified)
  */
-export function wrapEmbedCSSInStyleTag(embedCSS: string, minify: boolean = false): string {
+export function wrapEmbedCSSInStyleTag(
+  embedCSS: string,
+  minify: boolean = false,
+): string {
   if (!embedCSS || !embedCSS.trim()) {
-    return '';
+    return "";
   }
 
   const processedCSS = minify ? minifyCSS(embedCSS) : embedCSS;
@@ -1428,18 +2030,21 @@ export function willRouteToEmbed(css: string): boolean {
 export function getRoutingSummary(css: string): string[] {
   const features: string[] = [];
 
-  if (/@keyframes/i.test(css)) features.push('@keyframes animations');
-  if (/@font-face/i.test(css)) features.push('@font-face declarations');
-  if (/:root\s*\{/.test(css)) features.push('CSS custom properties (:root)');
-  if (/::before|::after/i.test(css)) features.push('::before/::after pseudo-elements');
-  if (/:nth-child\(|:nth-of-type\(/i.test(css)) features.push(':nth-child/:nth-of-type selectors');
-  if (/:not\(|:has\(|:where\(|:is\(/i.test(css)) features.push('Complex pseudo-classes (:not, :has, etc.)');
-  if (/\[[\w-]+=/.test(css)) features.push('Attribute selectors');
-  if (/\s+>\s+/.test(css)) features.push('Child combinators (>)');
-  if (/\s+\+\s+/.test(css)) features.push('Adjacent sibling combinators (+)');
-  if (/\s+~\s+/.test(css)) features.push('General sibling combinators (~)');
-  if (/\.\w+\s+\.\w+/.test(css)) features.push('Descendant selectors');
-  if (/\.\w+\.\w+/.test(css)) features.push('Compound selectors');
+  if (/@keyframes/i.test(css)) features.push("@keyframes animations");
+  if (/@font-face/i.test(css)) features.push("@font-face declarations");
+  if (/:root\s*\{/.test(css)) features.push("CSS custom properties (:root)");
+  if (/::before|::after/i.test(css))
+    features.push("::before/::after pseudo-elements");
+  if (/:nth-child\(|:nth-of-type\(/i.test(css))
+    features.push(":nth-child/:nth-of-type selectors");
+  if (/:not\(|:has\(|:where\(|:is\(/i.test(css))
+    features.push("Complex pseudo-classes (:not, :has, etc.)");
+  if (/\[[\w-]+=/.test(css)) features.push("Attribute selectors");
+  if (/\s+>\s+/.test(css)) features.push("Child combinators (>)");
+  if (/\s+\+\s+/.test(css)) features.push("Adjacent sibling combinators (+)");
+  if (/\s+~\s+/.test(css)) features.push("General sibling combinators (~)");
+  if (/\.\w+\s+\.\w+/.test(css)) features.push("Descendant selectors");
+  if (/\.\w+\.\w+/.test(css)) features.push("Compound selectors");
 
   return features;
 }
@@ -1448,11 +2053,11 @@ export function getRoutingSummary(css: string): string[] {
  * Merge embed CSS from multiple sources
  */
 export function mergeEmbedCSS(...embedCSSSources: string[]): string {
-  const nonEmpty = embedCSSSources.filter(s => s && s.trim());
-  if (nonEmpty.length === 0) return '';
+  const nonEmpty = embedCSSSources.filter((s) => s && s.trim());
+  if (nonEmpty.length === 0) return "";
   if (nonEmpty.length === 1) return nonEmpty[0];
 
-  return nonEmpty.join('\n\n');
+  return nonEmpty.join("\n\n");
 }
 
 // ============================================
@@ -1491,7 +2096,7 @@ export function mergeEmbedCSS(...embedCSSSources: string[]): string {
 export function extractClassNamesFromCSS(css: string): Set<string> {
   const classNames = new Set<string>();
 
-  if (!css || typeof css !== 'string') {
+  if (!css || typeof css !== "string") {
     return classNames;
   }
 
@@ -1507,12 +2112,12 @@ export function extractClassNamesFromCSS(css: string): Set<string> {
     const className = match[1];
 
     // Skip Webflow reserved class prefixes
-    if (className.startsWith('w-') || className.startsWith('wf-')) {
+    if (className.startsWith("w-") || className.startsWith("wf-")) {
       continue;
     }
 
     // Skip if it looks like a CSS escape sequence or invalid
-    if (className.includes('\\')) {
+    if (className.includes("\\")) {
       continue;
     }
 
@@ -1538,7 +2143,7 @@ export function extractClassNamesFromCSS(css: string): Set<string> {
  */
 export function getEmbedOnlyClassNames(
   embedCSS: string,
-  existingStyleNames: Set<string>
+  existingStyleNames: Set<string>,
 ): Set<string> {
   const embedClasses = extractClassNamesFromCSS(embedCSS);
   const embedOnly = new Set<string>();

@@ -1,4 +1,4 @@
-# SYSTEM MANIFEST — Aligned with AUTHORITATIVE_CURRENT_STATE (2026-01-24)
+# SYSTEM MANIFEST — Aligned with AUTHORITATIVE_CURRENT_STATE (2026-02-07)
 
 This manifest is aligned with `AUTHORITATIVE_CURRENT_STATE.md` and reflects the current system behavior. If there is any conflict, defer to `AUTHORITATIVE_CURRENT_STATE.md`.
 
@@ -108,20 +108,41 @@ It serves two user-facing purposes:
 - **Styling**: Tailwind CSS + Framer Motion
 - **Typography**: Plus Jakarta Sans (sans), Antonio (display), Geist Mono (mono)
 
-### HTML to Webflow Conversion
-- Converter in `lib/webflow-converter.ts`
-- Produces a single hidden `<div>` (class: `delete-me`) containing all style classes
-- User pastes into Webflow, then deletes the wrapper div
+### HTML to Webflow Conversion Pipeline
+
+Orchestrated by `lib/project-engine.ts`. Key pipeline files:
+
+| File | Role |
+|------|------|
+| `lib/css-embed-router.ts` | Two-phase CSS routing (hard-blockers → full), CSS variable resolution |
+| `lib/webflow-normalizer.ts` | HTML/CSS rewriting to class-only selectors, nth-child→BEM, typography injection |
+| `lib/webflow-literalizer.ts` | CSS variable resolution, unsupported construct stripping |
+| `lib/css-parser.ts` | CSS→ClassIndex parsing, modifier class creation, media query bucketing |
+| `lib/webflow-converter.ts` | ClassIndex→Webflow JSON, ancestor class tracking, UUID style IDs |
+| `audit/diff/smart-analyzer.ts` | CSS preservation analysis for audit pipeline |
+
+Pipeline flow:
+```
+extractCleanHtml → routeCSS(hard-blockers) → normalizeHtmlCssForWebflow
+→ routeCSS(full) → literalizeCssForWebflow → parseCSS → buildPayloads
+```
+
+Key patterns:
+- **Two-phase routing**: Hard-blockers (pseudo-elements, @keyframes, vendor prefixes) routed to embed first; full phase routes remaining non-native rules after normalization.
+- **Modifier classes**: Descendant selectors like `.hero h1` create `hero-h1` modifier class. Parser creates the class; converter injects it via `ancestorClasses` tracking. Flattenable elements (`h1`–`h6`, `p`, `a`, `ul`, `ol`, `li`, `blockquote`) stay native.
+- **nonStandardMediaCss**: Container queries, print media, `>991px` max-width breakpoints, and pseudo-class rules inside min-width media queries are collected and merged into embed output.
+- **Inline style conversion**: Inline `style=""` attributes are converted to generated classes (e.g., `inline-1`), not discarded.
+
+Output: Single hidden `<div>` (class: `delete-me`) containing all style classes. User pastes into Webflow, then deletes the wrapper div.
 
 ---
 
 ## 7. Deprecations (Current)
 - "Flow Stach" → **Flow Bridge**
-- "Design Tokens" / "Style Guide" / "Token asset" → **Deprecated** (single-file import only, no separate token system)
-- "Full Site Package" / "Site Structure Payload" / "Three-Output System" → **Deprecated** (now single hidden div output)
-- "Components" tab → **Deprecated** (no component extraction, single file only)
+- "Three-Output System" → **Deprecated** (now single hidden div with embed CSS/JS as separate copy actions)
 - `/assets` as primary entry → Redirects to `/workspace/projects`
 - Multi-file import → Not supported (single-file only)
+- Hardcoded app CSS classes for pipeline patterns (`btn-premium`, `premium-hover`, `premium-card-hover`, `btn-primary-cta`) → **Removed** (pipeline handles dynamically for any imported file)
 
 ---
 

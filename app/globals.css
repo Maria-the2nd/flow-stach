@@ -161,16 +161,38 @@
     width: 100%;
     height: 100%;
     z-index: -1;
-    background: radial-gradient(circle at 10% 10%, oklch(0.98 0.02 301 / 0.2) 0%, transparent 50%),
-      radial-gradient(circle at 90% 90%, oklch(0.98 0.02 301 / 0.2) 0%, transparent 50%);
+    background:
+      radial-gradient(
+        circle at 10% 10%,
+        oklch(0.98 0.02 301 / 0.2) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 90% 90%,
+        oklch(0.98 0.02 301 / 0.2) 0%,
+        transparent 50%
+      );
     pointer-events: none;
   }
 
   .dark body::before {
     background:
-      radial-gradient(circle at 15% 15%, oklch(0.6 0.25 300 / 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 85% 85%, oklch(0.5 0.2 280 / 0.12) 0%, transparent 50%),
-      linear-gradient(135deg, oklch(0.04 0.03 300) 0%, oklch(0.06 0.04 280) 50%, oklch(0.05 0.03 300) 100%);
+      radial-gradient(
+        circle at 15% 15%,
+        oklch(0.6 0.25 300 / 0.15) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 85% 85%,
+        oklch(0.5 0.2 280 / 0.12) 0%,
+        transparent 50%
+      ),
+      linear-gradient(
+        135deg,
+        oklch(0.04 0.03 300) 0%,
+        oklch(0.06 0.04 280) 50%,
+        oklch(0.05 0.03 300) 100%
+      );
   }
 }
 
@@ -188,7 +210,11 @@
 
   .dark .glass-card {
     border-color: oklch(0.3 0.06 300 / 0.4);
-    background-image: linear-gradient(to bottom right, oklch(1 0 0 / 0.03), transparent);
+    background-image: linear-gradient(
+      to bottom right,
+      oklch(1 0 0 / 0.03),
+      transparent
+    );
     box-shadow:
       0 10px 40px -10px oklch(0 0 0 / 0.5),
       0 0 20px -5px oklch(var(--primary) / 0.08),
@@ -196,94 +222,25 @@
     /* Subtle inner rim light */
   }
 
-  .glass-card-hover {
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .glass-card-hover:hover {
-    background-color: oklch(1 0 0 / 0.9);
-    border-color: var(--primary);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
-  }
-
-  .dark .glass-card-hover:hover {
-    background-color: var(--card);
-    border-color: var(--primary);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
-  }
-
   .premium-gradient-text {
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
-    background-image: linear-gradient(135deg, var(--foreground), var(--primary));
-  }
-
-  .font-display {
-    font-family: var(--font-display);
-    font-weight: 700;
-  }
-
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Premium Button Shimmer Effect */
-  .btn-premium {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn-premium::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 200%;
-    height: 100%;
-    background: linear-gradient(115deg,
-        transparent 0%,
-        transparent 40%,
-        rgba(255, 255, 255, 0.4) 45%,
-        rgba(255, 255, 255, 0.2) 50%,
-        transparent 55%,
-        transparent 100%);
-    transform: skewX(-15deg);
-    transition: left 0.7s ease;
-  }
-
-  .btn-premium:hover::after {
-    left: 100%;
-    transition: left 0.7s ease;
+    background-image: linear-gradient(
+      135deg,
+      var(--foreground),
+      var(--primary)
+    );
   }
 
   /* Custom Shadow Mix - 20% Glow strength */
   .shadow-primary\/5 {
-    --tw-shadow-color: color-mix(in oklab, color-mix(in oklab, var(--primary) 20%, transparent) var(--tw-shadow-alpha), transparent);
+    --tw-shadow-color: color-mix(
+      in oklab,
+      color-mix(in oklab, var(--primary) 20%, transparent)
+        var(--tw-shadow-alpha),
+      transparent
+    );
   }
 }
 
-/* Premium Hover Effects */
-.premium-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.premium-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-}
-
-.premium-card-hover {
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.premium-card-hover:hover {
-  transform: translateY(-8px) scale(1.01);
-  box-shadow: 0 25px 50px -12px rgba(168, 85, 247, 0.15);
-  border-color: rgba(168, 85, 247, 0.3);
-}

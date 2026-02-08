@@ -267,7 +267,7 @@ export default function TemplatesPage() {
                                         <div className="pt-5 border-t border-border/50 flex items-center justify-between mt-auto">
                                             <span className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest">{asset.category}</span>
                                             <Link href={`/workspace/projects/${asset._id}`}>
-                                                <Button className="bg-primary hover:opacity-90 text-primary-foreground shadow-xl shadow-primary/20 font-bold px-6 h-10 rounded-xl transition-all text-xs btn-premium">
+                                                <Button className="bg-primary hover:opacity-90 text-primary-foreground shadow-xl shadow-primary/20 font-bold px-6 h-10 rounded-xl transition-all text-xs hover:scale-[1.02] active:scale-[0.98]">
                                                     Use Template
                                                 </Button>
                                             </Link>

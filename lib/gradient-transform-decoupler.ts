@@ -1,16 +1,16 @@
 /**
  * Gradient-Transform Decoupler for Webflow Import
- * 
+ *
  * Webflow's import engine has a race condition when processing elements that combine:
  * - background-image: linear-gradient(...)
  * - transform: scale(), translateZ(), etc.
  * - transition properties
- * 
+ *
  * This module detects and structurally separates gradient-bearing elements from
  * transform-bearing elements before Webflow ever sees them, preventing gradient loss.
  */
 
-import { extractGradientFromValue } from './gradient-sanitizer';
+import { extractGradientFromValue } from "./gradient-sanitizer";
 
 // ============================================
 // TYPES
@@ -56,40 +56,40 @@ export interface DecouplingResult {
 // ============================================
 
 const TRANSFORM_PROPERTIES = new Set([
-  'transform',
-  'transform-origin',
-  'transform-style',
-  'perspective',
-  'perspective-origin',
-  'will-change',
-  'transition',
-  'transition-property',
-  'transition-duration',
-  'transition-timing-function',
-  'transition-delay',
+  "transform",
+  "transform-origin",
+  "transform-style",
+  "perspective",
+  "perspective-origin",
+  "will-change",
+  "transition",
+  "transition-property",
+  "transition-duration",
+  "transition-timing-function",
+  "transition-delay",
 ]);
 
 const GRADIENT_PROPERTIES = new Set([
-  'background',
-  'background-image',
-  'background-color',
-  'background-size',
-  'background-position',
-  'background-repeat',
-  'background-attachment',
-  'background-origin',
-  'background-clip',
+  "background",
+  "background-image",
+  "background-color",
+  "background-size",
+  "background-position",
+  "background-repeat",
+  "background-attachment",
+  "background-origin",
+  "background-clip",
 ]);
 
 const SHARED_PROPERTIES = new Set([
-  'border-radius',
-  'border-top-left-radius',
-  'border-top-right-radius',
-  'border-bottom-right-radius',
-  'border-bottom-left-radius',
-  'overflow',
-  'overflow-x',
-  'overflow-y',
+  "border-radius",
+  "border-top-left-radius",
+  "border-top-right-radius",
+  "border-bottom-right-radius",
+  "border-bottom-left-radius",
+  "overflow",
+  "overflow-x",
+  "overflow-y",
 ]);
 
 // ============================================
@@ -103,7 +103,10 @@ export function hasGradientTransformConflict(styleLess: string): boolean {
   if (!styleLess) return false;
 
   // Check for gradient
-  const hasGradient = /(?:linear|radial|conic|repeating-linear|repeating-radial)-gradient\s*\(/i.test(styleLess);
+  const hasGradient =
+    /(?:linear|radial|conic|repeating-linear|repeating-radial)-gradient\s*\(/i.test(
+      styleLess,
+    );
   if (!hasGradient) return false;
 
   // Check for transform indicators
@@ -122,15 +125,15 @@ function parsePropertiesToMap(propertiesStr: string): Map<string, string> {
   if (!propertiesStr) return props;
 
   const properties: string[] = [];
-  let current = '';
+  let current = "";
   let parenDepth = 0;
 
   for (const char of propertiesStr) {
-    if (char === '(') parenDepth++;
-    else if (char === ')') parenDepth--;
-    if (char === ';' && parenDepth === 0) {
+    if (char === "(") parenDepth++;
+    else if (char === ")") parenDepth--;
+    if (char === ";" && parenDepth === 0) {
       if (current.trim()) properties.push(current.trim());
-      current = '';
+      current = "";
     } else {
       current += char;
     }
@@ -138,7 +141,7 @@ function parsePropertiesToMap(propertiesStr: string): Map<string, string> {
   if (current.trim()) properties.push(current.trim());
 
   for (const prop of properties) {
-    const colonIndex = prop.indexOf(':');
+    const colonIndex = prop.indexOf(":");
     if (colonIndex === -1) continue;
     const name = prop.substring(0, colonIndex).trim().toLowerCase();
     const value = prop.substring(colonIndex + 1).trim();
@@ -155,7 +158,7 @@ function parsePropertiesToMap(propertiesStr: string): Map<string, string> {
  */
 function hasGradientInProperty(propName: string, propValue: string): boolean {
   // Check background-image and background properties
-  if (propName === 'background-image' || propName === 'background') {
+  if (propName === "background-image" || propName === "background") {
     return extractGradientFromValue(propValue) !== null;
   }
   return false;
@@ -169,7 +172,7 @@ function transitionInvolvesTransform(transitionValue: string): boolean {
   // Check if transition property includes transform
   const transitionPropertyMatch = transitionValue.match(/transform\b/i);
   if (transitionPropertyMatch) return true;
-  
+
   // If no specific property mentioned, assume it might affect transform
   // (common pattern: "transition: all 0.3s")
   return true; // Conservative: assume yes if transition exists
@@ -178,12 +181,14 @@ function transitionInvolvesTransform(transitionValue: string): boolean {
 /**
  * Detect all gradient-transform conflicts in CSS
  */
-export function detectGradientTransformConflicts(css: string): PotentialConflict[] {
+export function detectGradientTransformConflicts(
+  css: string,
+): PotentialConflict[] {
   const conflicts: PotentialConflict[] = [];
   const conflictMap = new Map<string, PotentialConflict>();
 
   // Remove comments
-  const cleanCss = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const cleanCss = css.replace(/\/\*[\s\S]*?\*\//g, "");
 
   // Parse CSS rules: selector { properties }
   const ruleRegex = /([^{}]+)\{([^{}]+)\}/g;
@@ -194,7 +199,7 @@ export function detectGradientTransformConflicts(css: string): PotentialConflict
     const propertiesStr = match[2].trim();
 
     // Skip @-rules and non-class selectors
-    if (selector.startsWith('@') || !selector.includes('.')) continue;
+    if (selector.startsWith("@") || !selector.includes(".")) continue;
 
     // Extract class name from selector (use last class)
     const classMatches = selector.match(/\.([a-zA-Z_-][\w-]*)/g);
@@ -203,7 +208,7 @@ export function detectGradientTransformConflicts(css: string): PotentialConflict
     const className = classMatches[classMatches.length - 1].substring(1); // Remove dot
 
     // Skip pseudo-elements (::before, ::after) - they don't have the same conflict
-    if (selector.includes('::before') || selector.includes('::after')) continue;
+    if (selector.includes("::before") || selector.includes("::after")) continue;
 
     // Parse properties
     const props = parsePropertiesToMap(propertiesStr);
@@ -232,14 +237,14 @@ export function detectGradientTransformConflicts(css: string): PotentialConflict
 
     for (const [name, value] of props.entries()) {
       if (TRANSFORM_PROPERTIES.has(name)) {
-        if (name === 'transform') {
+        if (name === "transform") {
           hasTransform = true;
           transformValue = value;
-        } else if (name === 'will-change' && /transform/i.test(value)) {
+        } else if (name === "will-change" && /transform/i.test(value)) {
           hasWillChange = true;
-        } else if (name === 'transition' || name.startsWith('transition-')) {
+        } else if (name === "transition" || name.startsWith("transition-")) {
           hasTransition = true;
-          if (name === 'transition') {
+          if (name === "transition") {
             transitionValue = value;
           }
           if (transitionInvolvesTransform(value)) {
@@ -313,7 +318,7 @@ export function detectGradientTransformConflicts(css: string): PotentialConflict
 function propertiesToCss(properties: Map<string, string>): string {
   return Array.from(properties.entries())
     .map(([name, value]) => `${name}: ${value};`)
-    .join(' ');
+    .join(" ");
 }
 
 /**
@@ -323,7 +328,7 @@ function propertiesToCss(properties: Map<string, string>): string {
 function splitCssForDecoupling(
   css: string,
   conflicts: PotentialConflict[],
-  gradientLayerSuffix: string
+  gradientLayerSuffix: string,
 ): string {
   if (conflicts.length === 0) return css;
 
@@ -333,22 +338,28 @@ function splitCssForDecoupling(
   for (const conflict of conflicts) {
     const className = conflict.className;
     const bgClassName = `${className}${gradientLayerSuffix}`;
-    const escapedClassName = className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedClassName = className.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
     // Process base rules (not in media queries)
     const baseRuleRegex = new RegExp(
       `(\\.${escapedClassName}(?:\\.[\\w-]+)*(?::[\\w-]+(?:\\([^)]*\\))?)?(?:\\s*,\\s*\\.${escapedClassName}(?:\\.[\\w-]+)*(?::[\\w-]+(?:\\([^)]*\\))?)?)*)\\s*\\{([^{}]+)\\}`,
-      'g'
+      "g",
     );
 
-    result = result.replace(baseRuleRegex, (match: string, selectorPart: string, propertiesStr: string) => {
-      // Skip if this selector has pseudo-elements
-      if (selectorPart.includes('::before') || selectorPart.includes('::after')) {
-        return match;
-      }
+    result = result.replace(
+      baseRuleRegex,
+      (match: string, selectorPart: string, propertiesStr: string) => {
+        // Skip if this selector has pseudo-elements
+        if (
+          selectorPart.includes("::before") ||
+          selectorPart.includes("::after")
+        ) {
+          return match;
+        }
 
-      return splitRule(selectorPart, propertiesStr, bgClassName);
-    });
+        return splitRule(selectorPart, propertiesStr, bgClassName);
+      },
+    );
 
     // Process media queries
     const mediaRegex = /@media\s*([^{]+)\{([\s\S]*?)\}\s*\}/g;
@@ -356,17 +367,23 @@ function splitCssForDecoupling(
       // Process rules inside media query
       const innerRuleRegex = new RegExp(
         `(\\.${escapedClassName}(?:\\.[\\w-]+)*(?::[\\w-]+(?:\\([^)]*\\))?)?(?:\\s*,\\s*\\.${escapedClassName}(?:\\.[\\w-]+)*(?::[\\w-]+(?:\\([^)]*\\))?)?)*)\\s*\\{([^{}]+)\\}`,
-        'g'
+        "g",
       );
 
-      const processedContent = mediaContent.replace(innerRuleRegex, (match: string, selectorPart: string, propertiesStr: string) => {
-        // Skip if this selector has pseudo-elements
-        if (selectorPart.includes('::before') || selectorPart.includes('::after')) {
-          return match;
-        }
+      const processedContent = mediaContent.replace(
+        innerRuleRegex,
+        (match: string, selectorPart: string, propertiesStr: string) => {
+          // Skip if this selector has pseudo-elements
+          if (
+            selectorPart.includes("::before") ||
+            selectorPart.includes("::after")
+          ) {
+            return match;
+          }
 
-        return splitRule(selectorPart, propertiesStr, bgClassName);
-      });
+          return splitRule(selectorPart, propertiesStr, bgClassName);
+        },
+      );
 
       return `@media ${query}{${processedContent}}`;
     });
@@ -381,10 +398,10 @@ function splitCssForDecoupling(
 function splitRule(
   selectorPart: string,
   propertiesStr: string,
-  bgClassName: string
+  bgClassName: string,
 ): string {
   const props = parsePropertiesToMap(propertiesStr);
-  
+
   // Separate properties
   const parentProps = new Map<string, string>();
   const childProps = new Map<string, string>();
@@ -405,13 +422,15 @@ function splitRule(
 
   // Extract pseudo-class from selector if present
   const pseudoMatch = selectorPart.match(/(:[\w-]+(?:\([^)]*\))?)\s*$/);
-  const pseudoClass = pseudoMatch ? pseudoMatch[1] : '';
-  const baseSelector = pseudoMatch ? selectorPart.slice(0, -pseudoMatch[0].length).trim() : selectorPart;
+  const pseudoClass = pseudoMatch ? pseudoMatch[1] : "";
+  const baseSelector = pseudoMatch
+    ? selectorPart.slice(0, -pseudoMatch[0].length).trim()
+    : selectorPart;
 
   // Only split if we actually have both gradient and transform properties
   // OR if we have a pseudo-class (hover, focus, etc.) - we need to create matching rules
   const hasBothProps = childProps.size > 0 && parentProps.size > 0;
-  const isPseudoClass = pseudoClass !== '';
+  const isPseudoClass = pseudoClass !== "";
 
   if (!hasBothProps && !isPseudoClass) {
     // No split needed, return original
@@ -419,15 +438,20 @@ function splitRule(
   }
 
   // Add positioning to parent if it doesn't have it
-  if (!parentProps.has('position')) {
-    parentProps.set('position', 'relative');
+  if (!parentProps.has("position")) {
+    parentProps.set("position", "relative");
+  }
+  // Ensure negative z-index background layer remains visible.
+  // Without a parent stacking context, the layer can render behind ancestor backgrounds.
+  if (!parentProps.has("z-index")) {
+    parentProps.set("z-index", "0");
   }
 
   // Add positioning to child (only if we have gradient properties or it's a pseudo-class)
   if (childProps.size > 0 || isPseudoClass) {
-    childProps.set('position', 'absolute');
-    childProps.set('inset', '0');
-    childProps.set('z-index', '-1');
+    childProps.set("position", "absolute");
+    childProps.set("inset", "0");
+    childProps.set("z-index", "-1");
   }
 
   // Add shared properties to child (parent already has them via other properties)
@@ -459,26 +483,29 @@ function splitRule(
 function rewriteHtmlForDecoupling(
   html: string,
   conflicts: PotentialConflict[],
-  options: DecouplingOptions
+  options: DecouplingOptions,
 ): { html: string; rewriteCount: number } {
   if (conflicts.length === 0) return { html, rewriteCount: 0 };
 
-  const gradientLayerSuffix = options.gradientLayerSuffix || '-bg';
+  const gradientLayerSuffix = options.gradientLayerSuffix || "-bg";
   const filterClasses = options.filterClasses;
   let rewriteCount = 0;
 
   // Filter conflicts if needed
   const activeConflicts = filterClasses
-    ? conflicts.filter(c => filterClasses.has(c.className))
+    ? conflicts.filter((c) => filterClasses.has(c.className))
     : conflicts;
 
   if (activeConflicts.length === 0) return { html, rewriteCount: 0 };
 
   // Use DOMParser if available, otherwise regex fallback
-  if (typeof DOMParser !== 'undefined') {
+  if (typeof DOMParser !== "undefined") {
     try {
       const parser = new DOMParser();
-      const doc = parser.parseFromString(`<div data-wf-root="true">${html}</div>`, 'text/html');
+      const doc = parser.parseFromString(
+        `<div data-wf-root="true">${html}</div>`,
+        "text/html",
+      );
       const wrapper = doc.body.firstElementChild;
 
       if (wrapper) {
@@ -488,17 +515,17 @@ function rewriteHtmlForDecoupling(
 
           // Find all elements with this class
           const elements = wrapper.querySelectorAll(`.${className}`);
-          
+
           for (const element of Array.from(elements)) {
             // Check if already has the bg element
             if (element.querySelector(`.${bgClassName}`)) continue;
 
             // Create gradient layer element
-            const bgElement = doc.createElement('div');
+            const bgElement = doc.createElement("div");
             bgElement.className = bgClassName;
-            
+
             if (options.preserveDebugInfo) {
-              bgElement.setAttribute('data-decoupled-from', className);
+              bgElement.setAttribute("data-decoupled-from", className);
             }
 
             // Insert as first child
@@ -512,12 +539,15 @@ function rewriteHtmlForDecoupling(
           }
         }
 
-        wrapper.removeAttribute('data-wf-root');
+        wrapper.removeAttribute("data-wf-root");
         const newHtml = wrapper.innerHTML;
         return { html: newHtml, rewriteCount };
       }
     } catch (error) {
-      console.warn('[gradient-transform-decoupler] DOMParser failed, using regex fallback:', error);
+      console.warn(
+        "[gradient-transform-decoupler] DOMParser failed, using regex fallback:",
+        error,
+      );
     }
   }
 
@@ -526,11 +556,11 @@ function rewriteHtmlForDecoupling(
   for (const conflict of activeConflicts) {
     const className = conflict.className;
     const bgClassName = `${className}${gradientLayerSuffix}`;
-    
+
     // Match opening tag with the class
     const classRegex = new RegExp(
-      `(<[^>]+class="[^"]*\\b${className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b[^"]*"[^>]*>)`,
-      'gi'
+      `(<[^>]+class="[^"]*\\b${className.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b[^"]*"[^>]*>)`,
+      "gi",
     );
 
     result = result.replace(classRegex, (match, openingTag) => {
@@ -544,7 +574,9 @@ function rewriteHtmlForDecoupling(
       return `${openingTag}${bgElement}`;
     });
 
-    rewriteCount += (result.match(new RegExp(`class="${bgClassName}"`, 'g')) || []).length;
+    rewriteCount += (
+      result.match(new RegExp(`class="${bgClassName}"`, "g")) || []
+    ).length;
   }
 
   return { html: result, rewriteCount };
@@ -560,14 +592,14 @@ function rewriteHtmlForDecoupling(
 export function decoupleGradientsFromTransforms(
   html: string,
   css: string,
-  options: DecouplingOptions = {}
+  options: DecouplingOptions = {},
 ): DecouplingResult {
   const warnings: string[] = [];
-  const gradientLayerSuffix = options.gradientLayerSuffix || '-bg';
+  const gradientLayerSuffix = options.gradientLayerSuffix || "-bg";
 
   // Step 1: Detect conflicts
   let conflicts = detectGradientTransformConflicts(css);
-  
+
   if (conflicts.length === 0) {
     return {
       html,
@@ -580,7 +612,9 @@ export function decoupleGradientsFromTransforms(
 
   // Apply filter classes if specified
   if (options.filterClasses) {
-    conflicts = conflicts.filter(conflict => options.filterClasses!.has(conflict.className));
+    conflicts = conflicts.filter((conflict) =>
+      options.filterClasses!.has(conflict.className),
+    );
   }
 
   if (conflicts.length === 0) {
@@ -596,19 +630,23 @@ export function decoupleGradientsFromTransforms(
   // Check for existing -bg classes to avoid collisions
   for (const conflict of conflicts) {
     const bgClassName = `${conflict.className}${gradientLayerSuffix}`;
-    const bgClassExists = new RegExp(`\\.${bgClassName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(css);
-    
+    const bgClassExists = new RegExp(
+      `\\.${bgClassName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+    ).test(css);
+
     if (bgClassExists) {
       warnings.push(
-        `Class "${bgClassName}" already exists. Skipping decoupling for "${conflict.className}" to avoid collision.`
+        `Class "${bgClassName}" already exists. Skipping decoupling for "${conflict.className}" to avoid collision.`,
       );
     }
   }
 
   // Filter out conflicts with existing -bg classes
-  const validConflicts = conflicts.filter(conflict => {
+  const validConflicts = conflicts.filter((conflict) => {
     const bgClassName = `${conflict.className}${gradientLayerSuffix}`;
-    const bgClassExists = new RegExp(`\\.${bgClassName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(css);
+    const bgClassExists = new RegExp(
+      `\\.${bgClassName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+    ).test(css);
     return !bgClassExists;
   });
 
@@ -623,16 +661,20 @@ export function decoupleGradientsFromTransforms(
   }
 
   // Step 2: Split CSS
-  const splitCss = splitCssForDecoupling(css, validConflicts, gradientLayerSuffix);
+  const splitCss = splitCssForDecoupling(
+    css,
+    validConflicts,
+    gradientLayerSuffix,
+  );
 
   // Step 3: Rewrite HTML
   const { html: rewrittenHtml, rewriteCount } = rewriteHtmlForDecoupling(
     html,
     validConflicts,
-    options
+    options,
   );
 
-  const decoupledClasses = validConflicts.map(c => c.className);
+  const decoupledClasses = validConflicts.map((c) => c.className);
 
   return {
     html: rewrittenHtml,

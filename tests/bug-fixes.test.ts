@@ -50,14 +50,18 @@ describe("Critical Bug Fixes", () => {
   });
 
   describe("Bug 2: Descendant selector handling", () => {
-    it("converts .hero h1 to .hero .heading-h1", () => {
+    it("converts .hero h1 to modifier class hero-h1", () => {
       const css = `.hero h1 { margin-bottom: 24px; }`;
       const result = parseCSS(css);
 
-      // Should have heading-h1 class with margin-bottom
+      // Base element class should exist (may be empty)
       const h1Entry = result.classIndex.classes["heading-h1"];
       expect(h1Entry).toBeDefined();
-      expect(h1Entry?.baseStyles).toContain("margin-bottom: 24px");
+
+      // Modifier class hero-h1 should have the descendant-specific styles
+      const modifierEntry = result.classIndex.classes["hero-h1"];
+      expect(modifierEntry).toBeDefined();
+      expect(modifierEntry?.baseStyles).toContain("margin-bottom: 24px");
 
       // Should have a warning about conversion
       const conversionWarning = result.classIndex.warnings.find(
@@ -70,11 +74,15 @@ describe("Critical Bug Fixes", () => {
       const css = `.card p { color: #333; font-size: 16px; }`;
       const result = parseCSS(css);
 
-      // Should create paragraph class entry (p maps to "text-body")
+      // Base element class should exist
       const pEntry = result.classIndex.classes["text-body"];
       expect(pEntry).toBeDefined();
-      expect(pEntry?.baseStyles).toContain("color: #333");
-      expect(pEntry?.baseStyles).toContain("font-size: 16px");
+
+      // Modifier class card-p should have the styles
+      const modifierEntry = result.classIndex.classes["card-p"];
+      expect(modifierEntry).toBeDefined();
+      expect(modifierEntry?.baseStyles).toContain("color: #333");
+      expect(modifierEntry?.baseStyles).toContain("font-size: 16px");
     });
 
     it("handles multiple descendant selectors", () => {
@@ -85,15 +93,15 @@ describe("Critical Bug Fixes", () => {
       `;
       const result = parseCSS(css);
 
-      // All element classes should exist
+      // Base element classes should exist
       expect(result.classIndex.classes["heading-h1"]).toBeDefined();
       expect(result.classIndex.classes["heading-h2"]).toBeDefined();
       expect(result.classIndex.classes["text-body"]).toBeDefined();
 
-      // Each should have correct styles
-      expect(result.classIndex.classes["heading-h1"]?.baseStyles).toContain("font-size: 48px");
-      expect(result.classIndex.classes["heading-h2"]?.baseStyles).toContain("font-size: 32px");
-      expect(result.classIndex.classes["text-body"]?.baseStyles).toContain("font-size: 18px");
+      // Modifier classes should have the correct styles
+      expect(result.classIndex.classes["hero-h1"]?.baseStyles).toContain("font-size: 48px");
+      expect(result.classIndex.classes["hero-h2"]?.baseStyles).toContain("font-size: 32px");
+      expect(result.classIndex.classes["hero-p"]?.baseStyles).toContain("font-size: 18px");
     });
 
     it("preserves parent class relationship", () => {

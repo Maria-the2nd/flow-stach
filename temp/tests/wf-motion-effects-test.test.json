@@ -1,11 +1,11 @@
 {
-  "name": "Webflow Motion Effects Test",
+  "name": "wf motion effects test",
   "entryType": "single_html",
   "paths": {
     "html": "wf-motion-effects-test.html"
   },
   "expectations": {
-    "maxDiffRatio": 0.10
+    "maxDiffRatio": 0.05
   },
-  "tags": ["motion", "animation", "effects"]
+  "tags": ["fresh-run"]
 }

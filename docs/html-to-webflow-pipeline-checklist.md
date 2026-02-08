@@ -1,5 +1,8 @@
 # HTML-to-Webflow Pipeline Fix Checklist
 
+For the current panel-first, non-hardcoded fine-tuning workflow, see:
+- `docs/webflow-panel-first-sanitization-playbook.md`
+
 This checklist targets the root cause: **class→style ID integrity**. Every `node.classes` entry must resolve to a `style._id` that exists.
 
 ---

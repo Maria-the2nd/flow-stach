@@ -1,10 +1,10 @@
-# Flow-Stach Documentation
+# Flow Bridge Documentation
 
-Welcome to the Flow-Stach documentation. This guide will help you understand and use all features of the platform.
+Welcome to the Flow Bridge documentation. This guide will help you understand and use all features of the platform.
 
-**🧭 Lost?** See the [Navigation Guide](./NAVIGATION_GUIDE.md) to find exactly what you need.
+See the [Navigation Guide](./NAVIGATION_GUIDE.md) to find docs by role or task.
 
-## 📚 Table of Contents
+## Table of Contents
 
 ### Getting Started
 - [Quick Start Guide](./cli-prompts/START-HERE.md)
@@ -24,13 +24,14 @@ Welcome to the Flow-Stach documentation. This guide will help you understand and
 
 #### Validation & Quality
 - **[Validation System](./cli-prompts/flow-bridge-validation-implementation-prompt.md)** - Multi-layer validation
-- **[Three-Output System](./three-output-system.md)** - Webflow JSON, CSS Embed, JS Embed
+- **[Pipeline Checklist](./html-to-webflow-pipeline-checklist.md)** - Conversion integrity checklist
 
 ### Technical Documentation
 
 #### Architecture
-- [Three-Output System Architecture](./three-output-system.md)
+- **[Panel-First Sanitization Playbook](./webflow-panel-first-sanitization-playbook.md)** - Current pipeline strategy and tuning workflow
 - [Webflow Conversion Pipeline](./cli-prompts/webflow-corruption-analysis.md)
+- [BEM Class Renaming](./bem-class-renaming.md)
 - [Implementation Details](./STYLE_GUIDE_IMPLEMENTATION.md)
 
 #### Debugging & Troubleshooting
@@ -39,56 +40,52 @@ Welcome to the Flow-Stach documentation. This guide will help you understand and
 - [Validation Gap Closure](./IMPLEMENT-validation-gap-closure.md)
 
 #### Research & References
-- [Webflow Custom Code Limitations](./Webflow%20Custom%20Code%20Limitations%20Research.pdf)
-- [Final Implementation Prompt](./FINAL-implementation-prompt.md)
+- [Webflow Custom Code Limitations](./WEBFLOW_CUSTOM_CODE_LIMITATIONS.md)
+- [CodePen to Webflow Gap Analysis](./codepen-to-webflow-gap-analysis.md)
 
-## 🎨 Feature Highlights
+## Feature Highlights
 
 ### Design Tokens Style Guide
 
-Automatically generate beautiful, Relume-style design system documentation:
+Automatically generate Relume-style design system documentation:
 
-- **Visual Token Display**: Colors, typography, spacing, radius, shadows
-- **Copy Functionality**: Individual tokens or entire categories as CSS
-- **Webflow Export**: One-click export to create style guide pages in Webflow
-- **Automatic Extraction**: Detects tokens from CSS custom properties
+- Visual token display: colors, typography, spacing, radius, shadows
+- Copy functionality: individual tokens or entire categories as CSS
+- Webflow export: one-click export to create style guide pages in Webflow
+- Automatic extraction from CSS custom properties
 
-[Learn more →](./features/STYLE_GUIDE.md)
+[Learn more](./features/STYLE_GUIDE.md)
 
 ### Import Wizard
 
 Import any HTML/CSS project and convert it to Webflow-compatible format:
 
-- Multi-step validation
+- Two-phase CSS routing (panel-first strategy)
+- Modifier class creation for descendant selectors
 - Component detection and extraction
-- Font and image analysis
-- Design token extraction
-- Webflow payload generation
+- Font, image, and design token extraction
+- Webflow JSON payload generation with embed CSS/JS
 
-### Three-Output System
+### Pipeline Output
 
-Every import generates three optimized outputs:
+Each import produces:
 
-1. **Webflow JSON**: Native Webflow elements
-2. **CSS Embed**: Advanced CSS features (animations, pseudo-elements)
-3. **JS Embed**: Interactive functionality and libraries
+- **Webflow JSON**: Native Webflow elements and styles (single hidden div with `delete-me` class)
+- **Embed CSS**: Non-native rules (pseudo-elements, animations, non-Webflow breakpoints, stateful selectors)
+- **Embed JS**: Interactive functionality and external library tags
 
-## 🚀 Quick Links
-
-### Most Common Tasks
+## Quick Links
 
 | Task | Documentation |
 |------|---------------|
 | Import a new project | [Import Wizard Guide](./cli-prompts/multi-step-workflow.md) |
+| Fine-tune conversion locally | [Panel-First Sanitization Playbook](./webflow-panel-first-sanitization-playbook.md) |
 | View design tokens | [Style Guide Feature](./features/STYLE_GUIDE.md) |
-| Copy individual token | [Quick Reference](./features/STYLE_GUIDE_QUICK_REFERENCE.md) |
-| Copy all tokens as CSS | [Category Copy](./features/STYLE_GUIDE.md#category-copy) |
-| Export to Webflow | [Webflow Export Guide](./features/STYLE_GUIDE.md#webflow-style-guide-export) |
+| Understand CSS routing | [BEM Class Renaming](./bem-class-renaming.md) |
 | Fix validation errors | [Validation System](./cli-prompts/flow-bridge-validation-implementation-prompt.md) |
-| Debug issues | [Troubleshooting](./features/STYLE_GUIDE.md#troubleshooting) |
 | Extend the feature | [Developer Guide](./features/STYLE_GUIDE_DEVELOPER_GUIDE.md) |
 
-## 📖 Documentation Structure
+## Documentation Structure
 
 ```
 docs/
@@ -96,57 +93,47 @@ docs/
 │   └── STYLE_GUIDE.md    # Design Tokens Style Guide
 ├── cli-prompts/          # Development and CLI documentation
 │   ├── START-HERE.md     # Quick start guide
-│   ├── USAGE_GUIDE.md    # Comprehensive usage guide
-│   └── ...               # Additional technical docs
+│   └── USAGE_GUIDE.md    # Comprehensive usage guide
+├── archive/              # Deprecated/historical docs
 ├── *.md                  # Technical implementation docs
 └── README.md             # This file
 ```
 
-## 🔧 For Developers
+## For Developers
 
 ### Implementation Documentation
-- [Style Guide Implementation](./STYLE_GUIDE_IMPLEMENTATION.md) - Complete implementation details
-- [Validation Gap Closure](./IMPLEMENT-validation-gap-closure.md) - Validation system architecture
-- [Three-Output System](./three-output-system.md) - Output generation architecture
+- [Style Guide Implementation](./STYLE_GUIDE_IMPLEMENTATION.md)
+- [Validation Gap Closure](./IMPLEMENT-validation-gap-closure.md)
+- [Pipeline Checklist](./html-to-webflow-pipeline-checklist.md)
 
-### Code Examples
-- [HTML Sanitizer](./cli-prompts/html-sanitizer.ts)
-- [Webflow Validator](./cli-prompts/webflow-validator.ts)
-- [Test Examples](./cli-prompts/flow-bridge-test-all-outputs.html)
+## Contributing to Documentation
 
-## 📝 Contributing to Documentation
-
-When adding new features, please:
+When adding new features:
 
 1. Create feature documentation in `docs/features/`
-2. Add implementation details to `docs/FEATURE_NAME_IMPLEMENTATION.md`
-3. Update this README with links to new documentation
-4. Include code examples and troubleshooting sections
+2. Update the [Panel-First Playbook](./webflow-panel-first-sanitization-playbook.md) if pipeline behavior changes
+3. Update [CHANGELOG.md](./CHANGELOG.md) with entries
+4. Update this README with links to new documentation
 
-## 🆘 Getting Help
+## Recent Updates
 
-1. **Navigation Guide**: [Find docs by role or task](./NAVIGATION_GUIDE.md) 🧭
-2. **Check Documentation**: Search this docs folder for your topic
-3. **Review Examples**: Look at test files in `docs/cli-prompts/`
-4. **Quick Reference**: [Style Guide Cheat Sheet](./features/STYLE_GUIDE_QUICK_REFERENCE.md)
-5. **Troubleshooting**: [Common Issues](./features/STYLE_GUIDE.md#troubleshooting)
-6. **Submit Issue**: If problem persists, create a GitHub issue
-
-## 📅 Recent Updates
+### February 2026
+- Modifier class creation for descendant element selectors (`.hero h1` -> `hero-h1`)
+- Pseudo-class rules in min-width media queries preserved (not dropped)
+- Flattenable elements bypass router safety net (stay native)
+- Removed hardcoded CSS classes from app globals (`btn-premium`, etc.)
+- Pipeline audit harness with smart CSS analysis
+- 550 tests passing
 
 ### January 2026
-- ✅ **New**: Design Tokens Style Guide with Webflow export
-- ✅ Enhanced token extraction (radius, shadows, UI elements)
-- ✅ Visual style guide components (Relume-style layout)
-- ✅ Category and individual token copy functionality
-- ✅ Complete documentation suite (user + developer guides)
-- ✅ **v2 Update**: Self-contained inline styles (no conflicts!)
-- ✅ **v2 Update**: UI Components section (buttons, cards, inputs)
-- ✅ **v2 Update**: Default spacing tokens (always visible)
+- Design Tokens Style Guide with Webflow export
+- BEM combo class pattern for typography inheritance
+- Comprehensive nth-child to BEM conversion
+- Two-phase CSS routing (hard-blockers + full)
 
-**📖 See:** [Complete Documentation Index](./features/INDEX.md) | **✨ [v2 Improvements](./STYLE_GUIDE_V2_IMPROVEMENTS.md)**
+See [CHANGELOG.md](./CHANGELOG.md) for full history.
 
 ---
 
-**Last Updated:** January 24, 2026  
-**Maintained by:** Flow-Stach Team
+**Last Updated:** February 7, 2026
+**Maintained by:** Flow Bridge Team

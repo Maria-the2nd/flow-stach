@@ -34,11 +34,11 @@ export class StyleIdMap {
 
   /**
    * Check if a class name is a reserved Webflow system class.
-   * Reserved classes (w-*, wf-*) are handled internally by Webflow
+   * Reserved classes (w-*) are handled internally by Webflow
    * and should NOT get custom UUIDs in our styles array.
    */
   private isReservedClass(className: string): boolean {
-    return className.startsWith('w-') || className.startsWith('wf-');
+    return className.startsWith('w-');
   }
 
   /**
@@ -63,7 +63,7 @@ export class StyleIdMap {
   /**
    * Convert an array of class names to an array of style UUIDs.
    *
-   * IMPORTANT: Reserved Webflow classes (w-*, wf-*) are filtered out.
+   * IMPORTANT: Reserved Webflow classes (w-*) are filtered out.
    * These are system classes that Webflow handles internally and should
    * NOT appear in node.classes as UUIDs - they're referenced by name only.
    *
@@ -1351,7 +1351,30 @@ function processRule(
   }
 
   // Track parent-child relationships for descendant selectors
+  // For element conversions like ".hero h1", create a modifier class (hero-h1) with
+  // the descendant-specific styles, keeping the base element class (heading-h1) separate.
   if (isDescendant && parentClasses.length > 0) {
+    let targetEntry = entry;
+
+    // Create modifier class for descendant element selectors
+    if (isElementConversion && originalElementSelector) {
+      const modifierName = `${parentClasses[0]}-${originalElementSelector}`;
+      if (!classes[modifierName]) {
+        classes[modifierName] = {
+          className: modifierName,
+          selectors: [],
+          baseStyles: "",
+          mediaQueries: {},
+          isComboClass: false,
+          children: [],
+          parentClasses: [...parentClasses],
+          isLayoutContainer: false,
+        };
+      }
+      classes[modifierName].selectors.push(selector);
+      targetEntry = classes[modifierName];
+    }
+
     for (const parentClass of parentClasses) {
       if (!entry.parentClasses.includes(parentClass)) {
         entry.parentClasses.push(parentClass);
@@ -1369,17 +1392,40 @@ function processRule(
           isLayoutContainer: false,
         };
       }
-      if (!classes[parentClass].children.includes(className)) {
-        classes[parentClass].children.push(className);
+      const childName = targetEntry === entry ? className : targetEntry.className;
+      if (!classes[parentClass].children.includes(childName)) {
+        classes[parentClass].children.push(childName);
       }
     }
     // Warn about descendant selectors that may not work in Webflow
     if (!breakpoint && !pseudoClass) {
       warnings.push({
         type: "complex_selector",
-        message: `Descendant selector "${selector}" flattened to .${className}. Parent context from .${parentClasses.join(", .")} may be lost.`,
+        message: `Descendant selector "${selector}" flattened to .${targetEntry.className}. Parent context from .${parentClasses.join(", .")} may be lost.`,
         selector,
       });
+    }
+
+    // Route styles to the modifier entry (not the base element class)
+    if (targetEntry !== entry) {
+      if (breakpoint) {
+        if (!pseudoClass) {
+          targetEntry.mediaQueries[breakpoint] = mergeStyleLess(targetEntry.mediaQueries[breakpoint], styleLess);
+        }
+      } else {
+        if (pseudoClass === "hover") {
+          targetEntry.hoverStyles = mergeStyleLess(targetEntry.hoverStyles, styleLess);
+        } else if (pseudoClass === "focus" || pseudoClass === "focus-visible") {
+          targetEntry.focusStyles = mergeStyleLess(targetEntry.focusStyles, styleLess);
+        } else if (pseudoClass === "active") {
+          targetEntry.activeStyles = mergeStyleLess(targetEntry.activeStyles, styleLess);
+        } else if (pseudoClass === "visited") {
+          targetEntry.visitedStyles = mergeStyleLess(targetEntry.visitedStyles, styleLess);
+        } else if (!pseudoClass) {
+          targetEntry.baseStyles = mergeStyleLess(targetEntry.baseStyles, styleLess);
+        }
+      }
+      return;
     }
   }
 
@@ -1578,12 +1624,19 @@ export function parseCSS(css: string): ParsedCssResult {
 
         if (breakpointResult.isMinWidth) {
           // Min-width query: either goes to UP breakpoint or promotes to base
+          // Pseudo-class rules inside min-width media queries (e.g. @media (min-width: 1024px) { .btn:hover { ... } })
+          // cannot map to Webflow breakpoints, so route them to nonStandardMediaCss for embed.
+          let hasPseudoRules = false;
+          const pseudoRuleTexts: string[] = [];
           const props = parseProperties(propertiesStr, variables, warnings, selectors);
           for (const sel of selectors.split(",")) {
             const parsed = parseSelector(sel.trim());
             if (!parsed.className) continue;
-            // Only handle non-pseudo min-width rules for now
-            if (parsed.pseudoClass) continue;
+            if (parsed.pseudoClass) {
+              hasPseudoRules = true;
+              pseudoRuleTexts.push(`${sel.trim()}{${propertiesStr}}`);
+              continue;
+            }
 
             if (!classes[parsed.className]) {
               classes[parsed.className] = {
@@ -1602,6 +1655,10 @@ export function parseCSS(css: string): ParsedCssResult {
             entry.selectors.push(sel.trim());
             applyMinWidthPropertiesToEntry({ entry, properties: props, minWidth: breakpointResult.originalWidth });
           }
+          // Route pseudo-class rules to nonStandardMediaCss
+          if (hasPseudoRules && pseudoRuleTexts.length > 0) {
+            nonStandardMediaBlocks.push(`@media ${query}{${pseudoRuleTexts.join("")}}`);
+          }
         } else {
           // Max-width query: goes to DOWN breakpoint (medium, small, tiny) or desktop
           for (const sel of selectors.split(",")) {
@@ -1614,11 +1671,17 @@ export function parseCSS(css: string): ParsedCssResult {
 
       // Fallback: use legacy minWidth detection for edge cases
       if (typeof minWidth === "number") {
+        let hasPseudoRulesLegacy = false;
+        const pseudoRuleTextsLegacy: string[] = [];
         const props = parseProperties(propertiesStr, variables, warnings, selectors);
         for (const sel of selectors.split(",")) {
           const parsed = parseSelector(sel.trim());
           if (!parsed.className) continue;
-          if (parsed.pseudoClass) continue;
+          if (parsed.pseudoClass) {
+            hasPseudoRulesLegacy = true;
+            pseudoRuleTextsLegacy.push(`${sel.trim()}{${propertiesStr}}`);
+            continue;
+          }
 
           if (!classes[parsed.className]) {
             classes[parsed.className] = {
@@ -1636,6 +1699,9 @@ export function parseCSS(css: string): ParsedCssResult {
           const entry = classes[parsed.className];
           entry.selectors.push(sel.trim());
           applyMinWidthPropertiesToEntry({ entry, properties: props, minWidth });
+        }
+        if (hasPseudoRulesLegacy && pseudoRuleTextsLegacy.length > 0) {
+          nonStandardMediaBlocks.push(`@media ${query}{${pseudoRuleTextsLegacy.join("")}}`);
         }
         continue;
       }

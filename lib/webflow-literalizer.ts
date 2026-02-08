@@ -31,14 +31,19 @@ const COMMENT_REGEX = /\/\*[\s\S]*?\*\//g;
 
 export function literalizeCssForWebflow(
   css: string,
-  options: { strict?: boolean } = {}
+  options: { strict?: boolean } = {},
 ): WebflowLiteralizeResult {
   const warnings: string[] = [];
   const variables = extractCssVariables(css);
   const unresolved = new Set<string>();
 
   const parsed = parseCssBlocks(css);
-  const baseRules = processRules(parsed.baseRules, variables, warnings, unresolved);
+  const baseRules = processRules(
+    parsed.baseRules,
+    variables,
+    warnings,
+    unresolved,
+  );
   const mediaBlocks = parsed.mediaBlocks.map((block) => ({
     query: block.query,
     rules: processRules(block.rules, variables, warnings, unresolved),
@@ -53,7 +58,7 @@ export function literalizeCssForWebflow(
   if (unresolved.size > 0) {
     const names = Array.from(unresolved);
     warnings.push(
-      `Unresolved CSS variables: ${names.slice(0, 6).join(", ")}${names.length > 6 ? "..." : ""}`
+      `Unresolved CSS variables: ${names.slice(0, 6).join(", ")}${names.length > 6 ? "..." : ""}`,
     );
   }
 
@@ -69,7 +74,10 @@ export function literalizeCssForWebflow(
   };
 }
 
-function parseCssBlocks(css: string): { baseRules: RawRule[]; mediaBlocks: MediaBlock[] } {
+function parseCssBlocks(css: string): {
+  baseRules: RawRule[];
+  mediaBlocks: MediaBlock[];
+} {
   const cleanCss = css.replace(COMMENT_REGEX, "");
   const mediaBlocks: MediaBlock[] = [];
 
@@ -130,7 +138,7 @@ function processRules(
   rules: RawRule[],
   variables: Map<string, string>,
   warnings: string[],
-  unresolved: Set<string>
+  unresolved: Set<string>,
 ): RawRule[] {
   const output: RawRule[] = [];
 
@@ -147,17 +155,26 @@ function processRules(
       //   continue;
       // }
       if (name.toLowerCase() === "content") {
-        warnings.push(`Removed unsupported content property on "${rule.selector}".`);
+        warnings.push(
+          `Removed unsupported content property on "${rule.selector}".`,
+        );
         continue;
       }
       // Pass property name to preserve font-family quotes
-      const { resolved, hasUnresolved } = resolveCssVariables(entry.value, variables, 8, name);
+      const { resolved, hasUnresolved } = resolveCssVariables(
+        entry.value,
+        variables,
+        8,
+        name,
+      );
       if (hasUnresolved) {
-        extractVarNames(entry.value).forEach((varName) => unresolved.add(varName));
+        extractVarNames(entry.value).forEach((varName) =>
+          unresolved.add(varName),
+        );
       }
-      // Ensure resolved value doesn't have unexpected quotes (defensive check)
-      // BUT preserve quotes for font-family - they're semantically meaningful
-      const cleanedValue = name.toLowerCase() === "font-family"
+      // Ensure resolved value doesn't have unexpected quotes (defensive check),
+      // while preserving properties where quotes are semantically required.
+      const cleanedValue = shouldPreserveResolvedQuotes(name, resolved)
         ? resolved
         : stripSurroundingQuotes(resolved);
       processed.push({ name, value: cleanedValue });
@@ -221,7 +238,9 @@ function serializeCss(baseRules: RawRule[], mediaBlocks: MediaBlock[]): string {
   const mediaCss = mediaBlocks
     .map((block) => {
       if (block.rules.length === 0) return "";
-      const rules = block.rules.map((rule) => `${rule.selector} { ${rule.properties} }`).join("\n");
+      const rules = block.rules
+        .map((rule) => `${rule.selector} { ${rule.properties} }`)
+        .join("\n");
       return `@media ${block.query} {\n${rules}\n}`;
     })
     .filter(Boolean)
@@ -245,4 +264,32 @@ function stripSurroundingQuotes(value: string): string {
     return trimmed.slice(1, -1);
   }
   return trimmed;
+}
+
+function shouldPreserveResolvedQuotes(
+  propertyName: string,
+  value: string,
+): boolean {
+  const normalized = propertyName.trim().toLowerCase();
+
+  // Quotes are structurally required for these properties.
+  if (normalized === "font-family" || normalized === "grid-template-areas") {
+    return true;
+  }
+
+  // If the outer quoted value contains additional quotes internally,
+  // it's likely a multi-string value (for example, grid area rows) and
+  // must not lose its outer quotes.
+  const trimmed = value.trim();
+  if (trimmed.length < 2) return false;
+  const first = trimmed.charAt(0);
+  const last = trimmed.charAt(trimmed.length - 1);
+  if ((first === '"' || first === "'") && first === last) {
+    const inner = trimmed.slice(1, -1);
+    if (inner.includes(first)) {
+      return true;
+    }
+  }
+
+  return false;
 }

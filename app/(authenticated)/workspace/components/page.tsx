@@ -93,7 +93,7 @@ export default function ComponentsPage() {
                                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground font-bold h-11 px-4 sm:px-6 rounded-xl flex-1 sm:flex-none border border-transparent hover:border-white/10 hover:bg-white/5">
                                     Preview
                                 </Button>
-                                <Button className="bg-primary hover:opacity-90 text-primary-foreground shadow-xl shadow-primary/20 font-black h-11 px-6 sm:px-8 rounded-xl transition-all flex-1 sm:flex-none whitespace-nowrap btn-premium premium-hover">
+                                <Button className="bg-primary hover:opacity-90 text-primary-foreground shadow-xl shadow-primary/20 font-black h-11 px-6 sm:px-8 rounded-xl transition-all flex-1 sm:flex-none whitespace-nowrap hover:scale-[1.02] active:scale-[0.98]">
                                     <span className="hidden sm:inline">Copy to Webflow</span>
                                     <span className="sm:hidden">Copy</span>
                                     <ExternalLink className="w-4 h-4 ml-2 shrink-0" />

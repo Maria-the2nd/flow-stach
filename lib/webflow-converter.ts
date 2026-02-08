@@ -1024,7 +1024,7 @@ function convertToWebflowNodes(
     delete el.attributes.style;
   }
 
-  function processElement(el: ParsedElement): string {
+  function processElement(el: ParsedElement, ancestorClasses: string[] = []): string {
     if (dropTags.has(el.tag)) return "";
 
     // ============================================
@@ -1280,7 +1280,7 @@ function convertToWebflowNodes(
 
     // Add Webflow class for typography elements if they don't have classes
     // This handles cases where CSS has descendant selectors like ".hero h1"
-    // which creates styles for "heading-h1" class
+    // which creates styles for "heading-h1" class and modifier class "hero-h1"
     if (baseClasses.length === 0) {
       const elementMap: Record<string, string> = {
         h1: "heading-h1",
@@ -1295,6 +1295,15 @@ function convertToWebflowNodes(
       const webflowClass = elementMap[el.tag];
       if (webflowClass && classIndex.classes[webflowClass]) {
         baseClasses.push(webflowClass);
+      }
+    }
+
+    // Add modifier classes from ancestor context (e.g., "hero-h1" for <h1> inside .hero)
+    // This applies whether the element has existing classes or not
+    for (const ancestorClass of ancestorClasses) {
+      const modifierName = `${ancestorClass}-${el.tag}`;
+      if (classIndex.classes[modifierName] && !baseClasses.includes(modifierName)) {
+        baseClasses.push(modifierName);
       }
     }
 
@@ -1352,7 +1361,8 @@ function convertToWebflowNodes(
         childIds.push(textId);
       } else {
         // Element node
-        const childId = processElement(child);
+        const childAncestorClasses = [...ancestorClasses, ...el.classes];
+        const childId = processElement(child, childAncestorClasses);
         if (childId) childIds.push(childId);
       }
     }
@@ -2231,8 +2241,8 @@ export function convertSectionToWebflow(
     if (existingStyleNames.has(className)) {
       continue;
     }
-    // Skip reserved Webflow classes (w-*, wf-*)
-    if (className.startsWith('w-') || className.startsWith('wf-')) {
+    // Skip reserved Webflow classes (w-*)
+    if (className.startsWith('w-')) {
       continue;
     }
     // Create placeholder style with empty styleLess
@@ -2739,7 +2749,7 @@ export function buildComponentPayload(
       missingClasses.push(className);
 
       // Skip Webflow reserved classes
-      if (!className.startsWith('w-') && !className.startsWith('wf-')) {
+      if (!className.startsWith('w-')) {
         componentStyles.push({
           _id: styleIdMap.getOrCreate(className),
           fake: false,

@@ -219,7 +219,7 @@ export const WebflowTemplateImport = forwardRef<WebflowTemplateImportHandle>(fun
           <p className="text-muted-foreground font-medium">Your template &ldquo;{importedTemplateName}&rdquo; is ready and converted.</p>
         </div>
         <Link href={`/workspace/projects/${newProjectId}`}>
-          <Button className="bg-primary text-primary-foreground hover:opacity-90 shadow-xl shadow-primary/20 premium-hover px-12 h-14 rounded-2xl font-black text-lg btn-premium">
+          <Button className="bg-primary text-primary-foreground hover:opacity-90 shadow-xl shadow-primary/20 px-12 h-14 rounded-2xl font-black text-lg transition-all hover:scale-[1.02] active:scale-[0.98]">
             View Project <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </Link>
