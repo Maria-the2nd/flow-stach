@@ -2073,6 +2073,219 @@ function ensurePageWrapper(html: string, css: string): { html: string; css: stri
 }
 
 /**
+ * Ensure all heading base classes have font-family set.
+ *
+ * In the source CSS, headings often inherit font-family from `body {}` or a parent
+ * container rather than having an explicit `h1 { font-family: ... }` rule.
+ * When converted to Webflow, this inheritance is lost — `heading-h1` gets no font-family
+ * and Webflow falls back to Arial.
+ *
+ * Resolution order for each heading level:
+ * 1. If base class already has font-family → keep it
+ * 2. Check classes applied to heading elements in the HTML tree
+ * 3. Check modifier classes (e.g., "hero-h1") in classIndex
+ * 4. Fall back to body/project font (from wf-body class)
+ */
+function propagateHeadingFonts(
+  root: ParsedElement,
+  classIndex: ClassIndex
+): void {
+  const HEADING_CLASS_MAP: Record<string, string> = {
+    h1: "heading-h1",
+    h2: "heading-h2",
+    h3: "heading-h3",
+    h4: "heading-h4",
+    h5: "heading-h5",
+    h6: "heading-h6",
+  };
+
+  function extractFontFamily(styles: string): string | null {
+    const match = styles.match(/font-family\s*:\s*([^;]+)/);
+    return match ? match[1].trim() : null;
+  }
+
+  // Extract body/project default font as final fallback
+  const bodyEntry = classIndex.classes["wf-body"];
+  const bodyFont = bodyEntry ? extractFontFamily(bodyEntry.baseStyles) : null;
+
+  // Track which heading levels are resolved (first-found per level wins)
+  const resolved = new Set<string>();
+
+  // Pass 1: Walk HTML tree to find fonts from applied classes
+  function walk(el: ParsedElement): void {
+    const baseClassName = HEADING_CLASS_MAP[el.tag];
+    if (baseClassName && !resolved.has(baseClassName)) {
+      const baseEntry = classIndex.classes[baseClassName];
+      if (baseEntry && extractFontFamily(baseEntry.baseStyles)) {
+        resolved.add(baseClassName);
+      } else {
+        // Search element's own CSS classes for font-family
+        let foundFont: string | null = null;
+        for (const cls of el.classes) {
+          if (cls === baseClassName) continue; // Skip base class itself
+          const entry = classIndex.classes[cls];
+          if (entry) {
+            foundFont = extractFontFamily(entry.baseStyles);
+            if (foundFont) break;
+          }
+        }
+        if (foundFont) {
+          injectFont(baseClassName, foundFont);
+          resolved.add(baseClassName);
+        }
+      }
+    }
+    for (const child of el.children) {
+      if (typeof child !== "string") {
+        walk(child);
+      }
+    }
+  }
+
+  function injectFont(baseClassName: string, font: string): void {
+    const entry = classIndex.classes[baseClassName];
+    if (entry) {
+      entry.baseStyles = `font-family: ${font}; ${entry.baseStyles}`;
+    } else {
+      classIndex.classes[baseClassName] = {
+        className: baseClassName,
+        selectors: [`.${baseClassName}`],
+        baseStyles: `font-family: ${font};`,
+        mediaQueries: {},
+        isComboClass: false,
+        children: [],
+        parentClasses: [],
+        isLayoutContainer: false,
+      };
+    }
+  }
+
+  walk(root);
+
+  // Pass 2: For any heading levels still unresolved, check modifier classes
+  for (const [tag, baseClassName] of Object.entries(HEADING_CLASS_MAP)) {
+    if (resolved.has(baseClassName)) continue;
+    const baseEntry = classIndex.classes[baseClassName];
+    if (baseEntry && extractFontFamily(baseEntry.baseStyles)) {
+      resolved.add(baseClassName);
+      continue;
+    }
+
+    // Check modifier classes (e.g., "hero-h1", "gap-card-h3")
+    const suffix = `-${tag}`;
+    let foundFont: string | null = null;
+    for (const [cls, entry] of Object.entries(classIndex.classes)) {
+      if (cls.endsWith(suffix) && cls !== baseClassName) {
+        foundFont = extractFontFamily(entry.baseStyles);
+        if (foundFont) break;
+      }
+    }
+    if (foundFont) {
+      injectFont(baseClassName, foundFont);
+      resolved.add(baseClassName);
+    }
+  }
+
+  // Pass 3: Fall back to body font for any heading levels still missing font-family
+  if (bodyFont) {
+    for (const baseClassName of Object.values(HEADING_CLASS_MAP)) {
+      if (resolved.has(baseClassName)) continue;
+      const entry = classIndex.classes[baseClassName];
+      if (entry && !extractFontFamily(entry.baseStyles)) {
+        entry.baseStyles = `font-family: ${bodyFont}; ${entry.baseStyles}`;
+      } else if (!entry) {
+        // Only create entry if it doesn't exist — don't create empty base classes
+        // that have no other styles (they'd be unnecessary)
+      }
+    }
+  }
+}
+
+/**
+ * Remove context-dependent `color` from element base classes.
+ *
+ * When `h3 { color: white }` is normalized to `.heading-h3 { color: white }`,
+ * ALL h3 elements inherit white text globally. But if `.gap-card h3 { color: white }`
+ * also exists (creating modifier `gap-card-h3`), the white color is context-dependent
+ * (only for dark-background cards) and should NOT be on the global base class.
+ *
+ * Rule: if the base class color is repeated on ANY modifier class for that element
+ * level, it's context-dependent → remove from base, keep on modifier.
+ */
+function sanitizeElementBaseColors(classIndex: ClassIndex): void {
+  // Map of element suffixes to their base class names
+  const ELEMENT_BASE_MAP: Record<string, string> = {
+    h1: "heading-h1", h2: "heading-h2", h3: "heading-h3",
+    h4: "heading-h4", h5: "heading-h5", h6: "heading-h6",
+    p: "text-body", a: "link",
+  };
+
+  function normalizeColor(color: string): string {
+    const c = color.toLowerCase().trim().replace(/\s+/g, "");
+    if (c === "#fff" || c === "white" || c === "rgb(255,255,255)") return "#ffffff";
+    if (c === "#000" || c === "black" || c === "rgb(0,0,0)") return "#000000";
+    return c;
+  }
+
+  function extractColorFromProps(styles: string): string | null {
+    // Split into declarations to avoid matching "background-color"
+    for (const decl of styles.split(";")) {
+      const colonIdx = decl.indexOf(":");
+      if (colonIdx === -1) continue;
+      const prop = decl.substring(0, colonIdx).trim().toLowerCase();
+      if (prop === "color") {
+        return decl.substring(colonIdx + 1).trim();
+      }
+    }
+    return null;
+  }
+
+  function removeColorProp(styles: string): string {
+    return styles
+      .split(";")
+      .filter((decl) => {
+        const colonIdx = decl.indexOf(":");
+        if (colonIdx === -1) return true;
+        return decl.substring(0, colonIdx).trim().toLowerCase() !== "color";
+      })
+      .join(";")
+      .replace(/^;\s*/, "")
+      .replace(/;\s*;/g, ";")
+      .trim();
+  }
+
+  for (const [elementSuffix, baseName] of Object.entries(ELEMENT_BASE_MAP)) {
+    const baseEntry = classIndex.classes[baseName];
+    if (!baseEntry) continue;
+
+    const baseColor = extractColorFromProps(baseEntry.baseStyles);
+    if (!baseColor) continue;
+
+    const normalizedBaseColor = normalizeColor(baseColor);
+
+    // Check if any modifier class for this element level has the same color
+    const suffix = `-${elementSuffix}`;
+    let modifierHasSameColor = false;
+
+    for (const [className, entry] of Object.entries(classIndex.classes)) {
+      if (className === baseName) continue;
+      if (!className.endsWith(suffix)) continue;
+
+      const modColor = extractColorFromProps(entry.baseStyles);
+      if (modColor && normalizeColor(modColor) === normalizedBaseColor) {
+        modifierHasSameColor = true;
+        break;
+      }
+    }
+
+    if (modifierHasSameColor) {
+      // Remove color from base class — it's context-dependent
+      baseEntry.baseStyles = removeColorProp(baseEntry.baseStyles);
+    }
+  }
+}
+
+/**
  * Convert a DetectedSection to Webflow JSON payload
  */
 export function convertSectionToWebflow(
@@ -2207,6 +2420,12 @@ export function convertSectionToWebflow(
 
   // Convert HTML to nodes (this registers classes in styleIdMap)
   const { nodes, spanClasses } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex, styleIdMap, inlineStyles);
+
+  // Propagate font-family from element classes to heading base classes
+  propagateHeadingFonts(parsed, classIndex);
+
+  // Remove context-dependent colors from element base classes
+  sanitizeElementBaseColors(classIndex);
 
   // Convert styles using the SAME styleIdMap to ensure UUIDs match
   const styles = convertToWebflowStyles(classIndex, collectedClasses, styleIdMap);
@@ -2719,6 +2938,12 @@ export function buildComponentPayload(
   }
 
   const { nodes, spanClasses } = convertToWebflowNodes(parsed, idGen, collectedClasses, classIndex, styleIdMap, inlineStyles);
+
+  // Propagate font-family from element classes to heading base classes
+  propagateHeadingFonts(parsed, classIndex);
+
+  // Remove context-dependent colors from element base classes
+  sanitizeElementBaseColors(classIndex);
 
   // Build styles array based on options
   const componentStyles: WebflowStyle[] = [];

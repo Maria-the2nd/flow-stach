@@ -502,12 +502,12 @@ function ImportForm() {
                   id="projectName"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
-                  placeholder="e.g. Osmo Loader, Client Site v2"
+                  placeholder="e.g. Hero Section, Client Site v2"
                   className="h-14 rounded-2xl border-border focus:ring-primary focus:border-primary font-bold bg-slate-500/5 backdrop-blur-sm shadow-inner px-6 text-lg"
                 />
                 <p className="text-[10px] text-muted-foreground font-medium ml-1">
-                  Give it a name you&rsquo;ll recognize later (e.g. &ldquo;Osmo
-                  Loader&rdquo;, &ldquo;Client Site v2&rdquo;).
+                  Give it a name you&rsquo;ll recognize later (e.g. &ldquo;Hero
+                  Section&rdquo;, &ldquo;Client Site v2&rdquo;).
                 </p>
               </div>
 

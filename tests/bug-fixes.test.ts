@@ -336,4 +336,149 @@ describe("Critical Bug Fixes", () => {
       expect(btnStyle?.styleLess).toContain("display: inline-block");
     });
   });
+
+  describe("Bug: Heading font-family lost during BEM class conversion", () => {
+    it("propagates font-family from class selector to heading base class", () => {
+      const css = `.display { font-family: 'Anton', sans-serif; font-size: 64px; }`;
+      const html = `<h1 class="display">Title</h1>`;
+
+      const result = convertHtmlCssToWebflow(html, css);
+      const headingStyle = result.payload.styles.find(s => s.name === "heading-h1");
+
+      expect(headingStyle).toBeDefined();
+      expect(headingStyle?.styleLess).toContain("font-family");
+      expect(headingStyle?.styleLess).toContain("Anton");
+    });
+
+    it("does not override font-family already on heading base class", () => {
+      // When .heading-h1 already has font-family (e.g., from a class selector),
+      // propagation should not overwrite it with the applied class's font
+      const css = `
+        .heading-h1 { font-family: 'Playfair Display', serif; font-size: 48px; }
+        .display { font-family: 'Anton', sans-serif; }
+      `;
+      const html = `<h1 class="display">Title</h1>`;
+
+      const result = convertHtmlCssToWebflow(html, css);
+      const headingStyle = result.payload.styles.find(s => s.name === "heading-h1");
+
+      expect(headingStyle).toBeDefined();
+      expect(headingStyle?.styleLess).toContain("Playfair Display");
+      expect(headingStyle?.styleLess).not.toMatch(/font-family[^;]*Anton/);
+    });
+
+    it("propagates font-family from modifier class (descendant selector)", () => {
+      const css = `.hero h1 { font-family: 'Oswald', sans-serif; font-size: 72px; }`;
+      const html = `<div class="hero"><h1>Title</h1></div>`;
+
+      const result = convertHtmlCssToWebflow(html, css);
+      const headingStyle = result.payload.styles.find(s => s.name === "heading-h1");
+
+      expect(headingStyle).toBeDefined();
+      expect(headingStyle?.styleLess).toContain("font-family");
+      expect(headingStyle?.styleLess).toContain("Oswald");
+    });
+
+    it("falls back to body font when no explicit heading font found", () => {
+      // Simulates: body { font-family: 'Inter' } with headings that inherit
+      // In production, body becomes .wf-body via normalizer
+      const css = `
+        .wf-body { font-family: 'Inter', sans-serif; }
+        .heading-h3 { font-size: 1.2rem; font-weight: 700; }
+        .gap-card { background: #1a1a1a; }
+      `;
+      const html = `
+        <div class="gap-card"><h3 class="heading-h3">Card heading</h3></div>
+      `;
+
+      const result = convertHtmlCssToWebflow(html, css);
+      const headingStyle = result.payload.styles.find(s => s.name === "heading-h3");
+
+      // heading-h3 should get body font as fallback
+      expect(headingStyle).toBeDefined();
+      expect(headingStyle?.styleLess).toContain("font-family");
+      expect(headingStyle?.styleLess).toContain("Inter");
+    });
+
+    it("leaves heading unchanged when no font found anywhere", () => {
+      const css = `.display { font-size: 64px; color: red; }`;
+      const html = `<h1 class="display">Title</h1>`;
+
+      const result = convertHtmlCssToWebflow(html, css);
+      const headingStyle = result.payload.styles.find(s => s.name === "heading-h1");
+
+      // heading-h1 may or may not exist, but if it does, it shouldn't have font-family
+      if (headingStyle) {
+        expect(headingStyle.styleLess).not.toContain("font-family");
+      }
+    });
+  });
+
+  describe("Bug: Context-dependent color on heading base classes", () => {
+    // NOTE: Production pipeline uses two-pass routing where bare element selectors
+    // (h3 {}) survive to the normalizer and become .heading-h3 {} class selectors.
+    // Tests here use pre-normalized CSS (class selectors) to simulate this behavior.
+
+    it("removes color from base class when modifier has same color", () => {
+      // Simulates production: h3 { color: white } → .heading-h3 { color: white }
+      // and .gap-card h3 { color: white } → .gap-card-h3 { color: white }
+      const css = `
+        .heading-h3 { color: white; font-size: 1.2rem; font-weight: 700; }
+        .gap-card-h3 { color: white; }
+        .gap-card { background: #1a1a1a; padding: 24px; }
+      `;
+      const html = `
+        <div class="section"><h3 class="heading-h3">Regular heading</h3></div>
+        <div class="gap-card"><h3 class="heading-h3 gap-card-h3">Card heading</h3></div>
+      `;
+
+      const result = convertHtmlCssToWebflow(html, css);
+      const headingStyle = result.payload.styles.find(s => s.name === "heading-h3");
+      const modifierStyle = result.payload.styles.find(s => s.name === "gap-card-h3");
+
+      // Base class should NOT have color (it was context-dependent)
+      expect(headingStyle).toBeDefined();
+      expect(headingStyle?.styleLess).not.toContain("color:");
+
+      // Modifier should still have the color
+      expect(modifierStyle).toBeDefined();
+      expect(modifierStyle?.styleLess).toContain("color");
+    });
+
+    it("keeps color on base class when no modifier repeats it", () => {
+      // Simulates production: h1 { color: #e8524b } → .heading-h1 { color: #e8524b }
+      const css = `
+        .heading-h1 { color: #e8524b; font-size: 4rem; }
+      `;
+      const html = `<h1 class="heading-h1">Red heading</h1>`;
+
+      const result = convertHtmlCssToWebflow(html, css);
+      const headingStyle = result.payload.styles.find(s => s.name === "heading-h1");
+
+      // Base class should keep its color (no modifier has the same color)
+      expect(headingStyle).toBeDefined();
+      expect(headingStyle?.styleLess).toContain("#e8524b");
+    });
+
+    it("keeps color when modifier has different color", () => {
+      // Simulates production: h3 { color: #333 } → .heading-h3 { color: #333 }
+      // and .dark-section h3 { color: white } → .dark-section-h3 { color: white }
+      const css = `
+        .heading-h3 { color: #333; font-size: 1.2rem; }
+        .dark-section-h3 { color: white; }
+      `;
+      const html = `
+        <h3 class="heading-h3">Normal heading</h3>
+        <div class="dark-section"><h3 class="heading-h3 dark-section-h3">Dark heading</h3></div>
+      `;
+
+      const result = convertHtmlCssToWebflow(html, css);
+      const headingStyle = result.payload.styles.find(s => s.name === "heading-h3");
+
+      // Base class should keep #333 (modifier has DIFFERENT color)
+      expect(headingStyle).toBeDefined();
+      expect(headingStyle?.styleLess).toContain("#333");
+    });
+  });
+
 });
